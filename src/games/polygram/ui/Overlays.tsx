@@ -27,7 +27,8 @@ function buildShareText(
   });
   return [
     `Polygram — ${date}`,
-    `${rankFor(state.score, state.puzzle)} · ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    // Rank only — raw points aren't part of the in-game language.
+    `${rankFor(state.score, state.puzzle)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
