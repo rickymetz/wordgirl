@@ -14,5 +14,12 @@ export const polygram: GameDefinition = {
   extraRoutes: [
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
   ],
-  secondaryActions: [{ label: "Practice", path: "practice" }],
+  primaryLabel: "Daily puzzle",
+  secondaryActions: [
+    {
+      label: "Practice",
+      path: "practice",
+      description: "Unlimited random puzzles",
+    },
+  ],
 };

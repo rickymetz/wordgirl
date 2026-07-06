@@ -18,6 +18,8 @@ export interface GameDefinition {
     path: string;
     Page: LazyExoticComponent<ComponentType>;
   }[];
-  /** Secondary entry points rendered as pills on the hub card. */
-  secondaryActions?: { label: string; path: string }[];
+  /** Eyebrow label on the hub's large bento tile, e.g. "Daily puzzle". */
+  primaryLabel?: string;
+  /** Secondary entry points rendered as small bento tiles on the hub. */
+  secondaryActions?: { label: string; path: string; description?: string }[];
 }
