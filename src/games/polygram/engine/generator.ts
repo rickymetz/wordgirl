@@ -58,6 +58,10 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     if (triangleWords.length < 1 || triangleWords.length > LEVEL_CAPS[3]) {
       continue;
     }
+    // Every starting letter must appear in at least one triangle word.
+    if (!letters.every((l) => triangleWords.some((w) => w.includes(l)))) {
+      continue;
+    }
     levels.push({ size: 3, words: triangleWords });
 
     // Grow one letter at a time; stop at the first size with no viable letter.
@@ -71,7 +75,13 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
       for (const candidate of candidates) {
         const extended = [...letters, candidate];
         const words = enumerateWords(dict, extended, size);
-        if (words.length >= 1 && words.length <= cap) {
+        if (
+          words.length >= 1 &&
+          words.length <= cap &&
+          // The debuting letter must be used by at least one word on
+          // the level that introduces it.
+          words.some((w) => w.includes(candidate))
+        ) {
           letters.push(candidate);
           levels.push({ size, words });
           found = true;

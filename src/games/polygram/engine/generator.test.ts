@@ -58,6 +58,19 @@ describe("generatePuzzle", () => {
           expect(word).toHaveLength(level.size);
           expect(letterMask(word) & ~setMask).toBe(0);
         }
+
+        // A letter must be used at least once on the level introducing
+        // it: all three seeds at the triangle, the new letter after.
+        const introduced =
+          level.size === 3
+            ? puzzle.letters.slice(0, 3)
+            : [puzzle.letters[level.size - 1]];
+        for (const letter of introduced) {
+          expect(
+            level.words.some((w) => w.includes(letter)),
+            `letter "${letter}" unused on level ${level.size}`,
+          ).toBe(true);
+        }
       }
       expect(total).toBeLessThanOrEqual(MAX_TOTAL_WORDS);
       expect(puzzle.maxScore).toBeGreaterThan(0);
