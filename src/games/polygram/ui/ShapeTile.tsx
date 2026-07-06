@@ -34,13 +34,10 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
       aria-label={`letter ${letter}`}
     >
       {/* A regular polygon's centroid IS its box center, so the glyph is
-          dead-centered — no optical nudging. */}
+          dead-centered — no optical nudging. Fixed size: type stays
+          consistent while the shapes change scale across levels. */}
       <span
-        className="relative font-game font-extrabold text-accent uppercase"
-        style={{
-          fontSize: Math.min(34, Math.max(20, size * 0.26)),
-          lineHeight: 1,
-        }}
+        className="relative font-game text-[26px] leading-none font-extrabold text-accent uppercase"
       >
         {letter}
       </span>
