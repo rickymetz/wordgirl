@@ -1,0 +1,28 @@
+import { lazy } from "react";
+import type { GameDefinition } from "../types";
+import { CrosshatchPreview } from "./ui/CrosshatchPreview";
+import { CrosshatchStatus } from "./ui/CrosshatchStatus";
+
+export const crosshatch: GameDefinition = {
+  id: "crosshatch",
+  name: "Crosshatch",
+  tagline: "Every way the words fit.",
+  themeColor: "var(--color-accent)",
+  Preview: CrosshatchPreview,
+  Status: CrosshatchStatus,
+  Page: lazy(() => import("./ui/CrosshatchPage")),
+  extraRoutes: [
+    { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
+    { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
+    {
+      path: "archive/:dateKey",
+      Page: lazy(() => import("./ui/ArchivePlayPage")),
+    },
+  ],
+  // Turquoise — the calm end of the palette for the deep-think game.
+  accentLevel: 10,
+  secondaryActions: [
+    { label: "Practice", path: "practice" },
+    { label: "Archive", path: "archive" },
+  ],
+};
