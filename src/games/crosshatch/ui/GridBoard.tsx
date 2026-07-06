@@ -1,4 +1,5 @@
-import { motion } from "motion/react";
+import { useEffect, useSyncExternalStore } from "react";
+import { motion, useAnimationControls } from "motion/react";
 import { cellKey, slotCells } from "../engine/types";
 import {
   cursorSlot,
@@ -9,6 +10,28 @@ import {
 
 const GAP = 6;
 const MAX_CELL = 60;
+const MIN_CELL = 34;
+/** Rough height of everything that isn't the grid (header, bars,
+ * chips, keyboard) — the grid must fit in what's left so the keyboard
+ * never falls below the fold on short phones. */
+const CHROME_H = 480;
+
+/** Live viewport size — re-measures on resize/orientation change. */
+function useViewport(): { vw: number; vh: number } {
+  const snapshot = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("resize", onChange);
+      window.addEventListener("orientationchange", onChange);
+      return () => {
+        window.removeEventListener("resize", onChange);
+        window.removeEventListener("orientationchange", onChange);
+      };
+    },
+    () => `${window.innerWidth}x${window.innerHeight}`,
+  );
+  const [vw, vh] = snapshot.split("x").map(Number);
+  return { vw, vh };
+}
 
 /**
  * The crossword grid. Cells are buttons (tap to focus; re-tap a
@@ -22,11 +45,11 @@ export function GridBoard({
   onFocus: (row: number, col: number) => void;
 }) {
   const { puzzle } = state;
-  const boardW = Math.min(340, window.innerWidth - 40);
-  const cell = Math.min(
-    MAX_CELL,
-    (boardW - (puzzle.cols - 1) * GAP) / puzzle.cols,
-  );
+  const { vw, vh } = useViewport();
+  const wCell =
+    (Math.min(340, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
+  const hCell = (vh - CHROME_H - (puzzle.rows - 1) * GAP) / puzzle.rows;
+  const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));
 
   const active = cursorSlot(state);
   const activeKeys = new Set(
@@ -34,20 +57,23 @@ export function GridBoard({
   );
 
   // A submit outcome nudges the whole grid: shake on a miss, a soft
-  // pulse on a combo. Keyed by nonce so repeats re-trigger.
+  // pulse on a combo. Animation controls, not a keyed remount — the
+  // buttons keep their identity across submits.
+  const controls = useAnimationControls();
   const r = state.lastResult;
-  const animate =
-    r === null
-      ? {}
-      : r.type === "correct"
-        ? { scale: [1, 1.02, 1] }
-        : { x: [0, -7, 7, -4, 4, 0] };
+  useEffect(() => {
+    if (!r) return;
+    void controls.start(
+      r.type === "correct"
+        ? { scale: [1, 1.02, 1], transition: { duration: 0.35 } }
+        : { x: [0, -7, 7, -4, 4, 0], transition: { duration: 0.35 } },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r?.nonce]);
 
   return (
     <motion.div
-      key={r?.nonce ?? 0}
-      animate={animate}
-      transition={{ duration: 0.35 }}
+      animate={controls}
       role="group"
       aria-label="puzzle grid"
       className="grid touch-manipulation select-none"

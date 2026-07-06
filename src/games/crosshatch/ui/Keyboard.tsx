@@ -14,7 +14,7 @@ export function Keyboard({
   submitReady: boolean;
 }) {
   const base =
-    "flex h-12 items-center justify-center rounded-lg font-semibold uppercase [@media(max-height:720px)]:h-10";
+    "flex h-12 touch-manipulation items-center justify-center rounded-lg font-semibold uppercase select-none [@media(max-height:720px)]:h-10";
   const key = `${base} bg-tile active:bg-accent-soft`;
   return (
     <div className="flex w-full max-w-md flex-col gap-1.5">
