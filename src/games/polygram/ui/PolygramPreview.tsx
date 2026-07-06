@@ -21,7 +21,8 @@ export function PolygramPreview() {
   });
 
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden>
+    // Scales to its container (the hub bento gives it 25% of the width).
+    <svg width="100%" viewBox="0 0 120 120" style={{ maxWidth: 120 }} aria-hidden>
       {petals.map(({ x, y, rot }, i) => (
         <g key={i} transform={`translate(${x} ${y})`}>
           <polygon points={tri(petalR, rot)} fill="var(--color-accent)" opacity="0.27" />
@@ -32,7 +33,9 @@ export function PolygramPreview() {
             fontWeight="bold"
             fill="var(--color-accent)"
           >
-            {["W", "R", "D"][i]}
+            {/* Petals sit at upper-right, bottom, upper-left — spells
+                F (upper-left) U (upper-right) N (bottom) reading down. */}
+            {["U", "N", "F"][i]}
           </text>
         </g>
       ))}

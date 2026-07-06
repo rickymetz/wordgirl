@@ -11,3 +11,25 @@ export function previousDateKey(dateKey: string): string {
   const [y, m, d] = dateKey.split("-").map(Number);
   return localDateKey(new Date(y, m - 1, d - 1));
 }
+
+/** All date keys from `fromKey` to `toKey` inclusive, ascending. */
+export function dateKeyRange(fromKey: string, toKey: string): string[] {
+  const out: string[] = [];
+  let key = fromKey;
+  while (key <= toKey) {
+    out.push(key);
+    const [y, m, d] = key.split("-").map(Number);
+    key = localDateKey(new Date(y, m - 1, d + 1));
+  }
+  return out;
+}
+
+/** "Sunday, July 5" for archive listings. */
+export function formatDateKey(dateKey: string): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}

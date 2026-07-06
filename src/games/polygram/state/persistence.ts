@@ -1,5 +1,5 @@
 import { createGameStore } from "../../../lib/storage/createGameStore";
-import { previousDateKey } from "../../../lib/date";
+import { localDateKey, previousDateKey } from "../../../lib/date";
 import { DICT_VERSION } from "../engine/dictionary";
 import { RANKS, type RankTitle } from "../engine/scoring";
 
@@ -10,6 +10,8 @@ export interface DailyProgress {
   revealed: Record<string, number>;
   score: number;
   completed: boolean;
+  /** Wall-clock play time accumulated across sessions, frozen at completion. */
+  elapsedMs: number;
 }
 
 export interface PolygramStats {
@@ -33,7 +35,9 @@ const EMPTY_STATS: PolygramStats = {
 };
 
 const store = createGameStore("polygram");
-const KEEP_DAILIES = 7;
+
+/** The first daily puzzle — the archive reaches back to here. */
+export const ARCHIVE_EPOCH = "2026-07-01";
 
 export async function loadDailyProgress(
   dateKey: string,
@@ -45,17 +49,22 @@ export async function loadDailyProgress(
   return saved;
 }
 
-export async function saveDailyProgress(progress: DailyProgress) {
-  await store.set(`daily:${progress.dateKey}`, progress);
-  await pruneOldDailies();
+/** Every saved daily, keyed by date — drives the archive listing. */
+export async function loadAllDailyProgress(): Promise<
+  Record<string, DailyProgress>
+> {
+  const out: Record<string, DailyProgress> = {};
+  for (const key of await store.keys("daily:")) {
+    const saved = await store.get<DailyProgress>(key);
+    if (saved && saved.dictVersion === DICT_VERSION) {
+      out[saved.dateKey] = saved;
+    }
+  }
+  return out;
 }
 
-async function pruneOldDailies() {
-  const keys = await store.keys("daily:");
-  const sorted = keys.sort(); // date keys sort chronologically
-  for (const key of sorted.slice(0, Math.max(0, sorted.length - KEEP_DAILIES))) {
-    await store.remove(key);
-  }
+export async function saveDailyProgress(progress: DailyProgress) {
+  await store.set(`daily:${progress.dateKey}`, progress);
 }
 
 export async function loadStats(): Promise<PolygramStats> {
@@ -68,7 +77,11 @@ export async function recordDailyStarted(): Promise<void> {
   await store.set("stats", { ...stats, played: stats.played + 1 });
 }
 
-/** Call once when the daily puzzle is completed. */
+/**
+ * Call once when a daily puzzle is completed. Only TODAY's puzzle moves
+ * the streak — finishing an archived day counts toward totals but must
+ * not rewrite streak history.
+ */
 export async function recordDailyCompleted(
   dateKey: string,
   score: number,
@@ -77,19 +90,22 @@ export async function recordDailyCompleted(
   const stats = await loadStats();
   if (stats.lastCompletedDate === dateKey) return stats; // already recorded
 
-  const continues = stats.lastCompletedDate === previousDateKey(dateKey);
-  const currentStreak = continues ? stats.currentStreak + 1 : 1;
   const rankIndex = (r: RankTitle | null) =>
     r === null ? -1 : RANKS.findIndex((x) => x.title === r);
+  const isToday = dateKey === localDateKey();
+  const continues = stats.lastCompletedDate === previousDateKey(dateKey);
+  const currentStreak = continues ? stats.currentStreak + 1 : 1;
 
   const next: PolygramStats = {
     ...stats,
     completed: stats.completed + 1,
-    currentStreak,
-    bestStreak: Math.max(stats.bestStreak, currentStreak),
-    lastCompletedDate: dateKey,
     bestRank: rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
     totalScore: stats.totalScore + score,
+    ...(isToday && {
+      currentStreak,
+      bestStreak: Math.max(stats.bestStreak, currentStreak),
+      lastCompletedDate: dateKey,
+    }),
   };
   await store.set("stats", next);
   return next;

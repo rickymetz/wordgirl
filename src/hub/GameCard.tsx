@@ -10,9 +10,9 @@ export function GameCard({ game }: { game: GameDefinition }) {
     <section>
       <Link
         to={`/games/${game.id}`}
-        className="flex items-center justify-between gap-4 overflow-hidden rounded-3xl bg-accent-soft px-6 py-7 transition-transform active:scale-[0.98]"
+        className="flex items-center overflow-hidden rounded-3xl bg-accent-soft px-6 py-7 transition-transform active:scale-[0.98]"
       >
-        <div className="min-w-0">
+        <div className="w-3/4 min-w-0 pr-2">
           {game.primaryLabel && (
             <div className="text-xs font-semibold tracking-widest text-accent uppercase">
               {game.primaryLabel}
@@ -24,7 +24,7 @@ export function GameCard({ game }: { game: GameDefinition }) {
           <p className="mt-0.5 text-sm text-ink-soft">{game.tagline}</p>
           {game.Status && <game.Status />}
         </div>
-        <div className="shrink-0">
+        <div className="flex w-1/4 justify-center">
           <game.Preview />
         </div>
       </Link>

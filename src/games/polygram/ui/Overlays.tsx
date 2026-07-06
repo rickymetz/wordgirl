@@ -61,7 +61,7 @@ export function DoneOverlay({
   onNewPuzzle,
 }: {
   state: GameState;
-  mode: "daily" | "practice";
+  mode: "daily" | "practice" | "archive";
   onNewPuzzle?: () => void;
 }) {
   if (state.phase !== "done") return null;
@@ -111,6 +111,14 @@ export function DoneOverlay({
               className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
             >
               Keep playing — practice
+            </Link>
+          )}
+          {mode === "archive" && (
+            <Link
+              to="/games/polygram/archive"
+              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+            >
+              More past puzzles
             </Link>
           )}
           <Link

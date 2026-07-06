@@ -13,6 +13,12 @@ export const polygram: GameDefinition = {
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
+    { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
+    {
+      path: "archive/:dateKey",
+      Page: lazy(() => import("./ui/ArchivePlayPage")),
+    },
+    { path: "scoreboard", Page: lazy(() => import("./ui/ScoreboardPage")) },
   ],
   primaryLabel: "Daily puzzle",
   secondaryActions: [
@@ -20,6 +26,16 @@ export const polygram: GameDefinition = {
       label: "Practice",
       path: "practice",
       description: "Unlimited random puzzles",
+    },
+    {
+      label: "Archive",
+      path: "archive",
+      description: "Play past dailies",
+    },
+    {
+      label: "Scoreboard",
+      path: "scoreboard",
+      description: "Times & scores",
     },
   ],
 };

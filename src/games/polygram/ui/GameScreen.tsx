@@ -1,6 +1,7 @@
 import "@fontsource/rubik-mono-one/index.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { formatDateKey } from "../../../lib/date";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import { currentLevel } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
@@ -30,7 +31,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const hintUsed = Object.keys(state.revealed).length > 0;
   const requestHint = () => {
-    if (mode.kind === "daily" && !hintUsed) {
+    if (mode.kind !== "practice" && !hintUsed) {
       setHintWarningOpen(true);
     } else {
       dispatch({ type: "revealHint" });
@@ -77,10 +78,19 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8"
     >
       <header className="flex items-center justify-between pt-6 pb-2">
-        <Link to="/" className="text-sm font-semibold text-ink-soft">
-          ← WordGirl
-        </Link>
-        {mode.kind === "daily" ? (
+        {mode.kind === "archive" ? (
+          <Link
+            to="/games/polygram/archive"
+            className="text-sm font-semibold text-ink-soft"
+          >
+            ← Archive
+          </Link>
+        ) : (
+          <Link to="/" className="text-sm font-semibold text-ink-soft">
+            ← WordGirl
+          </Link>
+        )}
+        {mode.kind !== "practice" ? (
           <button
             type="button"
             onClick={requestHint}
@@ -115,7 +125,14 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       </header>
 
       <div className="flex items-center gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Polygram</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Polygram
+          {mode.kind === "archive" && (
+            <span className="ml-2 text-base font-semibold text-ink-soft">
+              {formatDateKey(mode.dateKey)}
+            </span>
+          )}
+        </h1>
         {/* Level indicator: the current polygon in the level color —
             morphs with the board on level-up. */}
         <span
