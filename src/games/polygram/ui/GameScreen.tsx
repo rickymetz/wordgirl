@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/index.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { formatDateKey } from "../../../lib/date";
+import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import { currentLevel, hintTarget } from "../state/reducer";
@@ -176,7 +176,18 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
         />
       </div>
 
-      <DoneOverlay state={state} mode={mode.kind} onNewPuzzle={onNewPuzzle} />
+      <DoneOverlay
+        state={state}
+        mode={mode.kind}
+        dateKey={
+          mode.kind === "archive"
+            ? mode.dateKey
+            : mode.kind === "daily"
+              ? localDateKey()
+              : undefined
+        }
+        onNewPuzzle={onNewPuzzle}
+      />
 
       {hintWarningOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">

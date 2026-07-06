@@ -33,3 +33,13 @@ export function formatDateKey(dateKey: string): string {
     day: "numeric",
   });
 }
+
+/** "12:34" (or "1:02:03") for solve times. */
+export function formatDuration(ms: number): string {
+  const totalSeconds = Math.round(ms / 1000);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+  return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
+}

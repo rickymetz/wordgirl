@@ -1,22 +1,88 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { formatDateKey, formatDuration } from "../../../lib/date";
 import { rankFor } from "../engine/scoring";
+import { loadDailyProgress } from "../state/persistence";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
+
+/** Pride squares matching the level colors, for the share text. */
+const LEVEL_SQUARES: Record<number, string> = {
+  3: "🟥",
+  4: "🟧",
+  5: "🟨",
+  6: "🟩",
+  7: "🟦",
+  8: "🟪",
+  9: "🩷",
+  10: "🩵",
+};
+
+function buildShareText(
+  state: GameState,
+  dateKey: string,
+  elapsedMs: number,
+): string {
+  const row = state.puzzle.levels
+    .map((lvl) => LEVEL_SQUARES[lvl.size])
+    .join("");
+  const hints = Object.values(state.revealed).reduce(
+    (n, positions) => n + positions.length,
+    0,
+  );
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : "";
+  return [
+    `WordGirl Polygram — ${formatDateKey(dateKey)}`,
+    row,
+    `Score ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+  ].join("\n");
+}
 
 /** End-of-puzzle screen. */
 export function DoneOverlay({
   state,
   mode,
+  dateKey,
   onNewPuzzle,
 }: {
   state: GameState;
   mode: "daily" | "practice" | "archive";
+  /** Set for daily/archive — enables the share button. */
+  dateKey?: string;
   onNewPuzzle?: () => void;
 }) {
-  if (state.phase !== "done") return null;
+  const done = state.phase === "done";
+  const [elapsedMs, setElapsedMs] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // The persisted save holds the frozen completion time.
+  useEffect(() => {
+    if (!done || !dateKey) return;
+    void loadDailyProgress(dateKey).then((saved) =>
+      setElapsedMs(saved?.elapsedMs ?? 0),
+    );
+  }, [done, dateKey]);
+
+  if (!done) return null;
   const rank = rankFor(state.score, state.puzzle);
   const hintUsed = Object.keys(state.revealed).length > 0;
+
+  const share = async () => {
+    if (!dateKey || elapsedMs === null) return;
+    const text = buildShareText(state, dateKey, elapsedMs);
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+        return;
+      }
+      throw new Error("no web share");
+    } catch {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
 
   return (
     <motion.div
@@ -38,6 +104,11 @@ export function DoneOverlay({
           {state.score} of {state.puzzle.maxScore} points ·{" "}
           {POLYGON_NAMES[state.puzzle.maxLevel]} reached
         </div>
+        {elapsedMs !== null && (
+          <div className="mt-1 font-game text-lg text-accent">
+            {formatDuration(elapsedMs)}
+          </div>
+        )}
         {hintUsed && (
           <div className="mt-2">
             <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
@@ -46,6 +117,15 @@ export function DoneOverlay({
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2">
+          {dateKey && (
+            <button
+              type="button"
+              onClick={share}
+              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+            >
+              {copied ? "Copied!" : "Share"}
+            </button>
+          )}
           {mode === "practice" && onNewPuzzle && (
             <button
               type="button"
@@ -58,7 +138,7 @@ export function DoneOverlay({
           {mode === "daily" && (
             <Link
               to="/games/polygram/practice"
-              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+              className="rounded-full border border-line py-3 font-semibold active:scale-95"
             >
               Keep playing — practice
             </Link>
@@ -66,7 +146,7 @@ export function DoneOverlay({
           {mode === "archive" && (
             <Link
               to="/games/polygram/archive"
-              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+              className="rounded-full border border-line py-3 font-semibold active:scale-95"
             >
               More past puzzles
             </Link>

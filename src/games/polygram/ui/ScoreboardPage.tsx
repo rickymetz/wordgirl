@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "../../../components/HomeLink";
-import { formatDateKey } from "../../../lib/date";
+import { formatDateKey, formatDuration } from "../../../lib/date";
 import { rankFor } from "../engine/scoring";
 import { generatePuzzle, dailySeed } from "../engine/generator";
 import { getDictionary } from "../state/usePolygramGame";
@@ -9,15 +9,6 @@ import {
   loadAllDailyProgress,
   type DailyProgress,
 } from "../state/persistence";
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.round(ms / 1000);
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
-  return `${h > 0 ? `${h}:` : ""}${mm}:${String(s).padStart(2, "0")}`;
-}
 
 /** Completed dailies, newest first: date, rank, score, solve time. */
 export default function ScoreboardPage() {
