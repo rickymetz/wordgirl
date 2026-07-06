@@ -20,6 +20,8 @@ export const polygram: GameDefinition = {
     },
   ],
   primaryLabel: "Daily puzzle",
+  // Every daily starts at the triangle — the hub wears its red.
+  accentLevel: 3,
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },

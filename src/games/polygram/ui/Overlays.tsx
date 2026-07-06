@@ -16,7 +16,8 @@ function buildShareText(
     (n, positions) => n + positions.length,
     0,
   );
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : "";
+  // Hints get the sheepish peek; a clean solve earns the nerd badge.
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   const [y, m, d] = dateKey.split("-").map(Number);
   const date = new Date(y, m - 1, d).toLocaleDateString(undefined, {
     month: "long",

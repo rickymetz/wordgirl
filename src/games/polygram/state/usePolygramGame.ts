@@ -34,6 +34,9 @@ export function usePolygramGame(mode: GameMode) {
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   // Hydrate from storage once, and count a fresh date as "played".
+  // hydratedRef flips only AFTER hydration completes — saving before
+  // that would clobber the stored progress with the empty initial state.
+  const hydrationStartedRef = useRef(false);
   const hydratedRef = useRef(false);
   // Completed before this session → the timer stays frozen.
   const alreadyCompletedRef = useRef(false);
@@ -61,8 +64,8 @@ export function usePolygramGame(mode: GameMode) {
       document.removeEventListener("visibilitychange", onVisibility);
   }, [persisted]);
   useEffect(() => {
-    if (!persisted || hydratedRef.current) return;
-    hydratedRef.current = true;
+    if (!persisted || hydrationStartedRef.current) return;
+    hydrationStartedRef.current = true;
     let cancelled = false;
     loadDailyProgress(dateKey).then((saved) => {
       if (cancelled) return;
@@ -96,6 +99,7 @@ export function usePolygramGame(mode: GameMode) {
       } else {
         void recordDailyStarted();
       }
+      hydratedRef.current = true;
     });
     return () => {
       cancelled = true;

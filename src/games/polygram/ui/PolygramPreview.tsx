@@ -1,19 +1,26 @@
-/** Static hub-card preview: the flower triangle board in miniature. */
+/**
+ * Static hub-card preview: the triangle-level flower exactly as it looks
+ * in-game — grey petals with ink letters spelling F-U-N around a
+ * saturated center showing a count.
+ */
 export function PolygramPreview() {
-  const petalR = 26;
-  const centerR = petalR * 0.62;
-  const dist = petalR * 1.03;
-  const tri = (r: number, rot: number) =>
+  // Real board proportions for n=3: petal R, center 0.62R, ring 1.03R.
+  const R = 29;
+  const centerR = R * 0.62;
+  const dist = R * 1.03;
+  const tri = (r: number, rotDeg: number) =>
     [0, 1, 2]
       .map((k) => {
-        const angle = ((-90 + k * 120 + rot) * Math.PI) / 180;
+        const angle = ((-90 + k * 120 + rotDeg) * Math.PI) / 180;
         return `${(r * Math.cos(angle)).toFixed(1)},${(r * Math.sin(angle)).toFixed(1)}`;
       })
       .join(" ");
-  const petals = [0, 1, 2].map((i) => {
+  // Petals point outward radially, matching the game board.
+  const petals = ["U", "N", "F"].map((letter, i) => {
     const deg = -90 + (i + 0.5) * 120;
     const rad = (deg * Math.PI) / 180;
     return {
+      letter,
       x: 60 + dist * Math.cos(rad),
       y: 62 + dist * Math.sin(rad),
       rot: deg + 90,
@@ -23,19 +30,17 @@ export function PolygramPreview() {
   return (
     // Scales to its container — the hub bento sizes (and clips) it.
     <svg width="100%" viewBox="0 0 120 120" aria-hidden>
-      {petals.map(({ x, y, rot }, i) => (
-        <g key={i} transform={`translate(${x} ${y})`}>
-          <polygon points={tri(petalR, rot)} fill="var(--color-accent)" opacity="0.27" />
+      {petals.map(({ letter, x, y, rot }) => (
+        <g key={letter} transform={`translate(${x} ${y})`}>
+          <polygon points={tri(R, rot)} fill="var(--color-tile)" />
           <text
             textAnchor="middle"
             dy="4.5"
-            fontSize="13"
-            fontWeight="bold"
-            fill="var(--color-accent)"
+            fontSize="12"
+            fontWeight="800"
+            fill="var(--color-ink)"
           >
-            {/* Petals sit at upper-right, bottom, upper-left — spells
-                F (upper-left) U (upper-right) N (bottom) reading down. */}
-            {["U", "N", "F"][i]}
+            {letter}
           </text>
         </g>
       ))}
@@ -43,9 +48,9 @@ export function PolygramPreview() {
         <polygon points={tri(centerR, 0)} fill="var(--color-accent)" />
         <text
           textAnchor="middle"
-          dy="6"
-          fontSize="9"
-          fontWeight="bold"
+          dy="6.5"
+          fontSize="10"
+          fontWeight="800"
           fill="var(--color-surface)"
         >
           3

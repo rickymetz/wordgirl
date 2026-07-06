@@ -3,14 +3,16 @@ import type { GameDefinition } from "../games/types";
 
 /**
  * Bento cluster per game: a large tile for the primary mode (the daily
- * puzzle) and a grid of smaller tiles for secondary modes below it.
+ * puzzle) and a row of smaller tiles for secondary modes. Neutral card
+ * surfaces — color comes from the game's accent level and its preview
+ * art, matching the in-game look (grey petals, one saturated center).
  */
 export function GameCard({ game }: { game: GameDefinition }) {
   return (
-    <section>
+    <section data-level={game.accentLevel}>
       <Link
         to={`/games/${game.id}`}
-        className="flex items-center overflow-hidden rounded-3xl bg-accent-soft px-6 py-7 transition-transform active:scale-[0.98]"
+        className="flex items-center overflow-hidden rounded-3xl border border-line bg-surface-raised px-6 py-6 transition-transform active:scale-[0.98]"
       >
         <div className="w-3/4 min-w-0 pr-2">
           {game.primaryLabel && (
@@ -21,7 +23,6 @@ export function GameCard({ game }: { game: GameDefinition }) {
           <h2 className="mt-1 text-2xl font-bold tracking-tight">
             {game.name}
           </h2>
-          <p className="mt-0.5 text-sm text-ink-soft">{game.tagline}</p>
           {game.Status && <game.Status />}
         </div>
         {/* Oversized art that bleeds past the card's right edge — the
