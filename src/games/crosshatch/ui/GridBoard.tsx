@@ -48,6 +48,8 @@ export function GridBoard({
       key={r?.nonce ?? 0}
       animate={animate}
       transition={{ duration: 0.35 }}
+      role="group"
+      aria-label="puzzle grid"
       className="grid touch-manipulation select-none"
       style={{
         gridTemplateColumns: `repeat(${puzzle.cols}, ${cell}px)`,
@@ -71,14 +73,17 @@ export function GridBoard({
           <button
             key={i}
             type="button"
+            // Pointer taps mustn't steal focus — physical Enter should
+            // keep submitting. Tab focus + native activation still work.
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => onFocus(row, col)}
-            aria-label={
+            aria-label={`row ${row + 1}, column ${col + 1} — ${
               given
                 ? `locked letter ${given.toUpperCase()}`
                 : letter
-                  ? `letter ${letter.toUpperCase()} — tap to edit`
-                  : "empty cell"
-            }
+                  ? `letter ${letter.toUpperCase()}, tap to edit`
+                  : "empty"
+            }`}
             className={`relative flex items-center justify-center rounded-lg font-game uppercase transition-colors ${
               given
                 ? "bg-ink text-surface"

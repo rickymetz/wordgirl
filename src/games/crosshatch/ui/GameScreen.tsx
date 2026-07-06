@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
+import { ModalDialog } from "../../../components/ModalDialog";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
@@ -11,7 +12,7 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { hintTarget, slotWord, unfoundWords } from "../state/reducer";
+import { hintTarget, slotsAt, slotWord, unfoundWords } from "../state/reducer";
 import { uniqueWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
@@ -130,23 +131,67 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   };
 
   // Physical keyboard: letters type, Backspace deletes, Enter submits,
-  // Space flips direction, Escape closes dialogs.
+  // Space flips direction, arrows move the cursor, Escape closes
+  // dialogs. Enter/Space defer to a FOCUSED control (a keyboard user
+  // tabbing the page keeps native button activation), and dialogs own
+  // their keys entirely.
   const modalOpen =
     hintWarningOpen || coachOpen || (state.solved && resultsOpen);
   useEffect(() => {
+    const moveCursor = (dr: number, dc: number) => {
+      const cur = state.cursor;
+      if (!cur) return;
+      let { row, col } = cur;
+      while (true) {
+        row += dr;
+        col += dc;
+        if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+          return; // no playable cell that way
+        }
+        if (slotsAt(puzzle, row, col).length > 0) {
+          dispatch({
+            type: "focusCell",
+            row,
+            col,
+            dir: dr !== 0 ? "down" : "across",
+          });
+          return;
+        }
+      }
+    };
+    const ARROWS: Record<string, [number, number]> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) {
+        if (e.key === "Escape") {
+          setCoachOpen(false);
+          setHintWarningOpen(false);
+        }
+        return;
+      }
       if (e.key === "Escape") {
         setCoachOpen(false);
         setHintWarningOpen(false);
         return;
       }
       if (modalOpen) return;
+      const onControl = !!target?.closest(
+        "button, a, input, select, textarea",
+      );
       if (e.key === "Enter") {
+        if (onControl) return; // native activation wins
+        e.preventDefault();
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
         dispatch({ type: "backspace" });
       } else if (e.key === " ") {
+        if (onControl) return;
         e.preventDefault();
         if (state.cursor) {
           dispatch({
@@ -155,13 +200,16 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             col: state.cursor.col,
           });
         }
+      } else if (ARROWS[e.key]) {
+        e.preventDefault();
+        moveCursor(...ARROWS[e.key]);
       } else if (/^[a-zA-Z]$/.test(e.key)) {
         dispatch({ type: "typeLetter", letter: e.key });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [modalOpen, state.cursor, dispatch]);
+  }, [modalOpen, state.cursor, puzzle, dispatch]);
 
   // Submit feedback: a transient toast over the board, narrated for
   // screen readers via the live region below.
@@ -329,13 +377,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <div className="flex items-center gap-6">
           <button
             type="button"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => dispatch({ type: "clearEntry" })}
-            className="text-xs font-semibold text-ink-soft"
+            className="-my-2 px-2 py-2 text-xs font-semibold text-ink-soft"
           >
             Clear grid
           </button>
           <button
             type="button"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => setCombosOpen(true)}
             className="text-xs font-semibold text-accent"
           >
@@ -371,13 +421,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       )}
 
       {hintWarningOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hint-dialog-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl"
-          >
+        <ModalDialog
+          labelledBy="hint-dialog-title"
+          onClose={() => setHintWarningOpen(false)}
+          className="text-center"
+        >
+          <div>
             <h2 id="hint-dialog-title" className="text-lg font-bold">
               Use a hint?
             </h2>
@@ -390,7 +439,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                autoFocus
+                data-autofocus
                 onClick={confirmHint}
                 className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
               >
@@ -405,17 +454,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {coachOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="coach-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl"
-          >
+        <ModalDialog labelledBy="coach-title" onClose={closeCoach}>
+          <div>
             <h2 id="coach-title" className="text-lg font-bold">
               How to play
             </h2>
@@ -441,14 +485,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </ul>
             <button
               type="button"
-              autoFocus
+              data-autofocus
               onClick={closeCoach}
               className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
             >
               Got it
             </button>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { formatDuration } from "../../../lib/date";
+import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 
 function buildShareText(
@@ -56,6 +57,7 @@ export function SolvedOverlay({
   const [confirmReplay, setConfirmReplay] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
+  const dialogRef = useModalFocus<HTMLDivElement>(open);
 
   if (!open) return null;
   const perfect = found === total;
@@ -90,6 +92,8 @@ export function SolvedOverlay({
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="solved-dialog-title"

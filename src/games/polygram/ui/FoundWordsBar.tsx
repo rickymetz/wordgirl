@@ -143,7 +143,7 @@ export function FoundWordsBar({
                           type="button"
                           onClick={() => isCurrent && onSelectWord(word)}
                           aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
-                          className={`-mx-1 rounded px-1 font-game text-xs uppercase ${
+                          className={`-mx-1 -my-1.5 rounded px-1 py-1.5 font-game text-xs uppercase ${
                             hintTargetWord === word
                               ? "ring-2 ring-accent"
                               : ""

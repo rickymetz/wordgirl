@@ -49,6 +49,7 @@ export function SlotChips({
           <button
             key={i}
             type="button"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => onFocusSlot(slot)}
             aria-label={`${slot.dir} word ${display}${
               verdict ? ` — ${verdict.label}` : ""

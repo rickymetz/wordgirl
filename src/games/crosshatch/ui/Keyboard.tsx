@@ -20,14 +20,14 @@ export function Keyboard({
     <div className="flex w-full max-w-md flex-col gap-1.5">
       <div className="flex gap-1.5">
         {[...ROWS[0]].map((l) => (
-          <button key={l} type="button" onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
+          <button key={l} type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
             {l}
           </button>
         ))}
       </div>
       <div className="flex gap-1.5 px-4">
         {[...ROWS[1]].map((l) => (
-          <button key={l} type="button" onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
+          <button key={l} type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
             {l}
           </button>
         ))}
@@ -35,6 +35,7 @@ export function Keyboard({
       <div className="flex gap-1.5">
         <button
           type="button"
+          onPointerDown={(e) => e.preventDefault()}
           onClick={onEnter}
           className={`${base} flex-[1.6] text-xs tracking-wide ${
             submitReady
@@ -45,12 +46,13 @@ export function Keyboard({
           Enter
         </button>
         {[...ROWS[2]].map((l) => (
-          <button key={l} type="button" onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
+          <button key={l} type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>
             {l}
           </button>
         ))}
         <button
           type="button"
+          onPointerDown={(e) => e.preventDefault()}
           onClick={onBackspace}
           aria-label="delete"
           className={`${key} flex-[1.6] text-base`}
