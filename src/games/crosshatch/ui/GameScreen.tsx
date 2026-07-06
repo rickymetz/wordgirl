@@ -133,6 +133,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   };
 
   const focusSlot = (slot: Slot) => {
+    setWordsOpen(false);
     // Aim at the slot's first editable cell, in the slot's direction.
     const target =
       slotCells(slot).find(
@@ -165,6 +166,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           return; // no playable cell that way
         }
         if (slotsAt(puzzle, row, col).length > 0) {
+          setWordsOpen(false);
           dispatch({
             type: "focusCell",
             row,
@@ -203,8 +205,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       if (e.key === "Enter") {
         if (onControl) return; // native activation wins
         e.preventDefault();
+        setWordsOpen(false);
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
+        setWordsOpen(false);
         dispatch({ type: "backspace" });
       } else if (e.key === " ") {
         if (onControl) return;
@@ -220,6 +224,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         e.preventDefault();
         moveCursor(...ARROWS[e.key]);
       } else if (/^[a-zA-Z]$/.test(e.key)) {
+        setWordsOpen(false);
         dispatch({ type: "typeLetter", letter: e.key });
       }
     };
@@ -365,9 +370,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
       <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4 [@media(max-height:720px)]:gap-2 [@media(max-height:720px)]:py-2">
         <div className="relative">
+          {/* Any puzzle input closes an open words panel — the player
+              has moved on from browsing to playing. */}
           <GridBoard
             state={state}
-            onFocus={(row, col) => dispatch({ type: "focusCell", row, col })}
+            onFocus={(row, col) => {
+              setWordsOpen(false);
+              dispatch({ type: "focusCell", row, col });
+            }}
           />
           {/* Transient submit feedback, floating above the board.
               mode="wait" so rapid submits never stack two pills. */}
@@ -394,7 +404,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           <button
             type="button"
             onPointerDown={(e) => e.preventDefault()}
-            onClick={() => dispatch({ type: "clearEntry" })}
+            onClick={() => {
+              setWordsOpen(false);
+              dispatch({ type: "clearEntry" });
+            }}
             className="-my-2 px-2 py-2 text-xs font-semibold text-ink-soft"
           >
             Clear grid
@@ -414,9 +427,18 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           </button>
         </div>
         <Keyboard
-          onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
-          onBackspace={() => dispatch({ type: "backspace" })}
-          onEnter={() => dispatch({ type: "submit" })}
+          onLetter={(letter) => {
+            setWordsOpen(false);
+            dispatch({ type: "typeLetter", letter });
+          }}
+          onBackspace={() => {
+            setWordsOpen(false);
+            dispatch({ type: "backspace" });
+          }}
+          onEnter={() => {
+            setWordsOpen(false);
+            dispatch({ type: "submit" });
+          }}
           submitReady={puzzle.shape.slots.every(
             (slot) => slotWord(state, slot).complete,
           )}
