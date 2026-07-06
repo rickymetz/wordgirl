@@ -103,8 +103,19 @@ export function usePolygramGame(mode: GameMode) {
     );
   };
 
+  // An old-dictionary save is on disk for this date: hold off writing
+  // until real progress (a word or a hint), so stray taps can't wipe
+  // the historical record.
+  const staleRecordRef = useRef(false);
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current) return;
+    if (
+      staleRecordRef.current &&
+      s.found.length === 0 &&
+      Object.keys(s.revealed).length === 0
+    ) {
+      return;
+    }
     void saveDailyProgress({
       dateKey,
       dictVersion: DICT_VERSION,
@@ -144,6 +155,10 @@ export function usePolygramGame(mode: GameMode) {
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onPageHide);
+      // In-app navigation away unmounts without a pagehide — flush the
+      // clock here too. (Safe pre-hydration: persistNow no-ops then.)
+      if (!document.hidden) bank();
+      persistNow(stateRef.current);
     };
     // persistNow/stateRef are stable enough: they close over refs only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -181,6 +196,7 @@ export function usePolygramGame(mode: GameMode) {
           const stale = await loadStaleDailyProgress(dateKey);
           if (cancelled) return;
           if (stale) {
+            staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.completed || stale.statsRecorded === true;
             hydratedRef.current = true;

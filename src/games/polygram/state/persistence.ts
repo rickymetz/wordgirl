@@ -42,6 +42,17 @@ const EMPTY_STATS: PolygramStats = {
 
 const store = createGameStore("polygram");
 
+/**
+ * Stats updates are read-modify-write on one blob — serialize them so
+ * two in flight can never lose a write.
+ */
+let statsLock: Promise<unknown> = Promise.resolve();
+function serialized<T>(fn: () => Promise<T>): Promise<T> {
+  const run = statsLock.then(fn, fn);
+  statsLock = run.catch(() => {});
+  return run;
+}
+
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-01";
 
@@ -130,9 +141,11 @@ export async function loadStats(): Promise<PolygramStats> {
 }
 
 /** Call once when a new daily puzzle is first opened. */
-export async function recordDailyStarted(): Promise<void> {
-  const stats = await loadStats();
-  await store.set("stats", { ...stats, played: stats.played + 1 });
+export function recordDailyStarted(): Promise<void> {
+  return serialized(async () => {
+    const stats = await loadStats();
+    await store.set("stats", { ...stats, played: stats.played + 1 });
+  });
 }
 
 /**
@@ -141,17 +154,21 @@ export async function recordDailyStarted(): Promise<void> {
  * not rewrite streak history, and lastCompletedDate never moves
  * BACKWARD (westward timezone travel would otherwise reset a streak).
  */
-export async function recordDailyCompleted(
+export function recordDailyCompleted(
   dateKey: string,
   score: number,
   rank: RankTitle,
 ): Promise<PolygramStats> {
+  return serialized(async () => {
   const stats = await loadStats();
   if (stats.lastCompletedDate === dateKey) return stats; // already recorded
 
   const rankIndex = (r: RankTitle | null) =>
     r === null ? -1 : RANKS.findIndex((x) => x.title === r);
-  const isToday = dateKey === localDateKey();
+  // Today's puzzle — with a grace day so a session that crossed
+  // midnight mid-play (dateKey frozen at mount) still counts its day.
+  const today = localDateKey();
+  const isToday = dateKey === today || dateKey === previousDateKey(today);
   const advances =
     isToday &&
     (stats.lastCompletedDate === null || dateKey > stats.lastCompletedDate);
@@ -171,4 +188,5 @@ export async function recordDailyCompleted(
   };
   await store.set("stats", next);
   return next;
+  });
 }
