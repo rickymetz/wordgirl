@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+  /* Bold square monospace for game glyphs — fixed advance width keeps
+     typed-word spacing perfectly regular. Single 400 weight (heavy). */
+  --font-game: "Rubik Mono One", ui-monospace, monospace;
+
+  /* Page bg sits a step below raised cards so bentos need no borders. */
+  --color-surface: #f1efe9;
+  --color-surface-raised: #ffffff;
+  --color-ink: #26242b;
+  --color-ink-soft: #6f6b78;
+  --color-line: #e3e0d9;
+  /* Neutral petal-tile fill — stays grey while the accent changes. */
+  --color-tile: #e4e0d8;
+  --color-accent: #7c3aed;
+  --color-accent-soft: #ede9fe;
+  --color-good: #059669;
+  --color-warn: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #121116;
+    --color-surface-raised: #211f26;
+    --color-ink: #eceaf0;
+    --color-ink-soft: #98939f;
+    --color-line: #322f38;
+    --color-tile: #2c2a33;
+    --color-accent: #a78bfa;
+    --color-accent-soft: #2e2447;
+    --color-good: #34d399;
+    --color-warn: #fbbf24;
+  }
+}
+
+/*
+ * Per-level accent colors for Polygram: every polygon level gets its own
+ * hue. Utilities like bg-accent/text-accent resolve var(--color-accent)
+ * per element, so setting data-level on the game screen recolors the
+ * whole subtree (board, rank bar, hint chip, overlays).
+ */
+[data-level] {
+  --color-accent-soft: color-mix(
+    in oklab,
+    var(--color-accent) 27%,
+    var(--color-surface)
+  );
+}
+/* Level colors follow the pride flag top-to-bottom: red, orange,
+   yellow, green, blue, purple — extended with pink and turquoise for
+   the nonagon and decagon. Light-mode values are ~700-weight shades so
+   accent text and on-accent text both clear WCAG AA (4.5:1). */
+[data-level="3"] { --color-accent: #b91c1c; }  /* red */
+[data-level="4"] { --color-accent: #c2410c; }  /* orange */
+[data-level="5"] { --color-accent: #a16207; }  /* yellow */
+[data-level="6"] { --color-accent: #15803d; }  /* green */
+[data-level="7"] { --color-accent: #1d4ed8; }  /* blue */
+[data-level="8"] { --color-accent: #7e22ce; }  /* purple */
+[data-level="9"] { --color-accent: #be185d; }  /* pink */
+[data-level="10"] { --color-accent: #0f766e; } /* turquoise */
+
+@media (prefers-color-scheme: dark) {
+  [data-level="3"] { --color-accent: #f87171; }
+  [data-level="4"] { --color-accent: #fb923c; }
+  [data-level="5"] { --color-accent: #facc15; }
+  [data-level="6"] { --color-accent: #4ade80; }
+  [data-level="7"] { --color-accent: #60a5fa; }
+  [data-level="8"] { --color-accent: #c084fc; }
+  [data-level="9"] { --color-accent: #f472b6; }
+  [data-level="10"] { --color-accent: #2dd4bf; }
+}
+
+html {
+  /* Enables light-dark() color pairs (rank-bar gradient). */
+  color-scheme: light dark;
+}
+
+/* Kill springs, morphs, shakes, and pops for motion-sensitive users.
+   Inline transition styles need the !important to be overridden. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

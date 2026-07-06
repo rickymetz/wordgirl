@@ -1,0 +1,42 @@
+import { Suspense } from "react";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import type { RouteObject } from "react-router-dom";
+import { HubPage } from "./hub/HubPage";
+import { RouteError } from "./components/RouteError";
+import { games } from "./games/registry";
+
+function lazyPage(Page: React.ComponentType) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center text-ink-soft">
+          Loading…
+        </div>
+      }
+    >
+      <Page />
+    </Suspense>
+  );
+}
+
+const gameRoutes: RouteObject[] = games.flatMap((game) => [
+  { path: `/games/${game.id}`, element: lazyPage(game.Page) },
+  ...(game.extraRoutes ?? []).map((route) => ({
+    path: `/games/${game.id}/${route.path}`,
+    element: lazyPage(route.Page),
+  })),
+]);
+
+export const router = createBrowserRouter([
+  {
+    // Root layout route: catches lazy-chunk load failures after a new
+    // deploy (auto-reloads once) and rendering errors anywhere below.
+    element: <Outlet />,
+    errorElement: <RouteError />,
+    children: [
+      { path: "/", element: <HubPage /> },
+      ...gameRoutes,
+      { path: "*", element: <Navigate to="/" replace /> },
+    ],
+  },
+]);
