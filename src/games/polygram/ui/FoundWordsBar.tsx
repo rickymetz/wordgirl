@@ -59,7 +59,12 @@ export function FoundWordsBar({
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
-            {state.puzzle.levels.slice(0, state.levelIndex + 1).map((lvl) => {
+            {/* Current level FIRST — its blanks and the Hint button must
+                be visible without scrolling; completed levels follow. */}
+            {state.puzzle.levels
+              .slice(0, state.levelIndex + 1)
+              .reverse()
+              .map((lvl) => {
               const foundCount = lvl.words.filter((w) =>
                 state.found.includes(w),
               ).length;
