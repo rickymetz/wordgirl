@@ -10,6 +10,8 @@
   --color-ink: #26242b;
   --color-ink-soft: #6f6b78;
   --color-line: #e8e5e0;
+  /* Neutral petal-tile fill — stays grey while the accent changes. */
+  --color-tile: #e9e6e1;
   --color-accent: #7c3aed;
   --color-accent-soft: #ede9fe;
   --color-good: #059669;
@@ -23,6 +25,7 @@
     --color-ink: #eceaf0;
     --color-ink-soft: #98939f;
     --color-line: #322f38;
+    --color-tile: #2c2a33;
     --color-accent: #a78bfa;
     --color-accent-soft: #2e2447;
     --color-good: #34d399;

@@ -6,6 +6,8 @@ import { FLOWER, edgeMidDeg } from "./polygonPath";
 
 interface Props {
   state: GameState;
+  /** Display permutation: position i shows letters[order[i]]. */
+  order: number[];
   onLetter: (letter: string) => void;
   onSubmit: () => void;
 }
@@ -14,7 +16,7 @@ const BOARD = 340;
 /** Whitespace between the central shape's edges and the petals, px. */
 const RING_GAP = 18;
 
-export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
+export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
   const sides = state.puzzle.levels[state.levelIndex].size;
   const letters = state.puzzle.letters.slice(0, sides);
   const { d, extent, yOffset } = FLOWER[sides];
@@ -43,12 +45,16 @@ export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
           transition: "transform 600ms cubic-bezier(0.65, 0, 0.35, 1)",
         }}
       >
-        {letters.map((letter, i) => {
-          const deg = edgeMidDeg(i, sides);
+        {order.map((letterIdx, pos) => {
+          const letter = letters[letterIdx];
+          if (letter === undefined) return null;
+          const deg = edgeMidDeg(pos, sides);
           const rad = (deg * Math.PI) / 180;
           return (
             <ShapeTile
-              key={`${letter}-${i}`}
+              // Keyed by the letter's index so a shuffled tile GLIDES to
+              // its new slot instead of remounting.
+              key={letterIdx}
               letter={letter}
               sides={sides}
               size={tileSize}

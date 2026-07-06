@@ -9,7 +9,13 @@ import { POLYGON_NAMES } from "./polygonPath";
  * showing every level's words — completed levels in full, the current
  * level with blanks (plus any hint-revealed letters) for what's left.
  */
-export function FoundWordsBar({ state }: { state: GameState }) {
+export function FoundWordsBar({
+  state,
+  onHint,
+}: {
+  state: GameState;
+  onHint: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const recentFirst = [...state.found].reverse();
   const level = currentLevel(state);
@@ -19,6 +25,7 @@ export function FoundWordsBar({ state }: { state: GameState }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-label="found words"
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm">
@@ -59,9 +66,20 @@ export function FoundWordsBar({ state }: { state: GameState }) {
               const isCurrent = lvl.size === level.size;
               return (
                 <div key={lvl.size} className="mb-3 last:mb-0">
-                  <div className="mb-1 text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                    {POLYGON_NAMES[lvl.size]} — {found.length} of{" "}
-                    {lvl.words.length}
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                      {POLYGON_NAMES[lvl.size]} — {found.length} of{" "}
+                      {lvl.words.length}
+                    </span>
+                    {isCurrent && unsolved.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={onHint}
+                        className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-surface active:scale-95"
+                      >
+                        Reveal a letter
+                      </button>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {found.map((word) => (

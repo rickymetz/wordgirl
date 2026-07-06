@@ -1,5 +1,5 @@
 import "@fontsource/rubik/800.css";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import { currentLevel } from "../state/reducer";
@@ -24,6 +24,36 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
     () => dispatch({ type: "advanceLevel" }),
     [dispatch],
   );
+
+  // Display-only permutation of the petal letters; shuffling never
+  // touches game state. New letters append so existing tiles stay put.
+  const sides = level.size;
+  const [order, setOrder] = useState(() =>
+    Array.from({ length: sides }, (_, i) => i),
+  );
+  useEffect(() => {
+    setOrder((prev) =>
+      prev.length >= sides
+        ? prev.slice(0, sides)
+        : [
+            ...prev,
+            ...Array.from(
+              { length: sides - prev.length },
+              (_, k) => prev.length + k,
+            ),
+          ],
+    );
+  }, [sides]);
+  const shuffle = useCallback(() => {
+    setOrder((prev) => {
+      const next = [...prev];
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <div
@@ -71,19 +101,23 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       <RankBar score={state.score} puzzle={state.puzzle} />
 
       <div className="pt-3">
-        <FoundWordsBar state={state} />
+        <FoundWordsBar
+          state={state}
+          onHint={() => dispatch({ type: "revealHint" })}
+        />
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-1">
         <CurrentWord state={state} />
         <PolygonBoard
           state={state}
+          order={order}
           onLetter={(letter) => dispatch({ type: "tapLetter", letter })}
           onSubmit={() => dispatch({ type: "submit" })}
         />
         <Controls
           onDelete={() => dispatch({ type: "backspace" })}
-          onHint={() => dispatch({ type: "revealHint" })}
+          onShuffle={shuffle}
           onEnter={() => dispatch({ type: "submit" })}
         />
       </div>

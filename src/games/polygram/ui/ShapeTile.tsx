@@ -17,7 +17,7 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
     <motion.button
       type="button"
       onPointerDown={onTap}
-      className="absolute top-1/2 left-1/2 flex items-center justify-center bg-accent-soft select-none"
+      className="absolute top-1/2 left-1/2 flex items-center justify-center bg-tile select-none"
       initial={{ scale: 0, x: "-50%", y: "-50%" }}
       animate={{ scale: 1, x: `calc(-50% + ${x}px)`, y: `calc(-50% + ${y}px)` }}
       whileTap={{ scale: 0.85 }}
@@ -37,7 +37,7 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
           dead-centered — no optical nudging. Fixed size: type stays
           consistent while the shapes change scale across levels. */}
       <span
-        className="relative font-game text-[26px] leading-none font-extrabold text-accent uppercase"
+        className="relative font-game text-[26px] leading-none font-extrabold text-ink uppercase"
       >
         {letter}
       </span>
