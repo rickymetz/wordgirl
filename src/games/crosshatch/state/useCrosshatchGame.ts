@@ -65,6 +65,7 @@ export function useCrosshatchGame(mode: GameMode) {
       dictVersion: DICT_VERSION,
       foundWords: s.found,
       grid: s.grid,
+      revealed: s.revealed,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
       // Preserve the replay marker across saves.
@@ -122,6 +123,8 @@ export function useCrosshatchGame(mode: GameMode) {
             type: "hydrate",
             found: saved.foundWords,
             grid: saved.grid ?? {},
+            // Older saves predate hints — normalize.
+            revealed: saved.revealed ?? {},
             solved: saved.solved,
           });
         } else {
@@ -160,7 +163,7 @@ export function useCrosshatchGame(mode: GameMode) {
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.found, state.grid, state.solved]);
+  }, [persisted, dateKey, state.found, state.grid, state.revealed, state.solved]);
 
   // Freeze the clock the moment the solve threshold is crossed, and
   // expose the frozen value for the results screen and share text.

@@ -10,6 +10,8 @@ export interface DailyProgress {
   foundWords: string[];
   /** Player-typed letters still on the grid, cell key -> letter. */
   grid: Record<string, string>;
+  /** Hint reveals: word -> revealed letter positions. */
+  revealed: Record<string, number[]>;
   /** Reached the solve threshold (SOLVE_PCT of all combos). */
   solved: boolean;
   /** Wall-clock play time across sessions, frozen at the solve moment. */
@@ -112,6 +114,7 @@ export async function resetDailyForReplay(dateKey: string) {
     dictVersion: DICT_VERSION,
     foundWords: [],
     grid: {},
+    revealed: {},
     solved: false,
     elapsedMs: 0,
     statsRecorded: true,

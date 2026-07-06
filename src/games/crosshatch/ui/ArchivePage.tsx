@@ -276,7 +276,9 @@ function ArchiveRow({
         dateKey,
         saved.foundWords.length,
       );
-      status = `${rank} · ${saved.foundWords.length}/${total}`;
+      status = `${rank} · ${saved.foundWords.length}/${total}${
+        Object.keys(saved.revealed ?? {}).length > 0 ? " · used hint" : ""
+      }`;
     }
     statusClass = "text-accent";
   } else if (saved && saved.foundWords.length > 0) {

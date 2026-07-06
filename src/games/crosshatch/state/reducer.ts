@@ -25,6 +25,8 @@ export interface GameState {
   cursor: Cursor | null;
   /** Distinct words banked so far, in the order they were found. */
   found: string[];
+  /** Hint reveals: word -> revealed letter positions. */
+  revealed: Record<string, number[]>;
   /** Sticky: reached the solve threshold at some point (survives replays
       of the grid, never un-solves). */
   solved: boolean;
@@ -37,7 +39,14 @@ export type GameAction =
   | { type: "backspace" }
   | { type: "clearEntry" }
   | { type: "submit" }
-  | { type: "hydrate"; found: string[]; grid: Record<string, string>; solved: boolean };
+  | { type: "revealHint"; letterIndex: number; word?: string }
+  | {
+      type: "hydrate";
+      found: string[];
+      grid: Record<string, string>;
+      revealed: Record<string, number[]>;
+      solved: boolean;
+    };
 
 export function initialState(puzzle: CrosshatchPuzzle): GameState {
   return {
@@ -45,6 +54,7 @@ export function initialState(puzzle: CrosshatchPuzzle): GameState {
     grid: {},
     cursor: firstEditableCursor(puzzle),
     found: [],
+    revealed: {},
     solved: false,
     lastResult: null,
   };
@@ -59,6 +69,24 @@ function firstEditableCursor(puzzle: CrosshatchPuzzle): Cursor | null {
     }
   }
   return null;
+}
+
+
+/** The day's full word list, shortest first then alphabetical — the
+ * order of the words panel, blanks included. */
+export function allWords(state: GameState): string[] {
+  return uniqueWords(state.puzzle.combos).sort(
+    (a, b) => a.length - b.length || a.localeCompare(b),
+  );
+}
+
+export function unfoundWords(state: GameState): string[] {
+  return allWords(state).filter((w) => !state.found.includes(w));
+}
+
+/** Default hint target: the first unfound word in list order. */
+export function hintTarget(state: GameState): string | null {
+  return unfoundWords(state)[0] ?? null;
 }
 
 /** The letter shown at a cell: a locked given or the typed letter. */
@@ -233,11 +261,49 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "revealHint": {
+      // An explicit target must be an unfound word with hidden letters
+      // left; otherwise fall back to the default target.
+      const explicit =
+        action.word !== undefined &&
+        unfoundWords(state).includes(action.word) &&
+        (state.revealed[action.word] ?? []).length < action.word.length
+          ? action.word
+          : undefined;
+      const target = explicit ?? hintTarget(state);
+      if (!target) return state;
+      const already = state.revealed[target] ?? [];
+      if (
+        action.letterIndex < 0 ||
+        action.letterIndex >= target.length ||
+        already.includes(action.letterIndex)
+      ) {
+        return state;
+      }
+      const positions = [...already, action.letterIndex];
+      const revealed = { ...state.revealed, [target]: positions };
+      if (positions.length < target.length) return { ...state, revealed };
+      // Every letter revealed: the word is findable by definition, so
+      // bank it instead of making the player retype what they can see.
+      const found = [...state.found, target];
+      const nonce = (state.lastResult?.nonce ?? 0) + 1;
+      return {
+        ...state,
+        revealed,
+        found,
+        solved:
+          state.solved ||
+          isSolved(found.length, uniqueWords(state.puzzle.combos).length),
+        lastResult: { type: "correct", newWords: [target], nonce },
+      };
+    }
+
     case "hydrate": {
       return {
         ...state,
         found: action.found,
         grid: action.grid,
+        revealed: action.revealed,
         solved:
           action.solved ||
           isSolved(

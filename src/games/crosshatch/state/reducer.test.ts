@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CrosshatchPuzzle } from "../engine/types";
 import {
   gameReducer,
+  hintTarget,
   initialState,
   letterAt,
   slotWord,
@@ -156,11 +157,40 @@ describe("submit", () => {
     expect(s.solved).toBe(true);
   });
 
+  it("hints reveal letters of the target word and bank it when full", () => {
+    // Default target: first unfound in list order (bad).
+    let s = gameReducer(initialState(puzzle), {
+      type: "revealHint",
+      letterIndex: 1,
+    });
+    expect(hintTarget(initialState(puzzle))).toBe("bad");
+    expect(s.revealed).toEqual({ bad: [1] });
+    // Re-revealing the same position is a no-op.
+    expect(
+      gameReducer(s, { type: "revealHint", letterIndex: 1 }).revealed,
+    ).toEqual({ bad: [1] });
+    // An explicit aim at another unfound word wins.
+    s = gameReducer(s, { type: "revealHint", word: "dud", letterIndex: 0 });
+    expect(s.revealed).toEqual({ bad: [1], dud: [0] });
+    // Revealing the last letters banks the word without typing.
+    s = gameReducer(s, { type: "revealHint", word: "dud", letterIndex: 1 });
+    s = gameReducer(s, { type: "revealHint", word: "dud", letterIndex: 2 });
+    expect(s.found).toEqual(["dud"]);
+    expect(s.lastResult).toMatchObject({
+      type: "correct",
+      newWords: ["dud"],
+    });
+    // A found word can't be aimed at — falls back to the default.
+    s = gameReducer(s, { type: "revealHint", word: "dud", letterIndex: 0 });
+    expect(s.revealed.bad).toEqual([1, 0]);
+  });
+
   it("hydrates found words, grid, and solved flag", () => {
     const s = gameReducer(initialState(puzzle), {
       type: "hydrate",
       found: ["bad", "dab"],
       grid: { "1,1": "a" },
+      revealed: {},
       solved: false,
     });
     expect(s.found).toHaveLength(2);

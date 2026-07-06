@@ -11,7 +11,7 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { slotWord } from "../state/reducer";
+import { hintTarget, slotWord, unfoundWords } from "../state/reducer";
 import { uniqueWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
@@ -71,6 +71,50 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     );
   }, [mode.kind]);
 
+  // Daily hints are free to use but marked: the first one warns that
+  // the day's result will carry a hint count.
+  const [hintWarningOpen, setHintWarningOpen] = useState(false);
+  const hintUsed = Object.keys(state.revealed).length > 0;
+  // Tapping an unfound word in the list aims the next hint at it.
+  const [hintTargetWord, setHintTargetWord] = useState<string | null>(null);
+  useEffect(() => {
+    if (hintTargetWord && state.found.includes(hintTargetWord)) {
+      setHintTargetWord(null);
+    }
+  }, [hintTargetWord, state.found]);
+  // Reveal a RANDOM still-hidden letter of the (chosen or default) word.
+  const revealRandomLetter = () => {
+    const chosen =
+      hintTargetWord &&
+      unfoundWords(state).includes(hintTargetWord) &&
+      (state.revealed[hintTargetWord] ?? []).length < hintTargetWord.length
+        ? hintTargetWord
+        : undefined;
+    const target = chosen ?? hintTarget(state);
+    if (!target) return;
+    const already = state.revealed[target] ?? [];
+    const candidates = [...target]
+      .map((_, i) => i)
+      .filter((i) => !already.includes(i));
+    if (candidates.length === 0) return;
+    dispatch({
+      type: "revealHint",
+      word: target,
+      letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
+    });
+  };
+  const requestHint = () => {
+    if (mode.kind !== "practice" && !hintUsed) {
+      setHintWarningOpen(true);
+    } else {
+      revealRandomLetter();
+    }
+  };
+  const confirmHint = () => {
+    setHintWarningOpen(false);
+    revealRandomLetter();
+  };
+
   const focusSlot = (slot: Slot) => {
     // Aim at the slot's first editable cell, in the slot's direction.
     const target =
@@ -87,12 +131,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // Physical keyboard: letters type, Backspace deletes, Enter submits,
   // Space flips direction, Escape closes dialogs.
-  const modalOpen = coachOpen || (state.solved && resultsOpen);
+  const modalOpen =
+    hintWarningOpen || coachOpen || (state.solved && resultsOpen);
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "Escape") {
         setCoachOpen(false);
+        setHintWarningOpen(false);
         return;
       }
       if (modalOpen) return;
@@ -245,6 +291,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           state={state}
           open={combosOpen}
           onToggle={() => setCombosOpen((v) => !v)}
+          onHint={requestHint}
+          hintTargetWord={hintTargetWord}
+          onSelectWord={(w) =>
+            setHintTargetWord((cur) => (cur === w ? null : w))
+          }
         />
       </div>
 
@@ -275,13 +326,22 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       </div>
 
       <div className="flex flex-col items-center gap-2">
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "clearEntry" })}
-          className="text-xs font-semibold text-ink-soft"
-        >
-          Clear grid
-        </button>
+        <div className="flex items-center gap-6">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "clearEntry" })}
+            className="text-xs font-semibold text-ink-soft"
+          >
+            Clear grid
+          </button>
+          <button
+            type="button"
+            onClick={() => setCombosOpen(true)}
+            className="text-xs font-semibold text-accent"
+          >
+            Hint
+          </button>
+        </div>
         <Keyboard
           onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
           onBackspace={() => dispatch({ type: "backspace" })}
@@ -296,6 +356,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <SolvedOverlay
           found={state.found.length}
           total={total}
+          hints={Object.values(state.revealed).reduce(
+            (n, p) => n + p.length,
+            0,
+          )}
           mode={mode.kind}
           dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
           elapsedMs={solvedElapsedMs}
@@ -304,6 +368,44 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onNewPuzzle={onNewPuzzle}
           onReplay={onReplay}
         />
+      )}
+
+      {hintWarningOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hint-dialog-title"
+            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl"
+          >
+            <h2 id="hint-dialog-title" className="text-lg font-bold">
+              Use a hint?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              A letter of an unfound word will be revealed in your word
+              list, and today's result will show a{" "}
+              <span className="font-semibold text-ink">🫣 hint count</span>.
+              Streaks are safe — hints never break them.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                autoFocus
+                onClick={confirmHint}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Use hint
+              </button>
+              <button
+                type="button"
+                onClick={() => setHintWarningOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {coachOpen && (

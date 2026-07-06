@@ -7,6 +7,7 @@ import { rankFor } from "../engine/scoring";
 function buildShareText(
   found: number,
   total: number,
+  hints: number,
   dateKey: string,
   elapsedMs: number,
 ): string {
@@ -15,9 +16,11 @@ function buildShareText(
     month: "long",
     day: "numeric",
   });
+  // Hints get the sheepish peek; a clean solve earns the nerd badge.
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
     `Crosshatch — ${date}`,
-    `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}`,
+    `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     window.location.host,
   ].join("\n");
 }
@@ -26,6 +29,7 @@ function buildShareText(
 export function SolvedOverlay({
   found,
   total,
+  hints,
   mode,
   dateKey,
   elapsedMs,
@@ -36,6 +40,8 @@ export function SolvedOverlay({
 }: {
   found: number;
   total: number;
+  /** Hint letters revealed today — marks the shared result. */
+  hints: number;
   mode: "daily" | "practice" | "archive";
   /** Set for daily/archive — enables the share button. */
   dateKey?: string;
@@ -56,7 +62,7 @@ export function SolvedOverlay({
 
   const share = async () => {
     if (!dateKey || elapsedMs === null) return;
-    const text = buildShareText(found, total, dateKey, elapsedMs);
+    const text = buildShareText(found, total, hints, dateKey, elapsedMs);
     if (navigator.share) {
       try {
         await navigator.share({ text });
@@ -120,6 +126,13 @@ export function SolvedOverlay({
         {elapsedMs !== null && (
           <div className="mt-1 font-game text-lg text-accent">
             {formatDuration(elapsedMs)}
+          </div>
+        )}
+        {hints > 0 && (
+          <div className="mt-2">
+            <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
+              Used hint
+            </span>
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2">

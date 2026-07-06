@@ -1,17 +1,31 @@
 import { AnimatePresence, motion } from "motion/react";
-import type { GameState } from "../state/reducer";
+import { allWords, type GameState } from "../state/reducer";
 
-/** Collapsible log of banked words, newest first. */
+/**
+ * The words panel: every word of the day, shortest first then
+ * alphabetical, blanks in place — where a blank sits between found
+ * words is itself a gentle hint. Unfound words are tappable to aim the
+ * next hint; hint-revealed letters show in the accent with a dotted
+ * underline, before AND after the word is found.
+ */
 export function FoundCombosBar({
   state,
   open,
   onToggle,
+  onHint,
+  hintTargetWord,
+  onSelectWord,
 }: {
   state: GameState;
   open: boolean;
   onToggle: () => void;
+  onHint: () => void;
+  /** Unfound word the next hint will reveal into (tap to choose). */
+  hintTargetWord: string | null;
+  onSelectWord: (word: string) => void;
 }) {
   const recentFirst = [...state.found].reverse();
+  const words = allWords(state);
 
   return (
     <div className="relative">
@@ -55,22 +69,62 @@ export function FoundCombosBar({
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
-            {recentFirst.length === 0 ? (
-              <p className="text-sm text-ink-soft">
-                Every new word in a valid grid lands here.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {recentFirst.map((word) => (
-                  <span
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                {state.found.length}/{words.length} words
+              </span>
+              <button
+                type="button"
+                onClick={onHint}
+                disabled={state.found.length === words.length}
+                className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-40"
+              >
+                Hint
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {words.map((word) => {
+                const hinted = state.revealed[word] ?? [];
+                const isFound = state.found.includes(word);
+                const letters = [...word].map((letter, i) =>
+                  hinted.includes(i) ? (
+                    <span
+                      key={i}
+                      className="text-accent underline decoration-dotted underline-offset-2"
+                    >
+                      {letter}
+                    </span>
+                  ) : isFound ? (
+                    <span key={i}>{letter}</span>
+                  ) : (
+                    <span key={i} className="text-ink-soft">
+                      ?
+                    </span>
+                  ),
+                );
+                if (isFound) {
+                  return (
+                    <span key={word} className="text-sm font-semibold uppercase">
+                      {letters}
+                    </span>
+                  );
+                }
+                // Unfound words are tappable: aim the next hint.
+                return (
+                  <button
                     key={word}
-                    className="text-sm font-semibold tracking-wide uppercase"
+                    type="button"
+                    onClick={() => onSelectWord(word)}
+                    aria-label={`unfound ${word.length}-letter word — tap to aim the next hint here`}
+                    className={`-mx-1 rounded px-1 text-sm font-semibold uppercase ${
+                      hintTargetWord === word ? "ring-2 ring-accent" : ""
+                    }`}
                   >
-                    {word}
-                  </span>
-                ))}
-              </div>
-            )}
+                    {letters}
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
