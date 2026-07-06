@@ -76,17 +76,18 @@ export function FoundWordsBar({ state }: { state: GameState }) {
                       ) : (
                         <span
                           key={word}
-                          className="flex gap-0.5"
+                          className="text-sm font-semibold uppercase"
                           aria-label="unsolved word"
                         >
-                          {[...word].map((letter, i) => (
-                            <span
-                              key={i}
-                              className="inline-block w-3.5 border-b-2 border-line text-center text-sm font-semibold uppercase"
-                            >
-                              {i < (state.revealed[word] ?? 0) ? letter : " "}
-                            </span>
-                          ))}
+                          {[...word].map((letter, i) =>
+                            i < (state.revealed[word] ?? 0) ? (
+                              <span key={i}>{letter}</span>
+                            ) : (
+                              <span key={i} className="text-ink-soft/40">
+                                ?
+                              </span>
+                            ),
+                          )}
                         </span>
                       ),
                     )}

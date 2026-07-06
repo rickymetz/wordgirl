@@ -154,8 +154,11 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
         <FoundWordsBar state={state} />
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-1">
-        <CurrentWord state={state} />
+      <div className="flex flex-1 flex-col items-center justify-center">
+        {/* Symmetric breathing room above and below the typed word. */}
+        <div className="py-8">
+          <CurrentWord state={state} />
+        </div>
         <PolygonBoard
           state={state}
           order={order}

@@ -29,12 +29,15 @@ export function GameCard({ game }: { game: GameDefinition }) {
         </div>
       </Link>
       {game.secondaryActions && (
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div
+          className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1"
+          style={{ scrollbarWidth: "none" }}
+        >
           {game.secondaryActions.map((action) => (
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
-              className="rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.97]"
+              className="w-40 shrink-0 rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.97]"
             >
               <div className="font-semibold text-accent">{action.label}</div>
               {action.description && (
