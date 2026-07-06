@@ -64,6 +64,10 @@
 [data-level="9"] { --color-accent: light-dark(#be185d, #f472b6); }  /* pink */
 [data-level="10"] { --color-accent: light-dark(#0f766e, #2dd4bf); } /* turquoise */
 
+/* Crosshatch has its own palette key — Tiffany teal, blue-shifted
+   past the level-10 turquoise so it never reads green. */
+[data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
+
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
