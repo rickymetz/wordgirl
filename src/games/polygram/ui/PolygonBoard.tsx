@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { unsolvedWords, type GameState } from "../state/reducer";
 import { CenterShape } from "./CenterShape";
 import { ShapeTile } from "./ShapeTile";
-import { CENTER_RATIO, FLOWER, edgeMidDeg } from "./polygonPath";
+import { FLOWER, edgeMidDeg } from "./polygonPath";
 
 interface Props {
   state: GameState;
@@ -11,6 +11,8 @@ interface Props {
 }
 
 const BOARD = 340;
+/** Whitespace between the central shape's edges and the petals, px. */
+const RING_GAP = 18;
 
 export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
   const sides = state.puzzle.levels[state.levelIndex].size;
@@ -20,8 +22,13 @@ export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
   // Petal circumradius: the whole flower must fit in the board square.
   const R = (BOARD / 2 - 2) / extent;
   const tileSize = 2 * R;
-  const centerSize = 2 * R * CENTER_RATIO;
   const dist = d * R;
+  // The center grows to keep a CONSTANT whitespace ring to the petals:
+  // at high N the petal ring is pushed out (petal-petal separation), and
+  // a fixed-ratio center would leave a ballooning empty hole.
+  const cos = Math.cos(Math.PI / sides);
+  const centerApothem = dist - R * cos - RING_GAP;
+  const centerSize = Math.max(0.62 * tileSize, (2 * centerApothem) / cos);
   const yShift = yOffset * R;
 
   return (

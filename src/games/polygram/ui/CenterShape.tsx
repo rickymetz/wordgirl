@@ -43,12 +43,14 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
       transition={{ duration: 0.45 }}
       aria-label={`submit word — ${remaining} words left`}
     >
-      {/* The triangle's centroid sits below its box center visually —
-          drop the count slightly so it reads centered in the shape. */}
+      {/* The apex-up triangle occupies the top 75% of its box (apex at 0,
+          base at 75%): its visible vertical middle is ~37.5%, well above
+          the box center where flex puts the glyph. Split the difference
+          with the centroid (50%) for optical balance. */}
       <span
         className="relative font-game leading-none font-extrabold text-surface"
         style={{
-          top: sides === 3 ? "8%" : 0,
+          top: sides === 3 ? "-4%" : 0,
           fontSize: Math.max(18, size * (sides === 3 ? 0.24 : 0.28)),
         }}
       >
