@@ -48,7 +48,7 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
           the box center where flex puts the glyph. Split the difference
           with the centroid (50%) for optical balance. */}
       <span
-        className="relative font-game text-[26px] leading-none font-extrabold text-surface"
+        className="relative font-game text-[24px] leading-none font-normal text-surface"
         style={{ top: sides === 3 ? "-4%" : 0 }}
       >
         {remaining}

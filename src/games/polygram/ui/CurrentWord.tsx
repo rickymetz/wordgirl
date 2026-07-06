@@ -39,13 +39,15 @@ export function CurrentWord({ state }: { state: GameState }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <span className="flex font-game text-3xl font-extrabold uppercase">
+      {/* Monospace: every glyph shares one advance width, so spacing
+          between typed letters and placeholders is perfectly regular. */}
+      <span className="flex font-game text-2xl font-normal uppercase">
         {Array.from({ length: currentLevel(state).size }, (_, i) => {
           const letter = state.current[i];
           return letter ? (
             <motion.span
               key={`${i}-${letter}`}
-              className="inline-block w-[0.8em] text-center text-accent"
+              className="inline-block text-accent"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 26 }}
@@ -53,10 +55,7 @@ export function CurrentWord({ state }: { state: GameState }) {
               {letter}
             </motion.span>
           ) : (
-            <span
-              key={i}
-              className="inline-block w-[0.8em] text-center text-ink-soft/25"
-            >
+            <span key={i} className="inline-block text-ink-soft/25">
               ?
             </span>
           );

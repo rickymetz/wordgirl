@@ -36,9 +36,8 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
       {/* A regular polygon's centroid IS its box center, so the glyph is
           dead-centered — no optical nudging. Fixed size: type stays
           consistent while the shapes change scale across levels. */}
-      <span
-        className="relative font-game text-[26px] leading-none font-extrabold text-ink uppercase"
-      >
+      {/* Rubik Mono One ships a single (heavy) 400 weight — no bold. */}
+      <span className="relative font-game text-[24px] leading-none font-normal text-ink uppercase">
         {letter}
       </span>
     </motion.button>

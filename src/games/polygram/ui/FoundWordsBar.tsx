@@ -1,24 +1,18 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { currentLevel, type GameState } from "../state/reducer";
+import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
 /**
  * Spelling-Bee-style found-words strip: a single collapsed line of found
  * words (most recent first) with a chevron that expands a dropdown
- * showing every level's words — completed levels in full, the current
- * level with blanks (plus any hint-revealed letters) for what's left.
+ * showing every level's words. Words render in alphabetical order with
+ * blank slots for the unfound ones INTERLEAVED in place — where a blank
+ * falls in the ordering is itself a gentle hint, no prompt needed.
  */
-export function FoundWordsBar({
-  state,
-  onHint,
-}: {
-  state: GameState;
-  onHint: () => void;
-}) {
+export function FoundWordsBar({ state }: { state: GameState }) {
   const [open, setOpen] = useState(false);
   const recentFirst = [...state.found].reverse();
-  const level = currentLevel(state);
 
   return (
     <div className="relative">
@@ -59,36 +53,27 @@ export function FoundWordsBar({
             transition={{ duration: 0.15 }}
           >
             {state.puzzle.levels.slice(0, state.levelIndex + 1).map((lvl) => {
-              const found = lvl.words.filter((w) => state.found.includes(w));
-              const unsolved = lvl.words.filter(
-                (w) => !state.found.includes(w),
-              );
-              const isCurrent = lvl.size === level.size;
+              const foundCount = lvl.words.filter((w) =>
+                state.found.includes(w),
+              ).length;
               return (
                 <div key={lvl.size} className="mb-3 last:mb-0">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                      {POLYGON_NAMES[lvl.size]} — {found.length} of{" "}
-                      {lvl.words.length}
-                    </span>
-                    {isCurrent && unsolved.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={onHint}
-                        className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-surface active:scale-95"
-                      >
-                        Reveal a letter
-                      </button>
-                    )}
+                  <div className="mb-1 text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                    {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
+                    {lvl.words.length}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    {found.map((word) => (
-                      <span key={word} className="text-sm font-semibold uppercase">
-                        {word}
-                      </span>
-                    ))}
-                    {isCurrent &&
-                      unsolved.map((word) => (
+                    {/* Alphabetical order with blanks in place: where a
+                        blank falls between found words is itself a hint. */}
+                    {lvl.words.map((word) =>
+                      state.found.includes(word) ? (
+                        <span
+                          key={word}
+                          className="text-sm font-semibold uppercase"
+                        >
+                          {word}
+                        </span>
+                      ) : (
                         <span
                           key={word}
                           className="flex gap-0.5"
@@ -99,11 +84,12 @@ export function FoundWordsBar({
                               key={i}
                               className="inline-block w-3.5 border-b-2 border-line text-center text-sm font-semibold uppercase"
                             >
-                              {i < (state.revealed[word] ?? 0) ? letter : " "}
+                              {i < (state.revealed[word] ?? 0) ? letter : " "}
                             </span>
                           ))}
                         </span>
-                      ))}
+                      ),
+                    )}
                   </div>
                 </div>
               );

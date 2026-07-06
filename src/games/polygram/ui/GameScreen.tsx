@@ -1,4 +1,4 @@
-import "@fontsource/rubik/800.css";
+import "@fontsource/rubik-mono-one/index.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
@@ -101,10 +101,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       <RankBar score={state.score} puzzle={state.puzzle} />
 
       <div className="pt-3">
-        <FoundWordsBar
-          state={state}
-          onHint={() => dispatch({ type: "revealHint" })}
-        />
+        <FoundWordsBar state={state} />
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-1">

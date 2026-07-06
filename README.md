@@ -17,8 +17,9 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
   shapes morph into the next polygon (triangle → square → pentagon → …).
 - The puzzle ends at the last polygon that still has a valid word — if no
   10-letter word exists, the decagon never appears.
-- **Hints** are unlimited (each revealed letter halves that word's points,
-  floor 1), so you can always finish.
+- The word list shows blanks for unfound words **in alphabetical order**
+  — where a blank sits between found words is itself a gentle hint. (A
+  letter-reveal hint system exists in the engine but is hidden for now.)
 - Points per word + rank titles: Beginner → Good → Great → Amazing →
   Genius → **Polygon**.
 - One **daily puzzle** (same for everyone, deterministic from the date)
