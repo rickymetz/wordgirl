@@ -123,20 +123,13 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       </header>
 
       <div className="flex items-center gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Polygram
-          {mode.kind === "archive" && (
-            <span className="ml-2 text-base font-semibold text-ink-soft">
-              {formatDateKey(mode.dateKey)}
-            </span>
-          )}
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Polygram</h1>
         {/* Level indicator: the current polygon in the level color —
             morphs with the board on level-up. */}
         <span
           role="img"
           aria-label={`${POLYGON_NAMES[level.size]} level`}
-          className="inline-block bg-accent"
+          className="inline-block shrink-0 bg-accent"
           style={{
             width: 22,
             height: 22,
@@ -144,6 +137,11 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
             transition: "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1)",
           }}
         />
+        {mode.kind === "archive" && (
+          <span className="text-base font-semibold text-ink-soft">
+            {formatDateKey(mode.dateKey)}
+          </span>
+        )}
       </div>
 
       <RankBar score={state.score} puzzle={state.puzzle} />
