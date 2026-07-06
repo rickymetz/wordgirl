@@ -12,7 +12,7 @@ export function GameCard({ game }: { game: GameDefinition }) {
     <section data-level={game.accentLevel}>
       <Link
         to={`/games/${game.id}`}
-        className="flex items-center overflow-hidden rounded-3xl border border-line bg-surface-raised px-6 py-6 transition-transform active:scale-[0.98]"
+        className="flex items-center overflow-hidden rounded-3xl bg-surface-raised px-6 py-6 transition-transform active:scale-[0.98]"
       >
         <div className="w-3/4 min-w-0 pr-2">
           <h2 className="text-2xl font-bold tracking-tight">{game.name}</h2>
@@ -36,7 +36,7 @@ export function GameCard({ game }: { game: GameDefinition }) {
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
-              className="w-40 shrink-0 rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.97]"
+              className="w-40 shrink-0 rounded-2xl bg-surface-raised px-5 py-4 transition-transform active:scale-[0.97]"
             >
               <div className="font-semibold text-accent">{action.label}</div>
               {action.description && (

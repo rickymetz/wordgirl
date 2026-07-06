@@ -6,13 +6,14 @@
      typed-word spacing perfectly regular. Single 400 weight (heavy). */
   --font-game: "Rubik Mono One", ui-monospace, monospace;
 
-  --color-surface: #faf9f7;
+  /* Page bg sits a step below raised cards so bentos need no borders. */
+  --color-surface: #f1efe9;
   --color-surface-raised: #ffffff;
   --color-ink: #26242b;
   --color-ink-soft: #6f6b78;
-  --color-line: #e8e5e0;
+  --color-line: #e3e0d9;
   /* Neutral petal-tile fill — stays grey while the accent changes. */
-  --color-tile: #e9e6e1;
+  --color-tile: #e4e0d8;
   --color-accent: #7c3aed;
   --color-accent-soft: #ede9fe;
   --color-good: #059669;
@@ -21,7 +22,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-surface: #17161a;
+    --color-surface: #121116;
     --color-surface-raised: #211f26;
     --color-ink: #eceaf0;
     --color-ink-soft: #98939f;
