@@ -6,8 +6,8 @@
      typed-word spacing perfectly regular. Single 400 weight (heavy). */
   --font-game: "Rubik Mono One", ui-monospace, monospace;
 
-  /* Page bg sits a step below raised cards so bentos need no borders. */
-  --color-surface: #f1efe9;
+  /* Nearly-white page bg — the accent-tinted bentos carry the depth. */
+  --color-surface: #faf9f7;
   --color-surface-raised: #ffffff;
   --color-ink: #26242b;
   --color-ink-soft: #6f6b78;
@@ -19,7 +19,7 @@
   /* Hub bento tiles: crisp white in light mode; in dark, a whisper of
      the accent keeps the clusters from reading as one grey slab. */
   --color-surface-tint: light-dark(
-    var(--color-surface-raised),
+    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised)),
     color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))
   );
   --color-good: #059669;
@@ -56,7 +56,7 @@
   /* Re-mix with the level accent — custom properties resolve var()
      where they're DECLARED, so the root definition keeps root purple. */
   --color-surface-tint: light-dark(
-    var(--color-surface-raised),
+    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised)),
     color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))
   );
 }
