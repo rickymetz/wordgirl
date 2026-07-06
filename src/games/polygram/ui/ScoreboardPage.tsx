@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { HomeLink } from "../../../components/HomeLink";
 import { formatDateKey } from "../../../lib/date";
 import { rankFor } from "../engine/scoring";
 import { generatePuzzle, dailySeed } from "../engine/generator";
@@ -35,9 +36,7 @@ export default function ScoreboardPage() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12">
       <header className="flex items-center justify-between pt-6 pb-2">
-        <Link to="/" className="text-sm font-semibold text-ink-soft">
-          ← WordGirl
-        </Link>
+        <HomeLink />
         <Link
           to="/games/polygram"
           className="text-sm font-semibold text-accent"

@@ -2,6 +2,7 @@ import "@fontsource/rubik-mono-one/index.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey } from "../../../lib/date";
+import { HomeLink } from "../../../components/HomeLink";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import { currentLevel, hintTarget } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
@@ -108,9 +109,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
             ← Archive
           </Link>
         ) : (
-          <Link to="/" className="text-sm font-semibold text-ink-soft">
-            ← WordGirl
-          </Link>
+          <HomeLink />
         )}
         {mode.kind === "practice" && (
           <span className="flex items-center gap-3">

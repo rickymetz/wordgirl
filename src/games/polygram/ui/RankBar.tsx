@@ -2,16 +2,16 @@ import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { regularPolygonClipPath } from "./polygonPath";
 
-/** Level colors (light/dark) for sizes 3–10. */
+/** Level colors (light/dark) for sizes 3–10 — pride flag order. */
 const LEVEL_COLORS: Record<number, string> = {
-  3: "light-dark(#7e22ce, #c084fc)", // amethyst
-  4: "light-dark(#059669, #34d399)", // emerald
-  5: "light-dark(#be123c, #fb7185)", // ruby
-  6: "light-dark(#1d4ed8, #60a5fa)", // sapphire
-  7: "light-dark(#ca8a04, #facc15)", // citrine
-  8: "light-dark(#0d9488, #2dd4bf)", // turquoise
-  9: "light-dark(#c2410c, #fb923c)", // garnet
-  10: "light-dark(#4f46e5, #818cf8)", // tanzanite
+  3: "light-dark(#dc2626, #f87171)", // red
+  4: "light-dark(#ea580c, #fb923c)", // orange
+  5: "light-dark(#ca8a04, #facc15)", // yellow
+  6: "light-dark(#16a34a, #4ade80)", // green
+  7: "light-dark(#2563eb, #60a5fa)", // blue
+  8: "light-dark(#7e22ce, #c084fc)", // purple
+  9: "light-dark(#db2777, #f472b6)", // pink
+  10: "light-dark(#0d9488, #2dd4bf)", // turquoise
 };
 
 /**
