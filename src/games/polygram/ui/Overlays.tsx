@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { formatDateKey, formatDuration } from "../../../lib/date";
+import { formatDuration } from "../../../lib/date";
 import { rankFor } from "../engine/scoring";
 import { loadDailyProgress } from "../state/persistence";
 import type { GameState } from "../state/reducer";
@@ -17,8 +17,13 @@ function buildShareText(
     0,
   );
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : "";
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const date = new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+  });
   return [
-    `${window.location.host} — ${formatDateKey(dateKey)}`,
+    `${window.location.host} — ${date}`,
     `Score ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
   ].join("\n");
 }
