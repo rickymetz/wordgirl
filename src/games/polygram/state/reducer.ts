@@ -66,6 +66,17 @@ export function unsolvedWords(state: GameState): string[] {
   return currentLevel(state).words.filter((w) => !state.found.includes(w));
 }
 
+/**
+ * The word hints act on: the first unsolved word that still has hidden
+ * letters. Skipping fully-revealed (but not yet typed) words keeps the
+ * hint button functional instead of silently no-oping.
+ */
+export function hintTarget(state: GameState): string | undefined {
+  return unsolvedWords(state).find(
+    (w) => (state.revealed[w] ?? []).length < w.length,
+  );
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "tapLetter": {
@@ -130,7 +141,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "revealHint": {
       if (state.phase !== "playing") return state;
-      const target = unsolvedWords(state)[0];
+      const target = hintTarget(state);
       if (!target) return state;
       const already = state.revealed[target] ?? [];
       if (

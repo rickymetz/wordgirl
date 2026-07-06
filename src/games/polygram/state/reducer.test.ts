@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Puzzle } from "../engine/types";
 import {
   gameReducer,
+  hintTarget,
   initialState,
   unsolvedWords,
   type GameAction,
@@ -91,6 +92,26 @@ describe("gameReducer", () => {
     ).toEqual({ bad: [2] });
     s = play(s, ...type("bad"), { type: "submit" });
     expect(s.lastResult?.points).toBe(1); // floor(3/2)
+  });
+
+  it("hints skip past fully-revealed words to the next unsolved one", () => {
+    let s = initialState(puzzle);
+    // Fully reveal "bad" without finding it.
+    for (const i of [0, 1, 2]) {
+      s = gameReducer(s, { type: "revealHint", letterIndex: i });
+    }
+    expect(s.revealed).toEqual({ bad: [0, 1, 2] });
+    // "bad" is still unsolved, but the hint target moves on to "dab".
+    expect(unsolvedWords(s)[0]).toBe("bad");
+    expect(hintTarget(s)).toBe("dab");
+    s = gameReducer(s, { type: "revealHint", letterIndex: 1 });
+    expect(s.revealed).toEqual({ bad: [0, 1, 2], dab: [1] });
+    // Every unsolved word fully revealed -> no target, hint is a no-op.
+    for (const i of [0, 2]) {
+      s = gameReducer(s, { type: "revealHint", letterIndex: i });
+    }
+    expect(hintTarget(s)).toBeUndefined();
+    expect(gameReducer(s, { type: "revealHint", letterIndex: 0 })).toBe(s);
   });
 
   it("hydrates to the correct level and phase", () => {

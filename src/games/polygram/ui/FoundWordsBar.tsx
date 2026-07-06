@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { GameState } from "../state/reducer";
+import { hintTarget, type GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
 /**
@@ -76,12 +76,14 @@ export function FoundWordsBar({
                       {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
                       {lvl.words.length}
                     </span>
-                    {/* Hint sits WITH the words it reveals. */}
+                    {/* Hint sits WITH the words it reveals; disabled once
+                        every unsolved word is fully revealed. */}
                     {isCurrent && foundCount < lvl.words.length && (
                       <button
                         type="button"
                         onClick={onHint}
-                        className="rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-surface active:scale-95"
+                        disabled={hintTarget(state) === undefined}
+                        className="rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-surface active:scale-95 disabled:opacity-40"
                       >
                         Hint
                       </button>

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey } from "../../../lib/date";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
-import { currentLevel, unsolvedWords } from "../state/reducer";
+import { currentLevel, hintTarget } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -30,15 +30,14 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
   // day's score will carry a "used hint" indicator.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const hintUsed = Object.keys(state.revealed).length > 0;
-  // Reveal a RANDOM still-hidden letter of the first unsolved word.
+  // Reveal a RANDOM still-hidden letter of the hint target word.
   const revealRandomLetter = () => {
-    const target = unsolvedWords(state)[0];
+    const target = hintTarget(state);
     if (!target) return;
     const already = state.revealed[target] ?? [];
     const candidates = [...target]
       .map((_, i) => i)
       .filter((i) => !already.includes(i));
-    if (candidates.length === 0) return;
     dispatch({
       type: "revealHint",
       letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
