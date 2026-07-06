@@ -37,7 +37,7 @@ function rankForDay(
   return rank;
 }
 
-/** Past daily puzzles, newest first, with play status. */
+/** Past daily puzzles: calendar mosaic + played days, newest first. */
 export default function ArchivePage() {
   const [progress, setProgress] = useState<Record<
     string,
@@ -55,6 +55,12 @@ export default function ArchivePage() {
     yesterday >= ARCHIVE_EPOCH
       ? dateKeyRange(ARCHIVE_EPOCH, yesterday).reverse()
       : [];
+  // The calendar covers every day; the list below repeats only days
+  // with actual results (it's the scoreboard: rank, points, time).
+  const playedDates = dates.filter((d) => {
+    const saved = progress?.[d];
+    return saved && (saved.completed || saved.foundWords.length > 0);
+  });
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12">
@@ -84,14 +90,11 @@ export default function ArchivePage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {dates.length === 0 && (
-          <p className="text-ink-soft">
-            No past puzzles yet — come back tomorrow!
-          </p>
-        )}
+      <CalendarMosaic progress={progress ?? {}} />
+
+      <div className="mt-5 flex flex-col gap-3">
         {progress &&
-          dates.map((dateKey) => (
+          playedDates.map((dateKey) => (
             <ArchiveRow
               key={dateKey}
               dateKey={dateKey}
@@ -100,6 +103,136 @@ export default function ArchivePage() {
           ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Month-grid mosaic of the archive: each day is a tappable cell colored
+ * by status. Bounded by the archive epoch and the current month.
+ */
+function CalendarMosaic({
+  progress,
+}: {
+  progress: Record<string, ArchivedDay>;
+}) {
+  const today = localDateKey();
+  const currentMonth = today.slice(0, 7);
+  const epochMonth = ARCHIVE_EPOCH.slice(0, 7);
+  const [month, setMonth] = useState(currentMonth);
+
+  const [year, monthNum] = month.split("-").map(Number);
+  // Noon avoids DST edges, matching lib/date conventions.
+  const anchor = new Date(year, monthNum - 1, 1, 12);
+  const dayCount = new Date(year, monthNum, 0).getDate();
+  const leadingBlanks = anchor.getDay(); // 0 = Sunday
+  const label = anchor.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+  const shiftMonth = (delta: number) => {
+    const d = new Date(year, monthNum - 1 + delta, 1, 12);
+    setMonth(
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+    );
+  };
+
+  return (
+    <div className="rounded-2xl bg-surface-raised px-4 py-4">
+      <div className="flex items-center justify-between pb-3">
+        <button
+          type="button"
+          onClick={() => shiftMonth(-1)}
+          disabled={month <= epochMonth}
+          aria-label="Previous month"
+          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+        >
+          ‹
+        </button>
+        <div className="text-sm font-semibold">{label}</div>
+        <button
+          type="button"
+          onClick={() => shiftMonth(1)}
+          disabled={month >= currentMonth}
+          aria-label="Next month"
+          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5">
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <div
+            key={i}
+            aria-hidden
+            className="pb-1 text-center text-xs font-medium text-ink-soft"
+          >
+            {d}
+          </div>
+        ))}
+        {Array.from({ length: leadingBlanks }, (_, i) => (
+          <div key={`blank-${i}`} />
+        ))}
+        {Array.from({ length: dayCount }, (_, i) => {
+          const day = i + 1;
+          const dateKey = `${month}-${String(day).padStart(2, "0")}`;
+          return (
+            <DayCell
+              key={dateKey}
+              dateKey={dateKey}
+              day={day}
+              today={today}
+              saved={progress[dateKey]}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DayCell({
+  dateKey,
+  day,
+  today,
+  saved,
+}: {
+  dateKey: string;
+  day: number;
+  today: string;
+  saved?: ArchivedDay;
+}) {
+  const base =
+    "flex aspect-square items-center justify-center rounded-lg text-sm";
+  const playable = dateKey >= ARCHIVE_EPOCH && dateKey <= today;
+  if (!playable) {
+    // Before the archive began, or still in the future.
+    return (
+      <div aria-hidden className={`${base} text-ink-soft opacity-40`}>
+        {day}
+      </div>
+    );
+  }
+
+  const solved = saved?.completed ?? false;
+  const started = !solved && (saved?.foundWords.length ?? 0) > 0;
+  const status = solved ? "solved" : started ? "in progress" : "not played";
+  const isToday = dateKey === today;
+  const tone = solved
+    ? "bg-accent font-semibold text-surface"
+    : started
+      ? "bg-accent-soft font-medium text-ink"
+      : "bg-tile font-medium text-ink";
+  return (
+    <Link
+      to={isToday ? "/games/polygram" : `/games/polygram/archive/${dateKey}`}
+      aria-label={`${formatDateKey(dateKey)} — ${status}`}
+      className={`${base} ${tone} transition-transform active:scale-90 ${
+        isToday ? "ring-2 ring-accent" : ""
+      }`}
+    >
+      {day}
+    </Link>
   );
 }
 
