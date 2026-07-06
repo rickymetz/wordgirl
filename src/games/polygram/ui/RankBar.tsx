@@ -33,12 +33,11 @@ export function RankBar({ state }: { state: GameState }) {
     state.phase === "done" ? 1 : foundInCurrent / current.words.length;
   const pct = Math.min(100, ((state.levelIndex + frac) / n) * 100);
 
-  // Hard color stops: each segment is solidly its level's color.
-  const gradient = `linear-gradient(to right, ${levels
-    .map((lvl, k) => {
-      const color = LEVEL_COLORS[lvl.size];
-      return `${color} ${(k / n) * 100}%, ${color} ${((k + 1) / n) * 100}%`;
-    })
+  // Smooth gradient with a stop at each level checkpoint: background at
+  // the far left fading to amethyst at the triangle, then emerald at
+  // the square, ruby, sapphire… along the polygon markers.
+  const gradient = `linear-gradient(to right, var(--color-line) 0%, ${levels
+    .map((lvl, k) => `${LEVEL_COLORS[lvl.size]} ${((k + 1) / n) * 100}%`)
     .join(", ")})`;
 
   return (
