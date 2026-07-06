@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+
+  --color-surface: #faf9f7;
+  --color-surface-raised: #ffffff;
+  --color-ink: #26242b;
+  --color-ink-soft: #6f6b78;
+  --color-line: #e8e5e0;
+  --color-accent: #7c3aed;
+  --color-accent-soft: #ede9fe;
+  --color-good: #059669;
+  --color-warn: #d97706;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #17161a;
+    --color-surface-raised: #211f26;
+    --color-ink: #eceaf0;
+    --color-ink-soft: #98939f;
+    --color-line: #322f38;
+    --color-accent: #a78bfa;
+    --color-accent-soft: #2e2447;
+    --color-good: #34d399;
+    --color-warn: #fbbf24;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
