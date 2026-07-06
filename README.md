@@ -21,7 +21,7 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
   — where a blank sits between found words is itself a gentle hint. (A
   letter-reveal hint system exists in the engine but is hidden for now.)
 - Points per word + rank titles: Beginner → Good → Great → Amazing →
-  Genius → **Polygon**.
+  Genius → **Geometer**.
 - One **daily puzzle** (same for everyone, deterministic from the date)
   plus unlimited **practice** puzzles.
 
@@ -37,7 +37,7 @@ A small crossword frame with many right answers:
 - The daily generator enumerates **every** valid filling and accepts
   days with 10–22 distinct words (no single line hoarding more than 8)
   — ranks are the percentage of words found: Beginner → … → Genius →
-  **Crosshatch**.
+  **Weaver**.
 - Finding **most of the words solves the day** (~90%, always with a
   couple words of slack); 100% is the perfect sweep.
 - Chips under the grid judge each line's current word: ❌ doesn't work

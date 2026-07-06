@@ -19,8 +19,8 @@ export const crosshatch: GameDefinition = {
       Page: lazy(() => import("./ui/ArchivePlayPage")),
     },
   ],
-  // Turquoise — the calm end of the palette for the deep-think game.
-  accentLevel: 10,
+  // Tiffany teal — the calm end of the palette for the deep-think game.
+  accentLevel: "crosshatch",
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },

@@ -37,7 +37,7 @@ export const RANKS = [
   { title: "Great", pct: 50 },
   { title: "Amazing", pct: 70 },
   { title: "Genius", pct: 90 },
-  { title: "Polygon", pct: 100 },
+  { title: "Geometer", pct: 100 },
 ] as const;
 
 export type RankTitle = (typeof RANKS)[number]["title"];

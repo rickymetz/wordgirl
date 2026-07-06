@@ -18,8 +18,9 @@ export interface GameDefinition {
     path: string;
     Page: LazyExoticComponent<ComponentType>;
   }[];
-  /** Level whose color themes this game's hub cluster (data-level). */
-  accentLevel?: number;
+  /** Palette key theming this game's hub cluster (data-level): a
+   *  Polygram level number or a game's own key like "crosshatch". */
+  accentLevel?: number | string;
   /** Secondary entry points rendered as small bento tiles on the hub. */
   secondaryActions?: { label: string; path: string; description?: string }[];
 }

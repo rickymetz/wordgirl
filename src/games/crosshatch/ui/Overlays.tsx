@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
 import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 
@@ -23,7 +24,7 @@ function buildShareText(
   return [
     `Crosshatch — ${date}`,
     `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
-    window.location.host,
+    SHARE_URL,
   ].join("\n");
 }
 

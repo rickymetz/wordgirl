@@ -64,6 +64,10 @@
 [data-level="9"] { --color-accent: light-dark(#be185d, #f472b6); }  /* pink */
 [data-level="10"] { --color-accent: light-dark(#0f766e, #2dd4bf); } /* turquoise */
 
+/* Crosshatch has its own palette key — Tiffany teal, blue-shifted
+   past the level-10 turquoise so it never reads green. */
+[data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
+
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
@@ -94,7 +98,13 @@ body {
 }
 
 #root {
-  min-height: 100%;
+  /* Exactly one screen tall, with the safe-area padding INSIDE the
+     100dvh (border-box). Pages grow to fill #root instead of setting
+     min-h-dvh themselves — otherwise installed/PWA mode, where the
+     insets are real, gets insets + 100dvh and a permanent scroll. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);

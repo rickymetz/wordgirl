@@ -9,7 +9,7 @@ function lazyPage(Page: React.ComponentType) {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center text-ink-soft">
+        <div className="flex grow items-center justify-center text-ink-soft">
           Loading…
         </div>
       }
