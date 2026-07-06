@@ -22,8 +22,16 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch } = usePolygramGame(mode);
+  const { state, dispatch, doneElapsedMs } = usePolygramGame(mode);
   const level = currentLevel(state);
+
+  // Warn (once) if this device can't persist progress.
+  const [storageBroken, setStorageBroken] = useState(false);
+  useEffect(() => {
+    const onError = () => setStorageBroken(true);
+    window.addEventListener("wg:storage-error", onError);
+    return () => window.removeEventListener("wg:storage-error", onError);
+  }, []);
 
   const advance = useCallback(
     () => dispatch({ type: "advanceLevel" }),
@@ -162,6 +170,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         )}
       </div>
 
+      {storageBroken && (
+        <p className="pb-2 text-xs font-semibold text-warn" role="alert">
+          Progress can't be saved on this device.
+        </p>
+      )}
+
       <RankBar state={state} />
 
       <div className="pt-3">
@@ -189,13 +203,8 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       <DoneOverlay
         state={state}
         mode={mode.kind}
-        dateKey={
-          mode.kind === "archive"
-            ? mode.dateKey
-            : mode.kind === "daily"
-              ? localDateKey()
-              : undefined
-        }
+        dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
+        elapsedMs={doneElapsedMs}
         onNewPuzzle={onNewPuzzle}
         onReplay={onReplay}
       />

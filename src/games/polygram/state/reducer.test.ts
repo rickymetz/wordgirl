@@ -44,6 +44,14 @@ describe("gameReducer", () => {
     expect(s.current).toBe("bad");
   });
 
+  it("differentiates empty and too-short submissions", () => {
+    let s = gameReducer(initialState(puzzle), { type: "submit" });
+    expect(s.lastResult?.type).toBe("empty");
+    s = play(initialState(puzzle), ...type("ba"), { type: "submit" });
+    expect(s.lastResult?.type).toBe("tooShort");
+    expect(s.current).toBe("");
+  });
+
   it("rejects duplicates and invalid words", () => {
     let s = play(initialState(puzzle), ...type("bad"), { type: "submit" });
     s = play(s, ...type("bad"), { type: "submit" });

@@ -13,7 +13,15 @@ export function createLocalStorageAdapter(): StorageAdapter {
       }
     },
     async set<T>(key: string, value: T): Promise<void> {
-      localStorage.setItem(key, JSON.stringify(value));
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        // Quota pressure / private-browsing modes: never let a rejected
+        // save escape as an unhandled rejection — surface it once so the
+        // UI can warn that progress isn't persisting.
+        console.warn("storage write failed", key, err);
+        window.dispatchEvent(new Event("wg:storage-error"));
+      }
     },
     async remove(key: string): Promise<void> {
       localStorage.removeItem(key);

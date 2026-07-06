@@ -8,7 +8,7 @@ export interface DailyProgress {
   dictVersion: number;
   foundWords: string[];
   /** word -> hint-revealed letter positions (older saves stored counts). */
-  revealed: Record<string, number[]>;
+  revealed: Record<string, number[] | number>;
   score: number;
   completed: boolean;
   /** Wall-clock play time accumulated across sessions, frozen at completion. */
@@ -45,25 +45,55 @@ const store = createGameStore("polygram");
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-01";
 
+/** A partially-corrupted save must not crash hydration — normalize it. */
+function validShape(saved: DailyProgress | null): DailyProgress | null {
+  if (!saved || typeof saved !== "object") return null;
+  if (!Array.isArray(saved.foundWords)) return null;
+  if (typeof saved.score !== "number" || !Number.isFinite(saved.score)) {
+    return null;
+  }
+  if (saved.revealed === null || typeof saved.revealed !== "object") {
+    return null;
+  }
+  return saved;
+}
+
+/**
+ * The playable save for a date, or null. Saves written against an older
+ * dictionary can't be resumed (their words may not exist in the current
+ * puzzle) — use loadStaleDailyProgress to read their historical result.
+ */
 export async function loadDailyProgress(
   dateKey: string,
 ): Promise<DailyProgress | null> {
-  const saved = await store.get<DailyProgress>(`daily:${dateKey}`);
-  // A save from an older dictionary can reference words that no longer
-  // exist (or miss new ones) — start that day fresh instead of wedging.
+  const saved = validShape(await store.get<DailyProgress>(`daily:${dateKey}`));
   if (saved && saved.dictVersion !== DICT_VERSION) return null;
   return saved;
 }
 
+/** A save from an OLDER dictionary version, kept as a historical record. */
+export async function loadStaleDailyProgress(
+  dateKey: string,
+): Promise<DailyProgress | null> {
+  const saved = validShape(await store.get<DailyProgress>(`daily:${dateKey}`));
+  if (saved && saved.dictVersion !== DICT_VERSION) return saved;
+  return null;
+}
+
+export interface ArchivedDay extends DailyProgress {
+  /** True when played against an older dictionary (result-only record). */
+  stale: boolean;
+}
+
 /** Every saved daily, keyed by date — drives the archive listing. */
 export async function loadAllDailyProgress(): Promise<
-  Record<string, DailyProgress>
+  Record<string, ArchivedDay>
 > {
-  const out: Record<string, DailyProgress> = {};
+  const out: Record<string, ArchivedDay> = {};
   for (const key of await store.keys("daily:")) {
-    const saved = await store.get<DailyProgress>(key);
-    if (saved && saved.dictVersion === DICT_VERSION) {
-      out[saved.dateKey] = saved;
+    const saved = validShape(await store.get<DailyProgress>(key));
+    if (saved) {
+      out[saved.dateKey] = { ...saved, stale: saved.dictVersion !== DICT_VERSION };
     }
   }
   return out;
@@ -100,7 +130,8 @@ export async function recordDailyStarted(): Promise<void> {
 /**
  * Call once when a daily puzzle is completed. Only TODAY's puzzle moves
  * the streak — finishing an archived day counts toward totals but must
- * not rewrite streak history.
+ * not rewrite streak history, and lastCompletedDate never moves
+ * BACKWARD (westward timezone travel would otherwise reset a streak).
  */
 export async function recordDailyCompleted(
   dateKey: string,
@@ -113,6 +144,9 @@ export async function recordDailyCompleted(
   const rankIndex = (r: RankTitle | null) =>
     r === null ? -1 : RANKS.findIndex((x) => x.title === r);
   const isToday = dateKey === localDateKey();
+  const advances =
+    isToday &&
+    (stats.lastCompletedDate === null || dateKey > stats.lastCompletedDate);
   const continues = stats.lastCompletedDate === previousDateKey(dateKey);
   const currentStreak = continues ? stats.currentStreak + 1 : 1;
 
@@ -121,7 +155,7 @@ export async function recordDailyCompleted(
     completed: stats.completed + 1,
     bestRank: rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
     totalScore: stats.totalScore + score,
-    ...(isToday && {
+    ...(advances && {
       currentStreak,
       bestStreak: Math.max(stats.bestStreak, currentStreak),
       lastCompletedDate: dateKey,

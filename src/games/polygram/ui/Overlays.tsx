@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { formatDuration } from "../../../lib/date";
 import { rankFor } from "../engine/scoring";
-import { loadDailyProgress } from "../state/persistence";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
@@ -34,6 +33,7 @@ export function DoneOverlay({
   state,
   mode,
   dateKey,
+  elapsedMs,
   onNewPuzzle,
   onReplay,
 }: {
@@ -41,20 +41,15 @@ export function DoneOverlay({
   mode: "daily" | "practice" | "archive";
   /** Set for daily/archive — enables the share button. */
   dateKey?: string;
+  /** Frozen solve time from the hook (single source of truth). */
+  elapsedMs: number | null;
   onNewPuzzle?: () => void;
   onReplay?: () => void;
 }) {
   const done = state.phase === "done";
-  const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // The persisted save holds the frozen completion time.
-  useEffect(() => {
-    if (!done || !dateKey) return;
-    void loadDailyProgress(dateKey).then((saved) =>
-      setElapsedMs(saved?.elapsedMs ?? 0),
-    );
-  }, [done, dateKey]);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
   if (!done) return null;
   const rank = rankFor(state.score, state.puzzle);
@@ -63,16 +58,22 @@ export function DoneOverlay({
   const share = async () => {
     if (!dateKey || elapsedMs === null) return;
     const text = buildShareText(state, dateKey, elapsedMs);
-    try {
-      if (navigator.share) {
+    if (navigator.share) {
+      try {
         await navigator.share({ text });
-        return;
+      } catch {
+        // Dismissing the share sheet (AbortError) is a "changed my
+        // mind" — don't hijack the clipboard and claim success.
       }
-      throw new Error("no web share");
-    } catch {
+      return;
+    }
+    try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard unavailable — nothing useful to do.
     }
   };
 

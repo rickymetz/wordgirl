@@ -14,14 +14,27 @@ import { getDictionary } from "../state/usePolygramGame";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
-  type DailyProgress,
+  type ArchivedDay,
 } from "../state/persistence";
+
+// score -> rank needs the day's puzzle; cache so each date generates
+// at most once per session instead of on every list render.
+const rankCache = new Map<string, string>();
+function rankForDay(dateKey: string, score: number): string {
+  const key = `${dateKey}:${score}`;
+  let rank = rankCache.get(key);
+  if (!rank) {
+    rank = rankFor(score, generatePuzzle(getDictionary(), dailySeed(dateKey)));
+    rankCache.set(key, rank);
+  }
+  return rank;
+}
 
 /** Past daily puzzles, newest first, with play status. */
 export default function ArchivePage() {
   const [progress, setProgress] = useState<Record<
     string,
-    DailyProgress
+    ArchivedDay
   > | null>(null);
 
   useEffect(() => {
@@ -74,20 +87,18 @@ function ArchiveRow({
   saved,
 }: {
   dateKey: string;
-  saved?: DailyProgress;
+  saved?: ArchivedDay;
 }) {
   let status = "Not played";
   let statusClass = "text-ink-soft";
   const completed = saved?.completed ?? false;
   if (saved?.completed) {
-    // Regenerate the puzzle only to translate score → rank; it's fast.
-    const rank = rankFor(
-      saved.score,
-      generatePuzzle(getDictionary(), dailySeed(dateKey)),
-    );
+    // A stale save was played against an older dictionary: its score is
+    // real history but doesn't map onto the current puzzle's ranks.
+    const rank = saved.stale ? "Completed" : rankForDay(dateKey, saved.score);
     status = `${rank} · ${saved.score} pts${
       Object.keys(saved.revealed).length > 0 ? " · used hint" : ""
-    }`;
+    }${saved.stale ? " · older words" : ""}`;
     statusClass = "text-accent";
   } else if (saved && saved.foundWords.length > 0) {
     status = `In progress · ${saved.score} pts`;

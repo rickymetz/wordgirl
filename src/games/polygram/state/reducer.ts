@@ -4,7 +4,7 @@ import type { Puzzle } from "../engine/types";
 export type Phase = "playing" | "levelClear" | "done";
 
 export interface SubmitResult {
-  type: "correct" | "duplicate" | "invalid";
+  type: "correct" | "duplicate" | "invalid" | "tooShort" | "empty";
   word: string;
   points?: number;
   /** Monotonic counter so the UI can re-trigger animations on repeats. */
@@ -122,12 +122,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, current: "" };
 
     case "submit": {
-      if (state.phase !== "playing" || state.current.length === 0) {
-        return state;
-      }
+      if (state.phase !== "playing") return state;
       const word = state.current;
       const nonce = (state.lastResult?.nonce ?? 0) + 1;
       const level = currentLevel(state);
+
+      // Differentiated feedback: an empty submit and a real-but-short
+      // word are not "not in word list".
+      if (word.length === 0) {
+        return { ...state, lastResult: { type: "empty", word, nonce } };
+      }
+      if (word.length < level.size) {
+        return {
+          ...state,
+          current: "",
+          lastResult: { type: "tooShort", word, nonce },
+        };
+      }
 
       if (state.found.includes(word)) {
         return {

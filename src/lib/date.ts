@@ -6,10 +6,15 @@ export function localDateKey(date: Date = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-/** The date key one day before the given key (for streak math). */
+/**
+ * The date key one day before the given key (for streak math).
+ * Arithmetic happens at NOON: in timezones whose DST transition falls at
+ * midnight (Chile, Cuba), a constructed local midnight can resolve into
+ * the neighboring day and skew or even loop the date walk.
+ */
 export function previousDateKey(dateKey: string): string {
   const [y, m, d] = dateKey.split("-").map(Number);
-  return localDateKey(new Date(y, m - 1, d - 1));
+  return localDateKey(new Date(y, m - 1, d - 1, 12));
 }
 
 /** All date keys from `fromKey` to `toKey` inclusive, ascending. */
@@ -19,7 +24,7 @@ export function dateKeyRange(fromKey: string, toKey: string): string[] {
   while (key <= toKey) {
     out.push(key);
     const [y, m, d] = key.split("-").map(Number);
-    key = localDateKey(new Date(y, m - 1, d + 1));
+    key = localDateKey(new Date(y, m - 1, d + 1, 12));
   }
   return out;
 }

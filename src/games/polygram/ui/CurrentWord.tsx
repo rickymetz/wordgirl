@@ -12,16 +12,20 @@ export function CurrentWord({ state }: { state: GameState }) {
     null,
   );
 
+  const size = currentLevel(state).size;
   useEffect(() => {
     const result = state.lastResult;
     if (!result || result.type === "correct") return;
-    setToast({
-      text: result.type === "invalid" ? "Not in word list" : "Already found",
-      nonce: result.nonce,
-    });
-    const timer = setTimeout(() => setToast(null), 1200);
+    const text = {
+      invalid: "Not in word list",
+      duplicate: "Already found",
+      tooShort: `Too short — ${size}-letter words`,
+      empty: "Tap letters to spell a word",
+    }[result.type];
+    setToast({ text, nonce: result.nonce });
+    const timer = setTimeout(() => setToast(null), 1400);
     return () => clearTimeout(timer);
-  }, [state.lastResult]);
+  }, [state.lastResult, size]);
 
   return (
     <div className="relative flex h-12 items-center justify-center">
