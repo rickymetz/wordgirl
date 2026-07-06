@@ -76,8 +76,10 @@ export function FoundWordsBar({
                 <div key={lvl.size} data-level={lvl.size} className="mb-3 last:mb-0">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                      {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
-                      {lvl.words.length}
+                      {POLYGON_NAMES[lvl.size]}
+                      <span className="ml-2 text-ink-soft/45">
+                        {foundCount}/{lvl.words.length}
+                      </span>
                     </span>
                     {/* Hint sits WITH the words it reveals; disabled once
                         every unsolved word is fully revealed. */}
