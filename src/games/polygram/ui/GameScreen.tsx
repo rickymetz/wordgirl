@@ -421,11 +421,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 polygon.
               </li>
               <li>
-                Rare words are{" "}
+                Less common words score as{" "}
                 <span className="font-semibold text-ink">
                   <span className="text-accent">✦</span> bonus
                 </span>{" "}
-                — extra points, but they don't count toward the level.
+                — extra points, but the level count only tracks the
+                everyday words.
               </li>
             </ul>
             <button
