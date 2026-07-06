@@ -60,18 +60,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   // The words panel is controlled here so the lightbulb can open it.
   const [wordsOpen, setWordsOpen] = useState(false);
 
-  // After a few consecutive misses, glow the lightbulb — the stuck
-  // player is exactly who needs to discover hints.
-  const [missStreak, setMissStreak] = useState(0);
-  useEffect(() => {
-    const t = state.lastResult?.type;
-    if (!t) return;
-    setMissStreak((n) =>
-      t === "invalid" || t === "duplicate" ? n + 1 : t === "correct" ? 0 : n,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.lastResult]);
-
   const advance = useCallback(
     () => dispatch({ type: "advanceLevel" }),
     [dispatch],
@@ -336,11 +324,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onDelete={() => dispatch({ type: "backspace" })}
           onShuffle={shuffle}
           onEnter={() => dispatch({ type: "submit" })}
-          onHint={() => {
-            setWordsOpen(true);
-            setMissStreak(0);
-          }}
-          hintNudge={missStreak >= 3}
         />
       </div>
 
