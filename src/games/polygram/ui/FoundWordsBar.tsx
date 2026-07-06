@@ -1,0 +1,98 @@
+import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { currentLevel, type GameState } from "../state/reducer";
+import { POLYGON_NAMES } from "./polygonPath";
+
+/**
+ * Spelling-Bee-style found-words strip: a single collapsed line of found
+ * words (most recent first) with a chevron that expands a dropdown
+ * showing every level's words — completed levels in full, the current
+ * level with blanks (plus any hint-revealed letters) for what's left.
+ */
+export function FoundWordsBar({ state }: { state: GameState }) {
+  const [open, setOpen] = useState(false);
+  const recentFirst = [...state.found].reverse();
+  const level = currentLevel(state);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
+      >
+        <span className="min-w-0 flex-1 truncate text-sm">
+          {recentFirst.length === 0 ? (
+            <span className="text-ink-soft">Your words…</span>
+          ) : (
+            recentFirst.map((word, i) => (
+              <span key={word} className={i === 0 ? "font-semibold" : ""}>
+                {i > 0 && " "}
+                {word[0].toUpperCase() + word.slice(1)}
+              </span>
+            ))
+          )}
+        </span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          className="shrink-0 text-ink-soft"
+          aria-hidden
+        >
+          ⌄
+        </motion.span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="absolute inset-x-0 top-full z-20 mt-2 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface-raised p-4 shadow-lg"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+          >
+            {state.puzzle.levels.slice(0, state.levelIndex + 1).map((lvl) => {
+              const found = lvl.words.filter((w) => state.found.includes(w));
+              const unsolved = lvl.words.filter(
+                (w) => !state.found.includes(w),
+              );
+              const isCurrent = lvl.size === level.size;
+              return (
+                <div key={lvl.size} className="mb-3 last:mb-0">
+                  <div className="mb-1 text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                    {POLYGON_NAMES[lvl.size]} — {found.length} of{" "}
+                    {lvl.words.length}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                    {found.map((word) => (
+                      <span key={word} className="text-sm font-semibold uppercase">
+                        {word}
+                      </span>
+                    ))}
+                    {isCurrent &&
+                      unsolved.map((word) => (
+                        <span
+                          key={word}
+                          className="flex gap-0.5"
+                          aria-label="unsolved word"
+                        >
+                          {[...word].map((letter, i) => (
+                            <span
+                              key={i}
+                              className="inline-block w-3.5 border-b-2 border-line text-center text-sm font-semibold uppercase"
+                            >
+                              {i < (state.revealed[word] ?? 0) ? letter : " "}
+                            </span>
+                          ))}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

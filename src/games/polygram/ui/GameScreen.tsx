@@ -4,9 +4,10 @@ import { Link } from "react-router-dom";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import { currentLevel } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
-import { WordTray } from "./WordTray";
+import { CurrentWord } from "./CurrentWord";
+import { FoundWordsBar } from "./FoundWordsBar";
+import { Controls } from "./Controls";
 import { RankBar } from "./RankBar";
-import { WordsPanel } from "./WordsPanel";
 import { DoneOverlay, LevelClearOverlay } from "./Overlays";
 import { POLYGON_NAMES } from "./polygonPath";
 
@@ -69,20 +70,21 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
 
       <RankBar score={state.score} puzzle={state.puzzle} />
 
-      <div className="py-3">
-        <WordsPanel
-          state={state}
-          onHint={() => dispatch({ type: "revealHint" })}
-        />
+      <div className="pt-3">
+        <FoundWordsBar state={state} />
       </div>
 
-      <WordTray state={state} onBackspace={() => dispatch({ type: "backspace" })} />
-
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-1">
+        <CurrentWord state={state} />
         <PolygonBoard
           state={state}
           onLetter={(letter) => dispatch({ type: "tapLetter", letter })}
           onSubmit={() => dispatch({ type: "submit" })}
+        />
+        <Controls
+          onDelete={() => dispatch({ type: "backspace" })}
+          onHint={() => dispatch({ type: "revealHint" })}
+          onEnter={() => dispatch({ type: "submit" })}
         />
       </div>
 
