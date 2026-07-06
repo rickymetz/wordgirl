@@ -23,8 +23,9 @@ function buildShareText(
     day: "numeric",
   });
   return [
-    `${window.location.host} — ${date}`,
-    `Score ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `Polygram — ${date}`,
+    `${rankFor(state.score, state.puzzle)} · ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    window.location.host,
   ].join("\n");
 }
 

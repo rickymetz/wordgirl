@@ -15,11 +15,16 @@ export function FoundWordsBar({
   open,
   onToggle,
   onHint,
+  hintTargetWord,
+  onSelectWord,
 }: {
   state: GameState;
   open: boolean;
   onToggle: () => void;
   onHint: () => void;
+  /** Unsolved word the next hint will reveal into (tap to choose). */
+  hintTargetWord: string | null;
+  onSelectWord: (word: string) => void;
 }) {
   const recentFirst = [...state.found].reverse();
 
@@ -97,44 +102,72 @@ export function FoundWordsBar({
                       </button>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                     {/* Alphabetical order with blanks in place: where a
                         blank falls between found words is itself a hint. */}
                     {lvl.words.map((word) => {
                       const hinted = state.revealed[word] ?? [];
                       const isFound = state.found.includes(word);
+                      const letters = [...word].map((letter, i) =>
+                        hinted.includes(i) ? (
+                          // Level color + dotted underline mark
+                          // hint-revealed letters (not color alone) —
+                          // before AND after the word is found.
+                          <span
+                            key={i}
+                            className="text-accent underline decoration-dotted underline-offset-2"
+                          >
+                            {letter}
+                          </span>
+                        ) : isFound ? (
+                          <span key={i}>{letter}</span>
+                        ) : (
+                          <span key={i} className="text-ink-soft">
+                            ?
+                          </span>
+                        ),
+                      );
+                      if (isFound) {
+                        return (
+                          <span
+                            key={word}
+                            className="text-sm font-semibold uppercase"
+                          >
+                            {letters}
+                          </span>
+                        );
+                      }
+                      // Unsolved words are tappable: aim the next hint.
                       return (
+                        <button
+                          key={word}
+                          type="button"
+                          onClick={() => isCurrent && onSelectWord(word)}
+                          aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
+                          className={`-mx-1 rounded px-1 text-sm font-semibold uppercase ${
+                            hintTargetWord === word
+                              ? "ring-2 ring-accent"
+                              : ""
+                          }`}
+                        >
+                          {letters}
+                        </button>
+                      );
+                    })}
+                    {/* Bonus finds: extra points, never required. */}
+                    {lvl.bonusWords
+                      .filter((w) => state.found.includes(w))
+                      .map((word) => (
                         <span
                           key={word}
                           className="text-sm font-semibold uppercase"
-                          aria-label={
-                            isFound
-                              ? undefined
-                              : `unsolved ${word.length}-letter word`
-                          }
                         >
-                          {[...word].map((letter, i) =>
-                            hinted.includes(i) ? (
-                              // Level color + dotted underline mark
-                              // hint-revealed letters (not color alone) —
-                              // before AND after the word is found.
-                              <span
-                                key={i}
-                                className="text-accent underline decoration-dotted underline-offset-2"
-                              >
-                                {letter}
-                              </span>
-                            ) : isFound ? (
-                              <span key={i}>{letter}</span>
-                            ) : (
-                              <span key={i} className="text-ink-soft">
-                                ?
-                              </span>
-                            ),
-                          )}
+                          <span className="text-accent" aria-label="bonus">
+                            ✦
+                          </span>
+                          {word}
                         </span>
-                      );
-                    })}
+                      ))}
                   </div>
                 </div>
               );

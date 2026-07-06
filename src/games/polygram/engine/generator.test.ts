@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { letterMask, parseDictionary } from "./dictionary";
 import {
+  BONUS_CAP,
   LEVEL_CAPS,
   MAX_TOTAL_WORDS,
   MIN_MAX_LEVEL,
   dailySeed,
   generatePuzzle,
+  minWords,
 } from "./generator";
 
 const dict = parseDictionary(
@@ -46,15 +48,18 @@ describe("generatePuzzle", () => {
       let total = 0;
       for (const [idx, level] of puzzle.levels.entries()) {
         expect(level.size).toBe(3 + idx);
-        expect(level.words.length).toBeGreaterThanOrEqual(1);
+        expect(level.words.length).toBeGreaterThanOrEqual(
+          minWords(level.size),
+        );
         expect(level.words.length).toBeLessThanOrEqual(
           LEVEL_CAPS[level.size],
         );
+        expect(level.bonusWords.length).toBeLessThanOrEqual(BONUS_CAP);
         total += level.words.length;
 
         // Every word: exact length, spellable from the first `size` letters.
         const setMask = letterMask(puzzle.letters.slice(0, level.size).join(""));
-        for (const word of level.words) {
+        for (const word of [...level.words, ...level.bonusWords]) {
           expect(word).toHaveLength(level.size);
           expect(letterMask(word) & ~setMask).toBe(0);
         }

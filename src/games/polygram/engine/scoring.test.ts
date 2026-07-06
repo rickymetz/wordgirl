@@ -17,12 +17,12 @@ describe("wordPoints", () => {
 });
 
 describe("maxScore", () => {
-  it("sums un-hinted word points plus level bonuses", () => {
+  it("sums required + bonus word points plus level bonuses", () => {
     const levels = [
-      { size: 3, words: ["aaa", "bbb"] }, // 3+3 + bonus 3 = 9
-      { size: 4, words: ["cccc"] }, // 4 + bonus 4 = 8
+      { size: 3, words: ["aaa", "bbb"], bonusWords: ["ccc"] }, // 3+3+3 + 3
+      { size: 4, words: ["cccc"], bonusWords: [] }, // 4 + 4
     ];
-    expect(maxScore(levels)).toBe(17);
+    expect(maxScore(levels)).toBe(20);
     expect(levelBonus(4)).toBe(4);
   });
 });

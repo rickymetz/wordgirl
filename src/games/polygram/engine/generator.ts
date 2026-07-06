@@ -22,8 +22,19 @@ export const LEVEL_CAPS: Record<number, number> = {
 
 /** A puzzle must reach at least the pentagon to feel like a journey. */
 export const MIN_MAX_LEVEL = 5;
-/** Total-word ceiling across all levels. */
+/** Total-word ceiling across all levels (required tier). */
 export const MAX_TOTAL_WORDS = 35;
+/** Bonus words offered per level (deterministic: alphabetical first). */
+export const BONUS_CAP = 10;
+
+/**
+ * Required-word floor per level. Single-word high levels ("find exactly
+ * 'ecosystem' from nine blanks") give no partial traction — demand at
+ * least two from the heptagon up.
+ */
+export function minWords(size: number): number {
+  return size >= 7 ? 2 : 1;
+}
 
 const MAX_ATTEMPTS = 300;
 
@@ -45,7 +56,7 @@ export function practiceSeed(random: string): string {
  */
 export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
   const rand = seededRandom(`polygram:v1:${seed}`);
-  const threeLetterWords = dict.buckets.get(3) ?? [];
+  const threeLetterWords = dict.required.buckets.get(3) ?? [];
   if (threeLetterWords.length === 0) {
     throw new Error("dictionary has no 3-letter words");
   }
@@ -62,7 +73,11 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     if (!letters.every((l) => triangleWords.some((w) => w.includes(l)))) {
       continue;
     }
-    levels.push({ size: 3, words: triangleWords });
+    levels.push({
+      size: 3,
+      words: triangleWords,
+      bonusWords: enumerateWords(dict, letters, 3, "bonus").slice(0, BONUS_CAP),
+    });
 
     // Grow one letter at a time; stop at the first size with no viable letter.
     for (let size = 4; size <= 10; size++) {
@@ -76,14 +91,21 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
         const extended = [...letters, candidate];
         const words = enumerateWords(dict, extended, size);
         if (
-          words.length >= 1 &&
+          words.length >= minWords(size) &&
           words.length <= cap &&
           // The debuting letter must be used by at least one word on
           // the level that introduces it.
           words.some((w) => w.includes(candidate))
         ) {
           letters.push(candidate);
-          levels.push({ size, words });
+          levels.push({
+            size,
+            words,
+            bonusWords: enumerateWords(dict, extended, size, "bonus").slice(
+              0,
+              BONUS_CAP,
+            ),
+          });
           found = true;
           break;
         }

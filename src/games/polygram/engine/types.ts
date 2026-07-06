@@ -19,9 +19,14 @@ export interface LevelSpec {
   /** Word length and polygon vertex count: 3, 4, 5… */
   size: number;
   /**
-   * Every valid word for this level: exactly `size` letters long, drawn
-   * from the first `size` puzzle letters, reuse allowed. All must be
-   * found to advance.
+   * Every REQUIRED word for this level: exactly `size` letters long,
+   * drawn from the first `size` puzzle letters, reuse allowed. All must
+   * be found to advance.
    */
   words: string[];
+  /**
+   * Rarer same-length words worth extra points — never required, never
+   * hinted, invisible until found.
+   */
+  bonusWords: string[];
 }

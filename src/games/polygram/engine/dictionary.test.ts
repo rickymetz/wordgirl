@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { enumerateWords, letterMask, parseDictionary } from "./dictionary";
 
 const FIXTURE = [
-  // 3-letter
+  // 3-letter required
   "bab", "bad", "cab", "dab", "dad", "tan", "zoo",
-  // 4-letter
+  // 4-letter required
   "abba", "dada", "toon",
+  // bonus tier ("+"-prefixed)
+  "+abb", "+baba",
 ].join("\n");
 
 describe("letterMask", () => {
@@ -18,11 +20,14 @@ describe("letterMask", () => {
 });
 
 describe("parseDictionary", () => {
-  it("buckets words by length", () => {
+  it("buckets words by length and tier", () => {
     const dict = parseDictionary(FIXTURE);
-    expect(dict.buckets.get(3)).toHaveLength(7);
-    expect(dict.buckets.get(4)).toHaveLength(3);
+    expect(dict.required.buckets.get(3)).toHaveLength(7);
+    expect(dict.required.buckets.get(4)).toHaveLength(3);
+    expect(dict.bonus.buckets.get(3)).toEqual(["abb"]);
+    expect(dict.bonus.buckets.get(4)).toEqual(["baba"]);
     expect(dict.has("cab")).toBe(true);
+    expect(dict.has("abb")).toBe(true);
     expect(dict.has("nope")).toBe(false);
   });
 
@@ -46,6 +51,9 @@ describe("enumerateWords — reuse-allowed semantics", () => {
       "dab",
       "dad",
     ]);
+    // Bonus tier enumerates separately.
+    expect(enumerateWords(dict, ["a", "b", "d"], 3, "bonus")).toEqual(["abb"]);
+    expect(enumerateWords(dict, ["a", "b", "d"], 4, "bonus")).toEqual(["baba"]);
   });
 
   it("level 4 with the same letters", () => {

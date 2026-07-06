@@ -14,11 +14,18 @@ export function levelBonus(size: number): number {
   return size;
 }
 
-/** Best possible score: every word un-hinted plus every level bonus. */
-export function maxScore(levels: { size: number; words: string[] }[]): number {
+/**
+ * Best possible score: every required AND bonus word un-hinted plus
+ * every level bonus. Clearing required words alone lands well short of
+ * 100%, so the top ranks measure how exhaustively each level was swept.
+ */
+export function maxScore(
+  levels: { size: number; words: string[]; bonusWords?: string[] }[],
+): number {
   let total = 0;
   for (const level of levels) {
     for (const word of level.words) total += wordPoints(word);
+    for (const word of level.bonusWords ?? []) total += wordPoints(word);
     total += levelBonus(level.size);
   }
   return total;

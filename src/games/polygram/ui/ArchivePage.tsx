@@ -14,7 +14,9 @@ import { getDictionary } from "../state/usePolygramGame";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
+  loadStats,
   type ArchivedDay,
+  type PolygramStats,
 } from "../state/persistence";
 
 // score -> rank needs the day's puzzle; cache so each date generates
@@ -36,9 +38,11 @@ export default function ArchivePage() {
     string,
     ArchivedDay
   > | null>(null);
+  const [stats, setStats] = useState<PolygramStats | null>(null);
 
   useEffect(() => {
     void loadAllDailyProgress().then(setProgress);
+    void loadStats().then(setStats);
   }, []);
 
   const yesterday = previousDateKey(localDateKey());
@@ -63,6 +67,18 @@ export default function ArchivePage() {
         <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
       </div>
 
+      {/* The stats were always tracked — now they're shown. */}
+      {stats && stats.played > 0 && (
+        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-raised px-5 py-4">
+          <Stat label="Streak" value={stats.currentStreak} />
+          <Stat label="Best streak" value={stats.bestStreak} />
+          <Stat label="Solved" value={stats.completed} />
+          <Stat label="Played" value={stats.played} />
+          <Stat label="Best rank" value={stats.bestRank ?? "—"} />
+          <Stat label="Points" value={stats.totalScore} />
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         {dates.length === 0 && (
           <p className="text-ink-soft">
@@ -78,6 +94,15 @@ export default function ArchivePage() {
             />
           ))}
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <div className="font-game text-lg text-accent">{value}</div>
+      <div className="text-xs text-ink-soft">{label}</div>
     </div>
   );
 }

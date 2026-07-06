@@ -7,6 +7,8 @@ export interface SubmitResult {
   type: "correct" | "duplicate" | "invalid" | "tooShort" | "empty";
   word: string;
   points?: number;
+  /** The word came from the bonus tier (extra points, never required). */
+  bonus?: boolean;
   /** Monotonic counter so the UI can re-trigger animations on repeats. */
   nonce: number;
 }
@@ -30,7 +32,7 @@ export type GameAction =
   | { type: "backspace" }
   | { type: "clear" }
   | { type: "submit" }
-  | { type: "revealHint"; letterIndex: number }
+  | { type: "revealHint"; letterIndex: number; word?: string }
   | { type: "advanceLevel" }
   | {
       type: "hydrate";
@@ -82,12 +84,14 @@ function applyFoundWord(
   state: GameState,
   word: string,
   points: number,
+  bonus = false,
 ): GameState {
   const nonce = (state.lastResult?.nonce ?? 0) + 1;
   const found = [...state.found, word];
   let score = state.score + points;
   let phase: Phase = state.phase;
 
+  // Only REQUIRED words gate the level; bonus finds are pure points.
   const level = currentLevel(state);
   if (level.words.every((w) => found.includes(w))) {
     score += levelBonus(level.size);
@@ -102,7 +106,7 @@ function applyFoundWord(
     found,
     score,
     phase,
-    lastResult: { type: "correct", word, points, nonce },
+    lastResult: { type: "correct", word, points, bonus, nonce },
   };
 }
 
@@ -147,21 +151,34 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           lastResult: { type: "duplicate", word, nonce },
         };
       }
-      if (!level.words.includes(word)) {
+      if (level.words.includes(word)) {
+        const points = wordPoints(word, (state.revealed[word] ?? []).length);
+        return { ...applyFoundWord(state, word, points), current: "" };
+      }
+      if (level.bonusWords.includes(word)) {
         return {
-          ...state,
+          ...applyFoundWord(state, word, wordPoints(word), true),
           current: "",
-          lastResult: { type: "invalid", word, nonce },
         };
       }
-
-      const points = wordPoints(word, (state.revealed[word] ?? []).length);
-      return { ...applyFoundWord(state, word, points), current: "" };
+      return {
+        ...state,
+        current: "",
+        lastResult: { type: "invalid", word, nonce },
+      };
     }
 
     case "revealHint": {
       if (state.phase !== "playing") return state;
-      const target = hintTarget(state);
+      // An explicit target must be an unsolved required word of the
+      // current level with hidden letters left; otherwise default.
+      const explicit =
+        action.word !== undefined &&
+        unsolvedWords(state).includes(action.word) &&
+        (state.revealed[action.word] ?? []).length < action.word.length
+          ? action.word
+          : undefined;
+      const target = explicit ?? hintTarget(state);
       if (!target) return state;
       const already = state.revealed[target] ?? [];
       if (

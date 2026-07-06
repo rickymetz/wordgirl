@@ -14,11 +14,11 @@ const puzzle: Puzzle = {
   dictVersion: 1,
   letters: ["a", "b", "d", "c"],
   levels: [
-    { size: 3, words: ["bad", "dab"] },
-    { size: 4, words: ["abba"] },
+    { size: 3, words: ["bad", "dab"], bonusWords: ["abb"] },
+    { size: 4, words: ["abba"], bonusWords: [] },
   ],
   maxLevel: 4,
-  maxScore: 3 + 3 + 3 + 4 + 4, // words + level bonuses
+  maxScore: 3 + 3 + 3 + 3 + 4 + 4, // words + bonus word + level bonuses
 };
 
 function play(state: GameState, ...actions: GameAction[]): GameState {
@@ -52,6 +52,34 @@ describe("gameReducer", () => {
     expect(s.current).toBe("");
   });
 
+  it("bonus words score without gating the level", () => {
+    let s = play(initialState(puzzle), ...type("abb"), { type: "submit" });
+    expect(s.lastResult).toMatchObject({ type: "correct", bonus: true });
+    expect(s.score).toBe(3);
+    expect(s.phase).toBe("playing"); // bonus can't clear the level
+    // Level still clears on required words alone.
+    s = play(s, ...type("bad"), { type: "submit" }, ...type("dab"), {
+      type: "submit",
+    });
+    expect(s.phase).toBe("levelClear");
+  });
+
+  it("hints can be aimed at a chosen unsolved word", () => {
+    let s = gameReducer(initialState(puzzle), {
+      type: "revealHint",
+      word: "dab",
+      letterIndex: 0,
+    });
+    expect(s.revealed).toEqual({ dab: [0] });
+    // Invalid target (bonus word) falls back to the default.
+    s = gameReducer(initialState(puzzle), {
+      type: "revealHint",
+      word: "abb",
+      letterIndex: 0,
+    });
+    expect(s.revealed).toEqual({ bad: [0] });
+  });
+
   it("rejects duplicates and invalid words", () => {
     let s = play(initialState(puzzle), ...type("bad"), { type: "submit" });
     s = play(s, ...type("bad"), { type: "submit" });
@@ -78,13 +106,14 @@ describe("gameReducer", () => {
   it("finishes the puzzle on the last level", () => {
     let s = play(
       initialState(puzzle),
+      ...type("abb"), { type: "submit" }, // the bonus word
       ...type("bad"), { type: "submit" },
       ...type("dab"), { type: "submit" },
       { type: "advanceLevel" },
       ...type("abba"), { type: "submit" },
     );
     expect(s.phase).toBe("done");
-    expect(s.score).toBe(puzzle.maxScore);
+    expect(s.score).toBe(puzzle.maxScore); // perfect sweep incl. bonus
   });
 
   it("hints reveal a chosen letter of the first unsolved word and halve its points", () => {

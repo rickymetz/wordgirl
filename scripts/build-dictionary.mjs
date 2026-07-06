@@ -27,9 +27,11 @@ const ENABLE_URL =
 const FREQ_URL =
   "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt";
 
-// Keep the most frequent N words that also appear in ENABLE. Since the
-// game requires finding EVERY word, this is the obscurity dial: lower is
-// friendlier. 30k ≈ vocabulary of a casual player.
+// Two tiers. REQUIRED words gate level advancement, so they must be
+// common — this is the frustration dial. BONUS words score extra points
+// but are never required (and never hinted), so they can be rarer.
+// Bonus lines are prefixed "+" in the output.
+const REQUIRED_TOP_N = 12_000;
 const FREQ_TOP_N = 30_000;
 const MIN_LEN = 3;
 const MAX_LEN = 10;
@@ -84,26 +86,37 @@ const enable = new Set(
 console.log(`ENABLE: ${enable.size} words`);
 
 // Frequency file is sorted by descending frequency: "word count" per line.
-const keep = new Set();
+const required = new Set();
+const bonus = new Set();
+let rank = 0;
 for (const line of freqRaw.split(/\r?\n/)) {
-  if (keep.size >= FREQ_TOP_N) break;
+  if (rank >= FREQ_TOP_N) break;
   const word = line.split(/[\s\t]/)[0]?.trim().toLowerCase();
   if (!word) continue;
+  rank++;
   if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
   if (!/^[a-z]+$/.test(word)) continue;
   if (!enable.has(word)) continue;
   if (BLOCKLIST.has(word)) continue;
-  keep.add(word);
+  (rank <= REQUIRED_TOP_N ? required : bonus).add(word);
 }
 
-const words = [...keep].sort(
-  (a, b) => a.length - b.length || a.localeCompare(b),
-);
+const sortWords = (set) =>
+  [...set].sort((a, b) => a.length - b.length || a.localeCompare(b));
+const requiredWords = sortWords(required);
+const bonusWords = sortWords(bonus);
 
 const byLen = {};
-for (const w of words) byLen[w.length] = (byLen[w.length] ?? 0) + 1;
-console.log(`kept ${words.length} words`, byLen);
+for (const w of requiredWords) byLen[w.length] = (byLen[w.length] ?? 0) + 1;
+console.log(`required ${requiredWords.length}`, byLen);
+console.log(`bonus ${bonusWords.length}`);
 
 await mkdir(path.dirname(OUT_FILE), { recursive: true });
-await writeFile(OUT_FILE, words.join("\n") + "\n");
+await writeFile(
+  OUT_FILE,
+  requiredWords.join("\n") +
+    "\n" +
+    bonusWords.map((w) => `+${w}`).join("\n") +
+    "\n",
+);
 console.log(`wrote ${OUT_FILE}`);

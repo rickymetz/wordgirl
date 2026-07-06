@@ -9,7 +9,7 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { currentLevel, hintTarget } from "../state/reducer";
+import { currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -93,9 +93,20 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   // day's score will carry a "used hint" indicator.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const hintUsed = Object.keys(state.revealed).length > 0;
-  // Reveal a RANDOM still-hidden letter of the hint target word.
+  // Tapping an unsolved word in the list aims the next hint at it.
+  const [hintTargetWord, setHintTargetWord] = useState<string | null>(null);
+  useEffect(() => {
+    setHintTargetWord(null);
+  }, [state.levelIndex]);
+  // Reveal a RANDOM still-hidden letter of the (chosen or default) word.
   const revealRandomLetter = () => {
-    const target = hintTarget(state);
+    const chosen =
+      hintTargetWord &&
+      unsolvedWords(state).includes(hintTargetWord) &&
+      (state.revealed[hintTargetWord] ?? []).length < hintTargetWord.length
+        ? hintTargetWord
+        : undefined;
+    const target = chosen ?? hintTarget(state);
     if (!target) return;
     const already = state.revealed[target] ?? [];
     const candidates = [...target]
@@ -104,6 +115,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     if (candidates.length === 0) return;
     dispatch({
       type: "revealHint",
+      word: target,
       letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
     });
   };
@@ -184,7 +196,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       (w) => !state.found.includes(w),
     ).length;
     const messages: Record<string, string> = {
-      correct: `${r.word.toUpperCase()} — correct, ${r.points} points. ${remaining} words left.`,
+      correct: `${r.word.toUpperCase()} — ${r.bonus ? "bonus word! " : "correct, "}${r.points} points. ${remaining} words left.`,
       duplicate: "Already found.",
       invalid: "Not in word list.",
       tooShort: `Too short — ${level.size} letter words.`,
@@ -292,6 +304,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           open={wordsOpen}
           onToggle={() => setWordsOpen((v) => !v)}
           onHint={requestHint}
+          hintTargetWord={hintTargetWord}
+          onSelectWord={(w) =>
+            setHintTargetWord((cur) => (cur === w ? null : w))
+          }
         />
       </div>
 
