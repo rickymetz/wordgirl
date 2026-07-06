@@ -42,7 +42,7 @@ export function RankBar({ state }: { state: GameState }) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-20 shrink-0 text-sm font-semibold">
+      <span className="w-20 shrink-0 text-sm font-normal text-ink-soft">
         {rankFor(state.score, puzzle)}
       </span>
       <div className="relative flex h-4 flex-1 items-center">
