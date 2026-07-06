@@ -15,14 +15,8 @@ export function GameCard({ game }: { game: GameDefinition }) {
         className="flex items-center overflow-hidden rounded-3xl border border-line bg-surface-raised px-6 py-6 transition-transform active:scale-[0.98]"
       >
         <div className="w-3/4 min-w-0 pr-2">
-          {game.primaryLabel && (
-            <div className="text-xs font-semibold tracking-widest text-accent uppercase">
-              {game.primaryLabel}
-            </div>
-          )}
-          <h2 className="mt-1 text-2xl font-bold tracking-tight">
-            {game.name}
-          </h2>
+          <h2 className="text-2xl font-bold tracking-tight">{game.name}</h2>
+          <p className="mt-0.5 text-sm text-ink-soft">{game.tagline}</p>
           {game.Status && <game.Status />}
         </div>
         {/* Oversized art that bleeds past the card's right edge — the

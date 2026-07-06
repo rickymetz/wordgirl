@@ -19,7 +19,6 @@ export const polygram: GameDefinition = {
       Page: lazy(() => import("./ui/ArchivePlayPage")),
     },
   ],
-  primaryLabel: "Daily puzzle",
   // Every daily starts at the triangle — the hub wears its red.
   accentLevel: 3,
   secondaryActions: [

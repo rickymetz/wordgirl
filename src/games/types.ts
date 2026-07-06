@@ -18,8 +18,6 @@ export interface GameDefinition {
     path: string;
     Page: LazyExoticComponent<ComponentType>;
   }[];
-  /** Eyebrow label on the hub's large bento tile, e.g. "Daily puzzle". */
-  primaryLabel?: string;
   /** Level whose color themes this game's hub cluster (data-level). */
   accentLevel?: number;
   /** Secondary entry points rendered as small bento tiles on the hub. */
