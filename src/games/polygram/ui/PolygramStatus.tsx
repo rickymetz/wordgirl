@@ -15,14 +15,15 @@ export function PolygramStatus() {
         loadStats(),
       ]);
       if (cancelled) return;
+      // Only real state earns a line — a fresh day shows just the date.
       const today = daily?.completed
-        ? "Today's puzzle solved ✓"
-        : daily
-          ? "Today's puzzle in progress"
-          : "New puzzle today";
+        ? "Solved ✓"
+        : daily && daily.foundWords.length > 0
+          ? "In progress"
+          : null;
       const streak =
-        stats.currentStreak > 1 ? ` · ${stats.currentStreak}-day streak` : "";
-      setLine(today + streak);
+        stats.currentStreak > 1 ? `${stats.currentStreak}-day streak` : null;
+      setLine([today, streak].filter(Boolean).join(" · ") || null);
     })();
     return () => {
       cancelled = true;

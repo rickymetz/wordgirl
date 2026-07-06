@@ -22,20 +22,8 @@ export const polygram: GameDefinition = {
   ],
   primaryLabel: "Daily puzzle",
   secondaryActions: [
-    {
-      label: "Practice",
-      path: "practice",
-      description: "Unlimited random puzzles",
-    },
-    {
-      label: "Archive",
-      path: "archive",
-      description: "Play past dailies",
-    },
-    {
-      label: "Scoreboard",
-      path: "scoreboard",
-      description: "Times & scores",
-    },
+    { label: "Practice", path: "practice" },
+    { label: "Archive", path: "archive" },
+    { label: "Scoreboard", path: "scoreboard" },
   ],
 };

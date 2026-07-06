@@ -48,7 +48,6 @@ export default function ArchivePage() {
 
       <div className="pb-5">
         <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
-        <p className="text-sm text-ink-soft">Play past daily puzzles.</p>
       </div>
 
       <div className="flex flex-col gap-3">

@@ -48,9 +48,6 @@ export default function ScoreboardPage() {
 
       <div className="pb-5">
         <h1 className="text-2xl font-bold tracking-tight">Scoreboard</h1>
-        <p className="text-sm text-ink-soft">
-          How fast each daily was solved.
-        </p>
       </div>
 
       <div className="flex flex-col gap-3">
