@@ -133,7 +133,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         )}
       </header>
 
-      <div className="flex items-center gap-2.5 pb-3">
+      {/* Baseline-aligned: the shape's flat bottom sits on the text
+          baseline like a glyph, and the subtitle shares it. */}
+      <div className="flex items-baseline gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Polygram</h1>
         {/* Level indicator: the current polygon in the level color —
             morphs with the board on level-up. */}
