@@ -5,8 +5,8 @@ import { allWords, type GameState } from "../state/reducer";
  * The words panel: every word of the day, shortest first then
  * alphabetical, blanks in place — where a blank sits between found
  * words is itself a gentle hint. Unfound words are tappable to aim the
- * next hint; hint-revealed letters show in the accent with a dotted
- * underline, before AND after the word is found.
+ * next hint; hint-revealed letters show in the accent color, before
+ * AND after the word is found.
  */
 export function FoundCombosBar({
   state,
@@ -90,7 +90,7 @@ export function FoundCombosBar({
                   hinted.includes(i) ? (
                     <span
                       key={i}
-                      className="text-accent underline decoration-dotted underline-offset-2"
+                      className="text-accent"
                     >
                       {letter}
                     </span>

@@ -110,12 +110,11 @@ export function FoundWordsBar({
                       const isFound = state.found.includes(word);
                       const letters = [...word].map((letter, i) =>
                         hinted.includes(i) ? (
-                          // Level color + dotted underline mark
-                          // hint-revealed letters (not color alone) —
-                          // before AND after the word is found.
+                          // The level color marks hint-revealed
+                          // letters, before AND after the word is found.
                           <span
                             key={i}
-                            className="text-accent underline decoration-dotted underline-offset-2"
+                            className="text-accent"
                           >
                             {letter}
                           </span>
