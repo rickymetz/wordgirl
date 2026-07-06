@@ -136,10 +136,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       nothingNew: "All these words are banked — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
+      // Three honest flavors of rejection: gibberish, a real word
+      // that's too rare for the day's common-words list, and a common
+      // word whose crossings can't be completed.
       noFit: r.word
-        ? dict.has(r.word)
-          ? `${r.word.toUpperCase()} doesn't fit today's grid`
-          : `${r.word.toUpperCase()} isn't in the word list`
+        ? !dict.has(r.word)
+          ? `${r.word.toUpperCase()} isn't in the word list`
+          : !dict.required.buckets.get(r.word.length)?.includes(r.word)
+            ? `${r.word.toUpperCase()} is too rare for today's list`
+            : `${r.word.toUpperCase()} doesn't work with the crossing lines`
         : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
@@ -266,7 +271,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           </AnimatePresence>
         </div>
 
-        <SlotChips state={state} dict={dict} onFocusSlot={focusSlot} />
+        <SlotChips state={state} onFocusSlot={focusSlot} />
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -327,10 +332,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               </li>
               <li>
                 The chips under the grid judge each line: ❌ won't work,
-                ⚠️ already banked, and a face means a{" "}
-                <span className="font-semibold text-ink">new word</span> —
-                the cooler the face, the rarer the find. Reach 90% of the
-                words to solve the day.
+                ⚠️ already banked, ✅ a{" "}
+                <span className="font-semibold text-ink">new word</span>{" "}
+                ready to submit. Reach 90% of the words to solve the day.
               </li>
             </ul>
             <button

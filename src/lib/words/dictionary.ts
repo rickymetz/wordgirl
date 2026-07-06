@@ -11,8 +11,8 @@
  * generator-behavior changes, not just dictionary contents).
  * v5: crosshatch progress counts distinct WORDS, not combos — the
  * generator band and save shape changed with it.
- * v6: buckets keep subtitle-frequency order (difficultyOf reads it);
- * polygram sorts its display lists itself now.
+ * v6: buckets keep subtitle-frequency order (commonest first within
+ * each length); polygram sorts its display lists itself now.
  */
 export const DICT_VERSION = 6;
 
@@ -98,15 +98,4 @@ export function enumerateWords(
     if ((maskList[i] & ~setMask) === 0) out.push(bucket[i]);
   }
   return out;
-}
-
-/**
- * Difficulty quantile of a required word: its position within its
- * frequency-ordered length bucket. 0 = everyday, 1 = obscure.
- */
-export function difficultyOf(dict: Dictionary, word: string): number {
-  const bucket = dict.required.buckets.get(word.length);
-  const i = bucket?.indexOf(word) ?? -1;
-  if (!bucket || i < 0 || bucket.length < 2) return 0.5;
-  return i / (bucket.length - 1);
 }

@@ -1,5 +1,3 @@
-import type { Dictionary } from "../../../lib/words/dictionary";
-import { difficultyOf } from "../../../lib/words/dictionary";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import {
@@ -10,29 +8,15 @@ import {
 } from "../state/reducer";
 
 /**
- * A completed line's word earns a face scaled by how rare the word is
- * — everyday finds shrug, obscure ones put on sunglasses.
- */
-function faceFor(difficulty: number): string {
-  if (difficulty < 0.25) return "🙂";
-  if (difficulty < 0.5) return "😯";
-  if (difficulty < 0.75) return "🤓";
-  return "😎";
-}
-
-/**
  * One chip per line showing its current content plus an emoji verdict:
- * ❌ the word doesn't work there, ⚠️ it's already banked, and an
- * unplayed valid word gets a difficulty face. Tapping a chip aims the
- * cursor at its line.
+ * ❌ the word doesn't work there, ⚠️ it's already banked, ✅ it's a
+ * new word ready to submit. Tapping a chip aims the cursor at its line.
  */
 export function SlotChips({
   state,
-  dict,
   onFocusSlot,
 }: {
   state: GameState;
-  dict: Dictionary;
   onFocusSlot: (slot: Slot) => void;
 }) {
   const { puzzle } = state;
@@ -59,10 +43,7 @@ export function SlotChips({
             ? { emoji: "❌", label: "doesn't work here" }
             : found.has(word)
               ? { emoji: "⚠️", label: "already banked" }
-              : {
-                  emoji: faceFor(difficultyOf(dict, word)),
-                  label: "new word",
-                };
+              : { emoji: "✅", label: "new word" };
         const arrow = slot.dir === "across" ? "→" : "↓";
         return (
           <button
