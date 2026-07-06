@@ -59,24 +59,28 @@ export function FoundWordsBar({
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="mb-3 flex justify-end">
-              <button
-                type="button"
-                onClick={onHint}
-                className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-surface active:scale-95"
-              >
-                Hint
-              </button>
-            </div>
             {state.puzzle.levels.slice(0, state.levelIndex + 1).map((lvl) => {
               const foundCount = lvl.words.filter((w) =>
                 state.found.includes(w),
               ).length;
+              const isCurrent = lvl.size === state.puzzle.levels[state.levelIndex].size;
               return (
                 <div key={lvl.size} className="mb-3 last:mb-0">
-                  <div className="mb-1 text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                    {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
-                    {lvl.words.length}
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                      {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
+                      {lvl.words.length}
+                    </span>
+                    {/* Hint sits WITH the words it reveals. */}
+                    {isCurrent && foundCount < lvl.words.length && (
+                      <button
+                        type="button"
+                        onClick={onHint}
+                        className="rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-surface active:scale-95"
+                      >
+                        Hint
+                      </button>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {/* Alphabetical order with blanks in place: where a

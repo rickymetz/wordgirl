@@ -21,8 +21,8 @@ export function PolygramPreview() {
   });
 
   return (
-    // Scales to its container (the hub bento gives it 25% of the width).
-    <svg width="100%" viewBox="0 0 120 120" style={{ maxWidth: 120 }} aria-hidden>
+    // Scales to its container — the hub bento sizes (and clips) it.
+    <svg width="100%" viewBox="0 0 120 120" aria-hidden>
       {petals.map(({ x, y, rot }, i) => (
         <g key={i} transform={`translate(${x} ${y})`}>
           <polygon points={tri(petalR, rot)} fill="var(--color-accent)" opacity="0.27" />

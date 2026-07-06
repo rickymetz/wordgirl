@@ -24,8 +24,12 @@ export function GameCard({ game }: { game: GameDefinition }) {
           <p className="mt-0.5 text-sm text-ink-soft">{game.tagline}</p>
           {game.Status && <game.Status />}
         </div>
-        <div className="flex w-1/4 justify-center">
-          <game.Preview />
+        {/* Oversized art that bleeds past the card's right edge — the
+            card's overflow-hidden clips it. */}
+        <div className="w-1/4 shrink-0">
+          <div className="w-32">
+            <game.Preview />
+          </div>
         </div>
       </Link>
       {game.secondaryActions && (
