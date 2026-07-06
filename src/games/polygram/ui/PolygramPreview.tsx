@@ -38,8 +38,15 @@ export function PolygramPreview() {
       ))}
       <g transform="translate(60 62)">
         <polygon points={tri(centerR, 0)} fill="var(--color-accent)" />
-        <circle cx="-2.6" cy="1.5" r="1.4" fill="var(--color-surface)" />
-        <circle cx="2.6" cy="1.5" r="1.4" fill="var(--color-surface)" />
+        <text
+          textAnchor="middle"
+          dy="6"
+          fontSize="9"
+          fontWeight="bold"
+          fill="var(--color-surface)"
+        >
+          3
+        </text>
       </g>
     </svg>
   );

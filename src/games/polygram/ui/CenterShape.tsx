@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import type { SubmitResult } from "../state/reducer";
 import { regularPolygonClipPath } from "./polygonPath";
@@ -12,44 +11,18 @@ interface Props {
   onTap: () => void;
 }
 
-type Mood = "idle" | "blink" | "happy" | "sad";
-
 /**
- * The submit button — and the game's personality. It shows how many
- * words are left on the level, blinks now and then, beams when a word
- * lands, and headshakes at nonsense.
+ * The submit button. Shows how many words are left on the level;
+ * personality lives in the motion — a happy pulse on a correct word,
+ * a headshake at nonsense.
  */
 export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props) {
-  const [mood, setMood] = useState<Mood>("idle");
-
-  useEffect(() => {
-    if (!lastResult) return;
-    setMood(lastResult.type === "correct" ? "happy" : "sad");
-    const timer = setTimeout(() => setMood("idle"), 900);
-    return () => clearTimeout(timer);
-  }, [lastResult]);
-
-  // Occasional blink while idle.
-  useEffect(() => {
-    if (mood !== "idle") return;
-    const timer = setTimeout(
-      () => {
-        setMood("blink");
-        setTimeout(() => setMood("idle"), 140);
-      },
-      2500 + Math.random() * 3500,
-    );
-    return () => clearTimeout(timer);
-  }, [mood]);
-
   const shake =
     lastResult && lastResult.type !== "correct"
       ? { x: [0, -7, 7, -4, 4, 0] }
       : lastResult?.type === "correct"
         ? { scale: [1, 1.06, 1] }
         : {};
-
-  const eye = Math.max(5, size * 0.055);
 
   return (
     <motion.button
@@ -70,49 +43,17 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
       transition={{ duration: 0.45 }}
       aria-label={`submit word — ${remaining} words left`}
     >
-      {/* The triangle's base sits at 75% of its box — keep the stack's
-          bottom above it while dropping it below the narrow apex. */}
+      {/* The triangle's centroid sits below its box center visually —
+          drop the count slightly so it reads centered in the shape. */}
       <span
-        className="relative flex flex-col items-center"
-        style={{ top: sides === 3 ? "6%" : 0 }}
+        className="relative font-game leading-none font-extrabold text-surface"
+        style={{
+          top: sides === 3 ? "8%" : 0,
+          fontSize: Math.max(18, size * (sides === 3 ? 0.24 : 0.28)),
+        }}
       >
-        <span className="flex" style={{ gap: eye * 2 }} aria-hidden>
-          <Eye mood={mood} size={eye} />
-          <Eye mood={mood} size={eye} />
-        </span>
-        <span
-          className="font-game leading-none font-extrabold text-surface"
-          style={{
-            fontSize: Math.max(16, size * (sides === 3 ? 0.22 : 0.24)),
-            marginTop: eye,
-          }}
-        >
-          {remaining}
-        </span>
+        {remaining}
       </span>
     </motion.button>
-  );
-}
-
-function Eye({ mood, size }: { mood: Mood; size: number }) {
-  if (mood === "happy") {
-    // Closed-happy arc: ^ ^
-    return (
-      <span
-        className="rounded-full border-surface border-r-transparent border-b-transparent border-l-transparent"
-        style={{ width: size, height: size, borderWidth: size * 0.25 }}
-      />
-    );
-  }
-  if (mood === "sad" || mood === "blink") {
-    return (
-      <span
-        className="rounded-full bg-surface"
-        style={{ width: size, height: size * 0.22, marginTop: size * 0.39 }}
-      />
-    );
-  }
-  return (
-    <span className="rounded-full bg-surface" style={{ width: size, height: size }} />
   );
 }
