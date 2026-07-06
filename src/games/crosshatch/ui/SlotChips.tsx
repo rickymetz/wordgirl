@@ -38,7 +38,7 @@ export function SlotChips({
         }
         const { word, complete } = slotWord(state, slot);
         const display = slotCells(slot)
-          .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "·")
+          .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "?")
           .join("");
         // Reusing found words is NORMAL (most winning grids do), so
         // that state is a calm grey check — not a warning.
@@ -64,7 +64,9 @@ export function SlotChips({
             }`}
           >
             <Arrow aria-hidden className="h-3 w-3 text-ink-soft" strokeWidth={3} />
-            <span className="tracking-wide">{display}</span>
+            {/* Game mono: a ? is exactly one letter wide, so chips
+                never reflow as cells fill in. */}
+            <span className="font-game text-xs">{display}</span>
             {verdict && (
               <verdict.Icon
                 aria-hidden

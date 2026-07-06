@@ -36,6 +36,6 @@ describe("rankFor", () => {
     expect(rankFor(50, puzzle)).toBe("Great");
     expect(rankFor(70, puzzle)).toBe("Amazing");
     expect(rankFor(90, puzzle)).toBe("Genius");
-    expect(rankFor(100, puzzle)).toBe("Polygon");
+    expect(rankFor(100, puzzle)).toBe("Geometer");
   });
 });

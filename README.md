@@ -21,7 +21,7 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
   — where a blank sits between found words is itself a gentle hint. (A
   letter-reveal hint system exists in the engine but is hidden for now.)
 - Points per word + rank titles: Beginner → Good → Great → Amazing →
-  Genius → **Polygon**.
+  Genius → **Geometer**.
 - One **daily puzzle** (same for everyone, deterministic from the date)
   plus unlimited **practice** puzzles.
 
