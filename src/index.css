@@ -68,6 +68,11 @@
   [data-level="10"] { --color-accent: #818cf8; }
 }
 
+html {
+  /* Enables light-dark() color pairs (rank-bar gradient). */
+  color-scheme: light dark;
+}
+
 html,
 body {
   height: 100%;
