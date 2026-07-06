@@ -82,6 +82,16 @@ export function regularPolygonClipPath(n: number, rotationDeg = 0): string {
 }
 
 /**
+ * Fraction of the bounding box left EMPTY below the polygon's lowest
+ * point (an inscribed triangle leaves 25%). Lets inline shape glyphs
+ * sit their visible bottom on the text baseline instead of the box's.
+ */
+export function polygonBottomGap(n: number): number {
+  const ys = vertices(n, 0).map(([, y]) => y);
+  return (100 - Math.max(...ys)) / 100;
+}
+
+/**
  * Direction (degrees) toward the midpoint of central edge i — where
  * petal i sits. Matches the flat-bottom orientation of vertices().
  */

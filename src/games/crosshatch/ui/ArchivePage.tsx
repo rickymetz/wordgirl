@@ -9,33 +9,39 @@ import {
   previousDateKey,
 } from "../../../lib/date";
 import type { Dictionary } from "../../../lib/words/dictionary";
-import { rankFor } from "../engine/scoring";
-import { generatePuzzle, dailySeed } from "../engine/generator";
 import { loadDictionary } from "../../../lib/words/loader";
+import { rankFor, uniqueWords } from "../engine/scoring";
+import { generateCrosshatch, dailySeed } from "../engine/generator";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
   loadStats,
   type ArchivedDay,
-  type PolygramStats,
+  type CrosshatchStats,
 } from "../state/persistence";
 
-// score -> rank needs the day's puzzle; cache so each date generates
-// at most once per session instead of on every list render.
+// rank needs the day's word total; cache so each date generates at
+// most once per session instead of on every list render.
 const rankCache = new Map<string, string>();
 function rankForDay(
   dict: Dictionary,
   dateKey: string,
-  score: number,
-): string {
-  const key = `${dateKey}:${score}`;
-  let rank = rankCache.get(key);
-  if (!rank) {
-    rank = rankFor(score, generatePuzzle(dict, dailySeed(dateKey)));
-    rankCache.set(key, rank);
+  found: number,
+): { rank: string; total: number } {
+  const key = `${dateKey}:${found}`;
+  let cached = rankCache.get(key);
+  let total = totalCache.get(dateKey);
+  if (cached === undefined || total === undefined) {
+    total = uniqueWords(
+      generateCrosshatch(dict, dailySeed(dateKey)).combos,
+    ).length;
+    totalCache.set(dateKey, total);
+    cached = rankFor(found, total);
+    rankCache.set(key, cached);
   }
-  return rank;
+  return { rank: cached, total };
 }
+const totalCache = new Map<string, number>();
 
 /** Past daily puzzles: calendar mosaic + played days, newest first. */
 export default function ArchivePage() {
@@ -43,7 +49,7 @@ export default function ArchivePage() {
     string,
     ArchivedDay
   > | null>(null);
-  const [stats, setStats] = useState<PolygramStats | null>(null);
+  const [stats, setStats] = useState<CrosshatchStats | null>(null);
 
   useEffect(() => {
     void loadAllDailyProgress().then(setProgress);
@@ -56,18 +62,21 @@ export default function ArchivePage() {
       ? dateKeyRange(ARCHIVE_EPOCH, yesterday).reverse()
       : [];
   // The calendar covers every day; the list below repeats only days
-  // with actual results (it's the scoreboard: rank, points, time).
+  // with actual results (it's the scoreboard: rank, words, time).
   const playedDates = dates.filter((d) => {
     const saved = progress?.[d];
-    return saved && (saved.completed || saved.foundWords.length > 0);
+    return saved && (saved.solved || saved.foundWords.length > 0);
   });
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12">
+    <div
+      data-level={10}
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12"
+    >
       <header className="flex items-center justify-between pt-6 pb-2">
         <HomeLink />
         <Link
-          to="/games/polygram"
+          to="/games/crosshatch"
           className="text-sm font-semibold text-accent"
         >
           Today's puzzle
@@ -78,15 +87,14 @@ export default function ArchivePage() {
         <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
       </div>
 
-      {/* The stats were always tracked — now they're shown. */}
       {stats && stats.played > 0 && (
         <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
           <Stat label="Streak" value={stats.currentStreak} />
           <Stat label="Best streak" value={stats.bestStreak} />
-          <Stat label="Solved" value={stats.completed} />
+          <Stat label="Solved" value={stats.solved} />
           <Stat label="Played" value={stats.played} />
           <Stat label="Best rank" value={stats.bestRank ?? "—"} />
-          <Stat label="Points" value={stats.totalScore} />
+          <Stat label="Words" value={stats.totalWords} />
         </div>
       )}
 
@@ -214,7 +222,7 @@ function DayCell({
     );
   }
 
-  const solved = saved?.completed ?? false;
+  const solved = saved?.solved ?? false;
   const started = !solved && (saved?.foundWords.length ?? 0) > 0;
   const status = solved ? "solved" : started ? "in progress" : "not played";
   const isToday = dateKey === today;
@@ -225,7 +233,7 @@ function DayCell({
       : "bg-tile font-medium text-ink";
   return (
     <Link
-      to={isToday ? "/games/polygram" : `/games/polygram/archive/${dateKey}`}
+      to={isToday ? "/games/crosshatch" : `/games/crosshatch/archive/${dateKey}`}
       aria-label={`${formatDateKey(dateKey)} — ${status}`}
       className={`${base} ${tone} transition-transform active:scale-90 ${
         isToday ? "ring-2 ring-accent" : ""
@@ -254,27 +262,33 @@ function ArchiveRow({
 }) {
   let status = "Not played";
   let statusClass = "text-ink-soft";
-  const completed = saved?.completed ?? false;
-  if (saved?.completed) {
-    // A stale save was played against an older dictionary: its score is
-    // real history but doesn't map onto the current puzzle's ranks.
-    // `use` is conditional on purpose: the dictionary only loads (and
-    // suspends) when a rank is actually displayed.
-    const rank = saved.stale
-      ? "Completed"
-      : rankForDay(use(loadDictionary()), dateKey, saved.score);
-    status = `${rank} · ${saved.score} pts${
-      Object.keys(saved.revealed).length > 0 ? " · used hint" : ""
-    }${saved.stale ? " · older words" : ""}`;
+  const solved = saved?.solved ?? false;
+  if (saved?.solved) {
+    // A stale save was played against an older dictionary: its result is
+    // real history but doesn't map onto the current puzzle's combos.
+    if (saved.stale) {
+      status = `Solved · ${saved.foundWords.length} words · older words`;
+    } else {
+      // `use` is conditional on purpose: the dictionary only loads (and
+      // suspends) when a rank is actually displayed.
+      const { rank, total } = rankForDay(
+        use(loadDictionary()),
+        dateKey,
+        saved.foundWords.length,
+      );
+      status = `${rank} · ${saved.foundWords.length}/${total}${
+        Object.keys(saved.revealed ?? {}).length > 0 ? " · used hint" : ""
+      }`;
+    }
     statusClass = "text-accent";
   } else if (saved && saved.foundWords.length > 0) {
-    status = `In progress · ${saved.score} pts`;
+    status = `In progress · ${saved.foundWords.length} words`;
     statusClass = "text-ink";
   }
 
   return (
     <Link
-      to={`/games/polygram/archive/${dateKey}`}
+      to={`/games/crosshatch/archive/${dateKey}`}
       className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.98]"
     >
       <div className="min-w-0">
@@ -283,7 +297,7 @@ function ArchiveRow({
           {status}
         </div>
       </div>
-      {completed ? (
+      {solved ? (
         <span className="shrink-0 font-game text-base text-accent">
           {formatDuration(saved?.elapsedMs ?? 0)}
         </span>

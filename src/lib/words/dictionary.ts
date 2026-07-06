@@ -5,8 +5,16 @@
  *
  * v2: two tiers — common REQUIRED words gate advancement; rarer BONUS
  * words ("+"-prefixed lines) score extra but are never required.
+ * v3: allowlist puzzle staples (ode &c.) into the required tier
+ * whatever their frequency rank; drop mild words from the blocklist.
+ * v4: crosshatch generator never fully locks a line (also guards
+ * generator-behavior changes, not just dictionary contents).
+ * v5: crosshatch progress counts distinct WORDS, not combos — the
+ * generator band and save shape changed with it.
+ * v6: buckets keep subtitle-frequency order (commonest first within
+ * each length); polygram sorts its display lists itself now.
  */
-export const DICT_VERSION = 2;
+export const DICT_VERSION = 6;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

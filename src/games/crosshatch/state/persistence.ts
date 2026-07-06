@@ -6,53 +6,54 @@ import { RANKS, type RankTitle } from "../engine/scoring";
 export interface DailyProgress {
   dateKey: string;
   dictVersion: number;
+  /** Distinct words banked so far, in the order they were found. */
   foundWords: string[];
-  /** word -> hint-revealed letter positions (older saves stored counts). */
-  revealed: Record<string, number[] | number>;
-  score: number;
-  completed: boolean;
-  /** Wall-clock play time accumulated across sessions, frozen at completion. */
+  /** Player-typed letters still on the grid, cell key -> letter. */
+  grid: Record<string, string>;
+  /** Hint reveals: word -> revealed letter positions. */
+  revealed: Record<string, number[]>;
+  /** Reached the solve threshold (SOLVE_PCT of all combos). */
+  solved: boolean;
+  /** Wall-clock play time across sessions, frozen at the solve moment. */
   elapsedMs: number;
   /**
-   * Set when this date's completion already counted toward stats — a
-   * replay must not increment totals again.
+   * Set when this date's solve already counted toward stats — a replay
+   * must not increment totals again.
    */
   statsRecorded?: boolean;
 }
 
-export interface PolygramStats {
+export interface CrosshatchStats {
   played: number;
-  completed: number;
+  solved: number;
   currentStreak: number;
   bestStreak: number;
-  lastCompletedDate: string | null;
+  lastSolvedDate: string | null;
   bestRank: RankTitle | null;
-  totalScore: number;
+  totalWords: number;
 }
 
-const EMPTY_STATS: PolygramStats = {
+const EMPTY_STATS: CrosshatchStats = {
   played: 0,
-  completed: 0,
+  solved: 0,
   currentStreak: 0,
   bestStreak: 0,
-  lastCompletedDate: null,
+  lastSolvedDate: null,
   bestRank: null,
-  totalScore: 0,
+  totalWords: 0,
 };
 
-const store = createGameStore("polygram");
+const store = createGameStore("crosshatch");
 
 /** The first daily puzzle — the archive reaches back to here. */
-export const ARCHIVE_EPOCH = "2026-07-01";
+export const ARCHIVE_EPOCH = "2026-07-06";
 
 /** A partially-corrupted save must not crash hydration — normalize it. */
 function validShape(saved: DailyProgress | null): DailyProgress | null {
   if (!saved || typeof saved !== "object") return null;
   if (!Array.isArray(saved.foundWords)) return null;
-  if (typeof saved.score !== "number" || !Number.isFinite(saved.score)) {
-    return null;
-  }
-  if (saved.revealed === null || typeof saved.revealed !== "object") {
+  if (saved.grid === null || typeof saved.grid !== "object") return null;
+  if (typeof saved.elapsedMs !== "number" || !Number.isFinite(saved.elapsedMs)) {
     return null;
   }
   return saved;
@@ -93,7 +94,10 @@ export async function loadAllDailyProgress(): Promise<
   for (const key of await store.keys("daily:")) {
     const saved = validShape(await store.get<DailyProgress>(key));
     if (saved) {
-      out[saved.dateKey] = { ...saved, stale: saved.dictVersion !== DICT_VERSION };
+      out[saved.dateKey] = {
+        ...saved,
+        stale: saved.dictVersion !== DICT_VERSION,
+      };
     }
   }
   return out;
@@ -103,15 +107,15 @@ export async function saveDailyProgress(progress: DailyProgress) {
   await store.set(`daily:${progress.dateKey}`, progress);
 }
 
-/** Wipe a completed day for a fresh replay run; stats stay counted. */
+/** Wipe a solved day for a fresh replay run; stats stay counted. */
 export async function resetDailyForReplay(dateKey: string) {
   await saveDailyProgress({
     dateKey,
     dictVersion: DICT_VERSION,
     foundWords: [],
+    grid: {},
     revealed: {},
-    score: 0,
-    completed: false,
+    solved: false,
     elapsedMs: 0,
     statsRecorded: true,
   });
@@ -125,8 +129,11 @@ export async function markCoachSeen(): Promise<void> {
   await store.set("coachSeen", true);
 }
 
-export async function loadStats(): Promise<PolygramStats> {
-  return (await store.get<PolygramStats>("stats")) ?? EMPTY_STATS;
+export async function loadStats(): Promise<CrosshatchStats> {
+  // Merge over defaults so stats survive schema additions (an older
+  // blob without totalWords keeps its streaks and counters).
+  const saved = await store.get<Partial<CrosshatchStats>>("stats");
+  return { ...EMPTY_STATS, ...(saved ?? {}) };
 }
 
 /** Call once when a new daily puzzle is first opened. */
@@ -135,40 +142,54 @@ export async function recordDailyStarted(): Promise<void> {
   await store.set("stats", { ...stats, played: stats.played + 1 });
 }
 
-/**
- * Call once when a daily puzzle is completed. Only TODAY's puzzle moves
- * the streak — finishing an archived day counts toward totals but must
- * not rewrite streak history, and lastCompletedDate never moves
- * BACKWARD (westward timezone travel would otherwise reset a streak).
- */
-export async function recordDailyCompleted(
-  dateKey: string,
-  score: number,
-  rank: RankTitle,
-): Promise<PolygramStats> {
-  const stats = await loadStats();
-  if (stats.lastCompletedDate === dateKey) return stats; // already recorded
+const rankIndex = (r: RankTitle | null) =>
+  r === null ? -1 : RANKS.findIndex((x) => x.title === r);
 
-  const rankIndex = (r: RankTitle | null) =>
-    r === null ? -1 : RANKS.findIndex((x) => x.title === r);
+/**
+ * Call once when a daily puzzle reaches the solve threshold. Only
+ * TODAY's puzzle moves the streak — solving an archived day counts
+ * toward totals but must not rewrite streak history, and lastSolvedDate
+ * never moves BACKWARD (westward timezone travel would otherwise reset
+ * a streak).
+ */
+export async function recordDailySolved(
+  dateKey: string,
+  wordsFound: number,
+  rank: RankTitle,
+): Promise<CrosshatchStats> {
+  const stats = await loadStats();
+  if (stats.lastSolvedDate === dateKey) return stats; // already recorded
+
   const isToday = dateKey === localDateKey();
   const advances =
     isToday &&
-    (stats.lastCompletedDate === null || dateKey > stats.lastCompletedDate);
-  const continues = stats.lastCompletedDate === previousDateKey(dateKey);
+    (stats.lastSolvedDate === null || dateKey > stats.lastSolvedDate);
+  const continues = stats.lastSolvedDate === previousDateKey(dateKey);
   const currentStreak = continues ? stats.currentStreak + 1 : 1;
 
-  const next: PolygramStats = {
+  const next: CrosshatchStats = {
     ...stats,
-    completed: stats.completed + 1,
-    bestRank: rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
-    totalScore: stats.totalScore + score,
+    solved: stats.solved + 1,
+    bestRank:
+      rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
+    totalWords: stats.totalWords + wordsFound,
     ...(advances && {
       currentStreak,
       bestStreak: Math.max(stats.bestStreak, currentStreak),
-      lastCompletedDate: dateKey,
+      lastSolvedDate: dateKey,
     }),
   };
   await store.set("stats", next);
   return next;
+}
+
+/**
+ * The rank can still improve AFTER the solve is recorded (pushing from
+ * Genius to a perfect Crosshatch) — upgrade bestRank without touching
+ * the counters.
+ */
+export async function recordRankImproved(rank: RankTitle): Promise<void> {
+  const stats = await loadStats();
+  if (rankIndex(rank) <= rankIndex(stats.bestRank)) return;
+  await store.set("stats", { ...stats, bestRank: rank });
 }

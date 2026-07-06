@@ -21,8 +21,8 @@ export default defineConfig({
         description: "A little collection of games, made with love.",
         start_url: "/",
         display: "standalone",
-        background_color: "#f1efe9",
-        theme_color: "#f1efe9",
+        background_color: "#ffffff",
+        theme_color: "#ffffff",
         icons: [
           { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
           { src: "/icons/pwa-512.png", sizes: "512x512", type: "image/png" },

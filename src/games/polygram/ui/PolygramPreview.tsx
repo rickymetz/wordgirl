@@ -1,6 +1,6 @@
 /**
  * Static hub-card preview: the triangle-level flower exactly as it looks
- * in-game — grey petals with ink letters spelling F-U-N around a
+ * in-game — page-colored petals with ink letters spelling F-U-N around a
  * saturated center showing a count.
  */
 export function PolygramPreview() {
@@ -32,7 +32,7 @@ export function PolygramPreview() {
     <svg width="100%" viewBox="0 0 120 120" aria-hidden>
       {petals.map(({ letter, x, y, rot }) => (
         <g key={letter} transform={`translate(${x} ${y})`}>
-          <polygon points={tri(R, rot)} fill="var(--color-tile)" />
+          <polygon points={tri(R, rot)} fill="var(--color-surface)" />
           <text
             textAnchor="middle"
             dy="4.5"
@@ -48,7 +48,7 @@ export function PolygramPreview() {
         <polygon points={tri(centerR, 0)} fill="var(--color-accent)" />
         <text
           textAnchor="middle"
-          dy="6.5"
+          dy="3.5"
           fontSize="10"
           fontWeight="800"
           fill="var(--color-surface)"

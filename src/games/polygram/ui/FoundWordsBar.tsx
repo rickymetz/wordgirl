@@ -110,12 +110,11 @@ export function FoundWordsBar({
                       const isFound = state.found.includes(word);
                       const letters = [...word].map((letter, i) =>
                         hinted.includes(i) ? (
-                          // Level color + dotted underline mark
-                          // hint-revealed letters (not color alone) —
-                          // before AND after the word is found.
+                          // The level color marks hint-revealed
+                          // letters, before AND after the word is found.
                           <span
                             key={i}
-                            className="text-accent underline decoration-dotted underline-offset-2"
+                            className="text-accent"
                           >
                             {letter}
                           </span>
@@ -131,7 +130,7 @@ export function FoundWordsBar({
                         return (
                           <span
                             key={word}
-                            className="text-sm font-semibold uppercase"
+                            className="font-game text-xs uppercase"
                           >
                             {letters}
                           </span>
@@ -144,7 +143,7 @@ export function FoundWordsBar({
                           type="button"
                           onClick={() => isCurrent && onSelectWord(word)}
                           aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
-                          className={`-mx-1 rounded px-1 text-sm font-semibold uppercase ${
+                          className={`-mx-1 rounded px-1 font-game text-xs uppercase ${
                             hintTargetWord === word
                               ? "ring-2 ring-accent"
                               : ""
@@ -160,7 +159,7 @@ export function FoundWordsBar({
                       .map((word) => (
                         <span
                           key={word}
-                          className="text-sm font-semibold uppercase"
+                          className="font-game text-xs uppercase"
                         >
                           <span className="text-accent" aria-label="bonus">
                             ✦

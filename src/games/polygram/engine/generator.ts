@@ -1,6 +1,6 @@
 import { seededRandom, shuffle } from "../../../lib/random";
-import type { Dictionary } from "./dictionary";
-import { DICT_VERSION, enumerateWords } from "./dictionary";
+import type { Dictionary } from "../../../lib/words/dictionary";
+import { DICT_VERSION, enumerateWords } from "../../../lib/words/dictionary";
 import { maxScore } from "./scoring";
 import type { LevelSpec, Puzzle } from "./types";
 
@@ -24,7 +24,7 @@ export const LEVEL_CAPS: Record<number, number> = {
 export const MIN_MAX_LEVEL = 5;
 /** Total-word ceiling across all levels (required tier). */
 export const MAX_TOTAL_WORDS = 35;
-/** Bonus words offered per level (deterministic: alphabetical first). */
+/** Bonus words offered per level (deterministic: commonest first). */
 export const BONUS_CAP = 10;
 
 /**
@@ -65,7 +65,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     const letters = pickSeedLetters(threeLetterWords, rand);
     const levels: LevelSpec[] = [];
 
-    const triangleWords = enumerateWords(dict, letters, 3);
+    const triangleWords = enumerateWords(dict, letters, 3).sort();
     if (triangleWords.length < 1 || triangleWords.length > LEVEL_CAPS[3]) {
       continue;
     }
@@ -76,7 +76,11 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     levels.push({
       size: 3,
       words: triangleWords,
-      bonusWords: enumerateWords(dict, letters, 3, "bonus").slice(0, BONUS_CAP),
+      // Buckets are frequency-ordered, so the cap keeps the COMMONEST
+      // bonus words; sorted after for the word-list display.
+      bonusWords: enumerateWords(dict, letters, 3, "bonus")
+        .slice(0, BONUS_CAP)
+        .sort(),
     });
 
     // Grow one letter at a time; stop at the first size with no viable letter.
@@ -89,7 +93,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
       let found = false;
       for (const candidate of candidates) {
         const extended = [...letters, candidate];
-        const words = enumerateWords(dict, extended, size);
+        const words = enumerateWords(dict, extended, size).sort();
         if (
           words.length >= minWords(size) &&
           words.length <= cap &&
@@ -101,10 +105,9 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
           levels.push({
             size,
             words,
-            bonusWords: enumerateWords(dict, extended, size, "bonus").slice(
-              0,
-              BONUS_CAP,
-            ),
+            bonusWords: enumerateWords(dict, extended, size, "bonus")
+              .slice(0, BONUS_CAP)
+              .sort(),
           });
           found = true;
           break;

@@ -25,6 +25,25 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
 - One **daily puzzle** (same for everyone, deterministic from the date)
   plus unlimited **practice** puzzles.
 
+### Crosshatch
+
+A small crossword frame with many right answers:
+
+- **3–5 intersecting lines**, each locked to a few given letters. Type
+  freely into the rest.
+- Fill every line with a valid word (crossings agree, no repeats) and
+  submit — every **new word** in a valid grid is banked. Change lines
+  and keep hunting.
+- The daily generator enumerates **every** valid filling and accepts
+  days with 10–22 distinct words — ranks are the percentage of words
+  found: Beginner → … → Genius → **Crosshatch**.
+- Reaching **90% solves the day** (streaks stay humane); 100% is the
+  perfect sweep.
+- No hints — instead, always-on **deduction counts**: each line's chip
+  shows how many undiscovered words that line can still yield. Zero
+  means move on.
+- Daily + practice + a replayable archive, same as Polygram.
+
 ## Development
 
 ```bash
