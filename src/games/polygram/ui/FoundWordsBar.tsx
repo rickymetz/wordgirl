@@ -69,6 +69,12 @@ export function FoundWordsBar({
                 state.found.includes(w),
               ).length;
               const isCurrent = lvl.size === state.puzzle.levels[state.levelIndex].size;
+              // Everything left is fully revealed — the only move is to
+              // type those words in. Say so, or the level looks stuck.
+              const onlyTypingLeft =
+                isCurrent &&
+                foundCount < lvl.words.length &&
+                hintTarget(state) === undefined;
               return (
                 <div key={lvl.size} className="mb-3 last:mb-0">
                   <div className="mb-1 flex items-center justify-between">
@@ -128,6 +134,11 @@ export function FoundWordsBar({
                       );
                     })}
                   </div>
+                  {onlyTypingLeft && (
+                    <p className="mt-1.5 text-xs text-ink-soft">
+                      Underlined words still need to be typed in.
+                    </p>
+                  )}
                 </div>
               );
             })}
