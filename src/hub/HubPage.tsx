@@ -1,4 +1,4 @@
-import "@fontsource/rubik-mono-one/index.css";
+import "@fontsource/rubik-mono-one/latin-400.css";
 import { games } from "../games/registry";
 import { GameCard } from "./GameCard";
 

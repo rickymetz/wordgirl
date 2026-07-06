@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
-import dictRaw from "../assets/dictionary.txt?raw";
-import { DICT_VERSION, parseDictionary } from "../engine/dictionary";
+import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { DICT_VERSION } from "../engine/dictionary";
 import { dailySeed, generatePuzzle } from "../engine/generator";
 import { levelBonus, rankFor } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
@@ -11,13 +10,8 @@ import {
   recordDailyStarted,
   saveDailyProgress,
 } from "./persistence";
+import { loadDictionary } from "./dictionaryLoader";
 import { gameReducer, initialState, type GameState } from "./reducer";
-
-let dictSingleton: ReturnType<typeof parseDictionary> | null = null;
-export function getDictionary() {
-  dictSingleton ??= parseDictionary(dictRaw);
-  return dictSingleton;
-}
 
 export type GameMode =
   | { kind: "daily"; dateKey: string }
@@ -78,7 +72,9 @@ export function usePolygramGame(mode: GameMode) {
   const persisted = mode.kind !== "practice";
   const seed = persisted ? dailySeed(dateKey) : mode.seed;
 
-  const puzzle = useMemo(() => generatePuzzle(getDictionary(), seed), [seed]);
+  // Suspends until the dictionary asset loads (router Suspense boundary).
+  const dict = use(loadDictionary());
+  const puzzle = useMemo(() => generatePuzzle(dict, seed), [dict, seed]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   // hydratedRef flips only AFTER hydration completes — saving before

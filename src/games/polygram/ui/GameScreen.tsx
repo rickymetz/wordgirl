@@ -1,4 +1,4 @@
-import "@fontsource/rubik-mono-one/index.css";
+import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey, localDateKey } from "../../../lib/date";

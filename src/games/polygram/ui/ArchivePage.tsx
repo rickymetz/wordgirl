@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "../../../components/HomeLink";
 import {
@@ -8,9 +8,10 @@ import {
   localDateKey,
   previousDateKey,
 } from "../../../lib/date";
+import type { Dictionary } from "../engine/dictionary";
 import { rankFor } from "../engine/scoring";
 import { generatePuzzle, dailySeed } from "../engine/generator";
-import { getDictionary } from "../state/usePolygramGame";
+import { loadDictionary } from "../state/dictionaryLoader";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
@@ -22,11 +23,15 @@ import {
 // score -> rank needs the day's puzzle; cache so each date generates
 // at most once per session instead of on every list render.
 const rankCache = new Map<string, string>();
-function rankForDay(dateKey: string, score: number): string {
+function rankForDay(
+  dict: Dictionary,
+  dateKey: string,
+  score: number,
+): string {
   const key = `${dateKey}:${score}`;
   let rank = rankCache.get(key);
   if (!rank) {
-    rank = rankFor(score, generatePuzzle(getDictionary(), dailySeed(dateKey)));
+    rank = rankFor(score, generatePuzzle(dict, dailySeed(dateKey)));
     rankCache.set(key, rank);
   }
   return rank;
@@ -120,7 +125,11 @@ function ArchiveRow({
   if (saved?.completed) {
     // A stale save was played against an older dictionary: its score is
     // real history but doesn't map onto the current puzzle's ranks.
-    const rank = saved.stale ? "Completed" : rankForDay(dateKey, saved.score);
+    // `use` is conditional on purpose: the dictionary only loads (and
+    // suspends) when a rank is actually displayed.
+    const rank = saved.stale
+      ? "Completed"
+      : rankForDay(use(loadDictionary()), dateKey, saved.score);
     status = `${rank} · ${saved.score} pts${
       Object.keys(saved.revealed).length > 0 ? " · used hint" : ""
     }${saved.stale ? " · older words" : ""}`;
