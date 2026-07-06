@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { GameState } from "../state/reducer";
 
-/** Collapsible log of found combos, newest first. */
+/** Collapsible log of banked words, newest first. */
 export function FoundCombosBar({
   state,
   open,
@@ -12,31 +12,29 @@ export function FoundCombosBar({
   onToggle: () => void;
 }) {
   const recentFirst = [...state.found].reverse();
-  const latest = recentFirst[0];
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={onToggle}
-        aria-label="found combos"
+        aria-label="found words"
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm">
-          {latest === undefined ? (
-            <span className="text-ink-soft">Your combos…</span>
+          {recentFirst.length === 0 ? (
+            <span className="text-ink-soft">Your words…</span>
           ) : (
-            <>
-              <span className="font-semibold tracking-wide uppercase">
-                {latest.join(" · ")}
+            recentFirst.map((word, i) => (
+              <span
+                key={word}
+                className={i === 0 ? "font-semibold uppercase" : "uppercase"}
+              >
+                {i > 0 && " "}
+                {word}
               </span>
-              {recentFirst.length > 1 && (
-                <span className="text-ink-soft">
-                  {"  "}+{recentFirst.length - 1} more
-                </span>
-              )}
-            </>
+            ))
           )}
         </span>
         <motion.span
@@ -59,24 +57,19 @@ export function FoundCombosBar({
           >
             {recentFirst.length === 0 ? (
               <p className="text-sm text-ink-soft">
-                Submit a valid grid to log your first combo.
+                Every new word in a valid grid lands here.
               </p>
             ) : (
-              <ol className="flex flex-col gap-2">
-                {recentFirst.map((combo, i) => (
-                  <li
-                    key={combo.join("|")}
-                    className="flex items-baseline gap-3 text-sm"
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {recentFirst.map((word) => (
+                  <span
+                    key={word}
+                    className="text-sm font-semibold tracking-wide uppercase"
                   >
-                    <span className="w-6 shrink-0 text-right font-game text-xs text-ink-soft">
-                      {state.found.length - i}
-                    </span>
-                    <span className="font-semibold tracking-wide uppercase">
-                      {combo.join(" · ")}
-                    </span>
-                  </li>
+                    {word}
+                  </span>
                 ))}
-              </ol>
+              </div>
             )}
           </motion.div>
         )}

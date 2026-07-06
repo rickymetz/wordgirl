@@ -32,15 +32,16 @@ A small crossword frame with many right answers:
 - **3–5 intersecting lines**, each locked to a few given letters. Type
   freely into the rest.
 - Fill every line with a valid word (crossings agree, no repeats) and
-  submit — that's one **combo**. Change any line and find the next.
-- The daily generator enumerates **every** valid combo (kept to a
-  playable 15–45) — ranks are the percentage found: Beginner → … →
-  Genius → **Crosshatch**.
+  submit — every **new word** in a valid grid is banked. Change lines
+  and keep hunting.
+- The daily generator enumerates **every** valid filling and accepts
+  days with 10–22 distinct words — ranks are the percentage of words
+  found: Beginner → … → Genius → **Crosshatch**.
 - Reaching **90% solves the day** (streaks stay humane); 100% is the
   perfect sweep.
 - No hints — instead, always-on **deduction counts**: each line's chip
-  shows how many unfound combos still use its current word. Zero means
-  move on.
+  shows how many undiscovered words that line can still yield. Zero
+  means move on.
 - Daily + practice + a replayable archive, same as Polygram.
 
 ## Development

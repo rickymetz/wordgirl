@@ -12,6 +12,7 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { slotWord } from "../state/reducer";
+import { uniqueWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
@@ -31,7 +32,7 @@ interface Props {
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } = useCrosshatchGame(mode);
   const dict = use(loadDictionary());
-  const total = puzzle.combos.length;
+  const total = uniqueWords(puzzle.combos).length;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -124,19 +125,22 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   useEffect(() => {
     const r = state.lastResult;
     if (!r) return;
+    const banked = (r.newWords ?? []).map((w) => w.toUpperCase());
     const messages: Record<string, string> = {
       correct:
         state.found.length === total
           ? "Perfect sweep!"
-          : `Combo ${state.found.length} of ${total}!`,
-      duplicate: "Already found",
+          : banked.length === 1
+            ? `${banked[0]} — ${state.found.length} of ${total}`
+            : `${banked.length} new words — ${state.found.length} of ${total}`,
+      nothingNew: "All these words are banked — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       noFit: r.word
         ? dict.has(r.word)
-          ? `No combo uses ${r.word.toUpperCase()} there`
+          ? `${r.word.toUpperCase()} doesn't fit today's grid`
           : `${r.word.toUpperCase()} isn't in the word list`
-        : "Not a combo",
+        : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
     // Misses linger longer — this is the game's main teaching moment.
@@ -317,15 +321,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               </li>
               <li>
                 Tap a cell to aim, tap it again to switch direction, and
-                press <span className="font-semibold text-ink">Enter</span> to
-                submit. Then change any line and find the{" "}
-                <span className="font-semibold text-ink">next</span> combo.
+                press <span className="font-semibold text-ink">Enter</span>{" "}
+                — every <span className="font-semibold text-ink">new word</span>{" "}
+                in a valid grid is banked. Then change lines and keep going.
               </li>
               <li>
-                The chips under the grid count the unfound combos still
-                using each word —{" "}
+                The chips under the grid count each line's undiscovered
+                words —{" "}
                 <span className="font-semibold text-ink">0 means move on</span>
-                . Reach 90% to solve the day.
+                . Reach 90% of the words to solve the day.
               </li>
             </ul>
             <button

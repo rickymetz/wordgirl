@@ -9,8 +9,10 @@
  * whatever their frequency rank; drop mild words from the blocklist.
  * v4: crosshatch generator never fully locks a line (also guards
  * generator-behavior changes, not just dictionary contents).
+ * v5: crosshatch progress counts distinct WORDS, not combos — the
+ * generator band and save shape changed with it.
  */
-export const DICT_VERSION = 4;
+export const DICT_VERSION = 5;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

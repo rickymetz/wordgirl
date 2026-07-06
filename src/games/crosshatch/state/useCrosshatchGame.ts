@@ -2,7 +2,7 @@ import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch } from "../engine/generator";
-import { isSolved, rankFor } from "../engine/scoring";
+import { isSolved, rankFor, uniqueWords } from "../engine/scoring";
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
@@ -63,7 +63,7 @@ export function useCrosshatchGame(mode: GameMode) {
     void saveDailyProgress({
       dateKey,
       dictVersion: DICT_VERSION,
-      foundCombos: s.found,
+      foundWords: s.found,
       grid: s.grid,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
@@ -120,7 +120,7 @@ export function useCrosshatchGame(mode: GameMode) {
           sessionActiveMsRef.current = 0;
           dispatch({
             type: "hydrate",
-            found: saved.foundCombos,
+            found: saved.foundWords,
             grid: saved.grid ?? {},
             solved: saved.solved,
           });
@@ -185,7 +185,7 @@ export function useCrosshatchGame(mode: GameMode) {
   const recordedRef = useRef(false);
   useEffect(() => {
     if (!persisted) return;
-    const total = puzzle.combos.length;
+    const total = uniqueWords(puzzle.combos).length;
     if (
       state.solved &&
       !recordedRef.current &&

@@ -18,7 +18,7 @@ export function CrosshatchStatus() {
       // Only real state earns a line — a fresh day shows just the date.
       const today = daily?.solved
         ? "Solved ✓"
-        : daily && daily.foundCombos.length > 0
+        : daily && daily.foundWords.length > 0
           ? "In progress"
           : null;
       const streak =

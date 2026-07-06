@@ -1,11 +1,6 @@
-import type {
-  Combo,
-  CrosshatchPuzzle,
-  Slot,
-  SlotDir,
-} from "../engine/types";
+import type { CrosshatchPuzzle, Slot, SlotDir } from "../engine/types";
 import { cellKey, comboKey, slotCells } from "../engine/types";
-import { isSolved } from "../engine/scoring";
+import { isSolved, uniqueWords } from "../engine/scoring";
 
 export interface Cursor {
   row: number;
@@ -14,9 +9,11 @@ export interface Cursor {
 }
 
 export interface SubmitResult {
-  type: "correct" | "duplicate" | "incomplete" | "noFit" | "repeat";
+  type: "correct" | "nothingNew" | "incomplete" | "noFit" | "repeat";
   /** The offending word for noFit/repeat. */
   word?: string;
+  /** Words banked by a correct submission, in slot order. */
+  newWords?: string[];
   /** Monotonic counter so the UI can re-trigger animations on repeats. */
   nonce: number;
 }
@@ -26,7 +23,8 @@ export interface GameState {
   /** Player-typed letters, cell key -> letter. Given cells never appear. */
   grid: Record<string, string>;
   cursor: Cursor | null;
-  found: Combo[];
+  /** Distinct words banked so far, in the order they were found. */
+  found: string[];
   /** Sticky: reached the solve threshold at some point (survives replays
       of the grid, never un-solves). */
   solved: boolean;
@@ -39,7 +37,7 @@ export type GameAction =
   | { type: "backspace" }
   | { type: "clearEntry" }
   | { type: "submit" }
-  | { type: "hydrate"; found: Combo[]; grid: Record<string, string>; solved: boolean };
+  | { type: "hydrate"; found: string[]; grid: Record<string, string>; solved: boolean };
 
 export function initialState(puzzle: CrosshatchPuzzle): GameState {
   return {
@@ -91,9 +89,7 @@ export function cursorSlot(state: GameState): Slot | null {
   return slots.find((s) => s.dir === state.cursor!.dir) ?? slots[0] ?? null;
 }
 
-export function foundKeySet(found: Combo[]): Set<string> {
-  return new Set(found.map(comboKey));
-}
+
 
 /** The word currently on a slot; empty cells become "". */
 export function slotWord(
@@ -214,22 +210,26 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       for (let i = 0; i < words.length; i++) {
         if (words.indexOf(words[i]) !== i) return fail("repeat", words[i]);
       }
-      // A filling is correct iff it's one of the enumerated combos —
+      // A filling is valid iff it's one of the enumerated combos —
       // that single check covers dictionary membership AND intersections
       // (shared cells hold one letter, so crossings always agree).
       const key = comboKey(words);
-      const combo = state.puzzle.combos.find((c) => comboKey(c) === key);
-      if (!combo) {
+      if (!state.puzzle.combos.some((c) => comboKey(c) === key)) {
         return fail("noFit", firstNonComboWord(state, words));
       }
-      if (foundKeySet(state.found).has(key)) return fail("duplicate");
+      // A valid grid banks every word not yet credited. Words are the
+      // unit of progress — re-arranging already-found words earns
+      // nothing, so there's no cross-product sweeping.
+      const newWords = words.filter((w) => !state.found.includes(w));
+      if (newWords.length === 0) return fail("nothingNew");
 
-      const found = [...state.found, combo];
+      const found = [...state.found, ...newWords];
+      const total = uniqueWords(state.puzzle.combos).length;
       return {
         ...state,
         found,
-        solved: state.solved || isSolved(found.length, state.puzzle.combos.length),
-        lastResult: { type: "correct", nonce },
+        solved: state.solved || isSolved(found.length, total),
+        lastResult: { type: "correct", newWords, nonce },
       };
     }
 
@@ -240,7 +240,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         grid: action.grid,
         solved:
           action.solved ||
-          isSolved(action.found.length, state.puzzle.combos.length),
+          isSolved(
+            action.found.length,
+            uniqueWords(state.puzzle.combos).length,
+          ),
         lastResult: null,
       };
     }

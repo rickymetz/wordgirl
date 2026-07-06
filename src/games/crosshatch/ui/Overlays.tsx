@@ -115,7 +115,7 @@ export function SolvedOverlay({
           {rankFor(found, total)}
         </div>
         <div className="mt-1 text-ink-soft">
-          {found} of {total} combos
+          {found} of {total} words
         </div>
         {elapsedMs !== null && (
           <div className="mt-1 font-game text-lg text-accent">

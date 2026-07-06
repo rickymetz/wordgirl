@@ -1,5 +1,4 @@
-import type { CrosshatchPuzzle } from "./types";
-import { comboKey } from "./types";
+import type { Combo, CrosshatchPuzzle } from "./types";
 
 export const RANKS = [
   { pct: 0, title: "Beginner" },
@@ -14,10 +13,19 @@ export type RankTitle = (typeof RANKS)[number]["title"];
 
 /**
  * A day counts as SOLVED at this percentage — the top-rank threshold.
- * 100% ("Crosshatch") is the flex above it, so one elusive combo never
+ * 100% ("Crosshatch") is the flex above it, so one elusive word never
  * breaks a streak.
  */
 export const SOLVE_PCT = 90;
+
+/**
+ * The unit of progress is the distinct WORD, not the full-grid combo:
+ * submitting a valid grid banks every new word in it, so the player
+ * never re-submits near-identical grids just to sweep a cross-product.
+ */
+export function uniqueWords(combos: readonly Combo[]): string[] {
+  return [...new Set(combos.flat())].sort();
+}
 
 export function rankFor(found: number, total: number): RankTitle {
   const pct = total === 0 ? 0 : (found / total) * 100;
@@ -28,7 +36,7 @@ export function rankFor(found: number, total: number): RankTitle {
   return title;
 }
 
-/** Combos needed to mark the day solved. */
+/** Words needed to mark the day solved. */
 export function solveTarget(total: number): number {
   return Math.ceil((total * SOLVE_PCT) / 100);
 }
@@ -38,18 +46,18 @@ export function isSolved(found: number, total: number): boolean {
 }
 
 /**
- * The always-visible deduction aid: how many UNFOUND combos use `word`
- * in slot `slotIndex`. Zero means that word is exhausted there.
+ * The always-visible deduction aid: how many words this line can still
+ * yield. Zero means the line is exhausted — leave any valid word there
+ * and hunt elsewhere.
  */
-export function remainingWithWord(
+export function remainingInSlot(
   puzzle: CrosshatchPuzzle,
-  foundKeys: ReadonlySet<string>,
+  found: ReadonlySet<string>,
   slotIndex: number,
-  word: string,
 ): number {
-  let n = 0;
+  const words = new Set<string>();
   for (const combo of puzzle.combos) {
-    if (combo[slotIndex] === word && !foundKeys.has(comboKey(combo))) n++;
+    if (!found.has(combo[slotIndex])) words.add(combo[slotIndex]);
   }
-  return n;
+  return words.size;
 }

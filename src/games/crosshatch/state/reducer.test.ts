@@ -103,21 +103,24 @@ describe("submit", () => {
       ...type("dab"), // down: (0,1)=d, (1,1) already 'a' -> overwritten 'a', (2,1)=b
     );
 
-  it("logs a correct combo and keeps the grid for iteration", () => {
+  it("banks every new word in a valid grid and keeps it for iteration", () => {
     let s = fillBadDab(initialState(puzzle));
     s = gameReducer(s, { type: "submit" });
-    expect(s.lastResult?.type).toBe("correct");
-    expect(s.found).toEqual([["bad", "dab"]]);
+    expect(s.lastResult).toMatchObject({
+      type: "correct",
+      newWords: ["bad", "dab"],
+    });
+    expect(s.found).toEqual(["bad", "dab"]);
     expect(letterAt(s, 1, 1)).toBe("a"); // grid untouched
   });
 
-  it("rejects incomplete grids and duplicates", () => {
+  it("rejects incomplete grids and all-banked resubmits", () => {
     let s = play(initialState(puzzle), ...type("ad"), { type: "submit" });
     expect(s.lastResult?.type).toBe("incomplete");
     s = fillBadDab(initialState(puzzle));
     s = play(s, { type: "submit" }, { type: "submit" });
-    expect(s.lastResult?.type).toBe("duplicate");
-    expect(s.found).toHaveLength(1);
+    expect(s.lastResult?.type).toBe("nothingNew");
+    expect(s.found).toHaveLength(2);
   });
 
   it("flags fillings outside the combo set with the offending word", () => {
@@ -132,8 +135,8 @@ describe("submit", () => {
     expect(s.lastResult?.word).toBe("bax");
   });
 
-  it("marks solved at the 90% threshold and keeps it sticky", () => {
-    // 2 combos -> solveTarget = ceil(1.8) = 2: finding both solves.
+  it("marks solved at the 90% word threshold and keeps it sticky", () => {
+    // 4 unique words -> solveTarget = ceil(3.6) = 4: finding all solves.
     let s = fillBadDab(initialState(puzzle));
     s = gameReducer(s, { type: "submit" });
     expect(s.solved).toBe(false);
@@ -145,19 +148,22 @@ describe("submit", () => {
       ...type("dud"),
       { type: "submit" },
     );
-    expect(s.lastResult?.type).toBe("correct");
-    expect(s.found).toHaveLength(2);
+    expect(s.lastResult).toMatchObject({
+      type: "correct",
+      newWords: ["bud", "dud"],
+    });
+    expect(s.found).toHaveLength(4);
     expect(s.solved).toBe(true);
   });
 
-  it("hydrates found combos, grid, and solved flag", () => {
+  it("hydrates found words, grid, and solved flag", () => {
     const s = gameReducer(initialState(puzzle), {
       type: "hydrate",
-      found: [["bad", "dab"]],
+      found: ["bad", "dab"],
       grid: { "1,1": "a" },
       solved: false,
     });
-    expect(s.found).toHaveLength(1);
+    expect(s.found).toHaveLength(2);
     expect(letterAt(s, 1, 1)).toBe("a");
     expect(s.solved).toBe(false);
   });

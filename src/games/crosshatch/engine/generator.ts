@@ -6,12 +6,13 @@ import type { Combo, CrosshatchPuzzle, Shape, Slot } from "./types";
 import { cellKey, slotCells } from "./types";
 
 /**
- * Accepted range for a day's total combo count. The floor keeps the
- * hunt worth ranking; the ceiling keeps "solve = 90% found" humane.
+ * Accepted range for a day's DISTINCT WORD count — the player's unit
+ * of progress. The floor keeps the hunt worth ranking; the ceiling
+ * keeps "solve = 90% found" humane.
  */
-export const MIN_COMBOS = 15;
-export const MAX_COMBOS = 45;
-/** Enumeration bails past this — anything bigger is over the ceiling. */
+export const MIN_WORDS = 10;
+export const MAX_WORDS = 22;
+/** Enumeration bails past this many combos — the grid is too loose. */
 const ENUM_CAP = 200;
 /** All but at most this many slots must admit ≥2 different words. */
 const MAX_FIXED_SLOTS = 1;
@@ -91,10 +92,11 @@ export function generateCrosshatch(
       rand,
     );
 
-    // Tighten with extra givens until the combo count fits.
+    // Tighten with extra givens until the distinct-word count fits.
     for (let extra = 0; extra <= MAX_EXTRA_GIVENS; extra++) {
       const combos = enumerateCombos(shape, dict, givens, ENUM_CAP);
-      if (combos.length > MAX_COMBOS) {
+      const wordCount = new Set(combos.flat()).size;
+      if (combos.length >= ENUM_CAP || wordCount > MAX_WORDS) {
         // Never lock a line completely — a fully-given slot has no
         // interactivity, it's dead weight on the board.
         const idx = spareCells.findIndex(
@@ -105,7 +107,7 @@ export function generateCrosshatch(
         givens.set(next, solutionGrid.get(next)!);
         continue;
       }
-      if (combos.length < MIN_COMBOS) break; // over-tightened: retry
+      if (wordCount < MIN_WORDS) break; // over-tightened: retry
       if (fixedSlotCount(shape, combos) > MAX_FIXED_SLOTS) break;
 
       const { rows, cols } = gridSize(shape);

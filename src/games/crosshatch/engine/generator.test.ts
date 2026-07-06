@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import {
-  MAX_COMBOS,
-  MIN_COMBOS,
+  MAX_WORDS,
+  MIN_WORDS,
   dailySeed,
   enumerateCombos,
   generateCrosshatch,
@@ -71,9 +71,10 @@ describe("generateCrosshatch", () => {
       const puzzle = generateCrosshatch(dict, dailySeed(key));
       const { shape, givens, combos } = puzzle;
 
-      // Combo count in band; combos unique.
-      expect(combos.length).toBeGreaterThanOrEqual(MIN_COMBOS);
-      expect(combos.length).toBeLessThanOrEqual(MAX_COMBOS);
+      // Distinct-word count in band; combos unique.
+      const wordCount = new Set(combos.flat()).size;
+      expect(wordCount).toBeGreaterThanOrEqual(MIN_WORDS);
+      expect(wordCount).toBeLessThanOrEqual(MAX_WORDS);
       expect(new Set(combos.map(comboKey)).size).toBe(combos.length);
 
       // Every slot is anchored by at least one given cell, but NEVER

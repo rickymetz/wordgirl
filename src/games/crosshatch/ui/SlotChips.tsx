@@ -1,9 +1,8 @@
-import { remainingWithWord } from "../engine/scoring";
+import { remainingInSlot } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import {
   cursorSlot,
-  foundKeySet,
   letterAt,
   slotWord,
   type GameState,
@@ -11,9 +10,10 @@ import {
 
 /**
  * The deduction aid, always visible: one chip per line showing its
- * current word and how many UNFOUND combos still use that word there.
- * Zero means the word is exhausted — change that line. Tapping a chip
- * aims the cursor at its line.
+ * current content and how many words the line can still yield. Zero
+ * means the line is exhausted — leave a valid word there and hunt
+ * elsewhere. A chip's word lights up when it would bank a NEW word.
+ * Tapping a chip aims the cursor at its line.
  */
 export function SlotChips({
   state,
@@ -23,7 +23,7 @@ export function SlotChips({
   onFocusSlot: (slot: Slot) => void;
 }) {
   const { puzzle } = state;
-  const foundKeys = foundKeySet(state.found);
+  const found = new Set(state.found);
   const active = cursorSlot(state);
 
   return (
@@ -40,18 +40,21 @@ export function SlotChips({
         const display = slotCells(slot)
           .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "·")
           .join("");
-        const count = complete
-          ? remainingWithWord(puzzle, foundKeys, i, word)
-          : null;
+        const count = remainingInSlot(puzzle, found, i);
+        // This line currently holds an uncredited word: submit-worthy.
+        const isNew =
+          complete &&
+          !found.has(word) &&
+          puzzle.combos.some((c) => c[i] === word);
         const arrow = slot.dir === "across" ? "→" : "↓";
         return (
           <button
             key={i}
             type="button"
             onClick={() => onFocusSlot(slot)}
-            aria-label={`${slot.dir} word ${display}${
-              count !== null ? ` — ${count} combos left with it` : ""
-            }`}
+            aria-label={`${slot.dir} word ${display} — ${count} ${
+              count === 1 ? "word" : "words"
+            } left in this line`}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
               active === slot ? "border-accent" : "border-line"
             }`}
@@ -59,18 +62,20 @@ export function SlotChips({
             <span aria-hidden className="text-xs text-ink-soft">
               {arrow}
             </span>
-            <span className="tracking-wide">{display}</span>
-            {count !== null && (
-              // Zero is the load-bearing signal — no unfound combo uses
-              // this word here, so it gets the warning color.
-              <span
-                className={`font-game text-xs ${
-                  count > 0 ? "text-accent" : "text-warn"
-                }`}
-              >
-                {count}
-              </span>
-            )}
+            <span
+              className={`tracking-wide ${isNew ? "text-accent" : ""}`}
+            >
+              {display}
+            </span>
+            {/* Zero is the load-bearing signal — this line has no
+                words left to give, so it gets the warning color. */}
+            <span
+              className={`font-game text-xs ${
+                count > 0 ? "text-accent" : "text-warn"
+              }`}
+            >
+              {count}
+            </span>
           </button>
         );
       })}

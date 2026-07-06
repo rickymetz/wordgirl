@@ -2,13 +2,12 @@ import { createGameStore } from "../../../lib/storage/createGameStore";
 import { localDateKey, previousDateKey } from "../../../lib/date";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { RANKS, type RankTitle } from "../engine/scoring";
-import type { Combo } from "../engine/types";
 
 export interface DailyProgress {
   dateKey: string;
   dictVersion: number;
-  /** Combos found so far, each a word per slot in slot order. */
-  foundCombos: Combo[];
+  /** Distinct words banked so far, in the order they were found. */
+  foundWords: string[];
   /** Player-typed letters still on the grid, cell key -> letter. */
   grid: Record<string, string>;
   /** Reached the solve threshold (SOLVE_PCT of all combos). */
@@ -29,7 +28,7 @@ export interface CrosshatchStats {
   bestStreak: number;
   lastSolvedDate: string | null;
   bestRank: RankTitle | null;
-  totalCombos: number;
+  totalWords: number;
 }
 
 const EMPTY_STATS: CrosshatchStats = {
@@ -39,7 +38,7 @@ const EMPTY_STATS: CrosshatchStats = {
   bestStreak: 0,
   lastSolvedDate: null,
   bestRank: null,
-  totalCombos: 0,
+  totalWords: 0,
 };
 
 const store = createGameStore("crosshatch");
@@ -50,7 +49,7 @@ export const ARCHIVE_EPOCH = "2026-07-06";
 /** A partially-corrupted save must not crash hydration — normalize it. */
 function validShape(saved: DailyProgress | null): DailyProgress | null {
   if (!saved || typeof saved !== "object") return null;
-  if (!Array.isArray(saved.foundCombos)) return null;
+  if (!Array.isArray(saved.foundWords)) return null;
   if (saved.grid === null || typeof saved.grid !== "object") return null;
   if (typeof saved.elapsedMs !== "number" || !Number.isFinite(saved.elapsedMs)) {
     return null;
@@ -60,7 +59,7 @@ function validShape(saved: DailyProgress | null): DailyProgress | null {
 
 /**
  * The playable save for a date, or null. Saves written against an older
- * dictionary can't be resumed (their combos may not exist in the current
+ * dictionary can't be resumed (their words may not exist in the current
  * puzzle) — use loadStaleDailyProgress to read their historical result.
  */
 export async function loadDailyProgress(
@@ -111,7 +110,7 @@ export async function resetDailyForReplay(dateKey: string) {
   await saveDailyProgress({
     dateKey,
     dictVersion: DICT_VERSION,
-    foundCombos: [],
+    foundWords: [],
     grid: {},
     solved: false,
     elapsedMs: 0,
@@ -128,7 +127,10 @@ export async function markCoachSeen(): Promise<void> {
 }
 
 export async function loadStats(): Promise<CrosshatchStats> {
-  return (await store.get<CrosshatchStats>("stats")) ?? EMPTY_STATS;
+  // Merge over defaults so stats survive schema additions (an older
+  // blob without totalWords keeps its streaks and counters).
+  const saved = await store.get<Partial<CrosshatchStats>>("stats");
+  return { ...EMPTY_STATS, ...(saved ?? {}) };
 }
 
 /** Call once when a new daily puzzle is first opened. */
@@ -149,7 +151,7 @@ const rankIndex = (r: RankTitle | null) =>
  */
 export async function recordDailySolved(
   dateKey: string,
-  combosFound: number,
+  wordsFound: number,
   rank: RankTitle,
 ): Promise<CrosshatchStats> {
   const stats = await loadStats();
@@ -167,7 +169,7 @@ export async function recordDailySolved(
     solved: stats.solved + 1,
     bestRank:
       rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
-    totalCombos: stats.totalCombos + combosFound,
+    totalWords: stats.totalWords + wordsFound,
     ...(advances && {
       currentStreak,
       bestStreak: Math.max(stats.bestStreak, currentStreak),

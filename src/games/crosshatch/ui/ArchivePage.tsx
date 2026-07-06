@@ -10,7 +10,7 @@ import {
 } from "../../../lib/date";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { rankFor } from "../engine/scoring";
+import { rankFor, uniqueWords } from "../engine/scoring";
 import { generateCrosshatch, dailySeed } from "../engine/generator";
 import {
   ARCHIVE_EPOCH,
@@ -20,7 +20,7 @@ import {
   type CrosshatchStats,
 } from "../state/persistence";
 
-// rank needs the day's combo total; cache so each date generates at
+// rank needs the day's word total; cache so each date generates at
 // most once per session instead of on every list render.
 const rankCache = new Map<string, string>();
 function rankForDay(
@@ -32,7 +32,9 @@ function rankForDay(
   let cached = rankCache.get(key);
   let total = totalCache.get(dateKey);
   if (cached === undefined || total === undefined) {
-    total = generateCrosshatch(dict, dailySeed(dateKey)).combos.length;
+    total = uniqueWords(
+      generateCrosshatch(dict, dailySeed(dateKey)).combos,
+    ).length;
     totalCache.set(dateKey, total);
     cached = rankFor(found, total);
     rankCache.set(key, cached);
@@ -60,10 +62,10 @@ export default function ArchivePage() {
       ? dateKeyRange(ARCHIVE_EPOCH, yesterday).reverse()
       : [];
   // The calendar covers every day; the list below repeats only days
-  // with actual results (it's the scoreboard: rank, combos, time).
+  // with actual results (it's the scoreboard: rank, words, time).
   const playedDates = dates.filter((d) => {
     const saved = progress?.[d];
-    return saved && (saved.solved || saved.foundCombos.length > 0);
+    return saved && (saved.solved || saved.foundWords.length > 0);
   });
 
   return (
@@ -92,7 +94,7 @@ export default function ArchivePage() {
           <Stat label="Solved" value={stats.solved} />
           <Stat label="Played" value={stats.played} />
           <Stat label="Best rank" value={stats.bestRank ?? "—"} />
-          <Stat label="Combos" value={stats.totalCombos} />
+          <Stat label="Words" value={stats.totalWords} />
         </div>
       )}
 
@@ -221,7 +223,7 @@ function DayCell({
   }
 
   const solved = saved?.solved ?? false;
-  const started = !solved && (saved?.foundCombos.length ?? 0) > 0;
+  const started = !solved && (saved?.foundWords.length ?? 0) > 0;
   const status = solved ? "solved" : started ? "in progress" : "not played";
   const isToday = dateKey === today;
   const tone = solved
@@ -265,20 +267,20 @@ function ArchiveRow({
     // A stale save was played against an older dictionary: its result is
     // real history but doesn't map onto the current puzzle's combos.
     if (saved.stale) {
-      status = `Solved · ${saved.foundCombos.length} combos · older words`;
+      status = `Solved · ${saved.foundWords.length} words · older words`;
     } else {
       // `use` is conditional on purpose: the dictionary only loads (and
       // suspends) when a rank is actually displayed.
       const { rank, total } = rankForDay(
         use(loadDictionary()),
         dateKey,
-        saved.foundCombos.length,
+        saved.foundWords.length,
       );
-      status = `${rank} · ${saved.foundCombos.length}/${total}`;
+      status = `${rank} · ${saved.foundWords.length}/${total}`;
     }
     statusClass = "text-accent";
-  } else if (saved && saved.foundCombos.length > 0) {
-    status = `In progress · ${saved.foundCombos.length} combos`;
+  } else if (saved && saved.foundWords.length > 0) {
+    status = `In progress · ${saved.foundWords.length} words`;
     statusClass = "text-ink";
   }
 
