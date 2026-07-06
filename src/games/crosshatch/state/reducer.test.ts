@@ -136,11 +136,12 @@ describe("submit", () => {
     expect(s.lastResult?.word).toBe("bax");
   });
 
-  it("marks solved at the 90% word threshold and keeps it sticky", () => {
-    // 4 unique words -> solveTarget = ceil(3.6) = 4: finding all solves.
+  it("marks solved at the slack-adjusted threshold and keeps it sticky", () => {
+    // 4 unique words -> solveTarget = min(ceil(3.6), 4-2) = 2: the
+    // first full grid (2 new words) solves; more words keep banking.
     let s = fillBadDab(initialState(puzzle));
     s = gameReducer(s, { type: "submit" });
-    expect(s.solved).toBe(false);
+    expect(s.solved).toBe(true);
     s = play(
       s,
       { type: "focusCell", row: 1, col: 1 },
@@ -188,13 +189,22 @@ describe("submit", () => {
   it("hydrates found words, grid, and solved flag", () => {
     const s = gameReducer(initialState(puzzle), {
       type: "hydrate",
-      found: ["bad", "dab"],
+      found: ["bad"],
       grid: { "1,1": "a" },
       revealed: {},
       solved: false,
     });
-    expect(s.found).toHaveLength(2);
+    expect(s.found).toHaveLength(1);
     expect(letterAt(s, 1, 1)).toBe("a");
     expect(s.solved).toBe(false);
+    // Hydration recomputes the threshold: two of four words solves.
+    const solved = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: ["bad", "dab"],
+      grid: {},
+      revealed: {},
+      solved: false,
+    });
+    expect(solved.solved).toBe(true);
   });
 });

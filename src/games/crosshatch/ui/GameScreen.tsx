@@ -94,9 +94,25 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     const target = chosen ?? hintTarget(state);
     if (!target) return;
     const already = state.revealed[target] ?? [];
-    const candidates = [...target]
+    const unrevealed = [...target]
       .map((_, i) => i)
       .filter((i) => !already.includes(i));
+    // Don't burn a hint on a letter the board already shows: skip
+    // positions that are a GIVEN in every line this word can occupy.
+    const slotIdxs = puzzle.shape.slots
+      .map((_, si) => si)
+      .filter((si) => puzzle.combos.some((c) => c[si] === target));
+    const fresh = unrevealed.filter(
+      (i) =>
+        !(
+          slotIdxs.length > 0 &&
+          slotIdxs.every((si) => {
+            const c = slotCells(puzzle.shape.slots[si])[i];
+            return !!puzzle.givens[cellKey(c.row, c.col)];
+          })
+        ),
+    );
+    const candidates = fresh.length > 0 ? fresh : unrevealed;
     if (candidates.length === 0) return;
     dispatch({
       type: "revealHint",

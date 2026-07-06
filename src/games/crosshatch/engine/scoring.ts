@@ -36,9 +36,13 @@ export function rankFor(found: number, total: number): RankTitle {
   return title;
 }
 
-/** Words needed to mark the day solved. */
+/**
+ * Words needed to mark the day solved: 90%, but always at least two
+ * words of slack — plain ceil made "90%" mean "all but one" on every
+ * 10-19-word day.
+ */
 export function solveTarget(total: number): number {
-  return Math.ceil((total * SOLVE_PCT) / 100);
+  return Math.max(1, Math.min(Math.ceil((total * SOLVE_PCT) / 100), total - 2));
 }
 
 export function isSolved(found: number, total: number): boolean {
