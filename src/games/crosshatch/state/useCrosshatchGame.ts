@@ -52,14 +52,15 @@ export function useCrosshatchGame(mode: GameMode) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  const rawElapsedMs = () =>
+    savedElapsedRef.current +
+    sessionActiveMsRef.current +
+    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
+
   const currentElapsedMs = () => {
     if (alreadySolvedRef.current) return savedElapsedRef.current;
     if (solvedElapsedRef.current !== null) return solvedElapsedRef.current;
-    return (
-      savedElapsedRef.current +
-      sessionActiveMsRef.current +
-      (document.hidden ? 0 : Date.now() - sessionStartRef.current)
-    );
+    return rawElapsedMs();
   };
 
   // An old-dictionary save is on disk for this date: hold off writing
@@ -180,29 +181,36 @@ export function useCrosshatchGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, puzzle]);
 
+  // Freeze the clock when the solve threshold is crossed, then RE-STAMP
+  // it on each word banked after that — the recorded time is "when the
+  // last word was found", so pushing on to the full sweep counts but
+  // idling on the results screen never does. Declared BEFORE the persist
+  // effect so a banked word saves the freshly stamped time.
+  const [solvedElapsedMs, setSolvedElapsedMs] = useState<number | null>(null);
+  const clockFoundRef = useRef(0);
+  useEffect(() => {
+    if (!persisted || !state.solved) return;
+    if (alreadySolvedRef.current) {
+      // Solved in an earlier session: the saved time stands.
+      if (solvedElapsedMs === null) setSolvedElapsedMs(savedElapsedRef.current);
+      return;
+    }
+    if (
+      solvedElapsedRef.current === null ||
+      state.found.length > clockFoundRef.current
+    ) {
+      solvedElapsedRef.current = rawElapsedMs();
+      clockFoundRef.current = state.found.length;
+      setSolvedElapsedMs(solvedElapsedRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persisted, state.solved, state.found, solvedElapsedMs]);
+
   // Persist after every meaningful change.
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.found, state.grid, state.revealed, state.solved]);
-
-  // Freeze the clock the moment the solve threshold is crossed, and
-  // expose the frozen value for the results screen and share text.
-  const [solvedElapsedMs, setSolvedElapsedMs] = useState<number | null>(null);
-  useEffect(() => {
-    if (!persisted || !state.solved) return;
-    if (solvedElapsedRef.current === null && !alreadySolvedRef.current) {
-      solvedElapsedRef.current = currentElapsedMs();
-    }
-    if (solvedElapsedMs === null) {
-      setSolvedElapsedMs(
-        alreadySolvedRef.current
-          ? savedElapsedRef.current
-          : solvedElapsedRef.current,
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, state.solved, solvedElapsedMs]);
 
   // Record the solve (stats; streak only if it's today) exactly once,
   // and upgrade bestRank if the player pushes on to a perfect sweep.
