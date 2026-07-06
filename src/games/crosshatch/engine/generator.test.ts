@@ -76,11 +76,16 @@ describe("generateCrosshatch", () => {
       expect(combos.length).toBeLessThanOrEqual(MAX_COMBOS);
       expect(new Set(combos.map(comboKey)).size).toBe(combos.length);
 
-      // Every slot is anchored by at least one given cell.
+      // Every slot is anchored by at least one given cell, but NEVER
+      // fully given — a locked line would have no interactivity.
       for (const slot of shape.slots) {
         expect(
           slotCells(slot).some((c) => givens[cellKey(c.row, c.col)]),
           `${key}: unanchored slot`,
+        ).toBe(true);
+        expect(
+          slotCells(slot).some((c) => !givens[cellKey(c.row, c.col)]),
+          `${key}: fully locked slot`,
         ).toBe(true);
       }
 

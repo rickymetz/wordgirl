@@ -79,7 +79,7 @@ export function GridBoard({
                   ? `letter ${letter.toUpperCase()} — tap to edit`
                   : "empty cell"
             }
-            className={`flex items-center justify-center rounded-lg font-game uppercase transition-colors ${
+            className={`relative flex items-center justify-center rounded-lg font-game uppercase transition-colors ${
               given
                 ? "bg-ink text-surface"
                 : inActiveSlot
@@ -89,6 +89,21 @@ export function GridBoard({
             style={{ fontSize: Math.round(cell * 0.42) }}
           >
             {letter?.toUpperCase() ?? ""}
+            {given && (
+              // Quiet corner padlock — the tile is locked, not typed.
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                className="absolute top-1 right-1 opacity-40"
+                style={{ width: Math.max(8, Math.round(cell * 0.17)) }}
+              >
+                <rect x="5" y="11" width="14" height="9" rx="2" fill="currentColor" stroke="none" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+            )}
           </button>
         );
       })}

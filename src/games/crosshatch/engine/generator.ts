@@ -66,15 +66,26 @@ export function generateCrosshatch(
     });
 
     // Minimal givens: one cell per slot (a shared cell can cover both
-    // of its slots). Random order so anchors vary day to day.
+    // of its slots). Random order so anchors vary day to day. Anchors
+    // must never complete a line either — a shared-cell anchor can be
+    // some OTHER slot's last blank.
     const givens = new Map<string, string>();
+    let doomed = false;
     for (const slot of shuffle([...shape.slots], rand)) {
       const cells = slotCells(slot);
       if (cells.some((c) => givens.has(cellKey(c.row, c.col)))) continue;
-      const pick = cells[Math.floor(rand() * cells.length)];
+      const safe = cells.filter(
+        (c) => !wouldFullyLockSlot(shape, givens, cellKey(c.row, c.col)),
+      );
+      if (safe.length === 0) {
+        doomed = true;
+        break;
+      }
+      const pick = safe[Math.floor(rand() * safe.length)];
       const key = cellKey(pick.row, pick.col);
       givens.set(key, solutionGrid.get(key)!);
     }
+    if (doomed) continue;
     const spareCells = shuffle(
       [...solutionGrid.keys()].filter((k) => !givens.has(k)),
       rand,
@@ -84,8 +95,13 @@ export function generateCrosshatch(
     for (let extra = 0; extra <= MAX_EXTRA_GIVENS; extra++) {
       const combos = enumerateCombos(shape, dict, givens, ENUM_CAP);
       if (combos.length > MAX_COMBOS) {
-        const next = spareCells.shift();
-        if (!next) break;
+        // Never lock a line completely — a fully-given slot has no
+        // interactivity, it's dead weight on the board.
+        const idx = spareCells.findIndex(
+          (key) => !wouldFullyLockSlot(shape, givens, key),
+        );
+        if (idx === -1) break;
+        const next = spareCells.splice(idx, 1)[0];
         givens.set(next, solutionGrid.get(next)!);
         continue;
       }
@@ -106,6 +122,23 @@ export function generateCrosshatch(
   }
 
   throw new Error(`could not generate crosshatch for seed "${seed}"`);
+}
+
+/** Would adding a given at this cell leave some slot with no blanks? */
+function wouldFullyLockSlot(
+  shape: Shape,
+  givens: ReadonlyMap<string, string>,
+  key: string,
+): boolean {
+  const [row, col] = key.split(",").map(Number);
+  return shape.slots.some((slot) => {
+    const cells = slotCells(slot);
+    if (!cells.some((c) => c.row === row && c.col === col)) return false;
+    return cells.every((c) => {
+      const k = cellKey(c.row, c.col);
+      return k === key || givens.has(k);
+    });
+  });
 }
 
 /** Slots that admit only a single word across all combos. */

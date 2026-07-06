@@ -1,6 +1,6 @@
 import { remainingWithWord } from "../engine/scoring";
 import type { Slot } from "../engine/types";
-import { slotCells } from "../engine/types";
+import { cellKey, slotCells } from "../engine/types";
 import {
   cursorSlot,
   foundKeySet,
@@ -29,6 +29,13 @@ export function SlotChips({
   return (
     <div className="flex flex-wrap justify-center gap-2">
       {puzzle.shape.slots.map((slot, i) => {
+        // A fully-given line has nothing to type or aim at — no chip.
+        // (The generator avoids these, but old/practice seeds may not.)
+        if (
+          slotCells(slot).every((c) => puzzle.givens[cellKey(c.row, c.col)])
+        ) {
+          return null;
+        }
         const { word, complete } = slotWord(state, slot);
         const display = slotCells(slot)
           .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "·")

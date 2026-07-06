@@ -7,8 +7,10 @@
  * words ("+"-prefixed lines) score extra but are never required.
  * v3: allowlist puzzle staples (ode &c.) into the required tier
  * whatever their frequency rank; drop mild words from the blocklist.
+ * v4: crosshatch generator never fully locks a line (also guards
+ * generator-behavior changes, not just dictionary contents).
  */
-export const DICT_VERSION = 3;
+export const DICT_VERSION = 4;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

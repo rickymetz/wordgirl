@@ -2,7 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App";
+import { applySettings, loadSettings } from "./lib/settings";
 import "./index.css";
+
+// Theme override + text size must land before first paint.
+applySettings(loadSettings());
 
 // Ask the browser not to evict our storage — streak history lives here.
 if (navigator.storage?.persist) {
