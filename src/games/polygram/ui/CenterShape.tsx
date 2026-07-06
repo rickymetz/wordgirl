@@ -27,7 +27,7 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
   return (
     <motion.button
       type="button"
-      onPointerDown={onTap}
+      onClick={onTap}
       className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-accent select-none"
       style={{
         width: size,

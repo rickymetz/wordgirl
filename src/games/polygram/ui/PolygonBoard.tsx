@@ -12,7 +12,9 @@ interface Props {
   onSubmit: () => void;
 }
 
-const BOARD = 340;
+// Fit narrow phones instead of clipping a hard-coded square.
+const BOARD =
+  typeof window === "undefined" ? 340 : Math.min(340, window.innerWidth - 40);
 /** Whitespace between the central shape's edges and the petals, px. */
 const RING_GAP = 18;
 

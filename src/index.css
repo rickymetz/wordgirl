@@ -50,15 +50,16 @@
 }
 /* Level colors follow the pride flag top-to-bottom: red, orange,
    yellow, green, blue, purple — extended with pink and turquoise for
-   the nonagon and decagon. */
-[data-level="3"] { --color-accent: #dc2626; }  /* red */
-[data-level="4"] { --color-accent: #ea580c; }  /* orange */
-[data-level="5"] { --color-accent: #ca8a04; }  /* yellow */
-[data-level="6"] { --color-accent: #16a34a; }  /* green */
-[data-level="7"] { --color-accent: #2563eb; }  /* blue */
+   the nonagon and decagon. Light-mode values are ~700-weight shades so
+   accent text and on-accent text both clear WCAG AA (4.5:1). */
+[data-level="3"] { --color-accent: #b91c1c; }  /* red */
+[data-level="4"] { --color-accent: #c2410c; }  /* orange */
+[data-level="5"] { --color-accent: #a16207; }  /* yellow */
+[data-level="6"] { --color-accent: #15803d; }  /* green */
+[data-level="7"] { --color-accent: #1d4ed8; }  /* blue */
 [data-level="8"] { --color-accent: #7e22ce; }  /* purple */
-[data-level="9"] { --color-accent: #db2777; }  /* pink */
-[data-level="10"] { --color-accent: #0d9488; } /* turquoise */
+[data-level="9"] { --color-accent: #be185d; }  /* pink */
+[data-level="10"] { --color-accent: #0f766e; } /* turquoise */
 
 @media (prefers-color-scheme: dark) {
   [data-level="3"] { --color-accent: #f87171; }
@@ -74,6 +75,17 @@
 html {
   /* Enables light-dark() color pairs (rank-bar gradient). */
   color-scheme: light dark;
+}
+
+/* Kill springs, morphs, shakes, and pops for motion-sensitive users.
+   Inline transition styles need the !important to be overridden. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 html,

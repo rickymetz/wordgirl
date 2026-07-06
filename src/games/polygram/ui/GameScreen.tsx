@@ -115,12 +115,65 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     });
   }, []);
 
+  // Physical keyboard support: letters type, Backspace deletes, Enter
+  // submits, Escape closes the hint dialog.
+  const modalOpen = hintWarningOpen || state.phase === "done";
+  useEffect(() => {
+    const letters = new Set(state.puzzle.letters.slice(0, level.size));
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Escape") {
+        setHintWarningOpen(false);
+        return;
+      }
+      if (modalOpen) return;
+      if (e.key === "Enter") {
+        dispatch({ type: "submit" });
+      } else if (e.key === "Backspace") {
+        dispatch({ type: "backspace" });
+      } else if (letters.has(e.key.toLowerCase())) {
+        dispatch({ type: "tapLetter", letter: e.key.toLowerCase() });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [state.puzzle.letters, level.size, modalOpen, dispatch]);
+
+  // Screen-reader narration for outcomes the UI shows only visually.
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    const r = state.lastResult;
+    if (!r) return;
+    const remaining = level.words.filter(
+      (w) => !state.found.includes(w),
+    ).length;
+    const messages: Record<string, string> = {
+      correct: `${r.word.toUpperCase()} — correct, ${r.points} points. ${remaining} words left.`,
+      duplicate: "Already found.",
+      invalid: "Not in word list.",
+      tooShort: `Too short — ${level.size} letter words.`,
+      empty: "Tap letters to spell a word.",
+    };
+    setAnnouncement(messages[r.type] ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.lastResult]);
+  useEffect(() => {
+    if (state.phase === "done") {
+      setAnnouncement("Puzzle complete!");
+    } else if (state.phase === "playing" && state.levelIndex > 0) {
+      setAnnouncement(
+        `${POLYGON_NAMES[level.size]} level — ${level.words.length} ${level.size}-letter words to find.`,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.levelIndex, state.phase]);
+
   return (
     <div
       data-level={level.size}
-      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8"
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8 [@media(max-height:720px)]:pb-4"
     >
-      <header className="flex items-center justify-between pt-6 pb-2">
+      <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
           <Link
             to="/games/polygram/archive"
@@ -183,8 +236,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">
-        {/* Symmetric breathing room above and below the typed word. */}
-        <div className="py-8">
+        {/* Symmetric breathing room above and below the typed word;
+            tightens on short screens so controls stay on-screen. */}
+        <div className="py-8 [@media(max-height:720px)]:py-2">
           <CurrentWord state={state} />
         </div>
         <PolygonBoard
@@ -211,17 +265,25 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
       {hintWarningOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl">
-            <h2 className="text-lg font-bold">Use a hint?</h2>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hint-dialog-title"
+            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl"
+          >
+            <h2 id="hint-dialog-title" className="text-lg font-bold">
+              Use a hint?
+            </h2>
             <p className="mt-2 text-sm text-ink-soft">
               A letter of an unfound word will be revealed in your word
-              list — and today's score will show a{" "}
-              <span className="font-semibold text-ink">used hint</span>{" "}
-              indicator on the scoreboard.
+              list, and today's result will show a{" "}
+              <span className="font-semibold text-ink">🫣 hint count</span>.
+              Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
+                autoFocus
                 onClick={confirmHint}
                 className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
               >
@@ -238,6 +300,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           </div>
         </div>
       )}
+
+      {/* Outcomes are otherwise visual-only; narrate them politely. */}
+      <div aria-live="polite" role="status" className="sr-only">
+        {announcement}
+      </div>
     </div>
   );
 }

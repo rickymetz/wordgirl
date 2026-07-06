@@ -27,6 +27,7 @@ export function FoundWordsBar({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="found words"
+        aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm">
@@ -77,7 +78,7 @@ export function FoundWordsBar({
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
                       {POLYGON_NAMES[lvl.size]}
-                      <span className="ml-2 text-ink-soft/45">
+                      <span className="ml-2 font-medium text-ink-soft">
                         {foundCount}/{lvl.words.length}
                       </span>
                     </span>
@@ -88,7 +89,7 @@ export function FoundWordsBar({
                         type="button"
                         onClick={onHint}
                         disabled={hintTarget(state) === undefined}
-                        className="rounded-full bg-accent px-3.5 py-1 text-xs font-semibold text-surface active:scale-95 disabled:opacity-40"
+                        className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-surface active:scale-95 disabled:opacity-40"
                       >
                         Hint
                       </button>
@@ -104,19 +105,27 @@ export function FoundWordsBar({
                         <span
                           key={word}
                           className="text-sm font-semibold uppercase"
-                          aria-label={isFound ? undefined : "unsolved word"}
+                          aria-label={
+                            isFound
+                              ? undefined
+                              : `unsolved ${word.length}-letter word`
+                          }
                         >
                           {[...word].map((letter, i) =>
                             hinted.includes(i) ? (
-                              // Level color marks hint-revealed letters —
+                              // Level color + dotted underline mark
+                              // hint-revealed letters (not color alone) —
                               // before AND after the word is found.
-                              <span key={i} className="text-accent">
+                              <span
+                                key={i}
+                                className="text-accent underline decoration-dotted underline-offset-2"
+                              >
                                 {letter}
                               </span>
                             ) : isFound ? (
                               <span key={i}>{letter}</span>
                             ) : (
-                              <span key={i} className="text-ink-soft/40">
+                              <span key={i} className="text-ink-soft">
                                 ?
                               </span>
                             ),

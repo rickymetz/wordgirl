@@ -12,7 +12,7 @@ export function Controls({ onDelete, onShuffle, onEnter }: Props) {
     <div className="flex items-center justify-center gap-3 pt-2">
       <button
         type="button"
-        onPointerDown={onDelete}
+        onClick={onDelete}
         className={pill}
         style={{ touchAction: "manipulation" }}
       >
@@ -20,7 +20,7 @@ export function Controls({ onDelete, onShuffle, onEnter }: Props) {
       </button>
       <button
         type="button"
-        onPointerDown={onShuffle}
+        onClick={onShuffle}
         className="flex h-12 w-12 items-center justify-center rounded-full border border-line active:scale-95"
         style={{ touchAction: "manipulation" }}
         aria-label="shuffle letters"
@@ -43,7 +43,7 @@ export function Controls({ onDelete, onShuffle, onEnter }: Props) {
       </button>
       <button
         type="button"
-        onPointerDown={onEnter}
+        onClick={onEnter}
         className={pill}
         style={{ touchAction: "manipulation" }}
       >

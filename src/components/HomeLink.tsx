@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 /** Icon link back to the hub. */
 export function HomeLink() {
   return (
-    <Link to="/" aria-label="home" className="text-ink-soft active:scale-90">
+    // Negative margin keeps layout position while giving a ~44px target.
+    <Link
+      to="/"
+      aria-label="home"
+      className="-m-2.5 inline-block p-2.5 text-ink-soft active:scale-90"
+    >
       <svg
         width="22"
         height="22"

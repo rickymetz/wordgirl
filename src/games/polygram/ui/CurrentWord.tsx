@@ -59,7 +59,7 @@ export function CurrentWord({ state }: { state: GameState }) {
               {letter}
             </motion.span>
           ) : (
-            <span key={i} className="inline-block text-ink-soft/25">
+            <span key={i} className="inline-block text-ink-soft/70">
               ?
             </span>
           );

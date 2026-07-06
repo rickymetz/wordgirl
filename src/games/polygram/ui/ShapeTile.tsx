@@ -16,7 +16,7 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
   return (
     <motion.button
       type="button"
-      onPointerDown={onTap}
+      onClick={onTap}
       className="absolute top-1/2 left-1/2 flex items-center justify-center bg-tile select-none"
       initial={{ scale: 0, x: "-50%", y: "-50%" }}
       animate={{ scale: 1, x: `calc(-50% + ${x}px)`, y: `calc(-50% + ${y}px)` }}
