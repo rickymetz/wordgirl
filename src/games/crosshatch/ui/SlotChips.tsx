@@ -54,9 +54,11 @@ export function SlotChips({
             </span>
             <span className="tracking-wide">{display}</span>
             {count !== null && (
+              // Zero is the load-bearing signal — no unfound combo uses
+              // this word here, so it gets the warning color.
               <span
                 className={`font-game text-xs ${
-                  count > 0 ? "text-accent" : "text-ink-soft"
+                  count > 0 ? "text-accent" : "text-warn"
                 }`}
               >
                 {count}

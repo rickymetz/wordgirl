@@ -80,7 +80,7 @@ export default function ArchivePage() {
 
       {/* The stats were always tracked — now they're shown. */}
       {stats && stats.played > 0 && (
-        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-raised px-5 py-4">
+        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
           <Stat label="Streak" value={stats.currentStreak} />
           <Stat label="Best streak" value={stats.bestStreak} />
           <Stat label="Solved" value={stats.completed} />
@@ -137,7 +137,7 @@ function CalendarMosaic({
   };
 
   return (
-    <div className="rounded-2xl bg-surface-raised px-4 py-4">
+    <div className="rounded-2xl bg-surface-tint px-4 py-4">
       <div className="flex items-center justify-between pb-3">
         <button
           type="button"

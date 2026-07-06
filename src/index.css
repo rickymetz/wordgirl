@@ -6,8 +6,8 @@
      typed-word spacing perfectly regular. Single 400 weight (heavy). */
   --font-game: "Rubik Mono One", ui-monospace, monospace;
 
-  /* Nearly-white page bg — the accent-tinted bentos carry the depth. */
-  --color-surface: #faf9f7;
+  /* White page bg — the accent-tinted tiles carry the depth. */
+  --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
   --color-ink: #26242b;
   --color-ink-soft: #6f6b78;

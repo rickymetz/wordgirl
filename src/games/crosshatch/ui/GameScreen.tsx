@@ -11,6 +11,7 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
+import { slotWord } from "../state/reducer";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
@@ -138,7 +139,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         : "Not a combo",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
-    const timer = setTimeout(() => setToast(null), 1600);
+    // Misses linger longer — this is the game's main teaching moment.
+    const timer = setTimeout(
+      () => setToast(null),
+      r.type === "correct" ? 1600 : 3000,
+    );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.lastResult]);
@@ -272,6 +277,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
           onBackspace={() => dispatch({ type: "backspace" })}
           onEnter={() => dispatch({ type: "submit" })}
+          submitReady={puzzle.shape.slots.every(
+            (slot) => slotWord(state, slot).complete,
+          )}
         />
       </div>
 

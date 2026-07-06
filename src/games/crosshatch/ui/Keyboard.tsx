@@ -5,13 +5,17 @@ export function Keyboard({
   onLetter,
   onBackspace,
   onEnter,
+  submitReady,
 }: {
   onLetter: (letter: string) => void;
   onBackspace: () => void;
   onEnter: () => void;
+  /** Grid is fully filled — light Enter up as the obvious next tap. */
+  submitReady: boolean;
 }) {
-  const key =
-    "flex h-12 items-center justify-center rounded-lg bg-tile font-semibold uppercase active:bg-accent-soft [@media(max-height:720px)]:h-10";
+  const base =
+    "flex h-12 items-center justify-center rounded-lg font-semibold uppercase [@media(max-height:720px)]:h-10";
+  const key = `${base} bg-tile active:bg-accent-soft`;
   return (
     <div className="flex w-full max-w-md flex-col gap-1.5">
       <div className="flex gap-1.5">
@@ -32,7 +36,11 @@ export function Keyboard({
         <button
           type="button"
           onClick={onEnter}
-          className={`${key} flex-[1.6] text-xs tracking-wide`}
+          className={`${base} flex-[1.6] text-xs tracking-wide ${
+            submitReady
+              ? "bg-accent text-surface active:scale-95"
+              : "bg-tile active:bg-accent-soft"
+          }`}
         >
           Enter
         </button>
