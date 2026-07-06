@@ -18,4 +18,6 @@ export interface GameDefinition {
     path: string;
     Page: LazyExoticComponent<ComponentType>;
   }[];
+  /** Secondary entry points rendered as pills on the hub card. */
+  secondaryActions?: { label: string; path: string }[];
 }

@@ -66,6 +66,7 @@ export function DoneOverlay({
 }) {
   if (state.phase !== "done") return null;
   const rank = rankFor(state.score, state.puzzle);
+  const hintUsed = Object.keys(state.revealed).length > 0;
 
   return (
     <motion.div
@@ -87,6 +88,13 @@ export function DoneOverlay({
           {state.score} of {state.puzzle.maxScore} points ·{" "}
           {POLYGON_NAMES[state.puzzle.maxLevel]} reached
         </div>
+        {hintUsed && (
+          <div className="mt-2">
+            <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
+              Used hint
+            </span>
+          </div>
+        )}
         <div className="mt-6 flex flex-col gap-2">
           {mode === "practice" && onNewPuzzle && (
             <button
