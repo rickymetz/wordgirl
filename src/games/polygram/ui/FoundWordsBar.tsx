@@ -131,7 +131,7 @@ export function FoundWordsBar({
                         return (
                           <span
                             key={word}
-                            className="text-sm font-semibold uppercase"
+                            className="font-game text-xs uppercase"
                           >
                             {letters}
                           </span>
@@ -144,7 +144,7 @@ export function FoundWordsBar({
                           type="button"
                           onClick={() => isCurrent && onSelectWord(word)}
                           aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
-                          className={`-mx-1 rounded px-1 text-sm font-semibold uppercase ${
+                          className={`-mx-1 rounded px-1 font-game text-xs uppercase ${
                             hintTargetWord === word
                               ? "ring-2 ring-accent"
                               : ""
@@ -160,7 +160,7 @@ export function FoundWordsBar({
                       .map((word) => (
                         <span
                           key={word}
-                          className="text-sm font-semibold uppercase"
+                          className="font-game text-xs uppercase"
                         >
                           <span className="text-accent" aria-label="bonus">
                             ✦

@@ -104,7 +104,7 @@ export function FoundCombosBar({
                 );
                 if (isFound) {
                   return (
-                    <span key={word} className="text-sm font-semibold uppercase">
+                    <span key={word} className="font-game text-xs uppercase">
                       {letters}
                     </span>
                   );
@@ -116,7 +116,7 @@ export function FoundCombosBar({
                     type="button"
                     onClick={() => onSelectWord(word)}
                     aria-label={`unfound ${word.length}-letter word — tap to aim the next hint here`}
-                    className={`-mx-1 rounded px-1 text-sm font-semibold uppercase ${
+                    className={`-mx-1 rounded px-1 font-game text-xs uppercase ${
                       hintTargetWord === word ? "ring-2 ring-accent" : ""
                     }`}
                   >
