@@ -52,6 +52,12 @@ npm run preview    # serve the production build locally
   with zero backend. Determinism depends on the committed dictionary —
   regenerating `dictionary.txt` (`npm run build:dictionary`) changes
   future dailies; bump `DICT_VERSION` in `engine/dictionary.ts` if you do.
+- **Two-tier dictionary** — `dictionary.txt` holds *required* words
+  (common: top-12k by frequency) plus *bonus* words (rarer: 12k–30k,
+  prefixed with `+`). Required words gate level clears and receive
+  hints; bonus words only add points. Saves from an older
+  `DICT_VERSION` are kept as historical archive records, and that day
+  restarts fresh when replayed.
 
 ### PWA / iOS
 
