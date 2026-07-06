@@ -170,10 +170,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       }
       if (modalOpen) return;
       if (e.key === "Enter") {
+        setWordsOpen(false);
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
+        setWordsOpen(false);
         dispatch({ type: "backspace" });
       } else if (letters.has(e.key.toLowerCase())) {
+        setWordsOpen(false);
         dispatch({ type: "tapLetter", letter: e.key.toLowerCase() });
       }
     };
@@ -315,16 +318,33 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <div className="py-8 [@media(max-height:720px)]:py-2">
           <CurrentWord state={state} />
         </div>
+        {/* Any puzzle input closes an open words panel — the player
+            has moved on from browsing to playing. */}
         <PolygonBoard
           state={state}
           order={order}
-          onLetter={(letter) => dispatch({ type: "tapLetter", letter })}
-          onSubmit={() => dispatch({ type: "submit" })}
+          onLetter={(letter) => {
+            setWordsOpen(false);
+            dispatch({ type: "tapLetter", letter });
+          }}
+          onSubmit={() => {
+            setWordsOpen(false);
+            dispatch({ type: "submit" });
+          }}
         />
         <Controls
-          onDelete={() => dispatch({ type: "backspace" })}
-          onShuffle={shuffle}
-          onEnter={() => dispatch({ type: "submit" })}
+          onDelete={() => {
+            setWordsOpen(false);
+            dispatch({ type: "backspace" });
+          }}
+          onShuffle={() => {
+            setWordsOpen(false);
+            shuffle();
+          }}
+          onEnter={() => {
+            setWordsOpen(false);
+            dispatch({ type: "submit" });
+          }}
         />
       </div>
 
@@ -399,6 +419,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 Find them <span className="font-semibold text-ink">all</span>{" "}
                 and a new letter joins — the shapes grow into the next
                 polygon.
+              </li>
+              <li>
+                Less common words score as{" "}
+                <span className="font-semibold text-ink">
+                  <span className="text-accent">✦</span> bonus
+                </span>{" "}
+                — extra points, but the level count only tracks the
+                everyday words.
               </li>
             </ul>
             <button
