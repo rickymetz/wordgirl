@@ -20,7 +20,7 @@
      the accent keeps the clusters from reading as one grey slab. */
   --color-surface-tint: light-dark(
     var(--color-surface-raised),
-    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised))
+    color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))
   );
   --color-good: #059669;
   --color-warn: #d97706;
@@ -57,7 +57,7 @@
      where they're DECLARED, so the root definition keeps root purple. */
   --color-surface-tint: light-dark(
     var(--color-surface-raised),
-    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised))
+    color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))
   );
 }
 /* Level colors follow the pride flag top-to-bottom: red, orange,
