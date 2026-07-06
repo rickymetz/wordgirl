@@ -9,7 +9,7 @@ import { FoundWordsBar } from "./FoundWordsBar";
 import { Controls } from "./Controls";
 import { RankBar } from "./RankBar";
 import { DoneOverlay, LevelClearOverlay } from "./Overlays";
-import { POLYGON_NAMES } from "./polygonPath";
+import { POLYGON_NAMES, regularPolygonClipPath } from "./polygonPath";
 
 interface Props {
   mode: GameMode;
@@ -90,12 +90,21 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
         )}
       </header>
 
-      <div className="pb-3">
+      <div className="flex items-center gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Polygram</h1>
-        <p className="text-sm text-ink-soft">
-          {POLYGON_NAMES[level.size]} level — make {level.size}-letter words.
-          Letters can repeat.
-        </p>
+        {/* Level indicator: the current polygon in the level color —
+            morphs with the board on level-up. */}
+        <span
+          role="img"
+          aria-label={`${POLYGON_NAMES[level.size]} level`}
+          className="inline-block bg-accent"
+          style={{
+            width: 22,
+            height: 22,
+            clipPath: regularPolygonClipPath(level.size),
+            transition: "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1)",
+          }}
+        />
       </div>
 
       <RankBar score={state.score} puzzle={state.puzzle} />
