@@ -69,10 +69,20 @@ export function usePolygramGame(mode: GameMode) {
         savedElapsedRef.current = saved.elapsedMs ?? 0;
         sessionStartRef.current = Date.now();
         sessionActiveMsRef.current = 0;
+        // Older saves stored a revealed-letter COUNT; normalize to
+        // position arrays (prefix positions).
+        const revealed = Object.fromEntries(
+          Object.entries(saved.revealed ?? {}).map(([word, v]) => [
+            word,
+            Array.isArray(v)
+              ? v
+              : Array.from({ length: v as number }, (_, i) => i),
+          ]),
+        );
         dispatch({
           type: "hydrate",
           found: saved.foundWords,
-          revealed: saved.revealed,
+          revealed,
           score: saved.score,
         });
       } else {

@@ -7,7 +7,8 @@ export interface DailyProgress {
   dateKey: string;
   dictVersion: number;
   foundWords: string[];
-  revealed: Record<string, number>;
+  /** word -> hint-revealed letter positions (older saves stored counts). */
+  revealed: Record<string, number[]>;
   score: number;
   completed: boolean;
   /** Wall-clock play time accumulated across sessions, frozen at completion. */

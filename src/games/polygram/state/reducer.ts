@@ -16,8 +16,8 @@ export interface GameState {
   levelIndex: number;
   /** All found words across levels, in the order found. */
   found: string[];
-  /** word -> number of letters revealed via hints. */
-  revealed: Record<string, number>;
+  /** word -> letter positions revealed via hints. */
+  revealed: Record<string, number[]>;
   score: number;
   /** The word currently being built. */
   current: string;
@@ -30,12 +30,12 @@ export type GameAction =
   | { type: "backspace" }
   | { type: "clear" }
   | { type: "submit" }
-  | { type: "revealHint" }
+  | { type: "revealHint"; letterIndex: number }
   | { type: "advanceLevel" }
   | {
       type: "hydrate";
       found: string[];
-      revealed: Record<string, number>;
+      revealed: Record<string, number[]>;
       score: number;
     };
 
@@ -104,7 +104,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
-      const points = wordPoints(word, state.revealed[word] ?? 0);
+      const points = wordPoints(word, (state.revealed[word] ?? []).length);
       const found = [...state.found, word];
       let score = state.score + points;
       let phase: Phase = state.phase;
@@ -132,11 +132,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.phase !== "playing") return state;
       const target = unsolvedWords(state)[0];
       if (!target) return state;
-      const already = state.revealed[target] ?? 0;
-      if (already >= target.length) return state;
+      const already = state.revealed[target] ?? [];
+      if (
+        action.letterIndex < 0 ||
+        action.letterIndex >= target.length ||
+        already.includes(action.letterIndex)
+      ) {
+        return state;
+      }
       return {
         ...state,
-        revealed: { ...state.revealed, [target]: already + 1 },
+        revealed: {
+          ...state.revealed,
+          [target]: [...already, action.letterIndex],
+        },
       };
     }
 

@@ -8,9 +8,16 @@ import { POLYGON_NAMES } from "./polygonPath";
  * words (most recent first) with a chevron that expands a dropdown
  * showing every level's words. Words render in alphabetical order with
  * blank slots for the unfound ones INTERLEAVED in place — where a blank
- * falls in the ordering is itself a gentle hint, no prompt needed.
+ * falls in the ordering is itself a gentle hint. Hint-revealed letters
+ * render in the level color, permanently marking hint-assisted words.
  */
-export function FoundWordsBar({ state }: { state: GameState }) {
+export function FoundWordsBar({
+  state,
+  onHint,
+}: {
+  state: GameState;
+  onHint: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const recentFirst = [...state.found].reverse();
 
@@ -52,6 +59,15 @@ export function FoundWordsBar({ state }: { state: GameState }) {
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
           >
+            <div className="mb-3 flex justify-end">
+              <button
+                type="button"
+                onClick={onHint}
+                className="rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-surface active:scale-95"
+              >
+                Hint
+              </button>
+            </div>
             {state.puzzle.levels.slice(0, state.levelIndex + 1).map((lvl) => {
               const foundCount = lvl.words.filter((w) =>
                 state.found.includes(w),
@@ -65,22 +81,23 @@ export function FoundWordsBar({ state }: { state: GameState }) {
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {/* Alphabetical order with blanks in place: where a
                         blank falls between found words is itself a hint. */}
-                    {lvl.words.map((word) =>
-                      state.found.includes(word) ? (
+                    {lvl.words.map((word) => {
+                      const hinted = state.revealed[word] ?? [];
+                      const isFound = state.found.includes(word);
+                      return (
                         <span
                           key={word}
                           className="text-sm font-semibold uppercase"
-                        >
-                          {word}
-                        </span>
-                      ) : (
-                        <span
-                          key={word}
-                          className="text-sm font-semibold uppercase"
-                          aria-label="unsolved word"
+                          aria-label={isFound ? undefined : "unsolved word"}
                         >
                           {[...word].map((letter, i) =>
-                            i < (state.revealed[word] ?? 0) ? (
+                            hinted.includes(i) ? (
+                              // Level color marks hint-revealed letters —
+                              // before AND after the word is found.
+                              <span key={i} className="text-accent">
+                                {letter}
+                              </span>
+                            ) : isFound ? (
                               <span key={i}>{letter}</span>
                             ) : (
                               <span key={i} className="text-ink-soft/40">
@@ -89,8 +106,8 @@ export function FoundWordsBar({ state }: { state: GameState }) {
                             ),
                           )}
                         </span>
-                      ),
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               );

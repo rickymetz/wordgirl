@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey } from "../../../lib/date";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
-import { currentLevel } from "../state/reducer";
+import { currentLevel, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -30,16 +30,30 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
   // day's score will carry a "used hint" indicator.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const hintUsed = Object.keys(state.revealed).length > 0;
+  // Reveal a RANDOM still-hidden letter of the first unsolved word.
+  const revealRandomLetter = () => {
+    const target = unsolvedWords(state)[0];
+    if (!target) return;
+    const already = state.revealed[target] ?? [];
+    const candidates = [...target]
+      .map((_, i) => i)
+      .filter((i) => !already.includes(i));
+    if (candidates.length === 0) return;
+    dispatch({
+      type: "revealHint",
+      letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
+    });
+  };
   const requestHint = () => {
     if (mode.kind !== "practice" && !hintUsed) {
       setHintWarningOpen(true);
     } else {
-      dispatch({ type: "revealHint" });
+      revealRandomLetter();
     }
   };
   const confirmHint = () => {
     setHintWarningOpen(false);
-    dispatch({ type: "revealHint" });
+    revealRandomLetter();
   };
 
   // Display-only permutation of the petal letters; shuffling never
@@ -90,23 +104,8 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
             ← WordGirl
           </Link>
         )}
-        {mode.kind !== "practice" ? (
-          <button
-            type="button"
-            onClick={requestHint}
-            className="text-sm font-semibold text-accent"
-          >
-            Hint
-          </button>
-        ) : (
+        {mode.kind === "practice" && (
           <span className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={requestHint}
-              className="text-sm font-semibold text-accent"
-            >
-              Hint
-            </button>
             <button
               type="button"
               onClick={onNewPuzzle}
@@ -151,7 +150,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
       <RankBar score={state.score} puzzle={state.puzzle} />
 
       <div className="pt-3">
-        <FoundWordsBar state={state} />
+        <FoundWordsBar state={state} onHint={requestHint} />
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">

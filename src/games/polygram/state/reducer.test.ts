@@ -78,10 +78,17 @@ describe("gameReducer", () => {
     expect(s.score).toBe(puzzle.maxScore);
   });
 
-  it("hints reveal letters of the first unsolved word and halve its points", () => {
-    let s = gameReducer(initialState(puzzle), { type: "revealHint" });
+  it("hints reveal a chosen letter of the first unsolved word and halve its points", () => {
+    let s = gameReducer(initialState(puzzle), {
+      type: "revealHint",
+      letterIndex: 2,
+    });
     expect(unsolvedWords(s)[0]).toBe("bad");
-    expect(s.revealed).toEqual({ bad: 1 });
+    expect(s.revealed).toEqual({ bad: [2] });
+    // Re-revealing the same position is a no-op.
+    expect(
+      gameReducer(s, { type: "revealHint", letterIndex: 2 }).revealed,
+    ).toEqual({ bad: [2] });
     s = play(s, ...type("bad"), { type: "submit" });
     expect(s.lastResult?.points).toBe(1); // floor(3/2)
   });
