@@ -13,14 +13,13 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { hintTarget, slotsAt, slotWord, unfoundWords } from "../state/reducer";
-import { uniqueWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
 import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
-import { FoundCombosBar } from "./FoundCombosBar";
+import { WordsPanel } from "./WordsPanel";
 import { SolvedOverlay } from "./Overlays";
 
 interface Props {
@@ -31,9 +30,9 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs } = useCrosshatchGame(mode);
+  const { state, dispatch, puzzle, totalWords: total, solvedElapsedMs } =
+    useCrosshatchGame(mode);
   const dict = use(loadDictionary());
-  const total = uniqueWords(puzzle.combos).length;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -61,7 +60,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     void markCoachSeen();
   };
 
-  const [combosOpen, setCombosOpen] = useState(false);
+  const [wordsOpen, setWordsOpen] = useState(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -243,7 +242,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           : banked.length === 1
             ? `${banked[0]} — ${state.found.length} of ${total}`
             : `${banked.length} new words — ${state.found.length} of ${total}`,
-      nothingNew: "All these words are banked — change a line",
+      nothingNew: "You\u2019ve already found all these words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       // Three honest flavors of rejection: gibberish, a real word
@@ -351,10 +350,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       <ProgressBar found={state.found.length} total={total} />
 
       <div className="pt-3">
-        <FoundCombosBar
+        <WordsPanel
           state={state}
-          open={combosOpen}
-          onToggle={() => setCombosOpen((v) => !v)}
+          open={wordsOpen}
+          onToggle={() => setWordsOpen((v) => !v)}
           onHint={requestHint}
           hintTargetWord={hintTargetWord}
           onSelectWord={(w) =>
@@ -402,8 +401,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           <button
             type="button"
             onPointerDown={(e) => e.preventDefault()}
-            onClick={() => setCombosOpen(true)}
-            className="text-xs font-semibold text-accent"
+            onClick={() => {
+              // The button says Hint, so it hints — opening the words
+              // panel too shows where the reveal landed.
+              setWordsOpen(true);
+              requestHint();
+            }}
+            className="-my-2 px-2 py-2 text-xs font-semibold text-accent"
           >
             Hint
           </button>
@@ -484,19 +488,21 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 <span className="font-semibold text-ink">
                   Fill every line with a word
                 </span>{" "}
-                — together they're a combo. Dark cells are locked letters.
+                (dark cells are locked) and press{" "}
+                <span className="font-semibold text-ink">Enter</span> — every
+                new word in the grid counts. Change any line and keep going.
               </li>
               <li>
-                Tap a cell to aim, tap it again to switch direction, and
-                press <span className="font-semibold text-ink">Enter</span>{" "}
-                — every <span className="font-semibold text-ink">new word</span>{" "}
-                in a valid grid is banked. Then change lines and keep going.
+                The chips under the grid judge each line: ❌ won't work
+                there, ⚠️ counted already, ✅ new — but the{" "}
+                <span className="font-semibold text-ink">whole grid</span>{" "}
+                must be filled to submit.
               </li>
               <li>
-                The chips under the grid judge each line: ❌ won't work,
-                ⚠️ already banked, ✅ a{" "}
-                <span className="font-semibold text-ink">new word</span>{" "}
-                ready to submit. Reach 90% of the words to solve the day.
+                The bar up top lists every word as{" "}
+                <span className="font-semibold text-ink">?-blanks</span>;
+                stuck, tap Hint to reveal a letter. Find most of the words
+                to solve the day.
               </li>
             </ul>
             <button

@@ -32,16 +32,19 @@ A small crossword frame with many right answers:
 - **3–5 intersecting lines**, each locked to a few given letters. Type
   freely into the rest.
 - Fill every line with a valid word (crossings agree, no repeats) and
-  submit — every **new word** in a valid grid is banked. Change lines
-  and keep hunting.
+  submit — every **new word** in a valid grid counts. Change lines and
+  keep hunting.
 - The daily generator enumerates **every** valid filling and accepts
-  days with 10–22 distinct words — ranks are the percentage of words
-  found: Beginner → … → Genius → **Crosshatch**.
-- Reaching **90% solves the day** (streaks stay humane); 100% is the
-  perfect sweep.
-- No hints — instead, always-on **deduction counts**: each line's chip
-  shows how many undiscovered words that line can still yield. Zero
-  means move on.
+  days with 10–22 distinct words (no single line hoarding more than 8)
+  — ranks are the percentage of words found: Beginner → … → Genius →
+  **Crosshatch**.
+- Finding **most of the words solves the day** (~90%, always with a
+  couple words of slack); 100% is the perfect sweep.
+- Chips under the grid judge each line's current word: ❌ doesn't work
+  there, grey ✓ counted already, ✅ a new word.
+- The words panel lists the whole day as **?-blanks** (like Polygram);
+  blanks are tappable to aim **hints**, which reveal random letters —
+  the first daily hint warns that the share text will carry a 🫣 count.
 - Daily + practice + a replayable archive, same as Polygram.
 
 ## Development

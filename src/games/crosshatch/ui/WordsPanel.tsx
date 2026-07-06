@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { allWords, type GameState } from "../state/reducer";
 
@@ -8,7 +9,7 @@ import { allWords, type GameState } from "../state/reducer";
  * next hint; hint-revealed letters show in the accent color, before
  * AND after the word is found.
  */
-export function FoundCombosBar({
+export function WordsPanel({
   state,
   open,
   onToggle,
@@ -25,7 +26,8 @@ export function FoundCombosBar({
   onSelectWord: (word: string) => void;
 }) {
   const recentFirst = [...state.found].reverse();
-  const words = allWords(state);
+  // The word list depends only on the puzzle — not on every keystroke.
+  const words = useMemo(() => allWords(state), [state.puzzle]);
 
   return (
     <div className="relative">

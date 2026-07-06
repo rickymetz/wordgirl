@@ -8,9 +8,10 @@ import {
 } from "../state/reducer";
 
 /**
- * One chip per line showing its current content plus an emoji verdict:
- * ❌ the word doesn't work there, ⚠️ it's already banked, ✅ it's a
- * new word ready to submit. Tapping a chip aims the cursor at its line.
+ * One chip per line showing its current content plus a verdict:
+ * ❌ the word doesn't work there, a grey ✓ means it's counted already
+ * (a normal state — winning grids reuse found words), ✅ a new word.
+ * Tapping a chip aims the cursor at its line.
  */
 export function SlotChips({
   state,
@@ -37,13 +38,15 @@ export function SlotChips({
         const display = slotCells(slot)
           .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "·")
           .join("");
+        // Reusing found words is NORMAL (most winning grids do), so
+        // that state is a calm grey check — not a warning.
         const verdict = !complete
           ? null
           : !puzzle.combos.some((c) => c[i] === word)
-            ? { emoji: "❌", label: "doesn't work here" }
+            ? { emoji: "❌", label: "doesn't work here", muted: false }
             : found.has(word)
-              ? { emoji: "⚠️", label: "already banked" }
-              : { emoji: "✅", label: "new word" };
+              ? { emoji: "✓", label: "counted already", muted: true }
+              : { emoji: "✅", label: "new word", muted: false };
         const arrow = slot.dir === "across" ? "→" : "↓";
         return (
           <button
@@ -63,7 +66,12 @@ export function SlotChips({
             </span>
             <span className="tracking-wide">{display}</span>
             {verdict && (
-              <span aria-hidden className="text-xs">
+              <span
+                aria-hidden
+                className={`text-xs ${
+                  verdict.muted ? "font-bold text-ink-soft" : ""
+                }`}
+              >
                 {verdict.emoji}
               </span>
             )}

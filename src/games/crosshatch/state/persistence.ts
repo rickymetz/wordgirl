@@ -12,6 +12,9 @@ export interface DailyProgress {
   grid: Record<string, string>;
   /** Hint reveals: word -> revealed letter positions. */
   revealed: Record<string, number[]>;
+  /** The day's distinct-word total, stored so the archive can rank
+   * without regenerating the puzzle. */
+  totalWords?: number;
   /** Reached the solve threshold (SOLVE_PCT of all combos). */
   solved: boolean;
   /** Wall-clock play time across sessions, frozen at the solve moment. */

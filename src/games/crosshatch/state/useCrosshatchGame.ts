@@ -28,6 +28,10 @@ export function useCrosshatchGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
   const puzzle = useMemo(() => generateCrosshatch(dict, seed), [dict, seed]);
+  const totalWords = useMemo(
+    () => uniqueWords(puzzle.combos).length,
+    [puzzle],
+  );
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   // hydratedRef flips only AFTER hydration completes — saving before
@@ -77,6 +81,7 @@ export function useCrosshatchGame(mode: GameMode) {
       foundWords: s.found,
       grid: s.grid,
       revealed: s.revealed,
+      totalWords,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
       // Preserve the replay marker across saves.
@@ -204,7 +209,7 @@ export function useCrosshatchGame(mode: GameMode) {
   const recordedRef = useRef(false);
   useEffect(() => {
     if (!persisted) return;
-    const total = uniqueWords(puzzle.combos).length;
+    const total = totalWords;
     if (
       state.solved &&
       !recordedRef.current &&
@@ -221,7 +226,7 @@ export function useCrosshatchGame(mode: GameMode) {
     if (state.found.length === total && total > 0) {
       void recordRankImproved(rankFor(total, total));
     }
-  }, [persisted, dateKey, state.solved, state.found, puzzle]);
+  }, [persisted, dateKey, state.solved, state.found, puzzle, totalWords]);
 
-  return { state, dispatch, puzzle, solvedElapsedMs };
+  return { state, dispatch, puzzle, totalWords, solvedElapsedMs };
 }
