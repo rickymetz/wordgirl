@@ -23,7 +23,7 @@ export function CrosshatchPreview() {
           <div
             key={i}
             className={`flex h-[22px] items-center justify-center rounded font-game text-[10px] ${
-              i === 0 ? "bg-accent text-surface" : "bg-tile text-ink"
+              i === 0 ? "bg-accent text-surface" : "bg-surface text-ink"
             }`}
           >
             {letter}

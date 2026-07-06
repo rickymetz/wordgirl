@@ -16,7 +16,11 @@ import { FoundWordsBar } from "./FoundWordsBar";
 import { Controls } from "./Controls";
 import { RankBar } from "./RankBar";
 import { DoneOverlay } from "./Overlays";
-import { POLYGON_NAMES, regularPolygonClipPath } from "./polygonPath";
+import {
+  POLYGON_NAMES,
+  polygonBottomGap,
+  regularPolygonClipPath,
+} from "./polygonPath";
 
 interface Props {
   mode: GameMode;
@@ -275,7 +279,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             width: 22,
             height: 22,
             clipPath: regularPolygonClipPath(level.size),
-            transition: "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1)",
+            // Drop by the box's empty bottom so the shape's VISIBLE
+            // bottom sits on the title baseline, not the box's.
+            transform: `translateY(${(polygonBottomGap(level.size) * 22).toFixed(1)}px)`,
+            transition:
+              "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1), transform 600ms cubic-bezier(0.65, 0, 0.35, 1)",
           }}
         />
         {mode.kind === "archive" && (
