@@ -269,6 +269,7 @@ nun
 nut
 oak
 odd
+ode
 off
 oil
 old
@@ -390,6 +391,7 @@ til
 tin
 tip
 tis
+tit
 toe
 tom
 ton
@@ -694,6 +696,7 @@ deny
 desk
 dial
 dice
+dick
 died
 dies
 diet
@@ -1194,6 +1197,7 @@ nuts
 oath
 obey
 odds
+odes
 okay
 once
 ones
@@ -1532,6 +1536,7 @@ ting
 tiny
 tips
 tire
+tits
 toad
 toby
 toes
@@ -2059,6 +2064,7 @@ derby
 devil
 devon
 diary
+dicks
 diner
 dings
 dirty
@@ -9531,7 +9537,6 @@ yourselves
 +nos
 +oaf
 +oar
-+ode
 +oft
 +ohm
 +opt

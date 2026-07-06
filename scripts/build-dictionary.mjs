@@ -41,12 +41,12 @@ const MAX_LEN = 10;
 const BLOCKLIST = new Set([
   "ass", "asses", "arse", "arses", "bastard", "bastards", "bitch",
   "bitches", "boob", "boobs", "cock", "cocks", "crap", "craps", "cunt",
-  "cunts", "damn", "damns", "dick", "dicks", "fag", "fags", "faggot",
+  "cunts", "damn", "damns", "fag", "fags", "faggot",
   "faggots", "fuck", "fucks", "fucked", "fucker", "fuckers", "fucking",
   "hell", "hells", "homo", "homos", "jap", "japs", "jew", "jews", "kike",
   "kikes", "negro", "negros", "negroes", "nigger", "niggers", "piss",
   "pissed", "pisses", "prick", "pricks", "pussy", "pussies", "shit",
-  "shits", "shitted", "slut", "sluts", "spic", "spics", "tit", "tits",
+  "shits", "shitted", "slut", "sluts", "spic", "spics",
   "twat", "twats", "wank", "wanks", "whore", "whores", "whoring",
   // Violence/abuse — the game must never require these via hints.
   "rape", "raped", "rapes", "raping", "rapist", "rapists", "incest",
@@ -56,6 +56,10 @@ const BLOCKLIST = new Set([
   "oot", "sha", "hah", "heh", "duh", "ugh", "umm", "hmm", "shh", "psst",
   "brr", "tsk", "pff", "eek", "erm",
 ]);
+
+// Words every puzzle player expects to count, whatever their subtitle
+// frequency says — forced into the REQUIRED tier (must be in ENABLE).
+const REQUIRED_ALLOWLIST = new Set(["ode", "odes", "tit", "tits", "dick"]);
 
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);
@@ -99,6 +103,12 @@ for (const line of freqRaw.split(/\r?\n/)) {
   if (!enable.has(word)) continue;
   if (BLOCKLIST.has(word)) continue;
   (rank <= REQUIRED_TOP_N ? required : bonus).add(word);
+}
+
+for (const word of REQUIRED_ALLOWLIST) {
+  if (!enable.has(word) || BLOCKLIST.has(word)) continue;
+  bonus.delete(word);
+  required.add(word);
 }
 
 const sortWords = (set) =>

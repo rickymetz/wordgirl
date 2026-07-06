@@ -5,8 +5,10 @@
  *
  * v2: two tiers — common REQUIRED words gate advancement; rarer BONUS
  * words ("+"-prefixed lines) score extra but are never required.
+ * v3: allowlist puzzle staples (ode &c.) into the required tier
+ * whatever their frequency rank; drop mild words from the blocklist.
  */
-export const DICT_VERSION = 2;
+export const DICT_VERSION = 3;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;
