@@ -117,6 +117,14 @@ export async function resetDailyForReplay(dateKey: string) {
   });
 }
 
+/** One-time first-run coach marks. */
+export async function loadCoachSeen(): Promise<boolean> {
+  return (await store.get<boolean>("coachSeen")) === true;
+}
+export async function markCoachSeen(): Promise<void> {
+  await store.set("coachSeen", true);
+}
+
 export async function loadStats(): Promise<PolygramStats> {
   return (await store.get<PolygramStats>("stats")) ?? EMPTY_STATS;
 }

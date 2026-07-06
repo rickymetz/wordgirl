@@ -4,7 +4,11 @@ import { Link } from "react-router-dom";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
-import { loadDailyProgress } from "../state/persistence";
+import {
+  loadCoachSeen,
+  loadDailyProgress,
+  markCoachSeen,
+} from "../state/persistence";
 import { currentLevel, hintTarget } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
@@ -32,6 +36,36 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     window.addEventListener("wg:storage-error", onError);
     return () => window.removeEventListener("wg:storage-error", onError);
   }, []);
+
+  // Completion card is dismissable — closing reveals the solved board.
+  const [resultsOpen, setResultsOpen] = useState(true);
+
+  // One-time first-run coach, reopenable from the header "?".
+  const [coachOpen, setCoachOpen] = useState(false);
+  useEffect(() => {
+    void loadCoachSeen().then((seen) => {
+      if (!seen) setCoachOpen(true);
+    });
+  }, []);
+  const closeCoach = () => {
+    setCoachOpen(false);
+    void markCoachSeen();
+  };
+
+  // The words panel is controlled here so the lightbulb can open it.
+  const [wordsOpen, setWordsOpen] = useState(false);
+
+  // After a few consecutive misses, glow the lightbulb — the stuck
+  // player is exactly who needs to discover hints.
+  const [missStreak, setMissStreak] = useState(0);
+  useEffect(() => {
+    const t = state.lastResult?.type;
+    if (!t) return;
+    setMissStreak((n) =>
+      t === "invalid" || t === "duplicate" ? n + 1 : t === "correct" ? 0 : n,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.lastResult]);
 
   const advance = useCallback(
     () => dispatch({ type: "advanceLevel" }),
@@ -117,13 +151,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // Physical keyboard support: letters type, Backspace deletes, Enter
   // submits, Escape closes the hint dialog.
-  const modalOpen = hintWarningOpen || state.phase === "done";
+  const modalOpen =
+    hintWarningOpen || coachOpen || (state.phase === "done" && resultsOpen);
   useEffect(() => {
     const letters = new Set(state.puzzle.letters.slice(0, level.size));
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "Escape") {
         setHintWarningOpen(false);
+        setCoachOpen(false);
         return;
       }
       if (modalOpen) return;
@@ -184,14 +220,33 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         ) : (
           <HomeLink />
         )}
-        {mode.kind === "practice" && dailyDone === false && (
-          <Link
-            to="/games/polygram"
-            className="text-sm font-semibold text-accent"
+        <span className="flex items-center gap-3">
+          {mode.kind === "practice" && dailyDone === false && (
+            <Link
+              to="/games/polygram"
+              className="text-sm font-semibold text-accent"
+            >
+              New daily puzzle
+            </Link>
+          )}
+          {state.phase === "done" && !resultsOpen && (
+            <button
+              type="button"
+              onClick={() => setResultsOpen(true)}
+              className="text-sm font-semibold text-accent"
+            >
+              Results
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setCoachOpen(true)}
+            aria-label="how to play"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-base font-bold text-ink-soft active:scale-90"
           >
-            New daily puzzle
-          </Link>
-        )}
+            ?
+          </button>
+        </span>
       </header>
 
       {/* Baseline-aligned: the shape's flat bottom sits on the text
@@ -232,7 +287,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       <RankBar state={state} />
 
       <div className="pt-3">
-        <FoundWordsBar state={state} onHint={requestHint} />
+        <FoundWordsBar
+          state={state}
+          open={wordsOpen}
+          onToggle={() => setWordsOpen((v) => !v)}
+          onHint={requestHint}
+        />
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -251,6 +311,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onDelete={() => dispatch({ type: "backspace" })}
           onShuffle={shuffle}
           onEnter={() => dispatch({ type: "submit" })}
+          onHint={() => {
+            setWordsOpen(true);
+            setMissStreak(0);
+          }}
+          hintNudge={missStreak >= 3}
         />
       </div>
 
@@ -259,6 +324,8 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         mode={mode.kind}
         dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
         elapsedMs={doneElapsedMs}
+        open={resultsOpen}
+        onClose={() => setResultsOpen(false)}
         onNewPuzzle={onNewPuzzle}
         onReplay={onReplay}
       />
@@ -297,6 +364,48 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {coachOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="coach-title"
+            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl"
+          >
+            <h2 id="coach-title" className="text-lg font-bold">
+              How to play
+            </h2>
+            <ul className="mt-3 flex flex-col gap-2.5 text-sm text-ink-soft">
+              <li>
+                <span className="font-semibold text-ink">
+                  Spell {level.size}-letter words
+                </span>{" "}
+                from the letters around the center — letters{" "}
+                <span className="font-semibold text-ink">can repeat</span>.
+              </li>
+              <li>
+                Tap letters (or type), then tap the{" "}
+                <span className="font-semibold text-ink">center shape</span>{" "}
+                or Enter to submit. The number is how many words are left.
+              </li>
+              <li>
+                Find them <span className="font-semibold text-ink">all</span>{" "}
+                and a new letter joins — the shapes grow into the next
+                polygon.
+              </li>
+            </ul>
+            <button
+              type="button"
+              autoFocus
+              onClick={closeCoach}
+              className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}

@@ -34,6 +34,8 @@ export function DoneOverlay({
   mode,
   dateKey,
   elapsedMs,
+  open,
+  onClose,
   onNewPuzzle,
   onReplay,
 }: {
@@ -43,15 +45,19 @@ export function DoneOverlay({
   dateKey?: string;
   /** Frozen solve time from the hook (single source of truth). */
   elapsedMs: number | null;
+  /** Dismissable: closing reveals the solved board read-only. */
+  open: boolean;
+  onClose: () => void;
   onNewPuzzle?: () => void;
   onReplay?: () => void;
 }) {
   const done = state.phase === "done";
   const [copied, setCopied] = useState(false);
+  const [confirmReplay, setConfirmReplay] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
-  if (!done) return null;
+  if (!done || !open) return null;
   const rank = rankFor(state.score, state.puzzle);
   const hintUsed = Object.keys(state.revealed).length > 0;
 
@@ -82,14 +88,30 @@ export function DoneOverlay({
       className="fixed inset-0 z-30 flex items-center justify-center bg-surface/90 px-6 backdrop-blur-sm"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      onClick={onClose}
     >
       <motion.div
-        className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="done-dialog-title"
+        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl"
         initial={{ scale: 0.8, y: 30 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-sm font-semibold tracking-widest text-ink-soft uppercase">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="view puzzle"
+          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-lg text-ink-soft active:scale-90"
+        >
+          ✕
+        </button>
+        <div
+          id="done-dialog-title"
+          className="text-sm font-semibold tracking-widest text-ink-soft uppercase"
+        >
           {mode === "daily" ? "Daily complete" : "Puzzle complete"}
         </div>
         <div className="mt-2 text-4xl font-bold text-accent">{rank}</div>
@@ -136,14 +158,37 @@ export function DoneOverlay({
               Keep playing — practice
             </Link>
           )}
-          {mode === "archive" && onReplay && (
+          {mode === "archive" && onReplay && !confirmReplay && (
             <button
               type="button"
-              onClick={onReplay}
+              onClick={() => setConfirmReplay(true)}
               className="rounded-full border border-line py-3 font-semibold active:scale-95"
             >
               Replay puzzle
             </button>
+          )}
+          {mode === "archive" && onReplay && confirmReplay && (
+            <div className="rounded-2xl border border-line p-3">
+              <p className="text-sm text-ink-soft">
+                Replaying replaces this day's saved result.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={onReplay}
+                  className="flex-1 rounded-full bg-accent py-2 text-sm font-semibold text-surface active:scale-95"
+                >
+                  Replay
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmReplay(false)}
+                  className="flex-1 rounded-full border border-line py-2 text-sm font-semibold active:scale-95"
+                >
+                  Keep result
+                </button>
+              </div>
+            </div>
           )}
           {mode === "archive" && (
             <Link

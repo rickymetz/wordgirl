@@ -88,6 +88,7 @@ export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
             transition={{ duration: 1.1, ease: "easeOut" }}
           >
             +{state.lastResult.points}
+            {state.phase !== "playing" && " · bonus!"}
           </motion.span>
         )}
       </AnimatePresence>

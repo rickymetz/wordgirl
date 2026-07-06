@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { hintTarget, type GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
@@ -13,19 +12,22 @@ import { POLYGON_NAMES } from "./polygonPath";
  */
 export function FoundWordsBar({
   state,
+  open,
+  onToggle,
   onHint,
 }: {
   state: GameState;
+  open: boolean;
+  onToggle: () => void;
   onHint: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const recentFirst = [...state.found].reverse();
 
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         aria-label="found words"
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
