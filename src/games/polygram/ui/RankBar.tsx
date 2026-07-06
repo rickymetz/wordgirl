@@ -1,5 +1,6 @@
 import type { Puzzle } from "../engine/types";
 import { RANKS, rankFor } from "../engine/scoring";
+import { regularPolygonClipPath } from "./polygonPath";
 
 interface Props {
   score: number;
@@ -15,13 +16,19 @@ export function RankBar({ score, puzzle }: Props) {
       <span className="w-20 shrink-0 text-sm font-semibold">{rank}</span>
       <div className="relative flex h-4 flex-1 items-center">
         <div className="absolute inset-x-0 h-0.5 bg-line" />
-        {RANKS.map((r) => (
+        {RANKS.map((r, k) => (
+          // Checkpoints are the polygon sequence itself — triangle,
+          // square, pentagon… — each in its level's color once reached.
           <span
             key={r.title}
-            className={`absolute h-2 w-2 -translate-x-1/2 rounded-full ${
-              pct >= r.pct ? "bg-accent" : "bg-line"
-            }`}
-            style={{ left: `${r.pct}%` }}
+            data-level={3 + k}
+            className="absolute h-3 w-3 -translate-x-1/2"
+            style={{
+              left: `${r.pct}%`,
+              clipPath: regularPolygonClipPath(3 + k),
+              backgroundColor:
+                pct >= r.pct ? "var(--color-accent)" : "var(--color-line)",
+            }}
           />
         ))}
         <span

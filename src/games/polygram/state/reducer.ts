@@ -67,14 +67,43 @@ export function unsolvedWords(state: GameState): string[] {
 }
 
 /**
- * The word hints act on: the first unsolved word that still has hidden
- * letters. Skipping fully-revealed (but not yet typed) words keeps the
- * hint button functional instead of silently no-oping.
+ * The word hints act on: the first unsolved word. (Fully revealed words
+ * auto-submit, so every unsolved word has hidden letters left.)
  */
 export function hintTarget(state: GameState): string | undefined {
-  return unsolvedWords(state).find(
-    (w) => (state.revealed[w] ?? []).length < w.length,
-  );
+  return unsolvedWords(state)[0];
+}
+
+/**
+ * A word entered the found list (typed or fully hint-revealed): score
+ * it, and clear the level when it was the last one.
+ */
+function applyFoundWord(
+  state: GameState,
+  word: string,
+  points: number,
+): GameState {
+  const nonce = (state.lastResult?.nonce ?? 0) + 1;
+  const found = [...state.found, word];
+  let score = state.score + points;
+  let phase: Phase = state.phase;
+
+  const level = currentLevel(state);
+  if (level.words.every((w) => found.includes(w))) {
+    score += levelBonus(level.size);
+    phase =
+      state.levelIndex === state.puzzle.levels.length - 1
+        ? "done"
+        : "levelClear";
+  }
+
+  return {
+    ...state,
+    found,
+    score,
+    phase,
+    lastResult: { type: "correct", word, points, nonce },
+  };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -116,27 +145,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
 
       const points = wordPoints(word, (state.revealed[word] ?? []).length);
-      const found = [...state.found, word];
-      let score = state.score + points;
-      let phase: Phase = state.phase;
-
-      const cleared = level.words.every((w) => found.includes(w));
-      if (cleared) {
-        score += levelBonus(level.size);
-        phase =
-          state.levelIndex === state.puzzle.levels.length - 1
-            ? "done"
-            : "levelClear";
-      }
-
-      return {
-        ...state,
-        found,
-        score,
-        phase,
-        current: "",
-        lastResult: { type: "correct", word, points, nonce },
-      };
+      return { ...applyFoundWord(state, word, points), current: "" };
     }
 
     case "revealHint": {
@@ -151,13 +160,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       ) {
         return state;
       }
-      return {
+      const next = {
         ...state,
         revealed: {
           ...state.revealed,
           [target]: [...already, action.letterIndex],
         },
       };
+      // Every letter revealed → the word counts as submitted (at the
+      // minimum score), instead of demanding the player retype it.
+      if (next.revealed[target].length === target.length) {
+        return applyFoundWord(next, target, wordPoints(target, target.length));
+      }
+      return next;
     }
 
     case "advanceLevel": {

@@ -1,58 +1,8 @@
-import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
-
-/** Brief celebration between levels; auto-advances into the morph. */
-export function LevelClearOverlay({
-  state,
-  onAdvance,
-}: {
-  state: GameState;
-  onAdvance: () => void;
-}) {
-  const clearing = state.phase === "levelClear";
-  const nextSize = state.puzzle.levels[state.levelIndex + 1]?.size;
-
-  useEffect(() => {
-    if (!clearing) return;
-    const timer = setTimeout(onAdvance, 1500);
-    return () => clearTimeout(timer);
-  }, [clearing, onAdvance]);
-
-  return (
-    <AnimatePresence>
-      {clearing && nextSize && (
-        <motion.div
-          className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="rounded-3xl bg-accent px-8 py-6 text-center text-surface shadow-xl"
-            initial={{ scale: 0.7, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          >
-            <div className="text-sm font-semibold tracking-widest uppercase opacity-80">
-              Level clear
-            </div>
-            <div className="mt-1 text-3xl font-bold">
-              {POLYGON_NAMES[nextSize]} time!
-            </div>
-            <div className="mt-1 text-sm opacity-80">
-              A new letter joins the flock
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
 
 /** End-of-puzzle screen. */
 export function DoneOverlay({

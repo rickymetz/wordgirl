@@ -9,7 +9,7 @@ import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
 import { Controls } from "./Controls";
 import { RankBar } from "./RankBar";
-import { DoneOverlay, LevelClearOverlay } from "./Overlays";
+import { DoneOverlay } from "./Overlays";
 import { POLYGON_NAMES, regularPolygonClipPath } from "./polygonPath";
 
 interface Props {
@@ -26,6 +26,14 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
     [dispatch],
   );
 
+  // No popup between levels — a short beat for the last word's score
+  // pop, then the board morphs into the next polygon.
+  useEffect(() => {
+    if (state.phase !== "levelClear") return;
+    const timer = setTimeout(advance, 900);
+    return () => clearTimeout(timer);
+  }, [state.phase, advance]);
+
   // Daily hints are free to use but marked: the first one warns that the
   // day's score will carry a "used hint" indicator.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
@@ -38,6 +46,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
     const candidates = [...target]
       .map((_, i) => i)
       .filter((i) => !already.includes(i));
+    if (candidates.length === 0) return;
     dispatch({
       type: "revealHint",
       letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
@@ -168,7 +177,6 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
         />
       </div>
 
-      <LevelClearOverlay state={state} onAdvance={advance} />
       <DoneOverlay state={state} mode={mode.kind} onNewPuzzle={onNewPuzzle} />
 
       {hintWarningOpen && (

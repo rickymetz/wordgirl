@@ -94,24 +94,25 @@ describe("gameReducer", () => {
     expect(s.lastResult?.points).toBe(1); // floor(3/2)
   });
 
-  it("hints skip past fully-revealed words to the next unsolved one", () => {
+  it("fully revealing a word auto-submits it at the minimum score", () => {
     let s = initialState(puzzle);
-    // Fully reveal "bad" without finding it.
     for (const i of [0, 1, 2]) {
       s = gameReducer(s, { type: "revealHint", letterIndex: i });
     }
-    expect(s.revealed).toEqual({ bad: [0, 1, 2] });
-    // "bad" is still unsolved, but the hint target moves on to "dab".
-    expect(unsolvedWords(s)[0]).toBe("bad");
+    // Third reveal completes "bad" -> found automatically, floor score.
+    expect(s.found).toEqual(["bad"]);
+    expect(s.score).toBe(1);
+    expect(s.lastResult).toMatchObject({ type: "correct", word: "bad" });
+    // Hints now target the next unsolved word.
     expect(hintTarget(s)).toBe("dab");
-    s = gameReducer(s, { type: "revealHint", letterIndex: 1 });
-    expect(s.revealed).toEqual({ bad: [0, 1, 2], dab: [1] });
-    // Every unsolved word fully revealed -> no target, hint is a no-op.
-    for (const i of [0, 2]) {
+    expect(unsolvedWords(s)).toEqual(["dab"]);
+    // Auto-submitting the LAST word clears the level.
+    for (const i of [0, 1, 2]) {
       s = gameReducer(s, { type: "revealHint", letterIndex: i });
     }
-    expect(hintTarget(s)).toBeUndefined();
-    expect(gameReducer(s, { type: "revealHint", letterIndex: 0 })).toBe(s);
+    expect(s.found).toEqual(["bad", "dab"]);
+    expect(s.phase).toBe("levelClear");
+    expect(s.score).toBe(1 + 1 + 3); // two floor-scored words + level bonus
   });
 
   it("hydrates to the correct level and phase", () => {

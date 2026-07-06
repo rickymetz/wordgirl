@@ -79,12 +79,17 @@ export function usePolygramGame(mode: GameMode) {
               : Array.from({ length: v as number }, (_, i) => i),
           ]),
         );
-        dispatch({
-          type: "hydrate",
-          found: saved.foundWords,
-          revealed,
-          score: saved.score,
-        });
+        // Saves from before auto-submit can hold fully-revealed words
+        // that were never typed — count them as found (floor score).
+        const found = [...saved.foundWords];
+        let score = saved.score;
+        for (const [word, positions] of Object.entries(revealed)) {
+          if (positions.length >= word.length && !found.includes(word)) {
+            found.push(word);
+            score += 1;
+          }
+        }
+        dispatch({ type: "hydrate", found, revealed, score });
       } else {
         void recordDailyStarted();
       }

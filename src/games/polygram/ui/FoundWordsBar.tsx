@@ -69,14 +69,11 @@ export function FoundWordsBar({
                 state.found.includes(w),
               ).length;
               const isCurrent = lvl.size === state.puzzle.levels[state.levelIndex].size;
-              // Everything left is fully revealed — the only move is to
-              // type those words in. Say so, or the level looks stuck.
-              const onlyTypingLeft =
-                isCurrent &&
-                foundCount < lvl.words.length &&
-                hintTarget(state) === undefined;
               return (
-                <div key={lvl.size} className="mb-3 last:mb-0">
+                // data-level scopes the accent: each section's hinted
+                // letters keep THEIR level's color (amethyst 3s, emerald
+                // 4s…) rather than following the current level.
+                <div key={lvl.size} data-level={lvl.size} className="mb-3 last:mb-0">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
                       {POLYGON_NAMES[lvl.size]} — {foundCount} of{" "}
@@ -104,15 +101,7 @@ export function FoundWordsBar({
                       return (
                         <span
                           key={word}
-                          // Unsolved words carry a dotted underline: even
-                          // fully hint-revealed, they still must be typed
-                          // in — without this they'd look identical to
-                          // found words with hinted letters.
-                          className={`text-sm font-semibold uppercase ${
-                            isFound
-                              ? ""
-                              : "underline decoration-ink-soft/40 decoration-dotted underline-offset-4"
-                          }`}
+                          className="text-sm font-semibold uppercase"
                           aria-label={isFound ? undefined : "unsolved word"}
                         >
                           {[...word].map((letter, i) =>
@@ -134,11 +123,6 @@ export function FoundWordsBar({
                       );
                     })}
                   </div>
-                  {onlyTypingLeft && (
-                    <p className="mt-1.5 text-xs text-ink-soft">
-                      Underlined words still need to be typed in.
-                    </p>
-                  )}
                 </div>
               );
             })}
