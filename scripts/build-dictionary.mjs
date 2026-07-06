@@ -111,8 +111,10 @@ for (const word of REQUIRED_ALLOWLIST) {
   required.add(word);
 }
 
-const sortWords = (set) =>
-  [...set].sort((a, b) => a.length - b.length || a.localeCompare(b));
+// Group by length but KEEP frequency order inside each group (Set
+// iteration = insertion = rank order; JS sort is stable): a word's
+// position in its bucket is its difficulty, read at runtime.
+const sortWords = (set) => [...set].sort((a, b) => a.length - b.length);
 const requiredWords = sortWords(required);
 const bonusWords = sortWords(bonus);
 

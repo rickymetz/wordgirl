@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   isSolved,
   rankFor,
-  remainingInSlot,
   solveTarget,
   uniqueWords,
 } from "./scoring";
-import type { CrosshatchPuzzle } from "./types";
 
 describe("rankFor", () => {
   it("maps found percentage to rank titles", () => {
@@ -31,26 +29,14 @@ describe("solve threshold", () => {
   });
 });
 
-describe("word progress", () => {
-  const puzzle = {
-    combos: [
-      ["bad", "dab"],
-      ["bud", "dud"],
-      ["dab", "bad"],
-    ],
-  } as unknown as CrosshatchPuzzle;
-
-  it("uniqueWords dedupes across slots and combos", () => {
-    expect(uniqueWords(puzzle.combos)).toEqual(["bad", "bud", "dab", "dud"]);
-  });
-
-  it("remainingInSlot counts distinct unfound words per line", () => {
-    const none = new Set<string>();
-    expect(remainingInSlot(puzzle, none, 0)).toBe(3); // bad, bud, dab
-    expect(remainingInSlot(puzzle, none, 1)).toBe(3); // dab, dud, bad
-    // Finding a word retires it from EVERY line it can appear in.
-    const found = new Set(["bad", "dab"]);
-    expect(remainingInSlot(puzzle, found, 0)).toBe(1); // bud
-    expect(remainingInSlot(puzzle, found, 1)).toBe(1); // dud
+describe("uniqueWords", () => {
+  it("dedupes across slots and combos", () => {
+    expect(
+      uniqueWords([
+        ["bad", "dab"],
+        ["bud", "dud"],
+        ["dab", "bad"],
+      ]),
+    ).toEqual(["bad", "bud", "dab", "dud"]);
   });
 });

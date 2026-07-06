@@ -266,7 +266,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           </AnimatePresence>
         </div>
 
-        <SlotChips state={state} onFocusSlot={focusSlot} />
+        <SlotChips state={state} dict={dict} onFocusSlot={focusSlot} />
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -326,10 +326,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 in a valid grid is banked. Then change lines and keep going.
               </li>
               <li>
-                The chips under the grid count each line's undiscovered
-                words —{" "}
-                <span className="font-semibold text-ink">0 means move on</span>
-                . Reach 90% of the words to solve the day.
+                The chips under the grid judge each line: ❌ won't work,
+                ⚠️ already banked, and a face means a{" "}
+                <span className="font-semibold text-ink">new word</span> —
+                the cooler the face, the rarer the find. Reach 90% of the
+                words to solve the day.
               </li>
             </ul>
             <button

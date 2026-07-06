@@ -1,4 +1,4 @@
-import type { Combo, CrosshatchPuzzle } from "./types";
+import type { Combo } from "./types";
 
 export const RANKS = [
   { pct: 0, title: "Beginner" },
@@ -43,21 +43,4 @@ export function solveTarget(total: number): number {
 
 export function isSolved(found: number, total: number): boolean {
   return total > 0 && found >= solveTarget(total);
-}
-
-/**
- * The always-visible deduction aid: how many words this line can still
- * yield. Zero means the line is exhausted — leave any valid word there
- * and hunt elsewhere.
- */
-export function remainingInSlot(
-  puzzle: CrosshatchPuzzle,
-  found: ReadonlySet<string>,
-  slotIndex: number,
-): number {
-  const words = new Set<string>();
-  for (const combo of puzzle.combos) {
-    if (!found.has(combo[slotIndex])) words.add(combo[slotIndex]);
-  }
-  return words.size;
 }
