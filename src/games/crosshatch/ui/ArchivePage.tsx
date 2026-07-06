@@ -46,7 +46,7 @@ export default function ArchivePage() {
   return (
     <div
       data-level="crosshatch"
-      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-12"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12"
     >
       <header className="flex items-center justify-between pt-6 pb-2">
         <HomeLink />

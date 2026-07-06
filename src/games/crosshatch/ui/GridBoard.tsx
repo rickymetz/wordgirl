@@ -16,7 +16,9 @@ const MIN_CELL = 34;
  * never falls below the fold on short phones. */
 const CHROME_H = 480;
 
-/** Live viewport size — re-measures on resize/orientation change. */
+/** Live viewport size — re-measures on resize/orientation change.
+ * Height is what pages can actually use: innerHeight minus #root's
+ * safe-area padding, which is real (~93px) in installed/PWA mode. */
 function useViewport(): { vw: number; vh: number } {
   const snapshot = useSyncExternalStore(
     (onChange) => {
@@ -27,7 +29,14 @@ function useViewport(): { vw: number; vh: number } {
         window.removeEventListener("orientationchange", onChange);
       };
     },
-    () => `${window.innerWidth}x${window.innerHeight}`,
+    () => {
+      const root = document.getElementById("root");
+      const style = root && getComputedStyle(root);
+      const insets = style
+        ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+        : 0;
+      return `${window.innerWidth}x${window.innerHeight - insets}`;
+    },
   );
   const [vw, vh] = snapshot.split("x").map(Number);
   return { vw, vh };
