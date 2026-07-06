@@ -7,26 +7,11 @@ import { loadDailyProgress } from "../state/persistence";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
-/** Pride squares matching the level colors, for the share text. */
-const LEVEL_SQUARES: Record<number, string> = {
-  3: "🟥",
-  4: "🟧",
-  5: "🟨",
-  6: "🟩",
-  7: "🟦",
-  8: "🟪",
-  9: "🩷",
-  10: "🩵",
-};
-
 function buildShareText(
   state: GameState,
   dateKey: string,
   elapsedMs: number,
 ): string {
-  const row = state.puzzle.levels
-    .map((lvl) => LEVEL_SQUARES[lvl.size])
-    .join("");
   const hints = Object.values(state.revealed).reduce(
     (n, positions) => n + positions.length,
     0,
@@ -34,7 +19,6 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : "";
   return [
     `${window.location.host} — ${formatDateKey(dateKey)}`,
-    row,
     `Score ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
   ].join("\n");
 }
