@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
 import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
@@ -27,7 +28,7 @@ function buildShareText(
   return [
     `Polygram — ${date}`,
     `${rankFor(state.score, state.puzzle)} · ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
-    window.location.host,
+    SHARE_URL,
   ].join("\n");
 }
 
