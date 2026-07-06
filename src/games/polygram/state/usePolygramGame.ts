@@ -38,9 +38,26 @@ export function usePolygramGame(mode: GameMode) {
   // Already completed before this session? Then don't re-record stats
   // and don't keep the completion timer running.
   const alreadyCompletedRef = useRef(false);
-  // Play-time tracking: previously saved elapsed + this session's clock.
+  // Play-time tracking: previously saved elapsed + this session's ACTIVE
+  // time. The clock pauses while the app is backgrounded — completed
+  // visible stretches accumulate in sessionActiveMsRef, and
+  // sessionStartRef marks the start of the current visible stretch.
   const savedElapsedRef = useRef(0);
   const sessionStartRef = useRef(Date.now());
+  const sessionActiveMsRef = useRef(0);
+  useEffect(() => {
+    if (!persisted) return;
+    const onVisibility = () => {
+      if (document.hidden) {
+        sessionActiveMsRef.current += Date.now() - sessionStartRef.current;
+      } else {
+        sessionStartRef.current = Date.now();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibility);
+  }, [persisted]);
   useEffect(() => {
     if (!persisted || hydratedRef.current) return;
     hydratedRef.current = true;
@@ -51,6 +68,7 @@ export function usePolygramGame(mode: GameMode) {
         alreadyCompletedRef.current = saved.completed;
         savedElapsedRef.current = saved.elapsedMs ?? 0;
         sessionStartRef.current = Date.now();
+        sessionActiveMsRef.current = 0;
         dispatch({
           type: "hydrate",
           found: saved.foundWords,
@@ -69,9 +87,12 @@ export function usePolygramGame(mode: GameMode) {
   // Persist after every meaningful change.
   useEffect(() => {
     if (!persisted || !hydratedRef.current) return;
+    const activeMs =
+      sessionActiveMsRef.current +
+      (document.hidden ? 0 : Date.now() - sessionStartRef.current);
     const elapsedMs = alreadyCompletedRef.current
       ? savedElapsedRef.current
-      : savedElapsedRef.current + (Date.now() - sessionStartRef.current);
+      : savedElapsedRef.current + activeMs;
     void saveDailyProgress({
       dateKey,
       dictVersion: DICT_VERSION,
