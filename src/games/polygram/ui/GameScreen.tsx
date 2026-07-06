@@ -153,7 +153,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
         )}
       </div>
 
-      <RankBar score={state.score} puzzle={state.puzzle} />
+      <RankBar state={state} />
 
       <div className="pt-3">
         <FoundWordsBar state={state} onHint={requestHint} />

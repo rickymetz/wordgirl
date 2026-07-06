@@ -1,38 +1,51 @@
-import type { Puzzle } from "../engine/types";
-import { RANKS, rankFor } from "../engine/scoring";
+import { rankFor } from "../engine/scoring";
+import type { GameState } from "../state/reducer";
 import { regularPolygonClipPath } from "./polygonPath";
 
-interface Props {
-  score: number;
-  puzzle: Puzzle;
-}
+/** Level colors (light/dark) for sizes 3–10. */
+const LEVEL_COLORS: Record<number, string> = {
+  3: "light-dark(#7e22ce, #c084fc)", // amethyst
+  4: "light-dark(#059669, #34d399)", // emerald
+  5: "light-dark(#be123c, #fb7185)", // ruby
+  6: "light-dark(#1d4ed8, #60a5fa)", // sapphire
+  7: "light-dark(#ca8a04, #facc15)", // citrine
+  8: "light-dark(#0d9488, #2dd4bf)", // turquoise
+  9: "light-dark(#c2410c, #fb923c)", // garnet
+  10: "light-dark(#4f46e5, #818cf8)", // tanzanite
+};
 
-/** Checkpoint colors (light/dark), matching levels 3–8. */
-const STOP_COLORS = [
-  "light-dark(#7e22ce, #c084fc)", // amethyst
-  "light-dark(#059669, #34d399)", // emerald
-  "light-dark(#be123c, #fb7185)", // ruby
-  "light-dark(#1d4ed8, #60a5fa)", // sapphire
-  "light-dark(#ca8a04, #facc15)", // citrine
-  "light-dark(#0d9488, #2dd4bf)", // turquoise
-];
+/**
+ * Level progress bar: one segment per level in that level's color, with
+ * the level's polygon as the checkpoint at its end. Cleared levels are
+ * fully revealed; the current level's segment fills with words found.
+ */
+export function RankBar({ state }: { state: GameState }) {
+  const { puzzle } = state;
+  const levels = puzzle.levels;
+  const n = levels.length;
 
-// One gradient across the whole bar with a stop per rank checkpoint —
-// the advancing fill reveals each checkpoint's color as it approaches.
-const GRADIENT = `linear-gradient(to right, ${RANKS.map(
-  (r, k) => `${STOP_COLORS[k]} ${r.pct}%`,
-).join(", ")})`;
+  // Overall fill: completed levels plus fraction of the current one.
+  const current = levels[state.levelIndex];
+  const foundInCurrent = current.words.filter((w) =>
+    state.found.includes(w),
+  ).length;
+  const frac =
+    state.phase === "done" ? 1 : foundInCurrent / current.words.length;
+  const pct = Math.min(100, ((state.levelIndex + frac) / n) * 100);
 
-export function RankBar({ score, puzzle }: Props) {
-  const rank = rankFor(score, puzzle);
-  const pct = Math.min(
-    100,
-    puzzle.maxScore === 0 ? 0 : (score / puzzle.maxScore) * 100,
-  );
+  // Hard color stops: each segment is solidly its level's color.
+  const gradient = `linear-gradient(to right, ${levels
+    .map((lvl, k) => {
+      const color = LEVEL_COLORS[lvl.size];
+      return `${color} ${(k / n) * 100}%, ${color} ${((k + 1) / n) * 100}%`;
+    })
+    .join(", ")})`;
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-20 shrink-0 text-sm font-semibold">{rank}</span>
+      <span className="w-20 shrink-0 text-sm font-semibold">
+        {rankFor(state.score, puzzle)}
+      </span>
       <div className="relative flex h-4 flex-1 items-center">
         <div className="absolute inset-x-0 h-1 rounded-full bg-line" />
         {pct > 0 && (
@@ -41,25 +54,27 @@ export function RankBar({ score, puzzle }: Props) {
             style={{ width: `${pct}%` }}
           >
             {/* Full-bar gradient clipped by the fill width, so segment
-                colors line up with the checkpoints. */}
+                colors stay aligned with their levels. */}
             <div
               className="h-full"
-              style={{ width: `${10000 / pct}%`, backgroundImage: GRADIENT }}
+              style={{ width: `${10000 / pct}%`, backgroundImage: gradient }}
             />
           </div>
         )}
-        {RANKS.map((r, k) => (
-          // Checkpoints are the polygon sequence itself — triangle,
-          // square, pentagon… — each in its level's color once reached.
+        {levels.map((lvl, k) => (
+          // Each level's polygon marks the end of its segment, lighting
+          // up in its color once the level is cleared.
           <span
-            key={r.title}
-            data-level={3 + k}
+            key={lvl.size}
+            data-level={lvl.size}
             className="absolute h-3 w-3 -translate-x-1/2"
             style={{
-              left: `${r.pct}%`,
-              clipPath: regularPolygonClipPath(3 + k),
+              left: `${((k + 1) / n) * 100}%`,
+              clipPath: regularPolygonClipPath(lvl.size),
               backgroundColor:
-                pct >= r.pct ? "var(--color-accent)" : "var(--color-line)",
+                state.levelIndex > k || state.phase === "done"
+                  ? "var(--color-accent)"
+                  : "var(--color-line)",
             }}
           />
         ))}
