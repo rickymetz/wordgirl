@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { ChevronDown } from "lucide-react";
 import { hintTarget, type GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
@@ -54,7 +55,7 @@ export function FoundWordsBar({
           className="shrink-0 text-ink-soft"
           aria-hidden
         >
-          ⌄
+          <ChevronDown className="h-4 w-4" />
         </motion.span>
       </button>
 

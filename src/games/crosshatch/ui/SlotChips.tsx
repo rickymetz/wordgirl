@@ -1,3 +1,4 @@
+import { Check, CircleCheck, MoveDown, MoveRight, X } from "lucide-react";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import {
@@ -8,10 +9,11 @@ import {
 } from "../state/reducer";
 
 /**
- * One chip per line showing its current content plus a verdict:
- * ❌ the word doesn't work there, a grey ✓ means it's counted already
- * (a normal state — winning grids reuse found words), ✅ a new word.
- * Tapping a chip aims the cursor at its line.
+ * One chip per line showing its current content plus a verdict icon:
+ * an X when the word doesn't work there, a grey check when it's
+ * counted already (a normal state — winning grids reuse found words),
+ * a green circled check for a new word. Tapping a chip aims the
+ * cursor at its line.
  */
 export function SlotChips({
   state,
@@ -43,11 +45,11 @@ export function SlotChips({
         const verdict = !complete
           ? null
           : !puzzle.combos.some((c) => c[i] === word)
-            ? { emoji: "❌", label: "doesn't work here", muted: false }
+            ? { Icon: X, tone: "text-warn", label: "doesn't work here" }
             : found.has(word)
-              ? { emoji: "✓", label: "counted already", muted: true }
-              : { emoji: "✅", label: "new word", muted: false };
-        const arrow = slot.dir === "across" ? "→" : "↓";
+              ? { Icon: Check, tone: "text-ink-soft", label: "counted already" }
+              : { Icon: CircleCheck, tone: "text-good", label: "new word" };
+        const Arrow = slot.dir === "across" ? MoveRight : MoveDown;
         return (
           <button
             key={i}
@@ -61,19 +63,14 @@ export function SlotChips({
               active === slot ? "border-accent" : "border-line"
             }`}
           >
-            <span aria-hidden className="text-xs text-ink-soft">
-              {arrow}
-            </span>
+            <Arrow aria-hidden className="h-3 w-3 text-ink-soft" strokeWidth={3} />
             <span className="tracking-wide">{display}</span>
             {verdict && (
-              <span
+              <verdict.Icon
                 aria-hidden
-                className={`text-xs ${
-                  verdict.muted ? "font-bold text-ink-soft" : ""
-                }`}
-              >
-                {verdict.emoji}
-              </span>
+                className={`h-4 w-4 ${verdict.tone}`}
+                strokeWidth={3}
+              />
             )}
           </button>
         );

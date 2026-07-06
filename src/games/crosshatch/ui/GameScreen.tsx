@@ -2,6 +2,7 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { use, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
+import { Check, CircleCheck, CircleHelp, X } from "lucide-react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
@@ -304,9 +305,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             type="button"
             onClick={() => setCoachOpen(true)}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-base font-bold text-ink-soft active:scale-90"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >
-            ?
+            <CircleHelp aria-hidden className="h-5 w-5" />
           </button>
         </span>
       </header>
@@ -493,8 +494,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 new word in the grid counts. Change any line and keep going.
               </li>
               <li>
-                The chips under the grid judge each line: ❌ won't work
-                there, ⚠️ counted already, ✅ new — but the{" "}
+                The chips under the grid judge each line:{" "}
+                <X aria-label="X" className="inline h-3.5 w-3.5 text-warn" strokeWidth={3} />{" "}
+                won't work there,{" "}
+                <Check aria-label="check" className="inline h-3.5 w-3.5" strokeWidth={3} />{" "}
+                counted already,{" "}
+                <CircleCheck aria-label="circled check" className="inline h-3.5 w-3.5 text-good" strokeWidth={3} />{" "}
+                new — but the{" "}
                 <span className="font-semibold text-ink">whole grid</span>{" "}
                 must be filled to submit.
               </li>

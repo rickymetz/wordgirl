@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fontsource/rubik-mono-one": "^5.2.8",
+    "lucide-react": "^1.23.0",
     "motion": "^12.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

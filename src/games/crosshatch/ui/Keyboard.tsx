@@ -1,3 +1,5 @@
+import { Delete } from "lucide-react";
+
 const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 /** On-screen keyboard — the game is free typing, so it needs all 26. */
@@ -55,9 +57,9 @@ export function Keyboard({
           onPointerDown={(e) => e.preventDefault()}
           onClick={onBackspace}
           aria-label="delete"
-          className={`${key} flex-[1.6] text-base`}
+          className={`${key} flex-[1.6]`}
         >
-          ⌫
+          <Delete aria-hidden className="h-5 w-5" />
         </button>
       </div>
     </div>

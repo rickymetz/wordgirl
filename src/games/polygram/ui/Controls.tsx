@@ -1,3 +1,5 @@
+import { Shuffle } from "lucide-react";
+
 interface Props {
   onDelete: () => void;
   onShuffle: () => void;
@@ -25,21 +27,7 @@ export function Controls({ onDelete, onShuffle, onEnter }: Props) {
         style={{ touchAction: "manipulation" }}
         aria-label="shuffle letters"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M4 12a8 8 0 0 1 13.6-5.7M20 12a8 8 0 0 1-13.6 5.7"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M17.6 2.5v3.8h-3.8M6.4 21.5v-3.8h3.8"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Shuffle aria-hidden className="h-4.5 w-4.5" />
       </button>
       <button
         type="button"

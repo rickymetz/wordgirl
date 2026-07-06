@@ -2,6 +2,7 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey, localDateKey } from "../../../lib/date";
+import { CircleHelp } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
@@ -247,9 +248,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             type="button"
             onClick={() => setCoachOpen(true)}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-base font-bold text-ink-soft active:scale-90"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >
-            ?
+            <CircleHelp aria-hidden className="h-5 w-5" />
           </button>
         </span>
       </header>

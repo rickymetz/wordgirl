@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { X } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
 import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
@@ -109,9 +110,9 @@ export function DoneOverlay({
           type="button"
           onClick={onClose}
           aria-label="view puzzle"
-          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-lg text-ink-soft active:scale-90"
+          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-ink-soft active:scale-90"
         >
-          ✕
+          <X aria-hidden className="h-5 w-5" />
         </button>
         <div
           id="done-dialog-title"
