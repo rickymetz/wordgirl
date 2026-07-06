@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
+import { loadDailyProgress } from "../state/persistence";
 import { currentLevel, hintTarget } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
@@ -36,6 +37,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     const timer = setTimeout(advance, 900);
     return () => clearTimeout(timer);
   }, [state.phase, advance]);
+
+  // Practice: offer a jump to the daily only while it's still unsolved.
+  const [dailyDone, setDailyDone] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (mode.kind !== "practice") return;
+    void loadDailyProgress(localDateKey()).then((saved) =>
+      setDailyDone(saved?.completed ?? false),
+    );
+  }, [mode.kind]);
 
   // Daily hints are free to use but marked: the first one warns that the
   // day's score will carry a "used hint" indicator.
@@ -113,22 +123,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         ) : (
           <HomeLink />
         )}
-        {mode.kind === "practice" && (
-          <span className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onNewPuzzle}
-              className="text-sm font-semibold text-accent"
-            >
-              New puzzle
-            </button>
-            <Link
-              to="/games/polygram"
-              className="text-sm font-semibold text-ink-soft"
-            >
-              Daily
-            </Link>
-          </span>
+        {mode.kind === "practice" && dailyDone === false && (
+          <Link
+            to="/games/polygram"
+            className="text-sm font-semibold text-accent"
+          >
+            New daily puzzle
+          </Link>
         )}
       </header>
 
@@ -150,6 +151,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         {mode.kind === "archive" && (
           <span className="text-base font-semibold text-ink-soft">
             {formatDateKey(mode.dateKey)}
+          </span>
+        )}
+        {mode.kind === "practice" && (
+          <span className="text-base font-semibold text-ink-soft">
+            practice
           </span>
         )}
       </div>
