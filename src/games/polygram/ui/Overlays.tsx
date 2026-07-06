@@ -33,7 +33,7 @@ function buildShareText(
   );
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : "";
   return [
-    `WordGirl Polygram — ${formatDateKey(dateKey)}`,
+    `${window.location.host} — ${formatDateKey(dateKey)}`,
     row,
     `Score ${state.score}/${state.puzzle.maxScore} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
   ].join("\n");
@@ -45,12 +45,14 @@ export function DoneOverlay({
   mode,
   dateKey,
   onNewPuzzle,
+  onReplay,
 }: {
   state: GameState;
   mode: "daily" | "practice" | "archive";
   /** Set for daily/archive — enables the share button. */
   dateKey?: string;
   onNewPuzzle?: () => void;
+  onReplay?: () => void;
 }) {
   const done = state.phase === "done";
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
@@ -142,6 +144,15 @@ export function DoneOverlay({
             >
               Keep playing — practice
             </Link>
+          )}
+          {mode === "archive" && onReplay && (
+            <button
+              type="button"
+              onClick={onReplay}
+              className="rounded-full border border-line py-3 font-semibold active:scale-95"
+            >
+              Replay puzzle
+            </button>
           )}
           {mode === "archive" && (
             <Link

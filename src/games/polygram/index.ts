@@ -18,12 +18,10 @@ export const polygram: GameDefinition = {
       path: "archive/:dateKey",
       Page: lazy(() => import("./ui/ArchivePlayPage")),
     },
-    { path: "scoreboard", Page: lazy(() => import("./ui/ScoreboardPage")) },
   ],
   primaryLabel: "Daily puzzle",
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
-    { label: "Scoreboard", path: "scoreboard" },
   ],
 };

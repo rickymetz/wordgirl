@@ -13,6 +13,11 @@ export interface DailyProgress {
   completed: boolean;
   /** Wall-clock play time accumulated across sessions, frozen at completion. */
   elapsedMs: number;
+  /**
+   * Set when this date's completion already counted toward stats — a
+   * replay must not increment totals again.
+   */
+  statsRecorded?: boolean;
 }
 
 export interface PolygramStats {
@@ -66,6 +71,20 @@ export async function loadAllDailyProgress(): Promise<
 
 export async function saveDailyProgress(progress: DailyProgress) {
   await store.set(`daily:${progress.dateKey}`, progress);
+}
+
+/** Wipe a completed day for a fresh replay run; stats stay counted. */
+export async function resetDailyForReplay(dateKey: string) {
+  await saveDailyProgress({
+    dateKey,
+    dictVersion: DICT_VERSION,
+    foundWords: [],
+    revealed: {},
+    score: 0,
+    completed: false,
+    elapsedMs: 0,
+    statsRecorded: true,
+  });
 }
 
 export async function loadStats(): Promise<PolygramStats> {

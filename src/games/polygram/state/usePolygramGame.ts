@@ -35,9 +35,11 @@ export function usePolygramGame(mode: GameMode) {
 
   // Hydrate from storage once, and count a fresh date as "played".
   const hydratedRef = useRef(false);
-  // Already completed before this session? Then don't re-record stats
-  // and don't keep the completion timer running.
+  // Completed before this session → the timer stays frozen.
   const alreadyCompletedRef = useRef(false);
+  // Stats already counted (completed earlier OR this is a replay run) →
+  // don't record completion again.
+  const statsRecordedRef = useRef(false);
   // Play-time tracking: previously saved elapsed + this session's ACTIVE
   // time. The clock pauses while the app is backgrounded — completed
   // visible stretches accumulate in sessionActiveMsRef, and
@@ -66,6 +68,7 @@ export function usePolygramGame(mode: GameMode) {
       if (cancelled) return;
       if (saved) {
         alreadyCompletedRef.current = saved.completed;
+        statsRecordedRef.current = saved.completed || saved.statsRecorded === true;
         savedElapsedRef.current = saved.elapsedMs ?? 0;
         sessionStartRef.current = Date.now();
         sessionActiveMsRef.current = 0;
@@ -116,6 +119,8 @@ export function usePolygramGame(mode: GameMode) {
       score: state.score,
       completed: state.phase === "done",
       elapsedMs,
+      // Preserve the replay marker across saves.
+      ...(statsRecordedRef.current && { statsRecorded: true }),
     });
   }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase]);
 
@@ -126,7 +131,7 @@ export function usePolygramGame(mode: GameMode) {
       !persisted ||
       state.phase !== "done" ||
       completedRef.current ||
-      alreadyCompletedRef.current
+      statsRecordedRef.current
     ) {
       return;
     }

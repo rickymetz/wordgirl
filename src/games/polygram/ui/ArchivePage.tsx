@@ -4,6 +4,7 @@ import { HomeLink } from "../../../components/HomeLink";
 import {
   dateKeyRange,
   formatDateKey,
+  formatDuration,
   localDateKey,
   previousDateKey,
 } from "../../../lib/date";
@@ -77,6 +78,7 @@ function ArchiveRow({
 }) {
   let status = "Not played";
   let statusClass = "text-ink-soft";
+  const completed = saved?.completed ?? false;
   if (saved?.completed) {
     // Regenerate the puzzle only to translate score → rank; it's fast.
     const rank = rankFor(
@@ -95,17 +97,23 @@ function ArchiveRow({
   return (
     <Link
       to={`/games/polygram/archive/${dateKey}`}
-      className="flex items-center justify-between rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.98]"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface-raised px-5 py-4 transition-transform active:scale-[0.98]"
     >
-      <div>
+      <div className="min-w-0">
         <div className="font-semibold">{formatDateKey(dateKey)}</div>
-        <div className={`mt-0.5 text-sm font-medium ${statusClass}`}>
+        <div className={`mt-0.5 truncate text-sm font-medium ${statusClass}`}>
           {status}
         </div>
       </div>
-      <span className="text-ink-soft" aria-hidden>
-        ›
-      </span>
+      {completed ? (
+        <span className="shrink-0 font-game text-base text-accent">
+          {formatDuration(saved?.elapsedMs ?? 0)}
+        </span>
+      ) : (
+        <span className="shrink-0 text-ink-soft" aria-hidden>
+          ›
+        </span>
+      )}
     </Link>
   );
 }

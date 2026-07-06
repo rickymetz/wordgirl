@@ -16,9 +16,11 @@ import { POLYGON_NAMES, regularPolygonClipPath } from "./polygonPath";
 interface Props {
   mode: GameMode;
   onNewPuzzle?: () => void;
+  /** Archive: wipe the day's progress and start a fresh run. */
+  onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onNewPuzzle }: Props) {
+export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   const { state, dispatch } = usePolygramGame(mode);
   const level = currentLevel(state);
 
@@ -187,6 +189,7 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
               : undefined
         }
         onNewPuzzle={onNewPuzzle}
+        onReplay={onReplay}
       />
 
       {hintWarningOpen && (
