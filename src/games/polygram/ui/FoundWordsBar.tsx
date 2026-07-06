@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { ChevronDown } from "lucide-react";
 import { hintTarget, type GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
@@ -54,7 +55,7 @@ export function FoundWordsBar({
           className="shrink-0 text-ink-soft"
           aria-hidden
         >
-          ⌄
+          <ChevronDown className="h-4 w-4" />
         </motion.span>
       </button>
 
@@ -143,7 +144,7 @@ export function FoundWordsBar({
                           type="button"
                           onClick={() => isCurrent && onSelectWord(word)}
                           aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
-                          className={`-mx-1 rounded px-1 font-game text-xs uppercase ${
+                          className={`-mx-1 -my-1.5 rounded px-1 py-1.5 font-game text-xs uppercase ${
                             hintTargetWord === word
                               ? "ring-2 ring-accent"
                               : ""

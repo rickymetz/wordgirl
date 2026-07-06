@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-  <rect width="64" height="64" rx="14.08" fill="#7c3aed"/>
-  <g fill="#ffffff" opacity="0.92"><polygon points="0,-7.4879999999999995 6.484608,3.7439999999999998 -6.484608,3.7439999999999998" transform="translate(32 16.5248) rotate(0)" /><polygon points="0,-7.4879999999999995 6.484608,3.7439999999999998 -6.484608,3.7439999999999998" transform="translate(45.401916328644944 39.7376) rotate(0)" /><polygon points="0,-7.4879999999999995 6.484608,3.7439999999999998 -6.484608,3.7439999999999998" transform="translate(18.598083671355056 39.7376) rotate(0)" /></g>
-  <g fill="#ffffff"><polygon points="0,-8.486400000000001 7.349222400000001,4.243200000000001 -7.349222400000001,4.243200000000001" transform="translate(32 32) rotate(0)" /></g>
-  <circle cx="29.7536" cy="32.7488" r="1.1232" fill="#7c3aed"/>
-  <circle cx="34.2464" cy="32.7488" r="1.1232" fill="#7c3aed"/>
-</svg>

@@ -2,7 +2,9 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDateKey, localDateKey } from "../../../lib/date";
+import { CircleHelp } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { ModalDialog } from "../../../components/ModalDialog";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import {
   loadCoachSeen,
@@ -58,18 +60,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // The words panel is controlled here so the lightbulb can open it.
   const [wordsOpen, setWordsOpen] = useState(false);
-
-  // After a few consecutive misses, glow the lightbulb — the stuck
-  // player is exactly who needs to discover hints.
-  const [missStreak, setMissStreak] = useState(0);
-  useEffect(() => {
-    const t = state.lastResult?.type;
-    if (!t) return;
-    setMissStreak((n) =>
-      t === "invalid" || t === "duplicate" ? n + 1 : t === "correct" ? 0 : n,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.lastResult]);
 
   const advance = useCallback(
     () => dispatch({ type: "advanceLevel" }),
@@ -258,9 +248,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             type="button"
             onClick={() => setCoachOpen(true)}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-base font-bold text-ink-soft active:scale-90"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >
-            ?
+            <CircleHelp aria-hidden className="h-5 w-5" />
           </button>
         </span>
       </header>
@@ -335,11 +325,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onDelete={() => dispatch({ type: "backspace" })}
           onShuffle={shuffle}
           onEnter={() => dispatch({ type: "submit" })}
-          onHint={() => {
-            setWordsOpen(true);
-            setMissStreak(0);
-          }}
-          hintNudge={missStreak >= 3}
         />
       </div>
 
@@ -355,13 +340,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       />
 
       {hintWarningOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hint-dialog-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl"
-          >
+        <ModalDialog
+          labelledBy="hint-dialog-title"
+          onClose={() => setHintWarningOpen(false)}
+          className="text-center"
+        >
+          <div>
             <h2 id="hint-dialog-title" className="text-lg font-bold">
               Use a hint?
             </h2>
@@ -374,7 +358,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                autoFocus
+                data-autofocus
                 onClick={confirmHint}
                 className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
               >
@@ -389,17 +373,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {coachOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="coach-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl"
-          >
+        <ModalDialog labelledBy="coach-title" onClose={closeCoach}>
+          <div>
             <h2 id="coach-title" className="text-lg font-bold">
               How to play
             </h2>
@@ -424,14 +403,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </ul>
             <button
               type="button"
-              autoFocus
+              data-autofocus
               onClick={closeCoach}
               className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
             >
               Got it
             </button>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}

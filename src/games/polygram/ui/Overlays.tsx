@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { X } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
+import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
@@ -57,6 +59,7 @@ export function DoneOverlay({
   const [confirmReplay, setConfirmReplay] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
+  const dialogRef = useModalFocus<HTMLDivElement>(done && open);
 
   if (!done || !open) return null;
   const rank = rankFor(state.score, state.puzzle);
@@ -92,6 +95,8 @@ export function DoneOverlay({
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="done-dialog-title"
@@ -105,9 +110,9 @@ export function DoneOverlay({
           type="button"
           onClick={onClose}
           aria-label="view puzzle"
-          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-lg text-ink-soft active:scale-90"
+          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-ink-soft active:scale-90"
         >
-          ✕
+          <X aria-hidden className="h-5 w-5" />
         </button>
         <div
           id="done-dialog-title"

@@ -29,7 +29,7 @@
     color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))
   );
   --color-good: light-dark(#059669, #34d399);
-  --color-warn: light-dark(#d97706, #fbbf24);
+  --color-warn: light-dark(#b45309, #fbbf24);
 }
 
 /*

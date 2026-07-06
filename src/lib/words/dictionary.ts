@@ -13,8 +13,10 @@
  * generator band and save shape changed with it.
  * v6: buckets keep subtitle-frequency order (commonest first within
  * each length); polygram sorts its display lists itself now.
+ * v7: blocklist subtitle name-junk, allowlist everyday concrete words,
+ * and cap any one crosshatch line's share of a day's words.
  */
-export const DICT_VERSION = 6;
+export const DICT_VERSION = 7;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

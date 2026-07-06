@@ -55,11 +55,22 @@ const BLOCKLIST = new Set([
   // Dialect/transcription junk that slips in via subtitle frequencies.
   "oot", "sha", "hah", "heh", "duh", "ugh", "umm", "hmm", "shh", "psst",
   "brr", "tsk", "pff", "eek", "erm",
+  // Names and subtitle artifacts that read as non-words when a puzzle
+  // REQUIRES them (they're in ENABLE, but nobody thinks of them).
+  "mel", "del", "sal", "mae", "kat", "goa", "lakhs", "riley", "sally",
+  "donna", "jones", "sonny", "monte",
 ]);
 
 // Words every puzzle player expects to count, whatever their subtitle
 // frequency says — forced into the REQUIRED tier (must be in ENABLE).
-const REQUIRED_ALLOWLIST = new Set(["ode", "odes", "tit", "tits", "dick"]);
+const REQUIRED_ALLOWLIST = new Set([
+  "ode", "odes", "tit", "tits", "dick",
+  // Everyday concrete words the subtitle corpus underrates — players
+  // type these and deserve a yes.
+  "munch", "stomp", "stung", "stout", "stoop", "ore", "bog", "oar",
+  "eel", "elm", "imp", "orb", "urn", "yolk", "mime", "ewe", "husk",
+  "stoic",
+]);
 
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);

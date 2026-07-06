@@ -12,6 +12,11 @@ import { cellKey, slotCells } from "./types";
  */
 export const MIN_WORDS = 10;
 export const MAX_WORDS = 22;
+/**
+ * No single line may hold more than this many of the day's words —
+ * over it, the endgame degenerates into listing one pattern's fills.
+ */
+export const MAX_SLOT_WORDS = 8;
 /** Enumeration bails past this many combos — the grid is too loose. */
 const ENUM_CAP = 200;
 /** All but at most this many slots must admit ≥2 different words. */
@@ -92,16 +97,34 @@ export function generateCrosshatch(
       rand,
     );
 
-    // Tighten with extra givens until the distinct-word count fits.
+    // Tighten with extra givens until the distinct-word count AND the
+    // per-line share fit.
     for (let extra = 0; extra <= MAX_EXTRA_GIVENS; extra++) {
       const combos = enumerateCombos(shape, dict, givens, ENUM_CAP);
       const wordCount = new Set(combos.flat()).size;
-      if (combos.length >= ENUM_CAP || wordCount > MAX_WORDS) {
-        // Never lock a line completely — a fully-given slot has no
-        // interactivity, it's dead weight on the board.
-        const idx = spareCells.findIndex(
-          (key) => !wouldFullyLockSlot(shape, givens, key),
+      const slotVariety = shape.slots.map(
+        (_, i) => new Set(combos.map((c) => c[i])).size,
+      );
+      const fattest = slotVariety.indexOf(Math.max(...slotVariety));
+      if (
+        combos.length >= ENUM_CAP ||
+        wordCount > MAX_WORDS ||
+        slotVariety[fattest] > MAX_SLOT_WORDS
+      ) {
+        // Prefer a given INSIDE the fattest line — it's the one that
+        // needs constraining. Never lock a line completely.
+        const fatKeys = new Set(
+          slotCells(shape.slots[fattest]).map((c) => cellKey(c.row, c.col)),
         );
+        let idx = spareCells.findIndex(
+          (key) =>
+            fatKeys.has(key) && !wouldFullyLockSlot(shape, givens, key),
+        );
+        if (idx === -1) {
+          idx = spareCells.findIndex(
+            (key) => !wouldFullyLockSlot(shape, givens, key),
+          );
+        }
         if (idx === -1) break;
         const next = spareCells.splice(idx, 1)[0];
         givens.set(next, solutionGrid.get(next)!);

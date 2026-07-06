@@ -1,3 +1,4 @@
+import { Check, CircleCheck, MoveDown, MoveRight, X } from "lucide-react";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import {
@@ -8,9 +9,11 @@ import {
 } from "../state/reducer";
 
 /**
- * One chip per line showing its current content plus an emoji verdict:
- * ❌ the word doesn't work there, ⚠️ it's already banked, ✅ it's a
- * new word ready to submit. Tapping a chip aims the cursor at its line.
+ * One chip per line showing its current content plus a verdict icon:
+ * an X when the word doesn't work there, a grey check when it's
+ * counted already (a normal state — winning grids reuse found words),
+ * a green circled check for a new word. Tapping a chip aims the
+ * cursor at its line.
  */
 export function SlotChips({
   state,
@@ -37,34 +40,37 @@ export function SlotChips({
         const display = slotCells(slot)
           .map((c) => letterAt(state, c.row, c.col)?.toUpperCase() ?? "·")
           .join("");
+        // Reusing found words is NORMAL (most winning grids do), so
+        // that state is a calm grey check — not a warning.
         const verdict = !complete
           ? null
           : !puzzle.combos.some((c) => c[i] === word)
-            ? { emoji: "❌", label: "doesn't work here" }
+            ? { Icon: X, tone: "text-warn", label: "doesn't work here" }
             : found.has(word)
-              ? { emoji: "⚠️", label: "already banked" }
-              : { emoji: "✅", label: "new word" };
-        const arrow = slot.dir === "across" ? "→" : "↓";
+              ? { Icon: Check, tone: "text-ink-soft", label: "counted already" }
+              : { Icon: CircleCheck, tone: "text-good", label: "new word" };
+        const Arrow = slot.dir === "across" ? MoveRight : MoveDown;
         return (
           <button
             key={i}
             type="button"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => onFocusSlot(slot)}
             aria-label={`${slot.dir} word ${display}${
               verdict ? ` — ${verdict.label}` : ""
             }`}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
+            className={`flex touch-manipulation items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors select-none ${
               active === slot ? "border-accent" : "border-line"
             }`}
           >
-            <span aria-hidden className="text-xs text-ink-soft">
-              {arrow}
-            </span>
+            <Arrow aria-hidden className="h-3 w-3 text-ink-soft" strokeWidth={3} />
             <span className="tracking-wide">{display}</span>
             {verdict && (
-              <span aria-hidden className="text-xs">
-                {verdict.emoji}
-              </span>
+              <verdict.Icon
+                aria-hidden
+                className={`h-4 w-4 ${verdict.tone}`}
+                strokeWidth={3}
+              />
             )}
           </button>
         );

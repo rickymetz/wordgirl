@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { X } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
+import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 
 function buildShareText(
@@ -56,6 +58,7 @@ export function SolvedOverlay({
   const [confirmReplay, setConfirmReplay] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
+  const dialogRef = useModalFocus<HTMLDivElement>(open);
 
   if (!open) return null;
   const perfect = found === total;
@@ -90,6 +93,8 @@ export function SolvedOverlay({
       onClick={onClose}
     >
       <motion.div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="solved-dialog-title"
@@ -103,9 +108,9 @@ export function SolvedOverlay({
           type="button"
           onClick={onClose}
           aria-label="view puzzle"
-          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-lg text-ink-soft active:scale-90"
+          className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-ink-soft active:scale-90"
         >
-          ✕
+          <X aria-hidden className="h-5 w-5" />
         </button>
         <div
           id="solved-dialog-title"

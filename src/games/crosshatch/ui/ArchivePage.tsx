@@ -1,5 +1,6 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import {
   dateKeyRange,
@@ -8,10 +9,7 @@ import {
   localDateKey,
   previousDateKey,
 } from "../../../lib/date";
-import type { Dictionary } from "../../../lib/words/dictionary";
-import { loadDictionary } from "../../../lib/words/loader";
-import { rankFor, uniqueWords } from "../engine/scoring";
-import { generateCrosshatch, dailySeed } from "../engine/generator";
+import { rankFor } from "../engine/scoring";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
@@ -19,29 +17,6 @@ import {
   type ArchivedDay,
   type CrosshatchStats,
 } from "../state/persistence";
-
-// rank needs the day's word total; cache so each date generates at
-// most once per session instead of on every list render.
-const rankCache = new Map<string, string>();
-function rankForDay(
-  dict: Dictionary,
-  dateKey: string,
-  found: number,
-): { rank: string; total: number } {
-  const key = `${dateKey}:${found}`;
-  let cached = rankCache.get(key);
-  let total = totalCache.get(dateKey);
-  if (cached === undefined || total === undefined) {
-    total = uniqueWords(
-      generateCrosshatch(dict, dailySeed(dateKey)).combos,
-    ).length;
-    totalCache.set(dateKey, total);
-    cached = rankFor(found, total);
-    rankCache.set(key, cached);
-  }
-  return { rank: cached, total };
-}
-const totalCache = new Map<string, number>();
 
 /** Past daily puzzles: calendar mosaic + played days, newest first. */
 export default function ArchivePage() {
@@ -152,9 +127,9 @@ function CalendarMosaic({
           onClick={() => shiftMonth(-1)}
           disabled={month <= epochMonth}
           aria-label="Previous month"
-          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+          className="-m-2 p-2 text-ink disabled:opacity-25"
         >
-          ‹
+          <ChevronLeft aria-hidden className="h-5 w-5" />
         </button>
         <div className="text-sm font-semibold">{label}</div>
         <button
@@ -162,9 +137,9 @@ function CalendarMosaic({
           onClick={() => shiftMonth(1)}
           disabled={month >= currentMonth}
           aria-label="Next month"
-          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+          className="-m-2 p-2 text-ink disabled:opacity-25"
         >
-          ›
+          <ChevronRight aria-hidden className="h-5 w-5" />
         </button>
       </div>
 
@@ -266,17 +241,16 @@ function ArchiveRow({
   if (saved?.solved) {
     // A stale save was played against an older dictionary: its result is
     // real history but doesn't map onto the current puzzle's combos.
-    if (saved.stale) {
-      status = `Solved · ${saved.foundWords.length} words · older words`;
+    // The save carries the day's word total, so ranking needs no
+    // puzzle regeneration (old saves without it just show the count).
+    if (saved.stale || !saved.totalWords) {
+      status = `Solved · ${saved.foundWords.length} words${
+        saved.stale ? " · older words" : ""
+      }`;
     } else {
-      // `use` is conditional on purpose: the dictionary only loads (and
-      // suspends) when a rank is actually displayed.
-      const { rank, total } = rankForDay(
-        use(loadDictionary()),
-        dateKey,
-        saved.foundWords.length,
-      );
-      status = `${rank} · ${saved.foundWords.length}/${total}${
+      status = `${rankFor(saved.foundWords.length, saved.totalWords)} · ${
+        saved.foundWords.length
+      }/${saved.totalWords}${
         Object.keys(saved.revealed ?? {}).length > 0 ? " · used hint" : ""
       }`;
     }
@@ -303,7 +277,7 @@ function ArchiveRow({
         </span>
       ) : (
         <span className="shrink-0 text-ink-soft" aria-hidden>
-          ›
+          <ChevronRight className="h-4 w-4" />
         </span>
       )}
     </Link>

@@ -1,5 +1,6 @@
 import { use, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import {
   dateKeyRange,
@@ -144,9 +145,9 @@ function CalendarMosaic({
           onClick={() => shiftMonth(-1)}
           disabled={month <= epochMonth}
           aria-label="Previous month"
-          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+          className="-m-2 p-2 text-ink disabled:opacity-25"
         >
-          ‹
+          <ChevronLeft aria-hidden className="h-5 w-5" />
         </button>
         <div className="text-sm font-semibold">{label}</div>
         <button
@@ -154,9 +155,9 @@ function CalendarMosaic({
           onClick={() => shiftMonth(1)}
           disabled={month >= currentMonth}
           aria-label="Next month"
-          className="-m-2 p-2 text-lg leading-none text-ink disabled:opacity-25"
+          className="-m-2 p-2 text-ink disabled:opacity-25"
         >
-          ›
+          <ChevronRight aria-hidden className="h-5 w-5" />
         </button>
       </div>
 
@@ -289,7 +290,7 @@ function ArchiveRow({
         </span>
       ) : (
         <span className="shrink-0 text-ink-soft" aria-hidden>
-          ›
+          <ChevronRight className="h-4 w-4" />
         </span>
       )}
     </Link>

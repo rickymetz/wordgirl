@@ -2,8 +2,10 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { use, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
+import { Check, CircleCheck, CircleHelp, X } from "lucide-react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
+import { ModalDialog } from "../../../components/ModalDialog";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
@@ -11,15 +13,14 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { hintTarget, slotWord, unfoundWords } from "../state/reducer";
-import { uniqueWords } from "../engine/scoring";
+import { hintTarget, slotsAt, slotWord, unfoundWords } from "../state/reducer";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
 import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
-import { FoundCombosBar } from "./FoundCombosBar";
+import { WordsPanel } from "./WordsPanel";
 import { SolvedOverlay } from "./Overlays";
 
 interface Props {
@@ -30,9 +31,9 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs } = useCrosshatchGame(mode);
+  const { state, dispatch, puzzle, totalWords: total, solvedElapsedMs } =
+    useCrosshatchGame(mode);
   const dict = use(loadDictionary());
-  const total = uniqueWords(puzzle.combos).length;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -60,7 +61,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     void markCoachSeen();
   };
 
-  const [combosOpen, setCombosOpen] = useState(false);
+  const [wordsOpen, setWordsOpen] = useState(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -93,9 +94,25 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     const target = chosen ?? hintTarget(state);
     if (!target) return;
     const already = state.revealed[target] ?? [];
-    const candidates = [...target]
+    const unrevealed = [...target]
       .map((_, i) => i)
       .filter((i) => !already.includes(i));
+    // Don't burn a hint on a letter the board already shows: skip
+    // positions that are a GIVEN in every line this word can occupy.
+    const slotIdxs = puzzle.shape.slots
+      .map((_, si) => si)
+      .filter((si) => puzzle.combos.some((c) => c[si] === target));
+    const fresh = unrevealed.filter(
+      (i) =>
+        !(
+          slotIdxs.length > 0 &&
+          slotIdxs.every((si) => {
+            const c = slotCells(puzzle.shape.slots[si])[i];
+            return !!puzzle.givens[cellKey(c.row, c.col)];
+          })
+        ),
+    );
+    const candidates = fresh.length > 0 ? fresh : unrevealed;
     if (candidates.length === 0) return;
     dispatch({
       type: "revealHint",
@@ -130,23 +147,67 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   };
 
   // Physical keyboard: letters type, Backspace deletes, Enter submits,
-  // Space flips direction, Escape closes dialogs.
+  // Space flips direction, arrows move the cursor, Escape closes
+  // dialogs. Enter/Space defer to a FOCUSED control (a keyboard user
+  // tabbing the page keeps native button activation), and dialogs own
+  // their keys entirely.
   const modalOpen =
     hintWarningOpen || coachOpen || (state.solved && resultsOpen);
   useEffect(() => {
+    const moveCursor = (dr: number, dc: number) => {
+      const cur = state.cursor;
+      if (!cur) return;
+      let { row, col } = cur;
+      while (true) {
+        row += dr;
+        col += dc;
+        if (row < 0 || col < 0 || row >= puzzle.rows || col >= puzzle.cols) {
+          return; // no playable cell that way
+        }
+        if (slotsAt(puzzle, row, col).length > 0) {
+          dispatch({
+            type: "focusCell",
+            row,
+            col,
+            dir: dr !== 0 ? "down" : "across",
+          });
+          return;
+        }
+      }
+    };
+    const ARROWS: Record<string, [number, number]> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) {
+        if (e.key === "Escape") {
+          setCoachOpen(false);
+          setHintWarningOpen(false);
+        }
+        return;
+      }
       if (e.key === "Escape") {
         setCoachOpen(false);
         setHintWarningOpen(false);
         return;
       }
       if (modalOpen) return;
+      const onControl = !!target?.closest(
+        "button, a, input, select, textarea",
+      );
       if (e.key === "Enter") {
+        if (onControl) return; // native activation wins
+        e.preventDefault();
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
         dispatch({ type: "backspace" });
       } else if (e.key === " ") {
+        if (onControl) return;
         e.preventDefault();
         if (state.cursor) {
           dispatch({
@@ -155,13 +216,16 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             col: state.cursor.col,
           });
         }
+      } else if (ARROWS[e.key]) {
+        e.preventDefault();
+        moveCursor(...ARROWS[e.key]);
       } else if (/^[a-zA-Z]$/.test(e.key)) {
         dispatch({ type: "typeLetter", letter: e.key });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [modalOpen, state.cursor, dispatch]);
+  }, [modalOpen, state.cursor, puzzle, dispatch]);
 
   // Submit feedback: a transient toast over the board, narrated for
   // screen readers via the live region below.
@@ -179,7 +243,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           : banked.length === 1
             ? `${banked[0]} — ${state.found.length} of ${total}`
             : `${banked.length} new words — ${state.found.length} of ${total}`,
-      nothingNew: "All these words are banked — change a line",
+      nothingNew: "You\u2019ve already found all these words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       // Three honest flavors of rejection: gibberish, a real word
@@ -241,9 +305,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             type="button"
             onClick={() => setCoachOpen(true)}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-base font-bold text-ink-soft active:scale-90"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >
-            ?
+            <CircleHelp aria-hidden className="h-5 w-5" />
           </button>
         </span>
       </header>
@@ -287,10 +351,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       <ProgressBar found={state.found.length} total={total} />
 
       <div className="pt-3">
-        <FoundCombosBar
+        <WordsPanel
           state={state}
-          open={combosOpen}
-          onToggle={() => setCombosOpen((v) => !v)}
+          open={wordsOpen}
+          onToggle={() => setWordsOpen((v) => !v)}
           onHint={requestHint}
           hintTargetWord={hintTargetWord}
           onSelectWord={(w) =>
@@ -329,15 +393,22 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <div className="flex items-center gap-6">
           <button
             type="button"
+            onPointerDown={(e) => e.preventDefault()}
             onClick={() => dispatch({ type: "clearEntry" })}
-            className="text-xs font-semibold text-ink-soft"
+            className="-my-2 px-2 py-2 text-xs font-semibold text-ink-soft"
           >
             Clear grid
           </button>
           <button
             type="button"
-            onClick={() => setCombosOpen(true)}
-            className="text-xs font-semibold text-accent"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => {
+              // The button says Hint, so it hints — opening the words
+              // panel too shows where the reveal landed.
+              setWordsOpen(true);
+              requestHint();
+            }}
+            className="-my-2 px-2 py-2 text-xs font-semibold text-accent"
           >
             Hint
           </button>
@@ -371,13 +442,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       )}
 
       {hintWarningOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hint-dialog-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 text-center shadow-xl"
-          >
+        <ModalDialog
+          labelledBy="hint-dialog-title"
+          onClose={() => setHintWarningOpen(false)}
+          className="text-center"
+        >
+          <div>
             <h2 id="hint-dialog-title" className="text-lg font-bold">
               Use a hint?
             </h2>
@@ -390,7 +460,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             <div className="mt-5 flex flex-col gap-2">
               <button
                 type="button"
-                autoFocus
+                data-autofocus
                 onClick={confirmHint}
                 className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
               >
@@ -405,17 +475,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {coachOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="coach-title"
-            className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl"
-          >
+        <ModalDialog labelledBy="coach-title" onClose={closeCoach}>
+          <div>
             <h2 id="coach-title" className="text-lg font-bold">
               How to play
             </h2>
@@ -424,31 +489,38 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 <span className="font-semibold text-ink">
                   Fill every line with a word
                 </span>{" "}
-                — together they're a combo. Dark cells are locked letters.
+                (dark cells are locked) and press{" "}
+                <span className="font-semibold text-ink">Enter</span> — every
+                new word in the grid counts. Change any line and keep going.
               </li>
               <li>
-                Tap a cell to aim, tap it again to switch direction, and
-                press <span className="font-semibold text-ink">Enter</span>{" "}
-                — every <span className="font-semibold text-ink">new word</span>{" "}
-                in a valid grid is banked. Then change lines and keep going.
+                The chips under the grid judge each line:{" "}
+                <X aria-label="X" className="inline h-3.5 w-3.5 text-warn" strokeWidth={3} />{" "}
+                won't work there,{" "}
+                <Check aria-label="check" className="inline h-3.5 w-3.5" strokeWidth={3} />{" "}
+                counted already,{" "}
+                <CircleCheck aria-label="circled check" className="inline h-3.5 w-3.5 text-good" strokeWidth={3} />{" "}
+                new — but the{" "}
+                <span className="font-semibold text-ink">whole grid</span>{" "}
+                must be filled to submit.
               </li>
               <li>
-                The chips under the grid judge each line: ❌ won't work,
-                ⚠️ already banked, ✅ a{" "}
-                <span className="font-semibold text-ink">new word</span>{" "}
-                ready to submit. Reach 90% of the words to solve the day.
+                The bar up top lists every word as{" "}
+                <span className="font-semibold text-ink">?-blanks</span>;
+                stuck, tap Hint to reveal a letter. Find most of the words
+                to solve the day.
               </li>
             </ul>
             <button
               type="button"
-              autoFocus
+              data-autofocus
               onClick={closeCoach}
               className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
             >
               Got it
             </button>
           </div>
-        </div>
+        </ModalDialog>
       )}
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}

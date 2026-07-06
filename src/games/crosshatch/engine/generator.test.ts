@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import {
+  MAX_SLOT_WORDS,
   MAX_WORDS,
   MIN_WORDS,
   dailySeed,
@@ -90,11 +91,13 @@ describe("generateCrosshatch", () => {
         ).toBe(true);
       }
 
-      // At most one slot admits a single word across all combos.
-      const fixed = shape.slots.filter(
-        (_, s) => new Set(combos.map((c) => c[s])).size < 2,
+      // At most one slot admits a single word across all combos, and
+      // no slot hoards more than its share of the day's words.
+      const variety = shape.slots.map(
+        (_, s) => new Set(combos.map((c) => c[s])).size,
       );
-      expect(fixed.length).toBeLessThanOrEqual(1);
+      expect(variety.filter((v) => v < 2).length).toBeLessThanOrEqual(1);
+      expect(Math.max(...variety)).toBeLessThanOrEqual(MAX_SLOT_WORDS);
 
       for (const combo of combos) {
         expect(combo).toHaveLength(shape.slots.length);
