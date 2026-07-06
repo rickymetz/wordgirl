@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import type { GameState } from "../state/reducer";
+import { currentLevel, type GameState } from "../state/reducer";
 
 /**
- * Spelling-Bee-style typed word: large centered letters with a blinking
- * caret, and a black toast above it for rejected submissions.
+ * Spelling-Bee-style typed word: one slot per letter of the level's word
+ * length, shown as faint "?" placeholders that typed letters overwrite
+ * in the level color. A black toast appears above for rejections.
  */
 export function CurrentWord({ state }: { state: GameState }) {
   const [toast, setToast] = useState<{ text: string; nonce: number } | null>(
@@ -38,25 +39,29 @@ export function CurrentWord({ state }: { state: GameState }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <span className="font-game text-3xl font-extrabold tracking-wider uppercase">
-        {[...state.current].map((letter, i) => (
-          <motion.span
-            key={`${i}-${letter}`}
-            className="inline-block text-accent"
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 500, damping: 26 }}
-          >
-            {letter}
-          </motion.span>
-        ))}
+      <span className="flex font-game text-3xl font-extrabold uppercase">
+        {Array.from({ length: currentLevel(state).size }, (_, i) => {
+          const letter = state.current[i];
+          return letter ? (
+            <motion.span
+              key={`${i}-${letter}`}
+              className="inline-block w-[0.8em] text-center text-accent"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 26 }}
+            >
+              {letter}
+            </motion.span>
+          ) : (
+            <span
+              key={i}
+              className="inline-block w-[0.8em] text-center text-ink-soft/25"
+            >
+              ?
+            </span>
+          );
+        })}
       </span>
-      {/* Blinking caret. */}
-      <motion.span
-        className="ml-0.5 h-8 w-0.5 bg-accent"
-        animate={{ opacity: [1, 1, 0, 0] }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
     </div>
   );
 }
