@@ -1,6 +1,6 @@
 import { seededRandom, shuffle } from "../../../lib/random";
-import type { Dictionary } from "./dictionary";
-import { DICT_VERSION, enumerateWords } from "./dictionary";
+import type { Dictionary } from "../../../lib/words/dictionary";
+import { DICT_VERSION, enumerateWords } from "../../../lib/words/dictionary";
 import { maxScore } from "./scoring";
 import type { LevelSpec, Puzzle } from "./types";
 

@@ -16,7 +16,7 @@ import path from "node:path";
 
 const CACHE_DIR = new URL("./.cache/", import.meta.url).pathname;
 const OUT_FILE = new URL(
-  "../src/games/polygram/assets/dictionary.txt",
+  "../src/lib/words/dictionary.txt",
   import.meta.url,
 ).pathname;
 

@@ -1,6 +1,6 @@
 import { createGameStore } from "../../../lib/storage/createGameStore";
 import { localDateKey, previousDateKey } from "../../../lib/date";
-import { DICT_VERSION } from "../engine/dictionary";
+import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { RANKS, type RankTitle } from "../engine/scoring";
 
 export interface DailyProgress {

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { letterMask, parseDictionary } from "./dictionary";
+import { letterMask, parseDictionary } from "../../../lib/words/dictionary";
 import {
   BONUS_CAP,
   LEVEL_CAPS,
@@ -13,7 +13,7 @@ import {
 
 const dict = parseDictionary(
   readFileSync(
-    new URL("../assets/dictionary.txt", import.meta.url),
+    new URL("../../../lib/words/dictionary.txt", import.meta.url),
     "utf8",
   ),
 );

@@ -8,10 +8,10 @@ import {
   localDateKey,
   previousDateKey,
 } from "../../../lib/date";
-import type { Dictionary } from "../engine/dictionary";
+import type { Dictionary } from "../../../lib/words/dictionary";
 import { rankFor } from "../engine/scoring";
 import { generatePuzzle, dailySeed } from "../engine/generator";
-import { loadDictionary } from "../state/dictionaryLoader";
+import { loadDictionary } from "../../../lib/words/loader";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,

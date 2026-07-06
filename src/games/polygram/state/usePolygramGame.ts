@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { DICT_VERSION } from "../engine/dictionary";
+import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { dailySeed, generatePuzzle } from "../engine/generator";
 import { levelBonus, rankFor } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
@@ -10,7 +10,7 @@ import {
   recordDailyStarted,
   saveDailyProgress,
 } from "./persistence";
-import { loadDictionary } from "./dictionaryLoader";
+import { loadDictionary } from "../../../lib/words/loader";
 import { gameReducer, initialState, type GameState } from "./reducer";
 
 export type GameMode =

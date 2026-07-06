@@ -1,5 +1,5 @@
-import dictUrl from "../assets/dictionary.txt?url";
-import { parseDictionary, type Dictionary } from "../engine/dictionary";
+import dictUrl from "./dictionary.txt?url";
+import { parseDictionary, type Dictionary } from "./dictionary";
 
 let dictPromise: Promise<Dictionary> | null = null;
 
