@@ -77,6 +77,9 @@ export function FoundWordsBar({
               const foundCount = lvl.words.filter((w) =>
                 state.found.includes(w),
               ).length;
+              const bonusCount = lvl.bonusWords.filter((w) =>
+                state.found.includes(w),
+              ).length;
               const isCurrent = lvl.size === state.puzzle.levels[state.levelIndex].size;
               return (
                 // data-level scopes the accent: each section's hinted
@@ -88,6 +91,14 @@ export function FoundWordsBar({
                       {POLYGON_NAMES[lvl.size]}
                       <span className="ml-2 font-medium text-ink-soft">
                         {foundCount}/{lvl.words.length}
+                        {/* Bonus tally, so the level count and the word
+                            list below it add up at a glance. */}
+                        {bonusCount > 0 && (
+                          <span className="ml-1.5">
+                            · <span className="text-accent">✦</span>
+                            {bonusCount}
+                          </span>
+                        )}
                       </span>
                     </span>
                     {/* Hint sits WITH the words it reveals; disabled once
