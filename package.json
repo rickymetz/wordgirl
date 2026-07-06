@@ -12,6 +12,7 @@
     "build:dictionary": "node scripts/build-dictionary.mjs"
   },
   "dependencies": {
+    "@fontsource/rubik": "^5.2.8",
     "motion": "^12.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

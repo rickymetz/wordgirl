@@ -22,7 +22,7 @@ export function WordTray({ state, onBackspace }: Props) {
       {Array.from({ length: size }, (_, i) => (
         <span
           key={i}
-          className="flex h-11 w-9 items-end justify-center border-b-2 border-line pb-1 text-2xl font-bold uppercase"
+          className="flex h-11 w-9 items-end justify-center border-b-2 border-line pb-1 font-game text-2xl font-bold uppercase"
         >
           {letters[i] && (
             <motion.span

@@ -7,10 +7,12 @@ interface Props {
   size: number;
   x: number;
   y: number;
+  /** Degrees to spin the polygon shape (the letter stays upright). */
+  rotation: number;
   onTap: () => void;
 }
 
-export function ShapeTile({ letter, sides, size, x, y, onTap }: Props) {
+export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props) {
   return (
     <motion.button
       type="button"
@@ -24,17 +26,21 @@ export function ShapeTile({ letter, sides, size, x, y, onTap }: Props) {
         width: size,
         height: size,
         touchAction: "manipulation",
-        // Clip the button itself: tiles mirror the central shape across
-        // the shared edge, and the clip doubles as the tap hit area.
-        clipPath: regularPolygonClipPath(sides, true),
+        // Clip the button itself: the polygon doubles as the tap target,
+        // rotated so the petal's apex points away from the center.
+        clipPath: regularPolygonClipPath(sides, rotation),
         transition: "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1)",
       }}
       aria-label={`letter ${letter}`}
     >
-      {/* Flipped triangle's visual mass is above box center — nudge up. */}
+      {/* A regular polygon's centroid IS its box center, so the glyph is
+          dead-centered — no optical nudging. */}
       <span
-        className="relative text-2xl font-bold uppercase"
-        style={{ top: sides === 3 ? "-8%" : 0 }}
+        className="relative font-game font-extrabold text-accent uppercase"
+        style={{
+          fontSize: Math.min(34, Math.max(20, size * 0.26)),
+          lineHeight: 1,
+        }}
       >
         {letter}
       </span>

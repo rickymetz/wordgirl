@@ -1,3 +1,4 @@
+import "@fontsource/rubik/800.css";
 import { useCallback } from "react";
 import { Link } from "react-router-dom";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
@@ -24,7 +25,10 @@ export function GameScreen({ mode, onNewPuzzle }: Props) {
   );
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8">
+    <div
+      data-level={level.size}
+      className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-8"
+    >
       <header className="flex items-center justify-between pt-6 pb-2">
         <Link to="/" className="text-sm font-semibold text-ink-soft">
           ← WordGirl

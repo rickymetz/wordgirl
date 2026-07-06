@@ -2,6 +2,8 @@
 
 @theme {
   --font-display: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+  /* Bold, square-skeleton but friendly font for game letters/counters. */
+  --font-game: "Rubik", "Avenir Next", system-ui, sans-serif;
 
   --color-surface: #faf9f7;
   --color-surface-raised: #ffffff;
@@ -26,6 +28,40 @@
     --color-good: #34d399;
     --color-warn: #fbbf24;
   }
+}
+
+/*
+ * Per-level accent colors for Polygram: every polygon level gets its own
+ * hue. Utilities like bg-accent/text-accent resolve var(--color-accent)
+ * per element, so setting data-level on the game screen recolors the
+ * whole subtree (board, rank bar, hint chip, overlays).
+ */
+[data-level] {
+  --color-accent-soft: color-mix(
+    in oklab,
+    var(--color-accent) 27%,
+    var(--color-surface)
+  );
+}
+/* Kaleidoscope of jewel tones — one per polygon level. */
+[data-level="3"] { --color-accent: #7e22ce; }  /* amethyst */
+[data-level="4"] { --color-accent: #059669; }  /* emerald */
+[data-level="5"] { --color-accent: #be123c; }  /* ruby */
+[data-level="6"] { --color-accent: #1d4ed8; }  /* sapphire */
+[data-level="7"] { --color-accent: #ca8a04; }  /* citrine */
+[data-level="8"] { --color-accent: #0d9488; }  /* turquoise */
+[data-level="9"] { --color-accent: #c2410c; }  /* garnet */
+[data-level="10"] { --color-accent: #4f46e5; } /* tanzanite */
+
+@media (prefers-color-scheme: dark) {
+  [data-level="3"] { --color-accent: #c084fc; }
+  [data-level="4"] { --color-accent: #34d399; }
+  [data-level="5"] { --color-accent: #fb7185; }
+  [data-level="6"] { --color-accent: #60a5fa; }
+  [data-level="7"] { --color-accent: #facc15; }
+  [data-level="8"] { --color-accent: #2dd4bf; }
+  [data-level="9"] { --color-accent: #fb923c; }
+  [data-level="10"] { --color-accent: #818cf8; }
 }
 
 html,

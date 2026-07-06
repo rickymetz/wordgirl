@@ -6,6 +6,8 @@ import { regularPolygonClipPath } from "./polygonPath";
 interface Props {
   sides: number;
   size: number;
+  /** Words still to find on this level — displayed in the shape. */
+  remaining: number;
   lastResult: SubmitResult | null;
   onTap: () => void;
 }
@@ -13,11 +15,11 @@ interface Props {
 type Mood = "idle" | "blink" | "happy" | "sad";
 
 /**
- * The submit button — and the game's personality. It blinks now and
- * then, beams when a word lands, and headshakes at nonsense. Purely
- * cosmetic; the game never depends on it.
+ * The submit button — and the game's personality. It shows how many
+ * words are left on the level, blinks now and then, beams when a word
+ * lands, and headshakes at nonsense.
  */
-export function CenterShape({ sides, size, lastResult, onTap }: Props) {
+export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props) {
   const [mood, setMood] = useState<Mood>("idle");
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function CenterShape({ sides, size, lastResult, onTap }: Props) {
     return () => clearTimeout(timer);
   }, [lastResult]);
 
-  // Occasional double-blink while idle.
+  // Occasional blink while idle.
   useEffect(() => {
     if (mood !== "idle") return;
     const timer = setTimeout(
@@ -47,19 +49,18 @@ export function CenterShape({ sides, size, lastResult, onTap }: Props) {
         ? { scale: [1, 1.06, 1] }
         : {};
 
-  const eye = Math.max(8, size * 0.07);
+  const eye = Math.max(5, size * 0.055);
 
   return (
     <motion.button
       type="button"
       onPointerDown={onTap}
-      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-accent select-none"
+      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-accent select-none"
       style={{
         width: size,
         height: size,
         touchAction: "manipulation",
-        // Clip the button itself so taps register only inside the shape —
-        // its box overlaps the surrounding tiles' boxes.
+        // Clip the button itself so taps register only inside the shape.
         clipPath: regularPolygonClipPath(sides),
         transition: "clip-path 600ms cubic-bezier(0.65, 0, 0.35, 1)",
       }}
@@ -67,15 +68,27 @@ export function CenterShape({ sides, size, lastResult, onTap }: Props) {
       animate={shake}
       key={lastResult?.nonce ?? 0}
       transition={{ duration: 0.45 }}
-      aria-label="submit word"
+      aria-label={`submit word — ${remaining} words left`}
     >
+      {/* The triangle's base sits at 75% of its box — keep the stack's
+          bottom above it while dropping it below the narrow apex. */}
       <span
-        className="relative flex"
-        style={{ top: sides === 3 ? "12%" : "2%", gap: eye * 0.9 }}
-        aria-hidden
+        className="relative flex flex-col items-center"
+        style={{ top: sides === 3 ? "6%" : 0 }}
       >
-        <Eye mood={mood} size={eye} />
-        <Eye mood={mood} size={eye} />
+        <span className="flex" style={{ gap: eye * 2 }} aria-hidden>
+          <Eye mood={mood} size={eye} />
+          <Eye mood={mood} size={eye} />
+        </span>
+        <span
+          className="font-game leading-none font-extrabold text-surface"
+          style={{
+            fontSize: Math.max(16, size * (sides === 3 ? 0.22 : 0.24)),
+            marginTop: eye,
+          }}
+        >
+          {remaining}
+        </span>
       </span>
     </motion.button>
   );
@@ -86,8 +99,8 @@ function Eye({ mood, size }: { mood: Mood; size: number }) {
     // Closed-happy arc: ^ ^
     return (
       <span
-        className="rounded-full border-surface border-b-transparent border-l-transparent border-r-transparent"
-        style={{ width: size, height: size, borderWidth: size * 0.22 }}
+        className="rounded-full border-surface border-r-transparent border-b-transparent border-l-transparent"
+        style={{ width: size, height: size, borderWidth: size * 0.25 }}
       />
     );
   }
@@ -95,7 +108,7 @@ function Eye({ mood, size }: { mood: Mood; size: number }) {
     return (
       <span
         className="rounded-full bg-surface"
-        style={{ width: size, height: size * 0.2, marginTop: size * 0.4 }}
+        style={{ width: size, height: size * 0.22, marginTop: size * 0.39 }}
       />
     );
   }

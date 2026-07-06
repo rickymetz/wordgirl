@@ -1,14 +1,8 @@
 import { AnimatePresence, motion } from "motion/react";
-import type { GameState } from "../state/reducer";
+import { unsolvedWords, type GameState } from "../state/reducer";
 import { CenterShape } from "./CenterShape";
 import { ShapeTile } from "./ShapeTile";
-import {
-  CLUSTER_Y_OFFSET,
-  TILE_SCALE,
-  apothem,
-  boardExtent,
-  edgeMidAngle,
-} from "./polygonPath";
+import { CENTER_RATIO, FLOWER, edgeMidDeg } from "./polygonPath";
 
 interface Props {
   state: GameState;
@@ -17,22 +11,18 @@ interface Props {
 }
 
 const BOARD = 340;
-/** Hairline seam between the central shape and its tiles. */
-const SEAM = 3;
 
 export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
   const sides = state.puzzle.levels[state.levelIndex].size;
   const letters = state.puzzle.letters.slice(0, sides);
+  const { d, extent, yOffset } = FLOWER[sides];
 
-  // Central shape circumradius: the whole edge-flush cluster must fit.
-  const R = (BOARD / 2 - 2) / boardExtent(sides);
-  const scale = TILE_SCALE[sides];
-  const centerSize = 2 * R;
-  const tileSize = 2 * R * scale;
-  // Tile center: central apothem + tile apothem out along the edge normal.
-  const dist = apothem(sides) * R * (1 + scale) + SEAM;
-  // Odd-sided clusters hang low; shift content to visually center them.
-  const yShift = CLUSTER_Y_OFFSET[sides] * R;
+  // Petal circumradius: the whole flower must fit in the board square.
+  const R = (BOARD / 2 - 2) / extent;
+  const tileSize = 2 * R;
+  const centerSize = 2 * R * CENTER_RATIO;
+  const dist = d * R;
+  const yShift = yOffset * R;
 
   return (
     <div
@@ -47,15 +37,18 @@ export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
         }}
       >
         {letters.map((letter, i) => {
-          const angle = edgeMidAngle(i, sides);
+          const deg = edgeMidDeg(i, sides);
+          const rad = (deg * Math.PI) / 180;
           return (
             <ShapeTile
               key={`${letter}-${i}`}
               letter={letter}
               sides={sides}
               size={tileSize}
-              x={dist * Math.cos(angle)}
-              y={dist * Math.sin(angle)}
+              x={dist * Math.cos(rad)}
+              y={dist * Math.sin(rad)}
+              // Base faces the center, apex points outward.
+              rotation={deg + 90}
               onTap={() => onLetter(letter)}
             />
           );
@@ -63,6 +56,7 @@ export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
         <CenterShape
           sides={sides}
           size={centerSize}
+          remaining={unsolvedWords(state).length}
           lastResult={state.lastResult}
           onTap={onSubmit}
         />
@@ -72,7 +66,7 @@ export function PolygonBoard({ state, onLetter, onSubmit }: Props) {
         {state.lastResult?.type === "correct" && (
           <motion.span
             key={state.lastResult.nonce}
-            className="pointer-events-none absolute top-1/2 left-1/2 text-xl font-bold text-good"
+            className="pointer-events-none absolute top-1/2 left-1/2 font-game text-xl font-bold text-good"
             initial={{ opacity: 1, x: "-50%", y: "-140%" }}
             animate={{ opacity: 0, y: "-260%" }}
             exit={{ opacity: 0 }}
