@@ -98,7 +98,15 @@ export function FoundWordsBar({
                       return (
                         <span
                           key={word}
-                          className="text-sm font-semibold uppercase"
+                          // Unsolved words carry a dotted underline: even
+                          // fully hint-revealed, they still must be typed
+                          // in — without this they'd look identical to
+                          // found words with hinted letters.
+                          className={`text-sm font-semibold uppercase ${
+                            isFound
+                              ? ""
+                              : "underline decoration-ink-soft/40 decoration-dotted underline-offset-4"
+                          }`}
                           aria-label={isFound ? undefined : "unsolved word"}
                         >
                           {[...word].map((letter, i) =>
