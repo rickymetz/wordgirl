@@ -16,11 +16,11 @@
   --color-tile: #e4e0d8;
   --color-accent: #7c3aed;
   --color-accent-soft: #ede9fe;
-  /* Raised surface with a whisper of the accent — hub bento tiles. */
-  --color-surface-tint: color-mix(
-    in oklab,
-    var(--color-accent) 6%,
-    var(--color-surface-raised)
+  /* Hub bento tiles: crisp white in light mode; in dark, a whisper of
+     the accent keeps the clusters from reading as one grey slab. */
+  --color-surface-tint: light-dark(
+    var(--color-surface-raised),
+    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised))
   );
   --color-good: #059669;
   --color-warn: #d97706;
@@ -55,10 +55,9 @@
   );
   /* Re-mix with the level accent — custom properties resolve var()
      where they're DECLARED, so the root definition keeps root purple. */
-  --color-surface-tint: color-mix(
-    in oklab,
-    var(--color-accent) 6%,
-    var(--color-surface-raised)
+  --color-surface-tint: light-dark(
+    var(--color-surface-raised),
+    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised))
   );
 }
 /* Level colors follow the pride flag top-to-bottom: red, orange,
