@@ -6,14 +6,15 @@ export const RANKS = [
   { pct: 50, title: "Great" },
   { pct: 70, title: "Amazing" },
   { pct: 90, title: "Genius" },
-  { pct: 100, title: "Crosshatch" },
+  // Not "Crosshatch" — the top rank shouldn't repeat the game's name.
+  { pct: 100, title: "Weaver" },
 ] as const;
 
 export type RankTitle = (typeof RANKS)[number]["title"];
 
 /**
  * A day counts as SOLVED at this percentage — the top-rank threshold.
- * 100% ("Crosshatch") is the flex above it, so one elusive word never
+ * 100% ("Weaver") is the flex above it, so one elusive word never
  * breaks a streak.
  */
 export const SOLVE_PCT = 90;

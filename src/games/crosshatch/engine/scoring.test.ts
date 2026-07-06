@@ -14,7 +14,7 @@ describe("rankFor", () => {
     expect(rankFor(10, 20)).toBe("Great");
     expect(rankFor(14, 20)).toBe("Amazing");
     expect(rankFor(18, 20)).toBe("Genius"); // 90%
-    expect(rankFor(20, 20)).toBe("Crosshatch");
+    expect(rankFor(20, 20)).toBe("Weaver");
     expect(rankFor(0, 0)).toBe("Beginner");
   });
 });

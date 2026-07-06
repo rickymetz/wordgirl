@@ -24,13 +24,13 @@ describe("stats recording", () => {
     // them. Serialization must let the upgrade see the solve's write.
     await Promise.all([
       recordDailySolved("2026-07-06", 14, "Genius"),
-      recordRankImproved("Crosshatch"),
+      recordRankImproved("Weaver"),
     ]);
     const stats = await loadStats();
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06");
-    expect(stats.bestRank).toBe("Crosshatch");
+    expect(stats.bestRank).toBe("Weaver");
   });
 
   it("solving just after midnight still counts the session's day", async () => {
