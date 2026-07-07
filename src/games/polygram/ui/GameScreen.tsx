@@ -1,10 +1,19 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence } from "motion/react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
-import { CircleHelp } from "lucide-react";
+import {
+  CircleHelp,
+  CornerDownLeft,
+  Lightbulb,
+  Shapes,
+  Sparkles,
+  Type,
+} from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
+import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import {
   loadCoachSeen,
@@ -396,50 +405,69 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         </ModalDialog>
       )}
 
-      {coachOpen && (
-        <ModalDialog labelledBy="coach-title" onClose={closeCoach}>
-          <div>
-            <h2 id="coach-title" className="text-lg font-bold">
-              How to play
-            </h2>
-            <ul className="mt-3 flex flex-col gap-2.5 text-sm text-ink-soft">
-              <li>
-                <span className="font-semibold text-ink">
-                  Spell {level.size}-letter words
-                </span>{" "}
-                from the letters around the center — letters{" "}
-                <span className="font-semibold text-ink">can repeat</span>.
-              </li>
-              <li>
-                Tap letters (or type), then tap the{" "}
-                <span className="font-semibold text-ink">center shape</span>{" "}
-                or Enter to submit. The number is how many words are left.
-              </li>
-              <li>
-                Find them <span className="font-semibold text-ink">all</span>{" "}
-                and a new letter joins — the shapes grow into the next
-                polygon.
-              </li>
-              <li>
-                Less common words score as{" "}
-                <span className="font-semibold text-ink">
-                  <span className="text-accent">✦</span> bonus
-                </span>{" "}
-                — extra points, but the level count only tracks the
-                everyday words.
-              </li>
-            </ul>
-            <button
-              type="button"
-              data-autofocus
-              onClick={closeCoach}
-              className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
-            >
-              Got it
-            </button>
-          </div>
-        </ModalDialog>
-      )}
+      <AnimatePresence>
+        {coachOpen && (
+          <CoachSheet
+            onClose={closeCoach}
+            rules={[
+              {
+                Icon: Type,
+                title: "Build words",
+                body: (
+                  <>
+                    Spell <Key>{level.size}-letter words</Key> from the
+                    letters around the center — letters <Key>can repeat</Key>.
+                  </>
+                ),
+              },
+              {
+                Icon: CornerDownLeft,
+                title: "Submit at the center",
+                body: (
+                  <>
+                    Tap the <Key>middle shape</Key> (or press Enter). Its
+                    number counts the words still hidden.
+                  </>
+                ),
+              },
+              {
+                Icon: Shapes,
+                title: "Clear the level",
+                body: (
+                  <>
+                    Find <Key>every word</Key> and a new letter joins — the
+                    shapes become the next polygon.
+                  </>
+                ),
+              },
+              {
+                Icon: Sparkles,
+                title: "Bonus words",
+                body: (
+                  <>
+                    Less common words score{" "}
+                    <Key>
+                      <span className="text-accent">✦</span> bonus
+                    </Key>{" "}
+                    points, but only the everyday ones advance the level.
+                  </>
+                ),
+              },
+              {
+                Icon: Lightbulb,
+                title: "Hints",
+                body: (
+                  <>
+                    <Key>Your words</Key> lists the level as ?-blanks in ABC
+                    order — where a blank sits is itself a clue. <Key>Hint</Key>{" "}
+                    reveals a letter (your result will say so).
+                  </>
+                ),
+              },
+            ]}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">

@@ -2,10 +2,21 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { use, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, CircleCheck, CircleHelp, X } from "lucide-react";
+import {
+  Check,
+  CircleCheck,
+  CircleHelp,
+  CornerDownLeft,
+  ListChecks,
+  Lock,
+  Repeat2,
+  Target,
+  X,
+} from "lucide-react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
+import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
@@ -500,50 +511,85 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         </ModalDialog>
       )}
 
-      {coachOpen && (
-        <ModalDialog labelledBy="coach-title" onClose={closeCoach}>
-          <div>
-            <h2 id="coach-title" className="text-lg font-bold">
-              How to play
-            </h2>
-            <ul className="mt-3 flex flex-col gap-2.5 text-sm text-ink-soft">
-              <li>
-                <span className="font-semibold text-ink">
-                  Fill every line with a word
-                </span>{" "}
-                (dark cells are locked) and press{" "}
-                <span className="font-semibold text-ink">Enter</span> — every
-                new word in the grid counts. Change any line and keep going.
-              </li>
-              <li>
-                The chips under the grid judge each line:{" "}
-                <X aria-label="X" className="inline h-3.5 w-3.5 text-warn" strokeWidth={3} />{" "}
-                won't work there,{" "}
-                <Check aria-label="check" className="inline h-3.5 w-3.5" strokeWidth={3} />{" "}
-                counted already,{" "}
-                <CircleCheck aria-label="circled check" className="inline h-3.5 w-3.5 text-good" strokeWidth={3} />{" "}
-                new — but the{" "}
-                <span className="font-semibold text-ink">whole grid</span>{" "}
-                must be filled to submit.
-              </li>
-              <li>
-                The bar up top lists every word as{" "}
-                <span className="font-semibold text-ink">?-blanks</span>;
-                stuck, tap Hint to reveal a letter. Find most of the words
-                to solve the day.
-              </li>
-            </ul>
-            <button
-              type="button"
-              data-autofocus
-              onClick={closeCoach}
-              className="mt-5 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
-            >
-              Got it
-            </button>
-          </div>
-        </ModalDialog>
-      )}
+      <AnimatePresence>
+        {coachOpen && (
+          <CoachSheet
+            onClose={closeCoach}
+            rules={[
+              {
+                Icon: Lock,
+                title: "Fill every line",
+                body: (
+                  <>
+                    Type a <Key>real word</Key> into every line. The
+                    padlocked letters are fixed, and crossing lines share
+                    their letters.
+                  </>
+                ),
+              },
+              {
+                Icon: CornerDownLeft,
+                title: "Submit the grid",
+                body: (
+                  <>
+                    Press <Key>Enter</Key> once every cell is filled — each{" "}
+                    <Key>new word</Key> in a working grid counts.
+                  </>
+                ),
+              },
+              {
+                Icon: ListChecks,
+                title: "Chips",
+                body: (
+                  <>
+                    They judge each line:{" "}
+                    <X
+                      aria-label="X"
+                      className="inline h-3.5 w-3.5 text-warn"
+                      strokeWidth={3}
+                    />{" "}
+                    won't work there,{" "}
+                    <Check
+                      aria-label="check"
+                      className="inline h-3.5 w-3.5"
+                      strokeWidth={3}
+                    />{" "}
+                    counted already,{" "}
+                    <CircleCheck
+                      aria-label="circled check"
+                      className="inline h-3.5 w-3.5 text-good"
+                      strokeWidth={3}
+                    />{" "}
+                    a new word.
+                  </>
+                ),
+              },
+              {
+                Icon: Repeat2,
+                title: "Resubmit",
+                body: (
+                  <>
+                    Change a line and submit again — <Key>reusing</Key>{" "}
+                    counted words is allowed, and usually needed to reach
+                    the rest.
+                  </>
+                ),
+              },
+              {
+                Icon: Target,
+                title: "Solve the day",
+                body: (
+                  <>
+                    Find <Key>most of the day's words</Key> to solve it.{" "}
+                    <Key>Your words</Key> lists them as ?-blanks — tap one,
+                    then Hint, to reveal a letter.
+                  </>
+                ),
+              },
+            ]}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">

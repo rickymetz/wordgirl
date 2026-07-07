@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { Monitor, Moon, RefreshCw, Sun, X } from "lucide-react";
+import { BottomSheet } from "./BottomSheet";
 import {
   FONT_SCALES,
   loadSettings,
@@ -6,14 +9,20 @@ import {
   type Settings,
   type ThemePref,
 } from "../lib/settings";
+import { checkForUpdates } from "../lib/swUpdate";
 
-const THEMES: { value: ThemePref; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
+const THEMES: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
+  { value: "system", label: "System", Icon: Monitor },
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "dark", label: "Dark", Icon: Moon },
 ];
 
-/** Display settings: theme override + text size. Changes apply live. */
+/**
+ * Display settings + app utilities, as a bottom sheet — thumb-reach on
+ * a phone, where this app lives. Changes apply live; the sheet closes
+ * by X, backdrop tap, or Escape. Mount inside <AnimatePresence> so the
+ * slide-out plays.
+ */
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const update = (patch: Partial<Settings>) => {
@@ -22,58 +31,100 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     saveSettings(next);
   };
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="settings-title"
-        className="w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <BottomSheet labelledBy="settings-title" onClose={onClose}>
+      <div className="flex items-center justify-between pb-4">
         <h2 id="settings-title" className="text-lg font-bold">
           Settings
         </h2>
-
-        <div className="mt-5 flex flex-col gap-5">
-          <Segmented
-            label="Theme"
-            options={THEMES}
-            value={settings.theme}
-            onChange={(theme) => update({ theme })}
-          />
-          <Segmented
-            label="Text size"
-            options={FONT_SCALES.map((f) => ({
-              value: f.value,
-              label: f.label,
-            }))}
-            value={settings.fontScale}
-            onChange={(fontScale) => update({ fontScale })}
-          />
-        </div>
-
         <button
           type="button"
-          autoFocus
+          data-autofocus
           onClick={onClose}
-          className="mt-6 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+          aria-label="close settings"
+          className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
         >
-          Done
+          <X aria-hidden className="h-5 w-5" />
         </button>
       </div>
-    </div>
+
+      <div className="flex flex-col gap-5">
+        <Segmented
+          label="Theme"
+          options={THEMES.map(({ value, label, Icon }) => ({
+            value,
+            label,
+            content: (
+              <span className="flex items-center gap-1.5">
+                <Icon aria-hidden className="h-4 w-4" />
+                {label}
+              </span>
+            ),
+          }))}
+          value={settings.theme}
+          onChange={(theme) => update({ theme })}
+        />
+        <Segmented
+          label="Text size"
+          options={FONT_SCALES.map((f) => ({
+            value: f.value,
+            label: f.label,
+            // Graduated "Aa" — the option previews its own size.
+            content: (
+              <span aria-hidden style={{ fontSize: `${f.value / 100}em` }}>
+                Aa
+              </span>
+            ),
+          }))}
+          value={settings.fontScale}
+          onChange={(fontScale) => update({ fontScale })}
+        />
+        <UpdateRow />
+      </div>
+    </BottomSheet>
+  );
+}
+
+const UPDATE_STATUS = {
+  checking: "Checking…",
+  updating: "Update found…", // autoUpdate refreshes the app by itself
+  current: "Up to date",
+  failed: "Couldn't check",
+  unavailable: "Not available here",
+} as const;
+
+/** Installed PWAs only look for new builds on launch, so an app kept
+ * alive in the switcher can lag a deploy — this row asks right now. */
+function UpdateRow() {
+  const [status, setStatus] = useState<keyof typeof UPDATE_STATUS | null>(
+    null,
+  );
+  const check = async () => {
+    setStatus("checking");
+    setStatus(await checkForUpdates());
+  };
+  return (
+    <button
+      type="button"
+      onClick={check}
+      disabled={status === "checking"}
+      className="flex w-full items-center justify-between gap-3 rounded-2xl bg-tile px-4 py-3 text-left transition-transform active:scale-[0.98] disabled:opacity-60"
+    >
+      <span className="flex items-center gap-2.5 text-sm font-semibold">
+        <RefreshCw
+          aria-hidden
+          className={`h-4 w-4 text-ink-soft ${
+            status === "checking" ? "animate-spin" : ""
+          }`}
+        />
+        Check for updates
+      </span>
+      {status && (
+        <span role="status" className="text-xs font-medium text-ink-soft">
+          {UPDATE_STATUS[status]}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -84,7 +135,7 @@ function Segmented<T extends string | number>({
   onChange,
 }: {
   label: string;
-  options: readonly { value: T; label: string }[];
+  options: readonly { value: T; label: string; content?: ReactNode }[];
   value: T;
   onChange: (value: T) => void;
 }) {
@@ -102,14 +153,15 @@ function Segmented<T extends string | number>({
             type="button"
             role="radio"
             aria-checked={option.value === value}
+            aria-label={option.label}
             onClick={() => onChange(option.value)}
-            className={`flex-1 rounded-full py-1.5 text-sm font-semibold transition-colors ${
+            className={`flex h-9 flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
               option.value === value
                 ? "bg-accent text-surface"
                 : "text-ink-soft"
             }`}
           >
-            {option.label}
+            {option.content ?? option.label}
           </button>
         ))}
       </div>

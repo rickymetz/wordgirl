@@ -1,5 +1,6 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { Settings } from "lucide-react";
 import { games } from "../games/registry";
 import { SettingsDialog } from "../components/SettingsDialog";
@@ -26,7 +27,11 @@ export function HubPage() {
           <GameCard key={game.id} game={game} />
         ))}
       </main>
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      <AnimatePresence>
+        {settingsOpen && (
+          <SettingsDialog onClose={() => setSettingsOpen(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
