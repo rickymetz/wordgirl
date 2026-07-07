@@ -432,17 +432,17 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               },
               {
                 Icon: Shapes,
-                title: "Grow the flock",
+                title: "Clear the level",
                 body: (
                   <>
-                    Find <Key>every word</Key> and a new letter joins —
-                    triangle, square, pentagon…
+                    Find <Key>every word</Key> and a new letter joins — the
+                    shapes become the next polygon.
                   </>
                 ),
               },
               {
                 Icon: Sparkles,
-                title: "Bag bonus words",
+                title: "Bonus words",
                 body: (
                   <>
                     Less common words score{" "}
@@ -455,7 +455,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               },
               {
                 Icon: Lightbulb,
-                title: "Peek when stuck",
+                title: "Hints",
                 body: (
                   <>
                     <Key>Your words</Key> lists the level as ?-blanks in ABC
