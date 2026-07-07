@@ -518,7 +518,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             rules={[
               {
                 Icon: Lock,
-                title: "Fill the lines",
+                title: "Fill every line",
                 body: (
                   <>
                     Type a <Key>real word</Key> into every line. The
@@ -529,7 +529,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               },
               {
                 Icon: CornerDownLeft,
-                title: "Submit full grids",
+                title: "Submit the grid",
                 body: (
                   <>
                     Press <Key>Enter</Key> once every cell is filled — each{" "}
@@ -539,7 +539,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               },
               {
                 Icon: ListChecks,
-                title: "Read the chips",
+                title: "Chips",
                 body: (
                   <>
                     They judge each line:{" "}
@@ -566,11 +566,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               },
               {
                 Icon: Repeat2,
-                title: "Rework the grid",
+                title: "Resubmit",
                 body: (
                   <>
                     Change a line and submit again — <Key>reusing</Key>{" "}
-                    counted words is how you reach the rest.
+                    counted words is allowed, and usually needed to reach
+                    the rest.
                   </>
                 ),
               },
