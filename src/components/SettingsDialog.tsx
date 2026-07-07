@@ -6,6 +6,7 @@ import {
   type Settings,
   type ThemePref,
 } from "../lib/settings";
+import { checkForUpdates } from "../lib/swUpdate";
 
 const THEMES: { value: ThemePref; label: string }[] = [
   { value: "system", label: "System" },
@@ -62,6 +63,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             value={settings.fontScale}
             onChange={(fontScale) => update({ fontScale })}
           />
+          <UpdateChecker />
         </div>
 
         <button
@@ -73,6 +75,44 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           Done
         </button>
       </div>
+    </div>
+  );
+}
+
+const UPDATE_MESSAGES = {
+  checking: "Checking…",
+  updating: "Update found — the app will refresh in a moment.",
+  current: "You're up to date.",
+  failed: "Couldn't check — is the connection down?",
+  unavailable: "Updates aren't available here.",
+} as const;
+
+/** "Check for updates": installed PWAs only look for new builds on
+ * launch, so a stale app that's kept alive can lag — this asks now. */
+function UpdateChecker() {
+  const [status, setStatus] = useState<keyof typeof UPDATE_MESSAGES | null>(
+    null,
+  );
+  const check = async () => {
+    setStatus("checking");
+    setStatus(await checkForUpdates());
+  };
+  return (
+    <div>
+      <div className="pb-2 text-sm font-semibold text-ink-soft">App</div>
+      <button
+        type="button"
+        onClick={check}
+        disabled={status === "checking"}
+        className="w-full rounded-full border border-line py-2 text-sm font-semibold active:scale-95 disabled:opacity-40"
+      >
+        Check for updates
+      </button>
+      {status && (
+        <p role="status" className="pt-2 text-center text-xs text-ink-soft">
+          {UPDATE_MESSAGES[status]}
+        </p>
+      )}
     </div>
   );
 }

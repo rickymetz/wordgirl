@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import { applySettings, loadSettings } from "./lib/settings";
+import { setSWRegistration } from "./lib/swUpdate";
 import "./index.css";
 
 // Theme override + text size must land before first paint.
@@ -20,6 +21,7 @@ const updateSW = registerSW({
   immediate: true,
   onRegisteredSW(_url, registration) {
     if (!registration) return;
+    setSWRegistration(registration); // Settings' "Check for updates"
     setInterval(() => void registration.update(), 60 * 60 * 1000);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) void registration.update();
