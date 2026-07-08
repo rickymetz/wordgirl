@@ -398,9 +398,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
               A letter of an unfound word will be revealed in your word
-              list, and today's result will show a{" "}
-              <span className="font-semibold text-ink">🫣 hint count</span>.
-              Streaks are safe — hints never break them.
+              list, and today's result will note{" "}
+              <span className="font-semibold text-ink">
+                how many hints you used
+              </span>
+              . Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -476,9 +478,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Hints",
                 body: (
                   <>
-                    <Key>Your words</Key> lists the level as ?-blanks in ABC
-                    order — where a blank sits is itself a clue. <Key>Hint</Key>{" "}
-                    reveals a letter (your result will say so).
+                    Open <Key>Your words</Key> to see the level as ?-blanks
+                    in ABC order — where a blank sits is itself a clue. The{" "}
+                    <Key>Hint</Key> button there reveals a letter (your
+                    result will say so).
                   </>
                 ),
               },

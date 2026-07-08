@@ -561,9 +561,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
               A letter of an unfound word will be revealed in your word
-              list, and today's result will show a{" "}
-              <span className="font-semibold text-ink">🫣 hint count</span>.
-              Streaks are safe — hints never break them.
+              list, and today's result will note{" "}
+              <span className="font-semibold text-ink">
+                how many hints you used
+              </span>
+              . Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -596,9 +598,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Fill every line",
                 body: (
                   <>
-                    Type a <Key>real word</Key> into every line. The
-                    padlocked letters are fixed, and crossing lines share
-                    their letters.
+                    Type a <Key>real word</Key> into every line — typing
+                    fills only the <Key>empty cells</Key> (the padlocked
+                    letters are fixed). Tap any cell to move there; re-tap
+                    a crossing to switch direction.
                   </>
                 ),
               },
@@ -635,7 +638,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                       className="inline h-3.5 w-3.5 text-good"
                       strokeWidth={3}
                     />{" "}
-                    a new word.
+                    a new word. Tap a chip to jump to its line.
                   </>
                 ),
               },

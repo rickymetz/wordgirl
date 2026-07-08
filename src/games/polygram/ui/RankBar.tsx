@@ -2,18 +2,10 @@ import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { regularPolygonClipPath } from "./polygonPath";
 
-/** Level colors (light/dark) for sizes 3–10 — pride flag order,
- * matching the [data-level] palette in index.css. */
-const LEVEL_COLORS: Record<number, string> = {
-  3: "light-dark(#b91c1c, #f87171)", // red
-  4: "light-dark(#c2410c, #fb923c)", // orange
-  5: "light-dark(#a16207, #facc15)", // yellow
-  6: "light-dark(#15803d, #4ade80)", // green
-  7: "light-dark(#1d4ed8, #60a5fa)", // blue
-  8: "light-dark(#7e22ce, #c084fc)", // purple
-  9: "light-dark(#be185d, #f472b6)", // pink
-  10: "light-dark(#0f766e, #2dd4bf)", // turquoise
-};
+/** The gradient needs several level colors in ONE property, which the
+ * per-element [data-level] scoping can't provide — read the same
+ * :root --level-N tokens index.css declares (single source of truth). */
+const levelColor = (size: number) => `var(--level-${size})`;
 
 /**
  * Level progress bar: one segment per level in that level's color, with
@@ -38,7 +30,7 @@ export function RankBar({ state }: { state: GameState }) {
   // the far left fading to amethyst at the triangle, then emerald at
   // the square, ruby, sapphire… along the polygon markers.
   const gradient = `linear-gradient(to right, var(--color-line) 0%, ${levels
-    .map((lvl, k) => `${LEVEL_COLORS[lvl.size]} ${((k + 1) / n) * 100}%`)
+    .map((lvl, k) => `${levelColor(lvl.size)} ${((k + 1) / n) * 100}%`)
     .join(", ")})`;
 
   return (

@@ -57,9 +57,14 @@ export function FoundWordsBar({
             <span className="text-ink-soft">Your words…</span>
           ) : (
             recentFirst.map((word, i) => (
-              <span key={word} className={i === 0 ? "font-semibold" : ""}>
+              // Uppercase like Crosshatch's strip — one casing style
+              // for found words across the hub's games.
+              <span
+                key={word}
+                className={i === 0 ? "font-semibold uppercase" : "uppercase"}
+              >
                 {i > 0 && " "}
-                {word[0].toUpperCase() + word.slice(1)}
+                {word}
               </span>
             ))
           )}
@@ -122,7 +127,7 @@ export function FoundWordsBar({
                         type="button"
                         onClick={onHint}
                         disabled={hintTarget(state) === undefined}
-                        className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-surface active:scale-95 disabled:opacity-40"
+                        className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-40"
                       >
                         Hint
                       </button>
