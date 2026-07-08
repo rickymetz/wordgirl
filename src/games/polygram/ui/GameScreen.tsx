@@ -41,8 +41,17 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, doneElapsedMs } = usePolygramGame(mode);
+  const { state, dispatch, doneElapsedMs, abandonSession } =
+    usePolygramGame(mode);
   const level = currentLevel(state);
+  // Replay wipes the save; kill this mount's persistence first so the
+  // unmount flush can't write the old progress back over the reset.
+  const replay = onReplay
+    ? () => {
+        abandonSession();
+        onReplay();
+      }
+    : undefined;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -179,6 +188,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       }
       if (modalOpen) return;
       if (e.key === "Enter") {
+        // A FOCUSED control keeps native Enter activation — a keyboard
+        // user pressing Enter on the Hint button must not also submit.
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("button, a, input, select, textarea")) return;
+        e.preventDefault();
         setWordsOpen(false);
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
@@ -365,7 +379,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         open={resultsOpen}
         onClose={() => setResultsOpen(false)}
         onNewPuzzle={onNewPuzzle}
-        onReplay={onReplay}
+        onReplay={replay}
       />
 
       {hintWarningOpen && (

@@ -67,8 +67,11 @@ export function useCrosshatchGame(mode: GameMode) {
   // until real progress (a word or a reveal), so cursor taps and stray
   // keystrokes can't wipe the historical record.
   const staleRecordRef = useRef(false);
+  // A replay reset wipes the save and remounts; the OLD screen's
+  // unmount flush must not write the pre-reset state back over it.
+  const abandonedRef = useRef(false);
   const persistNow = (s: GameState) => {
-    if (!persisted || !hydratedRef.current) return;
+    if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (
       staleRecordRef.current &&
       s.found.length === 0 &&
@@ -236,5 +239,10 @@ export function useCrosshatchGame(mode: GameMode) {
     }
   }, [persisted, dateKey, state.solved, state.found, puzzle, totalWords]);
 
-  return { state, dispatch, puzzle, totalWords, solvedElapsedMs };
+  // Stop ALL further persistence for this mount (replay reset).
+  const abandonSession = () => {
+    abandonedRef.current = true;
+  };
+
+  return { state, dispatch, puzzle, totalWords, solvedElapsedMs, abandonSession };
 }

@@ -42,8 +42,22 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, totalWords: total, solvedElapsedMs } =
-    useCrosshatchGame(mode);
+  const {
+    state,
+    dispatch,
+    puzzle,
+    totalWords: total,
+    solvedElapsedMs,
+    abandonSession,
+  } = useCrosshatchGame(mode);
+  // Replay wipes the save; kill this mount's persistence first so the
+  // unmount flush can't write the old progress back over the reset.
+  const replay = onReplay
+    ? () => {
+        abandonSession();
+        onReplay();
+      }
+    : undefined;
   const dict = use(loadDictionary());
 
   // Warn (once) if this device can't persist progress.
@@ -470,7 +484,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           open={resultsOpen}
           onClose={() => setResultsOpen(false)}
           onNewPuzzle={onNewPuzzle}
-          onReplay={onReplay}
+          onReplay={replay}
         />
       )}
 
