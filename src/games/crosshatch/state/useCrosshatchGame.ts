@@ -9,6 +9,7 @@ import {
   recordDailySolved,
   recordDailyStarted,
   recordRankImproved,
+  recordWordsProgress,
   saveDailyProgress,
 } from "./persistence";
 import { gameReducer, initialState, type GameState } from "./reducer";
@@ -48,6 +49,8 @@ export function useCrosshatchGame(mode: GameMode) {
   const sessionActiveMsRef = useRef(0);
   // The clock value captured when the solve threshold was crossed.
   const solvedElapsedRef = useRef<number | null>(null);
+  // Words already credited to stats.totalWords for this day.
+  const creditedRef = useRef(0);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -88,6 +91,7 @@ export function useCrosshatchGame(mode: GameMode) {
       totalWords,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
+      statsWords: creditedRef.current,
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -140,6 +144,11 @@ export function useCrosshatchGame(mode: GameMode) {
           alreadySolvedRef.current = saved.solved;
           statsRecordedRef.current =
             saved.solved || saved.statsRecorded === true;
+          // Pre-statsWords saves: assume the solve credited everything
+          // found so far (the old behavior) rather than re-crediting.
+          creditedRef.current = saved.solved
+            ? (saved.statsWords ?? saved.foundWords.length)
+            : (saved.statsWords ?? 0);
           savedElapsedRef.current = saved.elapsedMs ?? 0;
           sessionStartRef.current = Date.now();
           sessionActiveMsRef.current = 0;
@@ -209,35 +218,49 @@ export function useCrosshatchGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.solved, state.found, solvedElapsedMs]);
 
-  // Persist after every meaningful change.
-  useEffect(() => {
-    persistNow(state);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.found, state.grid, state.revealed, state.solved]);
-
   // Record the solve (stats; streak only if it's today) exactly once,
-  // and upgrade bestRank if the player pushes on to a perfect sweep.
+  // then keep crediting words found AFTER the solve — a 12/14 finish
+  // must not freeze the lifetime totals and best rank at 9/14. Runs
+  // BEFORE the persist effect so each save carries the up-to-date
+  // credit count (a lagging statsWords would double-credit on reload).
   const recordedRef = useRef(false);
   useEffect(() => {
-    if (!persisted) return;
+    if (!persisted || !state.solved) return;
     const total = totalWords;
     if (
-      state.solved &&
       !recordedRef.current &&
       !statsRecordedRef.current &&
       isSolved(state.found.length, total)
     ) {
       recordedRef.current = true;
+      creditedRef.current = state.found.length;
       void recordDailySolved(
         dateKey,
         state.found.length,
         rankFor(state.found.length, total),
+        mode.kind === "daily",
       );
+      return;
     }
-    if (state.found.length === total && total > 0) {
-      void recordRankImproved(rankFor(total, total));
+    // Post-solve progress: replays (statsRecorded without a solve on
+    // record) never re-credit; genuine solved days always do.
+    if (!recordedRef.current && !alreadySolvedRef.current) return;
+    if (state.found.length > creditedRef.current) {
+      const delta = state.found.length - creditedRef.current;
+      creditedRef.current = state.found.length;
+      void recordWordsProgress(delta);
     }
-  }, [persisted, dateKey, state.solved, state.found, puzzle, totalWords]);
+    if (total > 0) {
+      void recordRankImproved(rankFor(state.found.length, total));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persisted, dateKey, state.solved, state.found, totalWords]);
+
+  // Persist after every meaningful change.
+  useEffect(() => {
+    persistNow(state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persisted, dateKey, state.found, state.grid, state.revealed, state.solved]);
 
   // Stop ALL further persistence for this mount (replay reset).
   const abandonSession = () => {

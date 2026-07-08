@@ -66,6 +66,9 @@ function validShape(saved: DailyProgress | null): DailyProgress | null {
   if (saved.revealed === null || typeof saved.revealed !== "object") {
     return null;
   }
+  if (typeof saved.elapsedMs !== "number" || !Number.isFinite(saved.elapsedMs)) {
+    return null;
+  }
   return saved;
 }
 
@@ -111,12 +114,28 @@ export async function loadAllDailyProgress(): Promise<
 }
 
 export async function saveDailyProgress(progress: DailyProgress) {
+  // Multi-tab guard: found words only ever GROW within a day, so a
+  // stored save holding words we don't know about means another tab is
+  // ahead — skip the write instead of silently destroying its progress.
+  const stored = validShape(
+    await store.get<DailyProgress>(`daily:${progress.dateKey}`),
+  );
+  if (
+    stored &&
+    stored.dictVersion === progress.dictVersion &&
+    stored.foundWords.length > progress.foundWords.length &&
+    stored.foundWords.some((w) => !progress.foundWords.includes(w))
+  ) {
+    return;
+  }
   await store.set(`daily:${progress.dateKey}`, progress);
 }
 
-/** Wipe a completed day for a fresh replay run; stats stay counted. */
+/** Wipe a completed day for a fresh replay run; stats stay counted.
+ * Writes directly — the multi-tab guard must not "protect" the old
+ * run from a deliberate reset. */
 export async function resetDailyForReplay(dateKey: string) {
-  await saveDailyProgress({
+  await store.set(`daily:${dateKey}`, {
     dateKey,
     dictVersion: DICT_VERSION,
     foundWords: [],
@@ -125,7 +144,7 @@ export async function resetDailyForReplay(dateKey: string) {
     completed: false,
     elapsedMs: 0,
     statsRecorded: true,
-  });
+  } satisfies DailyProgress);
 }
 
 /** One-time first-run coach marks. */
@@ -137,7 +156,10 @@ export async function markCoachSeen(): Promise<void> {
 }
 
 export async function loadStats(): Promise<PolygramStats> {
-  return (await store.get<PolygramStats>("stats")) ?? EMPTY_STATS;
+  // Merge over defaults so stats survive schema additions (an older
+  // blob without a newer field keeps its streaks and counters).
+  const saved = await store.get<Partial<PolygramStats>>("stats");
+  return { ...EMPTY_STATS, ...(saved ?? {}) };
 }
 
 /** Call once when a new daily puzzle is first opened. */
@@ -158,6 +180,9 @@ export function recordDailyCompleted(
   dateKey: string,
   score: number,
   rank: RankTitle,
+  // The grace day exists for a DAILY session frozen across midnight;
+  // an archive play of yesterday must not borrow it to move the streak.
+  allowGrace = true,
 ): Promise<PolygramStats> {
   return serialized(async () => {
   const stats = await loadStats();
@@ -168,7 +193,8 @@ export function recordDailyCompleted(
   // Today's puzzle — with a grace day so a session that crossed
   // midnight mid-play (dateKey frozen at mount) still counts its day.
   const today = localDateKey();
-  const isToday = dateKey === today || dateKey === previousDateKey(today);
+  const isToday =
+    dateKey === today || (allowGrace && dateKey === previousDateKey(today));
   const advances =
     isToday &&
     (stats.lastCompletedDate === null || dateKey > stats.lastCompletedDate);
@@ -189,4 +215,20 @@ export function recordDailyCompleted(
   await store.set("stats", next);
   return next;
   });
+}
+
+/**
+ * The streak to DISPLAY: stats.currentStreak is only rewritten on the
+ * next completion, so a lapsed streak would show its old value forever.
+ * Completing yesterday's puzzle still counts as alive (it dies only
+ * when today ends uncompleted).
+ */
+export function displayStreak(
+  stats: PolygramStats,
+  today = localDateKey(),
+): number {
+  if (!stats.lastCompletedDate) return 0;
+  return stats.lastCompletedDate >= previousDateKey(today)
+    ? stats.currentStreak
+    : 0;
 }

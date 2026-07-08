@@ -90,17 +90,21 @@ export function usePolygramGame(mode: GameMode) {
   const savedElapsedRef = useRef(0);
   const sessionStartRef = useRef(Date.now());
   const sessionActiveMsRef = useRef(0);
+  // The clock value captured the moment the puzzle completed.
+  const doneElapsedRef = useRef<number | null>(null);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  const rawElapsedMs = () =>
+    savedElapsedRef.current +
+    sessionActiveMsRef.current +
+    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
+
   const currentElapsedMs = () => {
     if (alreadyCompletedRef.current) return savedElapsedRef.current;
-    return (
-      savedElapsedRef.current +
-      sessionActiveMsRef.current +
-      (document.hidden ? 0 : Date.now() - sessionStartRef.current)
-    );
+    if (doneElapsedRef.current !== null) return doneElapsedRef.current;
+    return rawElapsedMs();
   };
 
   // An old-dictionary save is on disk for this date: hold off writing
@@ -225,20 +229,32 @@ export function usePolygramGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, puzzle]);
 
+  // Freeze the clock the moment the puzzle completes — the results
+  // screen, share text, AND the persisted save must all show the time
+  // of the finish, not the finish plus idle time on the overlay.
+  // Declared BEFORE the persist effect so the completing change saves
+  // the frozen value.
+  const [doneElapsedMs, setDoneElapsedMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!persisted || state.phase !== "done") return;
+    if (doneElapsedRef.current === null && !alreadyCompletedRef.current) {
+      doneElapsedRef.current = rawElapsedMs();
+    }
+    if (doneElapsedMs === null) {
+      setDoneElapsedMs(
+        alreadyCompletedRef.current
+          ? savedElapsedRef.current
+          : doneElapsedRef.current,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persisted, state.phase, doneElapsedMs]);
+
   // Persist after every meaningful change.
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase]);
-
-  // Freeze the final solve time the moment the puzzle completes, so the
-  // completion screen and share text never show a stale value.
-  const [doneElapsedMs, setDoneElapsedMs] = useState<number | null>(null);
-  useEffect(() => {
-    if (!persisted || state.phase !== "done" || doneElapsedMs !== null) return;
-    setDoneElapsedMs(currentElapsedMs());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, state.phase, doneElapsedMs]);
 
   // Record completion (stats; streak only if it's today) exactly once.
   const completedRef = useRef(false);
@@ -252,7 +268,13 @@ export function usePolygramGame(mode: GameMode) {
       return;
     }
     completedRef.current = true;
-    void recordDailyCompleted(dateKey, state.score, rankFor(state.score, puzzle));
+    void recordDailyCompleted(
+      dateKey,
+      state.score,
+      rankFor(state.score, puzzle),
+      mode.kind === "daily",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.phase, state.score, puzzle]);
 
   // Stop ALL further persistence for this mount (replay reset).

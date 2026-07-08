@@ -12,6 +12,7 @@ import {
 import { rankFor } from "../engine/scoring";
 import {
   ARCHIVE_EPOCH,
+  displayStreak,
   loadAllDailyProgress,
   loadStats,
   type ArchivedDay,
@@ -64,7 +65,7 @@ export default function ArchivePage() {
 
       {stats && stats.played > 0 && (
         <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
-          <Stat label="Streak" value={stats.currentStreak} />
+          <Stat label="Streak" value={displayStreak(stats)} />
           <Stat label="Best streak" value={stats.bestStreak} />
           <Stat label="Solved" value={stats.solved} />
           <Stat label="Played" value={stats.played} />

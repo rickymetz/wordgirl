@@ -15,6 +15,7 @@ import { generatePuzzle, dailySeed } from "../engine/generator";
 import { loadDictionary } from "../../../lib/words/loader";
 import {
   ARCHIVE_EPOCH,
+  displayStreak,
   loadAllDailyProgress,
   loadStats,
   type ArchivedDay,
@@ -82,7 +83,7 @@ export default function ArchivePage() {
       {/* The stats were always tracked — now they're shown. */}
       {stats && stats.played > 0 && (
         <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
-          <Stat label="Streak" value={stats.currentStreak} />
+          <Stat label="Streak" value={displayStreak(stats)} />
           <Stat label="Best streak" value={stats.bestStreak} />
           <Stat label="Solved" value={stats.completed} />
           <Stat label="Played" value={stats.played} />

@@ -24,6 +24,9 @@ export interface DailyProgress {
    * must not increment totals again.
    */
   statsRecorded?: boolean;
+  /** Words already credited to stats.totalWords, so post-solve finds
+   * keep counting exactly once across sessions. */
+  statsWords?: number;
 }
 
 export interface CrosshatchStats {
@@ -125,12 +128,28 @@ export async function loadAllDailyProgress(): Promise<
 }
 
 export async function saveDailyProgress(progress: DailyProgress) {
+  // Multi-tab guard: found words only ever GROW within a day, so a
+  // stored save holding words we don't know about means another tab is
+  // ahead — skip the write instead of silently destroying its progress.
+  const stored = validShape(
+    await store.get<DailyProgress>(`daily:${progress.dateKey}`),
+  );
+  if (
+    stored &&
+    stored.dictVersion === progress.dictVersion &&
+    stored.foundWords.length > progress.foundWords.length &&
+    stored.foundWords.some((w) => !progress.foundWords.includes(w))
+  ) {
+    return;
+  }
   await store.set(`daily:${progress.dateKey}`, progress);
 }
 
-/** Wipe a solved day for a fresh replay run; stats stay counted. */
+/** Wipe a solved day for a fresh replay run; stats stay counted.
+ * Writes directly — the multi-tab guard must not "protect" the old
+ * run from a deliberate reset. */
 export async function resetDailyForReplay(dateKey: string) {
-  await saveDailyProgress({
+  await store.set(`daily:${dateKey}`, {
     dateKey,
     dictVersion: DICT_VERSION,
     foundWords: [],
@@ -139,7 +158,7 @@ export async function resetDailyForReplay(dateKey: string) {
     solved: false,
     elapsedMs: 0,
     statsRecorded: true,
-  });
+  } satisfies DailyProgress);
 }
 
 /** One-time first-run coach marks. */
@@ -179,6 +198,9 @@ export function recordDailySolved(
   dateKey: string,
   wordsFound: number,
   rank: RankTitle,
+  // The grace day exists for a DAILY session frozen across midnight;
+  // an archive play of yesterday must not borrow it to move the streak.
+  allowGrace = true,
 ): Promise<CrosshatchStats> {
   return serialized(async () => {
   const stats = await loadStats();
@@ -187,7 +209,8 @@ export function recordDailySolved(
   // Today's puzzle — with a grace day so a session that crossed
   // midnight mid-play (dateKey frozen at mount) still counts its day.
   const today = localDateKey();
-  const isToday = dateKey === today || dateKey === previousDateKey(today);
+  const isToday =
+    dateKey === today || (allowGrace && dateKey === previousDateKey(today));
   const advances =
     isToday &&
     (stats.lastSolvedDate === null || dateKey > stats.lastSolvedDate);
@@ -222,4 +245,30 @@ export function recordRankImproved(rank: RankTitle): Promise<void> {
     if (rankIndex(rank) <= rankIndex(stats.bestRank)) return;
     await store.set("stats", { ...stats, bestRank: rank });
   });
+}
+
+/** Words found AFTER the solve was recorded still count toward the
+ * lifetime total — credited incrementally, exactly once per word. */
+export function recordWordsProgress(delta: number): Promise<void> {
+  return serialized(async () => {
+    if (delta <= 0) return;
+    const stats = await loadStats();
+    await store.set("stats", { ...stats, totalWords: stats.totalWords + delta });
+  });
+}
+
+/**
+ * The streak to DISPLAY: stats.currentStreak is only rewritten on the
+ * next solve, so a lapsed streak would show its old value forever.
+ * Solving yesterday's puzzle still counts as alive (it dies only when
+ * today ends unsolved).
+ */
+export function displayStreak(
+  stats: CrosshatchStats,
+  today = localDateKey(),
+): number {
+  if (!stats.lastSolvedDate) return 0;
+  return stats.lastSolvedDate >= previousDateKey(today)
+    ? stats.currentStreak
+    : 0;
 }
