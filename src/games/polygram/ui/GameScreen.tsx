@@ -208,7 +208,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   }, [state.puzzle.letters, level.size, modalOpen, dispatch]);
 
   // Screen-reader narration for outcomes the UI shows only visually.
-  const [announcement, setAnnouncement] = useState("");
+  // Keyed so an identical repeated outcome (two invalid words in a
+  // row) still mutates the DOM — SRs only announce on change.
+  const [announcement, setAnnouncementState] = useState({ text: "", n: 0 });
+  const setAnnouncement = (text: string) =>
+    setAnnouncementState((prev) => ({ text, n: prev.n + 1 }));
   useEffect(() => {
     const r = state.lastResult;
     if (!r) return;
@@ -485,7 +489,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">
-        {announcement}
+        <span key={announcement.n}>{announcement.text}</span>
       </div>
     </div>
   );

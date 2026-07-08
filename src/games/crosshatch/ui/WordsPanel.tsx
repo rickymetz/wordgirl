@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { allWords, type GameState } from "../state/reducer";
@@ -30,9 +30,22 @@ export function WordsPanel({
   // The word list depends only on the puzzle — not on every keystroke.
   const words = useMemo(() => allWords(state), [state.puzzle]);
 
+  // Puzzle input auto-closes the panel; if keyboard focus was inside
+  // it, the unmount drops focus to <body> — catch it on the toggle.
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    const was = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (was && !open && document.activeElement === document.body) {
+      toggleRef.current?.focus();
+    }
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={toggleRef}
         type="button"
         onClick={onToggle}
         aria-label="found words"
@@ -119,7 +132,7 @@ export function WordsPanel({
                     type="button"
                     onClick={() => onSelectWord(word)}
                     aria-label={`unfound ${word.length}-letter word — tap to aim the next hint here`}
-                    className={`-mx-1 -my-1.5 rounded px-1 py-1.5 font-game text-xs uppercase ${
+                    className={`-mx-1 -my-2.5 rounded px-1 py-2.5 font-game text-xs uppercase ${
                       hintTargetWord === word ? "ring-2 ring-accent" : ""
                     }`}
                   >

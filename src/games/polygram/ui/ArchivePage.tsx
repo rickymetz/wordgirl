@@ -146,7 +146,7 @@ function CalendarMosaic({
           onClick={() => shiftMonth(-1)}
           disabled={month <= epochMonth}
           aria-label="Previous month"
-          className="-m-2 p-2 text-ink disabled:opacity-25"
+          className="-m-3 p-3 text-ink disabled:opacity-25"
         >
           <ChevronLeft aria-hidden className="h-5 w-5" />
         </button>
@@ -156,7 +156,7 @@ function CalendarMosaic({
           onClick={() => shiftMonth(1)}
           disabled={month >= currentMonth}
           aria-label="Next month"
-          className="-m-2 p-2 text-ink disabled:opacity-25"
+          className="-m-3 p-3 text-ink disabled:opacity-25"
         >
           <ChevronRight aria-hidden className="h-5 w-5" />
         </button>

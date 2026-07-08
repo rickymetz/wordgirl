@@ -81,7 +81,9 @@ export function SlotChips({
                 aria-label={`${slot.dir} word ${display}${
                   verdict ? ` — ${verdict.label}` : ""
                 }`}
-                className={`flex touch-manipulation items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors select-none ${
+                // after: pseudo grows the HIT area past 44px without
+                // touching the visual pill.
+                className={`relative flex touch-manipulation items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors select-none after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-[''] ${
                   active === slot ? "border-accent" : "border-line"
                 }`}
               >
