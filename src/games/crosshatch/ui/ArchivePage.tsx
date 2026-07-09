@@ -206,7 +206,9 @@ function DayCell({
     ? "bg-accent font-semibold text-surface"
     : started
       ? "bg-accent-soft font-medium text-ink"
-      : "bg-tile font-medium text-ink";
+      : // The page neutral, hub-style: bg-tile is a warm grey tuned for
+        // plain surfaces and reads as a stain on the accent-tinted panel.
+        "bg-surface font-medium text-ink";
   return (
     <Link
       to={isToday ? "/games/crosshatch" : `/games/crosshatch/archive/${dateKey}`}
@@ -222,8 +224,10 @@ function DayCell({
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div>
-      <div className="font-game text-lg text-accent">{value}</div>
+    // min-w-0 + truncate: a long mono value (AMAZING) must ellipsize
+    // inside its grid column, not collide with its neighbor.
+    <div className="min-w-0">
+      <div className="truncate font-game text-lg text-accent">{value}</div>
       <div className="text-xs text-ink-soft">{label}</div>
     </div>
   );
