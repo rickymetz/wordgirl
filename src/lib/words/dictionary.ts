@@ -22,10 +22,10 @@
  * v10: backwords palindrome prefix aliases — the shadowed even
  * palindromes (poop, peep) join the item pool, changing puzzle
  * derivation without a dictionary.txt change.
- * v11: suffix expansion — for every ENABLE word whose base form is
- * already in the dictionary, add the inflected form (-s, -es, -ed,
- * -ing, -ly, -er, -est, -ness) to the bonus tier. Fixes inconsistent
- * suffix coverage (e.g. "pen" accepted but "penned" rejected).
+ * v11: full ENABLE coverage — every valid Scrabble word (3–10 chars)
+ * is now in the dictionary. Required tier is still frequency-gated;
+ * all remaining ENABLE words are bonus. Replaces the v11 suffix-
+ * expansion approach with complete Scrabble/crossword coverage.
  */
 export const DICT_VERSION = 11;
 

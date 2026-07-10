@@ -5,10 +5,15 @@
  * src/lib/words/dictionary.ts if you regenerate.
  *
  * Pipeline:
- *   1. ENABLE word list (validity) ∩ subtitle-frequency top-N → core dict
- *   2. Suffix expansion: any ENABLE word whose base form is already in the
- *      dict gets added to the bonus tier, ensuring consistent inflection
- *      coverage (-s, -es, -ed, -ing, -ly, -er, -est).
+ *   1. ENABLE word list — the public-domain Scrabble tournament word list
+ *      (~173k words). Every 3–10 letter a-z word becomes at least bonus.
+ *   2. Subtitle frequency ranks the REQUIRED tier (words players must
+ *      find). Everything else in ENABLE is bonus (counts when entered
+ *      but never required or hinted).
+ *
+ * This makes the dictionary reflective of Scrabble/crossword dictionaries:
+ * every valid ENABLE word is accepted. Frequency-based tiering controls
+ * difficulty — only common words gate advancement.
  *
  * Usage: npm run build:dictionary
  */
@@ -81,106 +86,6 @@ const REQUIRED_ALLOWLIST = new Set([
   "dab",
 ]);
 
-/**
- * Given an inflected word, return candidate base forms by stripping
- * common English suffixes. We don't need perfect morphology — false
- * candidates that aren't in ENABLE or our dict are harmlessly ignored.
- */
-function candidateBases(word) {
-  const bases = new Set();
-  const len = word.length;
-
-  // -s / -es / -ies plurals
-  if (word.endsWith("s") && !word.endsWith("ss") && len > MIN_LEN) {
-    bases.add(word.slice(0, -1));
-  }
-  if (word.endsWith("es") && len > MIN_LEN + 1) {
-    bases.add(word.slice(0, -2));
-  }
-  if (word.endsWith("ies") && len > MIN_LEN + 2) {
-    bases.add(word.slice(0, -3) + "y");
-  }
-
-  // -ed: walked→walk, baked→bake (drop d), penned→pen (doubled cons)
-  if (word.endsWith("ed") && len > MIN_LEN + 1) {
-    const stemEd = word.slice(0, -2);
-    bases.add(stemEd);
-    bases.add(stemEd + "e");
-    if (
-      stemEd.length >= MIN_LEN &&
-      stemEd[stemEd.length - 1] === stemEd[stemEd.length - 2]
-    ) {
-      bases.add(stemEd.slice(0, -1));
-    }
-    if (word.endsWith("ied") && len > MIN_LEN + 2) {
-      bases.add(word.slice(0, -3) + "y");
-    }
-  }
-
-  // -ing: walking→walk, baking→bake, running→run
-  if (word.endsWith("ing") && len > MIN_LEN + 2) {
-    const stemIng = word.slice(0, -3);
-    bases.add(stemIng);
-    bases.add(stemIng + "e");
-    if (
-      stemIng.length >= MIN_LEN &&
-      stemIng[stemIng.length - 1] === stemIng[stemIng.length - 2]
-    ) {
-      bases.add(stemIng.slice(0, -1));
-    }
-  }
-
-  // -ly: quickly→quick, happily→happy
-  if (word.endsWith("ly") && len > MIN_LEN + 1) {
-    bases.add(word.slice(0, -2));
-    if (word.endsWith("ily") && len > MIN_LEN + 2) {
-      bases.add(word.slice(0, -3) + "y");
-    }
-  }
-
-  // -er: taller→tall, baker→bake, runner→run, happier→happy
-  if (word.endsWith("er") && len > MIN_LEN + 1) {
-    const stemEr = word.slice(0, -2);
-    bases.add(stemEr);
-    bases.add(stemEr + "e");
-    if (
-      stemEr.length >= MIN_LEN &&
-      stemEr[stemEr.length - 1] === stemEr[stemEr.length - 2]
-    ) {
-      bases.add(stemEr.slice(0, -1));
-    }
-    if (word.endsWith("ier") && len > MIN_LEN + 2) {
-      bases.add(word.slice(0, -3) + "y");
-    }
-  }
-
-  // -est: tallest→tall, nicest→nice, biggest→big, happiest→happy
-  if (word.endsWith("est") && len > MIN_LEN + 2) {
-    const stemEst = word.slice(0, -3);
-    bases.add(stemEst);
-    bases.add(stemEst + "e");
-    if (
-      stemEst.length >= MIN_LEN &&
-      stemEst[stemEst.length - 1] === stemEst[stemEst.length - 2]
-    ) {
-      bases.add(stemEst.slice(0, -1));
-    }
-    if (word.endsWith("iest") && len > MIN_LEN + 3) {
-      bases.add(word.slice(0, -4) + "y");
-    }
-  }
-
-  // -ness: sadness→sad, kindness→kind
-  if (word.endsWith("ness") && len > MIN_LEN + 3) {
-    bases.add(word.slice(0, -4));
-    if (word.endsWith("iness") && len > MIN_LEN + 4) {
-      bases.add(word.slice(0, -5) + "y");
-    }
-  }
-
-  return bases;
-}
-
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);
   if (existsSync(cachePath)) {
@@ -201,64 +106,53 @@ const [enableRaw, freqRaw] = await Promise.all([
   fetchCached(FREQ_URL, "count_1w.txt"),
 ]);
 
-const enable = new Set(
-  enableRaw
-    .split(/\r?\n/)
-    .map((w) => w.trim().toLowerCase())
-    .filter(Boolean),
-);
-console.log(`ENABLE: ${enable.size} words`);
+// All ENABLE words, filtered to game constraints.
+const enableAll = new Set();
+for (const line of enableRaw.split(/\r?\n/)) {
+  const word = line.trim().toLowerCase();
+  if (!word) continue;
+  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
+  if (!/^[a-z]+$/.test(word)) continue;
+  if (BLOCKLIST.has(word)) continue;
+  enableAll.add(word);
+}
+console.log(`ENABLE (${MIN_LEN}–${MAX_LEN} chars, filtered): ${enableAll.size} words`);
 
 // Frequency file is sorted by descending frequency: "word count" per line.
+// High-frequency ENABLE words become REQUIRED; mid-frequency become BONUS.
 const required = new Set();
-const bonus = new Set();
+const freqBonus = new Set();
 let rank = 0;
 for (const line of freqRaw.split(/\r?\n/)) {
   if (rank >= FREQ_TOP_N) break;
   const word = line.split(/[\s\t]/)[0]?.trim().toLowerCase();
   if (!word) continue;
   rank++;
-  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
-  if (!/^[a-z]+$/.test(word)) continue;
-  if (!enable.has(word)) continue;
-  if (BLOCKLIST.has(word)) continue;
-  (rank <= REQUIRED_TOP_N ? required : bonus).add(word);
+  if (!enableAll.has(word)) continue;
+  (rank <= REQUIRED_TOP_N ? required : freqBonus).add(word);
 }
 
 for (const word of REQUIRED_ALLOWLIST) {
-  if (!enable.has(word) || BLOCKLIST.has(word)) continue;
-  bonus.delete(word);
+  if (!enableAll.has(word)) continue;
+  freqBonus.delete(word);
   required.add(word);
 }
 
-// --- Suffix expansion ---
-// For every ENABLE word whose base form (after stripping a common suffix)
-// is already in our dictionary, add the inflected form to the bonus tier.
-// This ensures consistent coverage: if "pen" is required, "penned",
-// "penning", "pens" all count as bonus words.
-const allDict = new Set([...required, ...bonus]);
-let suffixAdded = 0;
-for (const word of enable) {
-  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
-  if (!/^[a-z]+$/.test(word)) continue;
-  if (allDict.has(word)) continue;
-  if (BLOCKLIST.has(word)) continue;
-
-  const bases = candidateBases(word);
-  for (const base of bases) {
-    if (allDict.has(base)) {
-      bonus.add(word);
-      allDict.add(word);
-      suffixAdded++;
-      break;
-    }
+// Every remaining ENABLE word that isn't already required or frequency-
+// bonus becomes a dictionary-bonus word. This ensures the game accepts
+// every valid Scrabble/crossword word.
+const bonus = new Set(freqBonus);
+for (const word of enableAll) {
+  if (!required.has(word) && !bonus.has(word)) {
+    bonus.add(word);
   }
 }
-console.log(`suffix expansion: +${suffixAdded} bonus words`);
 
 // Group by length but KEEP frequency order inside each group (Set
 // iteration = insertion = rank order; JS sort is stable): a word's
 // position in its bucket is its difficulty, read at runtime.
+// Frequency-ranked words come first within each length group, then
+// ENABLE-only words (alphabetically, since they have no frequency rank).
 const sortWords = (set) => [...set].sort((a, b) => a.length - b.length);
 const requiredWords = sortWords(required);
 const bonusWords = sortWords(bonus);
@@ -266,7 +160,8 @@ const bonusWords = sortWords(bonus);
 const byLen = {};
 for (const w of requiredWords) byLen[w.length] = (byLen[w.length] ?? 0) + 1;
 console.log(`required ${requiredWords.length}`, byLen);
-console.log(`bonus ${bonusWords.length}`);
+console.log(`bonus ${bonusWords.length} (${freqBonus.size} freq + ${bonus.size - freqBonus.size} ENABLE-only)`);
+console.log(`total ${requiredWords.length + bonusWords.length}`);
 
 await mkdir(path.dirname(OUT_FILE), { recursive: true });
 await writeFile(
