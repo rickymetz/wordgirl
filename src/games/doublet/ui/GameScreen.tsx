@@ -5,7 +5,7 @@ import { Check, RotateCcw } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
-import { useTilewordGame, type GameMode } from "../state/useTilewordGame";
+import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
 import { dominoCells, dominoLetters, cellKey } from "../engine/types";
@@ -34,7 +34,7 @@ interface Props {
 
 export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, dict, solvedElapsedMs } =
-    useTilewordGame(mode);
+    useDoubletGame(mode);
 
   const [resultsOpen, setResultsOpen] = useState(true);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -196,7 +196,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   return (
     <div
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 [@media(max-height:720px)]:pb-3"
-      data-level="tileword"
+      data-level="doublet"
     >
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
@@ -220,7 +220,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Title + difficulty */}
       <div className="flex items-baseline gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Tileword</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Doublet</h1>
         <span className="text-base font-semibold text-ink-soft">
           {placedCount}/{totalDominoes} placed
         </span>
@@ -290,7 +290,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       <AnimatePresence>
         {state.solved && resultsOpen && (
           <ModalDialog
-            labelledBy="tileword-result"
+            labelledBy="doublet-result"
             onClose={() => setResultsOpen(false)}
           >
             <motion.div
@@ -305,7 +305,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 <Check className="h-8 w-8 text-good" />
               </div>
               <h2
-                id="tileword-result"
+                id="doublet-result"
                 className="text-xl font-bold text-ink"
               >
                 Solved

@@ -1,16 +1,16 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { TilewordPreview } from "./ui/TilewordPreview";
-import { TilewordStatus } from "./ui/TilewordStatus";
+import { DoubletPreview } from "./ui/DoubletPreview";
+import { DoubletStatus } from "./ui/DoubletStatus";
 
-export const tileword: GameDefinition = {
-  id: "tileword",
-  name: "Tileword",
+export const doublet: GameDefinition = {
+  id: "doublet",
+  name: "Doublet",
   tagline: "Place the tiles. Spell the words.",
   themeColor: "var(--color-accent)",
-  Preview: TilewordPreview,
-  Status: TilewordStatus,
-  Page: lazy(() => import("./ui/TilewordPage")),
+  Preview: DoubletPreview,
+  Status: DoubletStatus,
+  Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
@@ -19,7 +19,7 @@ export const tileword: GameDefinition = {
       Page: lazy(() => import("./ui/ArchivePlayPage")),
     },
   ],
-  accentLevel: "tileword",
+  accentLevel: "doublet",
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },

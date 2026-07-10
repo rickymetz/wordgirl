@@ -14,7 +14,7 @@ export default function ArchivePlayPage() {
     dateKey >= ARCHIVE_EPOCH &&
     dateKey < localDateKey();
 
-  if (!valid) return <Navigate to="/games/tileword/archive" replace />;
+  if (!valid) return <Navigate to="/games/doublet/archive" replace />;
   return (
     <GameScreen
       key={`${dateKey}:${difficulty}`}

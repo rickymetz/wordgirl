@@ -7,7 +7,7 @@ import {
   loadStats,
 } from "../state/persistence";
 
-export function TilewordStatus() {
+export function DoubletStatus() {
   const today = useToday();
   const [line, setLine] = useState<string | null>(null);
 

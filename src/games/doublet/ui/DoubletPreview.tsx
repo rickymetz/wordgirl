@@ -4,7 +4,7 @@ const CELLS: (string | null)[][] = [
   ["W", "O", "R"],
 ];
 
-export function TilewordPreview() {
+export function DoubletPreview() {
   return (
     <div
       className="grid gap-[3px]"

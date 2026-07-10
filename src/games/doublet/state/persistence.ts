@@ -14,7 +14,7 @@ export interface DailyProgress {
   foundWords: string[];
 }
 
-export interface TilewordStats {
+export interface DoubletStats {
   played: number;
   solved: number;
   currentStreak: number;
@@ -22,7 +22,7 @@ export interface TilewordStats {
   lastSolvedDate: string | null;
 }
 
-const EMPTY_STATS: TilewordStats = {
+const EMPTY_STATS: DoubletStats = {
   played: 0,
   solved: 0,
   currentStreak: 0,
@@ -30,7 +30,7 @@ const EMPTY_STATS: TilewordStats = {
   lastSolvedDate: null,
 };
 
-const store = createGameStore("tileword");
+const store = createGameStore("doublet");
 
 let statsLock: Promise<unknown> = Promise.resolve();
 function serialized<T>(fn: () => Promise<T>): Promise<T> {
@@ -133,8 +133,8 @@ export async function markCoachSeen(): Promise<void> {
   await store.set("coachSeen", true);
 }
 
-export async function loadStats(): Promise<TilewordStats> {
-  const saved = await store.get<Partial<TilewordStats>>("stats");
+export async function loadStats(): Promise<DoubletStats> {
+  const saved = await store.get<Partial<DoubletStats>>("stats");
   return { ...EMPTY_STATS, ...(saved ?? {}) };
 }
 
@@ -148,7 +148,7 @@ export function recordDailyStarted(): Promise<void> {
 export function recordDailySolved(
   dateKey: string,
   allowGrace = true,
-): Promise<TilewordStats> {
+): Promise<DoubletStats> {
   return serialized(async () => {
     const stats = await loadStats();
     const alreadyRecordedDate = stats.lastSolvedDate === dateKey;
@@ -165,7 +165,7 @@ export function recordDailySolved(
 
     if (alreadyRecordedDate) return stats;
 
-    const next: TilewordStats = {
+    const next: DoubletStats = {
       ...stats,
       solved: stats.solved + 1,
       ...(advances && {
@@ -180,7 +180,7 @@ export function recordDailySolved(
 }
 
 export function displayStreak(
-  stats: TilewordStats,
+  stats: DoubletStats,
   today = localDateKey(),
 ): number {
   if (!stats.lastSolvedDate) return 0;

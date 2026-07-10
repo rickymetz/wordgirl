@@ -1,7 +1,7 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { dailySeed, generateTileword } from "../engine/generator";
+import { dailySeed, generateDoublet } from "../engine/generator";
 import type { Difficulty } from "../engine/types";
 import {
   loadDailyProgress,
@@ -17,7 +17,7 @@ export type GameMode =
   | { kind: "archive"; dateKey: string; difficulty: Difficulty }
   | { kind: "practice"; seed: string; difficulty: Difficulty };
 
-export function useTilewordGame(mode: GameMode) {
+export function useDoubletGame(mode: GameMode) {
   const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
   const persisted = mode.kind !== "practice";
   const seed = persisted
@@ -25,7 +25,7 @@ export function useTilewordGame(mode: GameMode) {
     : mode.seed;
 
   const dict = use(loadDictionary());
-  const puzzle = useMemo(() => generateTileword(dict, seed), [dict, seed]);
+  const puzzle = useMemo(() => generateDoublet(dict, seed), [dict, seed]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   const hydratedRef = useRef(false);

@@ -36,7 +36,7 @@ export interface PlacedDomino {
   orientation: Orientation;
 }
 
-export interface TilewordPuzzle {
+export interface DoubletPuzzle {
   seed: string;
   dictVersion: number;
   difficulty: Difficulty;

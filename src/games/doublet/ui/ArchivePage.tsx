@@ -8,12 +8,12 @@ import {
   loadAllDailyProgress,
   loadStats,
   type ArchivedDay,
-  type TilewordStats,
+  type DoubletStats,
 } from "../state/persistence";
 
-const config: GameArchiveConfig<ArchivedDay, TilewordStats> = {
-  gameId: "tileword",
-  accent: "tileword",
+const config: GameArchiveConfig<ArchivedDay, DoubletStats> = {
+  gameId: "doublet",
+  accent: "doublet",
   epoch: ARCHIVE_EPOCH,
   loadAllDays: loadAllDailyProgress,
   loadStats,
