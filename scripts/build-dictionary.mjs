@@ -86,6 +86,30 @@ const REQUIRED_ALLOWLIST = new Set([
   "dab",
 ]);
 
+// Crossword-supplement words: real English words that appear in NYT/USA
+// Today crosswords but are missing from ENABLE. Cherry-picked from the
+// Crossword Nexus Collaborative Word List (score >= 50) — only genuine
+// common words, no proper nouns/abbreviations/brands. Added as bonus.
+const CROSSWORD_ALLOWLIST = new Set([
+  // Modern vocabulary that postdates ENABLE
+  "app", "apps", "blog", "blogs", "emoji", "meme", "memes", "vape",
+  "vapes", "vaped", "vaping", "wifi", "wiki", "wikis", "yeet", "yeets",
+  "yeeted", "yeeting",
+  // Established informal/clipped forms in standard dictionaries
+  "acai", "camo", "chai", "cred", "delt", "delts", "fest", "fests",
+  "glam", "glams", "goth", "goths", "grok", "groks", "meds", "mega",
+  "mosh", "moshed", "moshing", "nano", "olde", "reup", "reups",
+  "reupped", "reupping", "sesh", "tech", "uber", "zine", "zines",
+  // Food/drink terms common in crosswords
+  "mahi", "pho",
+  // Words in Merriam-Webster but absent from ENABLE
+  "ugli", "uglis",
+  // Common informal terms crossword solvers expect
+  "bruh", "cigs", "dawg", "heli", "helis", "itsy", "itty", "noob",
+  "noobs", "nyet", "pedi", "pedis", "tada", "todo", "todos", "woah",
+  "yoyo", "yoyos", "fomo",
+]);
+
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);
   if (existsSync(cachePath)) {
@@ -147,6 +171,20 @@ for (const word of enableAll) {
     bonus.add(word);
   }
 }
+
+// Crossword supplement: words NOT in ENABLE but common in published
+// crosswords. Added to bonus so they count when a player types them.
+let crosswordAdded = 0;
+for (const word of CROSSWORD_ALLOWLIST) {
+  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
+  if (!/^[a-z]+$/.test(word)) continue;
+  if (BLOCKLIST.has(word)) continue;
+  if (!required.has(word) && !bonus.has(word)) {
+    bonus.add(word);
+    crosswordAdded++;
+  }
+}
+console.log(`crossword supplement: +${crosswordAdded} words`);
 
 // Group by length but KEEP frequency order inside each group (Set
 // iteration = insertion = rank order; JS sort is stable): a word's
