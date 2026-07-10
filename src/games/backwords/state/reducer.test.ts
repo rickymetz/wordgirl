@@ -129,7 +129,7 @@ describe("backwords reducer", () => {
     expect(state.rows).toHaveLength(1);
   });
 
-  it("coaches the half placement when a full palindrome is typed", () => {
+  it("typing a palindrome in full commits it and refunds the extras", () => {
     // Needs a second M in the bank — palindromes repeat letters.
     state = initialState({
       puzzle: { ...puzzle, bank: [..."moiltaswmo"].sort() },
@@ -138,13 +138,29 @@ describe("backwords reducer", () => {
       isWord,
     });
     run(...type("mom"), { type: "commit" });
-    expect(state.lastResult).toMatchObject({
-      type: "halfOnly",
-      place: "mom",
-      half: "mo",
+    expect(state.lastResult?.type).toBe("committed");
+    expect(state.rows[0]).toMatchObject({ place: "mo" });
+    expect(state.rows[0].def.words).toEqual(["mom"]);
+    // The extra M went home to the rack.
+    expect(state.bank).toContain("m");
+  });
+
+  it("typing past a shared half reaches the LONGER palindrome", () => {
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."poopsi"].sort() },
+      lexicon,
+      words,
+      isWord,
     });
-    // The letters stay staged — backspacing one M leaves the valid half.
-    expect(state.current).toBe("mom");
+    // The short reading owns the bare half...
+    run(...type("po"), { type: "commit" });
+    expect(state.rows[0].def.words).toEqual(["pop"]);
+    // ...and one letter past the fold reaches POOP.
+    run({ type: "breakRow", index: 0 }, ...type("poo"), { type: "commit" });
+    expect(state.rows[0].def.words).toEqual(["poop"]);
+    expect(state.rows[0].place).toBe("po");
+    // Only the canonical two letters are spent; the extra O returned.
+    expect(state.bank.join("")).toBe("iops");
   });
 
   it("unstages a mid-row tile back to the bank", () => {

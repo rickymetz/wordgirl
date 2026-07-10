@@ -58,17 +58,8 @@ export function buildLexicon(dict: Dictionary): Map<string, RowDef> {
   const seenPair = new Set<string>();
   for (const w of common) {
     const r = reverse(w);
-    if (w === r) {
-      // Palindrome: place the first half (+ middle when odd).
-      const place = w.slice(0, Math.ceil(w.length / 2));
-      addPlacement(place, {
-        kind: "palindrome",
-        place,
-        words: [w],
-        cost: sortLetters(place),
-        glyph: glyphMirror(w) === w,
-      });
-    } else if (common.has(r) && !seenPair.has(r)) {
+    if (w === r) continue; // palindromes handled below, shortest first
+    if (common.has(r) && !seenPair.has(r)) {
       seenPair.add(w);
       // ✦ when a REAL mirror would render exactly the reflection we
       // draw. In caps this is rare for pairs (WOT|TOW-shaped), common
@@ -83,6 +74,31 @@ export function buildLexicon(dict: Dictionary): Map<string, RowDef> {
           glyph,
         });
       }
+    }
+  }
+
+  // Palindromes, SHORTEST first: the canonical placement is the first
+  // half (+ middle when odd), and every longer prefix through the full
+  // word aliases to the same row — so when POP and POOP share the
+  // half "po", typing on to POO (or POOP) reaches the longer word,
+  // and typing any palindrome out in full simply commits it. Aliases
+  // never overwrite an existing key.
+  const palindromes = [...common]
+    .filter((w) => w === reverse(w))
+    .sort((a, b) => a.length - b.length || a.localeCompare(b));
+  for (const w of palindromes) {
+    const place = w.slice(0, Math.ceil(w.length / 2));
+    const def: RowDef = {
+      kind: "palindrome",
+      place,
+      words: [w],
+      cost: sortLetters(place),
+      glyph: glyphMirror(w) === w,
+    };
+    addPlacement(place, def);
+    for (let n = place.length + 1; n <= w.length; n++) {
+      const key = w.slice(0, n);
+      if (!byPlace.has(key)) byPlace.set(key, def);
     }
   }
   return byPlace;

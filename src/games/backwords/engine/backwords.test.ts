@@ -33,6 +33,18 @@ describe("lexicon", () => {
     expect(lexicon.get("de")?.words).toEqual(["deed"]);
   });
 
+  it("aliases longer prefixes so shadowed palindromes stay reachable", () => {
+    // POP owns the bare half; POO and POOP reach the longer word.
+    expect(lexicon.get("po")?.words).toEqual(["pop"]);
+    expect(lexicon.get("poo")?.words).toEqual(["poop"]);
+    expect(lexicon.get("poop")?.words).toEqual(["poop"]);
+    expect(lexicon.get("pee")?.words).toEqual(["peep"]);
+    // Every palindrome also commits typed out in full.
+    expect(lexicon.get("mom")?.words).toEqual(["mom"]);
+    expect(lexicon.get("noon")?.words).toEqual(["noon"]);
+    expect(lexicon.get("madam")?.words).toEqual(["madam"]);
+  });
+
   it("flags glyph-true rows for UPPERCASE letterforms only", () => {
     // The board renders caps: MOM, WOW, AHA, TIT survive a real mirror.
     expect(lexicon.get("mo")?.glyph).toBe(true);

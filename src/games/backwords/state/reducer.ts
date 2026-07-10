@@ -18,8 +18,6 @@ export type SubmitResult =
       reason: "notWord" | "rare";
       nonce: number;
     }
-  /** A palindrome typed in FULL — only its half belongs on the board. */
-  | { type: "halfOnly"; place: string; half: string; nonce: number }
   | { type: "duplicate"; place: string; nonce: number }
   | { type: "empty"; nonce: number };
 
@@ -145,19 +143,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (!def) {
         const place = state.current;
         const rev = [...place].reverse().join("");
-        if (place === rev && state.words.has(place)) {
-          // A whole palindrome typed out — MOM instead of MO. The
-          // word is fine; the placement is the lesson.
-          return {
-            ...state,
-            lastResult: {
-              type: "halfOnly",
-              place,
-              half: place.slice(0, Math.ceil(place.length / 2)),
-              nonce,
-            },
-          };
-        }
         // Name the reading that fails and HOW it fails: a non-word
         // beats "too rare" (blame the mirror side when the staged word
         // is fine: BAD -> DAB isn't a word), and a real-but-bonus-tier
@@ -186,12 +171,21 @@ export function gameReducer(state: GameState, action: Action): GameState {
           lastResult: { type: "duplicate", place: state.current, nonce },
         };
       }
-      const rows = [...state.rows, { place: state.current, def }];
-      const solved = state.bank.length === 0;
+      // An aliased placement (POO or POOP -> the POOP row) staged more
+      // letters than the mirror needs: the row keeps the canonical
+      // placement and the extras go home to the rack.
+      const place = state.current.startsWith(def.place)
+        ? def.place
+        : state.current;
+      const extra = state.current.slice(place.length);
+      const bank = extra ? [...state.bank, ...extra].sort() : state.bank;
+      const rows = [...state.rows, { place, def }];
+      const solved = bank.length === 0;
       return {
         ...state,
         rows,
         current: "",
+        bank,
         solved,
         lastResult: { type: solved ? "solved" : "committed", row: def, nonce },
       };

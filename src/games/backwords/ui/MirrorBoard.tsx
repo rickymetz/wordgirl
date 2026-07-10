@@ -20,6 +20,7 @@ type DragLive = (
 export function MirrorBoard({
   rows,
   current,
+  activePlace,
   currentStraddle,
   solved,
   bankAll,
@@ -29,6 +30,9 @@ export function MirrorBoard({
 }: {
   rows: CommittedRow[];
   current: string;
+  /** The canonical placement of the staged letters (current when no
+   * alias applies): extras past it fill the reflection's slots. */
+  activePlace: string;
   /** The staged letters already read as an odd palindrome's half —
    * preview the straddle live (middle tile on the glass). */
   currentStraddle: boolean;
@@ -50,7 +54,7 @@ export function MirrorBoard({
   const RAIL = 36; // take-back ×: 24px + 8px margin + slack
   const fit = (budget: number, n: number) =>
     Math.floor((budget - (n - 1) * 3) / n);
-  const caps = [34, fit(halfW - 6, Math.max(3, current.length))];
+  const caps = [34, fit(halfW - 6, Math.max(3, activePlace.length))];
   if (rows.length > 0) {
     const longest = Math.max(3, ...rows.map((r) => r.place.length));
     caps.push(fit(halfW - RAIL, longest));
@@ -138,7 +142,8 @@ export function MirrorBoard({
         </AnimatePresence>
         {!solved && (
           <Row
-            place={current}
+            place={activePlace}
+            extras={current.slice(activePlace.length)}
             ids={idsFor(current.length)}
             tile={tile}
             straddle={currentStraddle}
@@ -154,6 +159,7 @@ export function MirrorBoard({
 
 function Row({
   place,
+  extras = "",
   ids,
   tile,
   straddle = false,
@@ -165,6 +171,9 @@ function Row({
   onDragLive,
 }: {
   place: string;
+  /** Staged letters past the canonical placement (POO's second O):
+   * they sit IN the reflection's slots as real tiles until commit. */
+  extras?: string;
   ids: number[];
   tile: number;
   straddle?: boolean;
@@ -261,18 +270,33 @@ function Row({
             style={tileStyle}
           />
         )}
-        {[...reflection].map((ch, i) => (
-          <ReflectionTile
-            key={i}
-            letter={ch}
-            style={tileStyle}
-            // The ghost at reflection index i mirrors the tile at left
-            // index (len-1-i): dragging it off the board unstages that
-            // letter, so rows rework from either side of the glass.
-            onUnstage={onUnstage && (() => onUnstage(left.length - 1 - i))}
-            onDragLive={onDragLive}
-          />
-        ))}
+        {[...reflection].map((ch, i) =>
+          i < extras.length ? (
+            // A staged letter typed past the fold: a REAL tile filling
+            // the reflection's slot, handed back at commit when the
+            // mirror takes over.
+            <PlacedTile
+              key={ids[place.length + i]}
+              id={ids[place.length + i]}
+              letter={extras[i]}
+              active={active}
+              style={tileStyle}
+              onUnstage={onUnstage && (() => onUnstage(place.length + i))}
+              onDragLive={onDragLive}
+            />
+          ) : (
+            <ReflectionTile
+              key={`g${i}`}
+              letter={ch}
+              style={tileStyle}
+              // The ghost at reflection index i mirrors the tile at left
+              // index (len-1-i): dragging it off the board unstages that
+              // letter, so rows rework from either side of the glass.
+              onUnstage={onUnstage && (() => onUnstage(left.length - 1 - i))}
+              onDragLive={onDragLive}
+            />
+          ),
+        )}
         {/* The mirror's seal: lives INSIDE the glass so it never eats
             the left half's tile budget. Decorative here — the commit
             toast and results carry the words. */}

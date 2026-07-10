@@ -94,6 +94,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     !!currentDef &&
     currentDef.kind === "palindrome" &&
     currentDef.words[0].length % 2 === 1;
+  // Aliased placements (POO -> POOP): the board shows the canonical
+  // placement, and the extra staged letters fill the reflection's
+  // slots — typing INTO the mirror.
+  const activePlace =
+    currentDef && state.current.startsWith(currentDef.place)
+      ? currentDef.place
+      : state.current;
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -207,17 +214,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             ? `${r.badWord.toUpperCase()} is too rare here`
             : `${r.badWord.toUpperCase()} isn't a valid word`
           : "",
-      halfOnly:
-        r.type === "halfOnly"
-          ? `${r.place.toUpperCase()} only needs ${r.half.toUpperCase()}`
-          : "",
       duplicate: "Already placed",
       empty: "Tap letters to build a row",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
     const timer = setTimeout(
       () => setToast(null),
-      r.type === "invalid" || r.type === "halfOnly" ? 3000 : 1600,
+      r.type === "invalid" ? 3000 : 1600,
     );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -317,6 +320,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <MirrorBoard
           rows={state.rows}
           current={state.current}
+          activePlace={activePlace}
           currentStraddle={currentStraddle}
           solved={state.solved}
           bankAll={puzzle.bank}
@@ -419,7 +423,8 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                     A word that reads the same both ways needs its{" "}
                     <Key>first half plus the middle letter</Key> — the
                     middle tile slides onto the glass and the mirror
-                    completes the rest.
+                    completes the rest. Typing the whole word out works
+                    too.
                   </>
                 ),
               },
