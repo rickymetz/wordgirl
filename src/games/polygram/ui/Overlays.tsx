@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
-import { formatDuration } from "../../../lib/date";
+import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
+import { ShareButton } from "../../../components/ShareButton";
 import { useModalFocus } from "../../../components/useModalFocus";
 import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
@@ -20,11 +21,7 @@ function buildShareText(
   );
   // Hints get the sheepish peek; a clean solve earns the nerd badge.
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const date = new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-  });
+  const date = formatShareDate(dateKey);
   return [
     `Polygram — ${date}`,
     // Rank only — raw points aren't part of the in-game language.
@@ -57,37 +54,12 @@ export function DoneOverlay({
   onReplay?: () => void;
 }) {
   const done = state.phase === "done";
-  const [copied, setCopied] = useState(false);
   const [confirmReplay, setConfirmReplay] = useState(false);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(copiedTimer.current), []);
   const dialogRef = useModalFocus<HTMLDivElement>(done && open);
 
   if (!done || !open) return null;
   const rank = rankFor(state.score, state.puzzle);
   const hintUsed = Object.keys(state.revealed).length > 0;
-
-  const share = async () => {
-    if (!dateKey || elapsedMs === null) return;
-    const text = buildShareText(state, dateKey, elapsedMs);
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-      } catch {
-        // Dismissing the share sheet (AbortError) is a "changed my
-        // mind" — don't hijack the clipboard and claim success.
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      clearTimeout(copiedTimer.current);
-      copiedTimer.current = setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard unavailable — nothing useful to do.
-    }
-  };
 
   return (
     <motion.div
@@ -141,14 +113,8 @@ export function DoneOverlay({
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2">
-          {dateKey && (
-            <button
-              type="button"
-              onClick={share}
-              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
-            >
-              {copied ? "Copied!" : "Share"}
-            </button>
+          {dateKey && elapsedMs !== null && (
+            <ShareButton text={buildShareText(state, dateKey, elapsedMs)} />
           )}
           {mode === "practice" && onNewPuzzle && (
             <button
