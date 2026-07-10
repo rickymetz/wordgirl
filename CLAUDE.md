@@ -58,10 +58,15 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `overBoard`) + the LetterBank/MirrorBoard wiring — pointer-fallback,
   cancel-aborts, tap-vs-drag guard, live-ghost via direct DOM writes
   (never setState per drag frame).
-- Daily persistence + clock recipe: `backwords/state/` or
-  `crosshatch/state/` (see State-integrity below) — including BOTH
-  save guards (solved-final, dictVersion-ordering) and the multi-tab
-  ownership rules.
+- Daily persistence: `lib/daily/persistence.ts` —
+  `createDailyPersistence()` owns the store, save guards
+  (version-ordering, solved-final, per-game unsolved veto), stats
+  lock/defaults-merge, coachSeen, plus `streakAdvance`/`countsAsToday`/
+  `displayStreak`. `lib/daily/useDailyClock.ts` owns active-time
+  (pause on hide, flush, freeze-at-solve). Adopted by backwords,
+  crosshatch, doublet; polygram predates the recipe (its stat field
+  names differ) — migrate it when next touched, without renaming its
+  persisted fields.
 - Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
   morphing: `polygram/ui/`.
 

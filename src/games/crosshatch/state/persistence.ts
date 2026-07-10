@@ -1,5 +1,8 @@
-import { createGameStore } from "../../../lib/storage/createGameStore";
-import { localDateKey, previousDateKey } from "../../../lib/date";
+import {
+  createDailyPersistence,
+  displayStreak,
+  streakAdvance,
+} from "../../../lib/daily/persistence";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { RANKS, type RankTitle } from "../engine/scoring";
 
@@ -49,38 +52,31 @@ const EMPTY_STATS: CrosshatchStats = {
   totalWords: 0,
 };
 
-const store = createGameStore("crosshatch");
+const base = createDailyPersistence<DailyProgress, CrosshatchStats>({
+  gameId: "crosshatch",
+  emptyStats: EMPTY_STATS,
+  validDay: (s) =>
+    Array.isArray(s.foundWords) &&
+    s.grid !== null &&
+    typeof s.grid === "object" &&
+    (s.revealed === undefined ||
+      (s.revealed !== null && typeof s.revealed === "object")),
+  // Found words only ever GROW within a day: a stored save holding
+  // words this tab doesn't know about means another tab is ahead.
+  allowUnsolvedWrite: (stored, progress) =>
+    !(
+      stored.foundWords.length > progress.foundWords.length &&
+      stored.foundWords.some((w) => !progress.foundWords.includes(w))
+    ),
+});
+const store = base.store;
 
-/**
- * Stats updates are read-modify-write on one blob; two in flight (a
- * solve and a same-tick rank upgrade on a straight-to-perfect finish)
- * would lose the first write. Serialize them all through one chain.
- */
-let statsLock: Promise<unknown> = Promise.resolve();
-function serialized<T>(fn: () => Promise<T>): Promise<T> {
-  const run = statsLock.then(fn, fn);
-  statsLock = run.catch(() => {});
-  return run;
-}
 
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-06";
 
-/** A partially-corrupted save must not crash hydration — normalize it. */
 function validShape(saved: DailyProgress | null): DailyProgress | null {
-  if (!saved || typeof saved !== "object") return null;
-  if (!Array.isArray(saved.foundWords)) return null;
-  if (saved.grid === null || typeof saved.grid !== "object") return null;
-  if (
-    saved.revealed !== undefined &&
-    (saved.revealed === null || typeof saved.revealed !== "object")
-  ) {
-    return null;
-  }
-  if (typeof saved.elapsedMs !== "number" || !Number.isFinite(saved.elapsedMs)) {
-    return null;
-  }
-  return saved;
+  return base.validShape(saved);
 }
 
 /**
@@ -127,25 +123,8 @@ export async function loadAllDailyProgress(): Promise<
   return out;
 }
 
-export async function saveDailyProgress(progress: DailyProgress) {
-  // Multi-tab guard: found words only ever GROW within a day, so a
-  // stored save holding words we don't know about means another tab is
-  // ahead — skip the write instead of silently destroying its progress.
-  const stored = validShape(
-    await store.get<DailyProgress>(`daily:${progress.dateKey}`),
-  );
-  // A tab running an OLDER build must never clobber a newer build's
-  // save - dictVersion only ever grows.
-  if (stored && stored.dictVersion > progress.dictVersion) return;
-  if (
-    stored &&
-    stored.dictVersion === progress.dictVersion &&
-    stored.foundWords.length > progress.foundWords.length &&
-    stored.foundWords.some((w) => !progress.foundWords.includes(w))
-  ) {
-    return;
-  }
-  await store.set(`daily:${progress.dateKey}`, progress);
+export function saveDailyProgress(progress: DailyProgress) {
+  return base.saveDay(progress);
 }
 
 /** Wipe a solved day for a fresh replay run; stats stay counted.
@@ -165,27 +144,12 @@ export async function resetDailyForReplay(dateKey: string) {
 }
 
 /** One-time first-run coach marks. */
-export async function loadCoachSeen(): Promise<boolean> {
-  return (await store.get<boolean>("coachSeen")) === true;
-}
-export async function markCoachSeen(): Promise<void> {
-  await store.set("coachSeen", true);
-}
+export const { loadCoachSeen, markCoachSeen } = base;
 
-export async function loadStats(): Promise<CrosshatchStats> {
-  // Merge over defaults so stats survive schema additions (an older
-  // blob without totalWords keeps its streaks and counters).
-  const saved = await store.get<Partial<CrosshatchStats>>("stats");
-  return { ...EMPTY_STATS, ...(saved ?? {}) };
-}
+export const loadStats = base.loadStats;
 
 /** Call once when a new daily puzzle is first opened. */
-export function recordDailyStarted(): Promise<void> {
-  return serialized(async () => {
-    const stats = await loadStats();
-    await store.set("stats", { ...stats, played: stats.played + 1 });
-  });
-}
+export const recordDailyStarted = base.recordStarted;
 
 const rankIndex = (r: RankTitle | null) =>
   r === null ? -1 : RANKS.findIndex((x) => x.title === r);
@@ -205,35 +169,16 @@ export function recordDailySolved(
   // an archive play of yesterday must not borrow it to move the streak.
   allowGrace = true,
 ): Promise<CrosshatchStats> {
-  return serialized(async () => {
-  const stats = await loadStats();
-  if (stats.lastSolvedDate === dateKey) return stats; // already recorded
-
-  // Today's puzzle — with a grace day so a session that crossed
-  // midnight mid-play (dateKey frozen at mount) still counts its day.
-  const today = localDateKey();
-  const isToday =
-    dateKey === today || (allowGrace && dateKey === previousDateKey(today));
-  const advances =
-    isToday &&
-    (stats.lastSolvedDate === null || dateKey > stats.lastSolvedDate);
-  const continues = stats.lastSolvedDate === previousDateKey(dateKey);
-  const currentStreak = continues ? stats.currentStreak + 1 : 1;
-
-  const next: CrosshatchStats = {
-    ...stats,
-    solved: stats.solved + 1,
-    bestRank:
-      rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
-    totalWords: stats.totalWords + wordsFound,
-    ...(advances && {
-      currentStreak,
-      bestStreak: Math.max(stats.bestStreak, currentStreak),
-      lastSolvedDate: dateKey,
-    }),
-  };
-  await store.set("stats", next);
-  return next;
+  return base.updateStats((stats) => {
+    if (stats.lastSolvedDate === dateKey) return stats; // already recorded
+    return {
+      ...stats,
+      solved: stats.solved + 1,
+      bestRank:
+        rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
+      totalWords: stats.totalWords + wordsFound,
+      ...streakAdvance(stats, dateKey, allowGrace),
+    };
   });
 }
 
@@ -242,22 +187,22 @@ export function recordDailySolved(
  * Genius to a perfect Crosshatch) — upgrade bestRank without touching
  * the counters.
  */
-export function recordRankImproved(rank: RankTitle): Promise<void> {
-  return serialized(async () => {
-    const stats = await loadStats();
-    if (rankIndex(rank) <= rankIndex(stats.bestRank)) return;
-    await store.set("stats", { ...stats, bestRank: rank });
-  });
+export async function recordRankImproved(rank: RankTitle): Promise<void> {
+  await base.updateStats((stats) =>
+    rankIndex(rank) > rankIndex(stats.bestRank)
+      ? { ...stats, bestRank: rank }
+      : stats,
+  );
 }
 
 /** Words found AFTER the solve was recorded still count toward the
  * lifetime total — credited incrementally, exactly once per word. */
-export function recordWordsProgress(delta: number): Promise<void> {
-  return serialized(async () => {
-    if (delta <= 0) return;
-    const stats = await loadStats();
-    await store.set("stats", { ...stats, totalWords: stats.totalWords + delta });
-  });
+export async function recordWordsProgress(delta: number): Promise<void> {
+  if (delta <= 0) return;
+  await base.updateStats((stats) => ({
+    ...stats,
+    totalWords: stats.totalWords + delta,
+  }));
 }
 
 /**
@@ -266,12 +211,4 @@ export function recordWordsProgress(delta: number): Promise<void> {
  * Solving yesterday's puzzle still counts as alive (it dies only when
  * today ends unsolved).
  */
-export function displayStreak(
-  stats: CrosshatchStats,
-  today = localDateKey(),
-): number {
-  if (!stats.lastSolvedDate) return 0;
-  return stats.lastSolvedDate >= previousDateKey(today)
-    ? stats.currentStreak
-    : 0;
-}
+export { displayStreak };

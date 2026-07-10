@@ -9,6 +9,7 @@ import {
 } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
+import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
 import { dailySeed, generateBackwords } from "../engine/generator";
 import {
@@ -75,30 +76,20 @@ export function useBackwordsGame(mode: GameMode) {
   // hydratedRef flips only AFTER hydration completes — saving before
   // that would clobber the stored progress with the empty initial state.
   const hydratedRef = useRef(false);
-  // Solved before this session → the clock stays frozen at the save.
-  const alreadySolvedRef = useRef(false);
   // Stats already counted (solved earlier OR this is a replay run).
   const statsRecordedRef = useRef(false);
-  // Play-time tracking: previously saved elapsed + this session's
-  // ACTIVE time. Pauses while backgrounded; frozen at the solve.
-  const savedElapsedRef = useRef(0);
-  const sessionStartRef = useRef(Date.now());
-  const sessionActiveMsRef = useRef(0);
-  const solvedElapsedRef = useRef<number | null>(null);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const rawElapsedMs = () =>
-    savedElapsedRef.current +
-    sessionActiveMsRef.current +
-    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
-
-  const currentElapsedMs = () => {
-    if (alreadySolvedRef.current) return savedElapsedRef.current;
-    if (solvedElapsedRef.current !== null) return solvedElapsedRef.current;
-    return rawElapsedMs();
-  };
+  // The shared active-time clock: pauses while backgrounded, flushes
+  // a save on hide/pagehide/unmount, freezes at the solve. Practice
+  // runs it too (its time shows at the end); persistNow gates itself.
+  const persistRef = useRef<() => void>(() => {});
+  const clock = useDailyClock({
+    flush: () => persistRef.current(),
+    resetKey: dateKey,
+  });
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress, so stray taps can't wipe the historical record.
@@ -122,44 +113,14 @@ export function useBackwordsGame(mode: GameMode) {
         // (a POOP row saved as "po" would reload as POP).
         rows: s.rows.map(rowSaveKey),
         solved: s.solved,
-        elapsedMs: currentElapsedMs(),
+        elapsedMs: clock.currentElapsedMs(),
         ...(statsRecordedRef.current && { statsRecorded: true }),
       },
       { rowsEdited: rowsEditedRef.current },
     );
   };
 
-  // Pause the clock while backgrounded, and FLUSH a save when the app
-  // hides — iOS routinely kills suspended PWAs. Practice runs the
-  // clock too (its time shows at the end); persistNow is a no-op there.
-  useEffect(() => {
-    const bank = () => {
-      sessionActiveMsRef.current += Date.now() - sessionStartRef.current;
-      sessionStartRef.current = Date.now();
-    };
-    const onVisibility = () => {
-      if (document.hidden) {
-        bank();
-        persistNow(stateRef.current);
-      } else {
-        sessionStartRef.current = Date.now();
-      }
-    };
-    const onPageHide = () => {
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", onPageHide);
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    // persistNow/stateRef are stable enough: they close over refs only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey]);
+  persistRef.current = () => persistNow(stateRef.current);
 
   // Hydrate from storage once. StrictMode-safe: the first (cancelled)
   // run applies nothing, the second completes.
@@ -171,12 +132,9 @@ export function useBackwordsGame(mode: GameMode) {
         const saved = await loadDailyProgress(dateKey);
         if (cancelled) return;
         if (saved) {
-          alreadySolvedRef.current = saved.solved;
           statsRecordedRef.current =
             saved.solved || saved.statsRecorded === true;
-          savedElapsedRef.current = saved.elapsedMs ?? 0;
-          sessionStartRef.current = Date.now();
-          sessionActiveMsRef.current = 0;
+          clock.hydrate(saved.elapsedMs ?? 0, saved.solved);
           dispatch({ type: "hydrate", places: saved.rows, solved: saved.solved });
         } else {
           const stale = await loadStaleDailyProgress(dateKey);
@@ -214,21 +172,15 @@ export function useBackwordsGame(mode: GameMode) {
   const recordedRef = useRef(false);
   useEffect(() => {
     if (!state.solved) return;
-    if (alreadySolvedRef.current) {
-      if (solvedElapsedMs === null) setSolvedElapsedMs(savedElapsedRef.current);
-      return;
-    }
     // The clock freezes at the solve in EVERY mode — practice reveals
     // its time too; only the stats recording is daily/archive-only.
-    if (solvedElapsedRef.current === null) {
-      solvedElapsedRef.current = rawElapsedMs();
-      setSolvedElapsedMs(solvedElapsedRef.current);
-    }
+    const ms = clock.freeze();
+    if (solvedElapsedMs === null) setSolvedElapsedMs(ms);
     if (persisted && !recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
       void recordDailySolved(
         dateKey,
-        solvedElapsedRef.current,
+        ms,
         glyphRowCount(state.rows),
         mode.kind === "daily",
       );
