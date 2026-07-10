@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "./HomeLink";
 import { dateKeyRange, localDateKey } from "../lib/date";
@@ -69,10 +69,13 @@ export function GameTrends<Day extends { dateKey: string }>({
         <p className="pt-1 text-sm text-ink-soft">Last {WINDOW_DAYS} days</p>
       </div>
 
-      {days &&
-        config.metrics.map((m) => (
-          <MetricChart key={m.key} metric={m} days={days} dates={from} />
-        ))}
+      {days && (
+        <div className="grid grid-cols-2 gap-x-5">
+          {config.metrics.map((m) => (
+            <MetricChart key={m.key} metric={m} days={days} dates={from} />
+          ))}
+        </div>
+      )}
       {days && config.hours && (
         <HourChart metric={config.hours} days={days} dates={from} />
       )}
@@ -118,13 +121,14 @@ function MetricChart<Day extends { dateKey: string }>({
   );
   const pickedPoint = picked === null ? null : points[picked];
 
-  // Sparkline geometry: dots on played days, thin segments joining
-  // CONSECUTIVE days only (a skipped day breaks the line — a gap is
-  // data), headroom above/below for the direct min/max labels.
-  const W = 360;
-  const H = 76;
-  const TOP = 16;
-  const BOTTOM = 16;
+  // Sparkline geometry, sized for a HALF-width grid cell: dots on
+  // played days, thin segments joining CONSECUTIVE days only (a
+  // skipped day breaks the line — a gap is data), headroom above and
+  // below for the direct min/max labels.
+  const W = 168;
+  const H = 64;
+  const TOP = 14;
+  const BOTTOM = 14;
   const slot = W / points.length;
   const x = (i: number) => i * slot + slot / 2;
   const y = (v: number) =>
@@ -145,23 +149,33 @@ function MetricChart<Day extends { dateKey: string }>({
   const minIdx = dataIdx.find((i) => points[i].v === minV)!;
   // Keep edge labels inside the frame.
   const anchor = (i: number) =>
-    x(i) < 36 ? "start" : x(i) > W - 36 ? "end" : "middle";
+    x(i) < 26 ? "start" : x(i) > W - 26 ? "end" : "middle";
+
+  // Half-width day slots are too narrow to hit precisely, so a tap
+  // picks the NEAREST played day (the whole chart is the target).
+  const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const vx = ((e.clientX - rect.left) / rect.width) * W;
+    const nearest = dataIdx.reduce((a, b) =>
+      Math.abs(x(b) - vx) < Math.abs(x(a) - vx) ? b : a,
+    );
+    setPicked((cur) => (cur === nearest ? null : nearest));
+  };
 
   return (
-    <section className="mb-5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-bold">{metric.label}</h2>
-        <p className="text-xs font-semibold text-ink-soft">
-          {pickedPoint && pickedPoint.v !== null
-            ? `${shortDate(pickedPoint.dateKey)} · ${metric.format(pickedPoint.v)}`
-            : `Best ${metric.format(best)} · Avg ${metric.format(avg)}`}
-        </p>
-      </div>
+    <section className="mb-4 flex min-w-0 flex-col">
+      <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
+      <p className="pt-0.5 text-xs font-semibold text-ink-soft">
+        {pickedPoint && pickedPoint.v !== null
+          ? `${shortDate(pickedPoint.dateKey)} · ${metric.format(pickedPoint.v)}`
+          : `Best ${metric.format(best)} · Avg ${metric.format(avg)}`}
+      </p>
       <svg
         viewBox={`0 0 ${W} ${H + 8}`}
-        className="mt-1 w-full touch-manipulation select-none"
+        className="mt-auto w-full touch-manipulation select-none"
         role="img"
         aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${latestIdx >= 0 && points[latestIdx].v !== null ? `, latest ${metric.format(points[latestIdx].v)}` : ""}.`}
+        onPointerDown={pickNearest}
       >
         {/* Range-frame: the only scaffold, spanning exactly the
             played days. */}
@@ -187,33 +201,21 @@ function MetricChart<Day extends { dateKey: string }>({
           const isLatest = i === latestIdx;
           const isPicked = picked === i;
           return (
-            <g key={p.dateKey}>
-              <rect
-                x={i * slot}
-                y={0}
-                width={slot}
-                height={H + 8}
-                fill="transparent"
-                onPointerDown={() =>
-                  setPicked((cur) => (cur === i ? null : i))
-                }
-              />
+            <g key={p.dateKey} pointerEvents="none">
               {isPicked && (
                 <circle
                   cx={x(i)}
                   cy={y(p.v!)}
-                  r={6}
+                  r={5}
                   className="fill-surface stroke-accent"
                   strokeWidth={1.5}
-                  pointerEvents="none"
                 />
               )}
               <circle
                 cx={x(i)}
                 cy={y(p.v!)}
-                r={isLatest ? 3.5 : 2.25}
+                r={isLatest ? 3 : 2}
                 className="fill-accent"
-                pointerEvents="none"
               />
             </g>
           );
@@ -221,7 +223,7 @@ function MetricChart<Day extends { dateKey: string }>({
         {/* Direct labels on the extremes — the axis Tufte erased. */}
         <text
           x={x(maxIdx)}
-          y={y(maxV) - 7}
+          y={y(maxV) - 6}
           textAnchor={anchor(maxIdx)}
           className="fill-ink-soft font-semibold"
           fontSize={10}
@@ -232,7 +234,7 @@ function MetricChart<Day extends { dateKey: string }>({
         {minIdx !== maxIdx && (
           <text
             x={x(minIdx)}
-            y={y(minV) + 13}
+            y={y(minV) + 12}
             textAnchor={anchor(minIdx)}
             className="fill-ink-soft font-semibold"
             fontSize={10}
@@ -283,6 +285,17 @@ function HourChart<Day extends { dateKey: string }>({
   const y = (n: number) => H - (n / maxN) * (H - TOP);
   const labeled = picked ?? peak;
   const dayCount = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+  const filled = bins.flatMap((n, h) => (n > 0 ? [h] : []));
+  // A tap picks the nearest FILLED bin — bars are far too thin to
+  // demand a direct hit.
+  const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const vx = ((e.clientX - rect.left) / rect.width) * W;
+    const nearest = filled.reduce((a, b) =>
+      Math.abs(x(b) - vx) < Math.abs(x(a) - vx) ? b : a,
+    );
+    setPicked((cur) => (cur === nearest ? null : nearest));
+  };
 
   return (
     <section className="mb-5">
@@ -299,6 +312,7 @@ function HourChart<Day extends { dateKey: string }>({
         className="mt-1 w-full touch-manipulation select-none"
         role="img"
         aria-label={`${metric.label}: most solves around ${fmtHour(peak)}.`}
+        onPointerDown={pickNearest}
       >
         <line
           x1={0}
@@ -320,22 +334,6 @@ function HourChart<Day extends { dateKey: string }>({
                 rx={1.5}
                 className="fill-accent"
                 pointerEvents="none"
-              />
-            ),
-        )}
-        {bins.map(
-          (n, h) =>
-            n > 0 && (
-              <rect
-                key={`tap-${h}`}
-                x={h * slot}
-                y={0}
-                width={slot}
-                height={H + 18}
-                fill="transparent"
-                onPointerDown={() =>
-                  setPicked((cur) => (cur === h ? null : h))
-                }
               />
             ),
         )}
