@@ -102,6 +102,9 @@
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: light-dark(#92400e, #fbbf24); }
 
+/* Serpentine — lime green, distinct from the existing palette. */
+[data-level="serpentine"] { --color-accent: light-dark(#4d7c0f, #a3e635); }
+
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
