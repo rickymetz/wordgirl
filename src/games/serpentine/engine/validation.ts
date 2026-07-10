@@ -1,4 +1,4 @@
-import { areAdjacent, cellKey, type Cell, type PuzzleDef } from "./types";
+import { areAdjacent, cellKey, MAX_COLS, MAX_ROWS, type Cell, type PuzzleDef } from "./types";
 
 /** True when every consecutive pair in `path` is 8-directionally adjacent. */
 export function isContiguousPath(path: Cell[]): boolean {
@@ -34,6 +34,10 @@ export function checkSolved(
 /** Validate a puzzle definition (for tests): path is contiguous,
  *  covers every cell exactly once, and text matches. */
 export function validatePuzzle(puzzle: PuzzleDef): string | null {
+  if (puzzle.rows > MAX_ROWS || puzzle.cols > MAX_COLS) {
+    return `Grid ${puzzle.rows}×${puzzle.cols} exceeds max ${MAX_ROWS}×${MAX_COLS}`;
+  }
+
   const totalCells = puzzle.rows * puzzle.cols;
 
   if (!isContiguousPath(puzzle.path)) {

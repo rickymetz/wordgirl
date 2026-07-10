@@ -151,7 +151,7 @@ export function SnakeGrid({
           Array.from({ length: cols }, (_, c) => (
             <div
               key={cellKey({ row: r, col: c })}
-              className="relative flex items-center justify-center rounded-full font-game text-sm text-ink"
+              className="relative flex items-center justify-center rounded-full font-game text-base text-ink"
               style={
                 claimed.has(cellKey({ row: r, col: c }))
                   ? { color: "var(--color-on-accent)" }

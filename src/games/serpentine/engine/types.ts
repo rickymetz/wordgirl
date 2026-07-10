@@ -1,5 +1,8 @@
 export type Difficulty = "easy" | "medium" | "hard";
 
+export const MAX_ROWS = 8;
+export const MAX_COLS = 10;
+
 export interface Cell {
   row: number;
   col: number;
