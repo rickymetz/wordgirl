@@ -187,17 +187,10 @@ export function SnakeGrid({
         {Array.from({ length: rows }, (_, r) =>
           Array.from({ length: cols }, (_, c) => {
             const key = cellKey({ row: r, col: c });
-            const owner = cellOwner.get(key);
-            const isOwned = owner !== undefined;
-
             return (
               <div
                 key={key}
-                className={[
-                  "relative flex items-center justify-center rounded-full font-game text-sm",
-                  isOwned ? "" : "bg-tile",
-                  "text-ink",
-                ].join(" ")}
+                className="relative flex items-center justify-center rounded-full font-game text-sm text-ink"
               >
                 <span className="relative z-10 select-none">{grid[r][c]}</span>
               </div>
