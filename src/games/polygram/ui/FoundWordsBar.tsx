@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { hintTarget, type GameState } from "../state/reducer";
@@ -29,9 +30,22 @@ export function FoundWordsBar({
 }) {
   const recentFirst = [...state.found].reverse();
 
+  // Puzzle input auto-closes the panel; if keyboard focus was inside
+  // it, the unmount drops focus to <body> — catch it on the toggle.
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    const was = prevOpenRef.current;
+    prevOpenRef.current = open;
+    if (was && !open && document.activeElement === document.body) {
+      toggleRef.current?.focus();
+    }
+  }, [open]);
+
   return (
     <div className="relative">
       <button
+        ref={toggleRef}
         type="button"
         onClick={onToggle}
         aria-label="found words"
@@ -43,9 +57,14 @@ export function FoundWordsBar({
             <span className="text-ink-soft">Your words…</span>
           ) : (
             recentFirst.map((word, i) => (
-              <span key={word} className={i === 0 ? "font-semibold" : ""}>
+              // Uppercase like Crosshatch's strip — one casing style
+              // for found words across the hub's games.
+              <span
+                key={word}
+                className={i === 0 ? "font-semibold uppercase" : "uppercase"}
+              >
                 {i > 0 && " "}
-                {word[0].toUpperCase() + word.slice(1)}
+                {word}
               </span>
             ))
           )}
@@ -108,7 +127,7 @@ export function FoundWordsBar({
                         type="button"
                         onClick={onHint}
                         disabled={hintTarget(state) === undefined}
-                        className="rounded-full bg-accent px-4 py-2 text-xs font-semibold text-surface active:scale-95 disabled:opacity-40"
+                        className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-40"
                       >
                         Hint
                       </button>
@@ -155,7 +174,7 @@ export function FoundWordsBar({
                           type="button"
                           onClick={() => isCurrent && onSelectWord(word)}
                           aria-label={`unsolved ${word.length}-letter word — tap to aim the next hint here`}
-                          className={`-mx-1 -my-1.5 rounded px-1 py-1.5 font-game text-xs uppercase ${
+                          className={`-mx-1 -my-2.5 rounded px-1 py-2.5 font-game text-xs uppercase ${
                             hintTargetWord === word
                               ? "ring-2 ring-accent"
                               : ""

@@ -96,10 +96,11 @@ export function SolvedOverlay({
       <motion.div
         ref={dialogRef}
         tabIndex={-1}
+        data-autofocus
         role="dialog"
         aria-modal="true"
         aria-labelledby="solved-dialog-title"
-        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl"
+        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none"
         initial={{ scale: 0.8, y: 30 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}

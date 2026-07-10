@@ -17,7 +17,9 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
     <motion.button
       type="button"
       onClick={onTap}
-      className="absolute top-1/2 left-1/2 flex items-center justify-center bg-tile select-none"
+      // clip-path clips the browser focus ring, so keyboard focus shows
+      // as a fill change instead.
+      className="absolute top-1/2 left-1/2 flex items-center justify-center bg-tile outline-none select-none focus-visible:bg-accent-soft"
       initial={{ scale: 0, x: "-50%", y: "-50%" }}
       animate={{ scale: 1, x: `calc(-50% + ${x}px)`, y: `calc(-50% + ${y}px)` }}
       whileTap={{ scale: 0.85 }}

@@ -15,7 +15,14 @@ export function CurrentWord({ state }: { state: GameState }) {
   const size = currentLevel(state).size;
   useEffect(() => {
     const result = state.lastResult;
-    if (!result || result.type === "correct") return;
+    if (!result) return;
+    if (result.type === "correct") {
+      // A correct submit within the 1.4s window cancels the hide timer
+      // (effect cleanup) — clear explicitly or the rejection sticks
+      // forever over words that are actually scoring.
+      setToast(null);
+      return;
+    }
     const text = {
       invalid: "Not in word list",
       duplicate: "Already found",

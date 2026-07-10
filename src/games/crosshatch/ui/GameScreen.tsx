@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -24,7 +24,13 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { hintTarget, slotsAt, slotWord, unfoundWords } from "../state/reducer";
+import {
+  hintTarget,
+  letterAt,
+  slotsAt,
+  slotWord,
+  unfoundWords,
+} from "../state/reducer";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
@@ -42,8 +48,22 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, totalWords: total, solvedElapsedMs } =
-    useCrosshatchGame(mode);
+  const {
+    state,
+    dispatch,
+    puzzle,
+    totalWords: total,
+    solvedElapsedMs,
+    abandonSession,
+  } = useCrosshatchGame(mode);
+  // Replay wipes the save; kill this mount's persistence first so the
+  // unmount flush can't write the old progress back over the reset.
+  const replay = onReplay
+    ? () => {
+        abandonSession();
+        onReplay();
+      }
+    : undefined;
   const dict = use(loadDictionary());
 
   // Warn (once) if this device can't persist progress.
@@ -243,6 +263,61 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [modalOpen, state.cursor, puzzle, dispatch]);
 
+  // Play-by-play for screen readers: typed letters, cursor moves, and
+  // hint reveals are otherwise visual-only.
+  const [playAnnounce, setPlayAnnounce] = useState("");
+  const prevPlayRef = useRef({
+    grid: state.grid,
+    cursor: state.cursor,
+    revealed: state.revealed,
+  });
+  useEffect(() => {
+    const prev = prevPlayRef.current;
+    prevPlayRef.current = {
+      grid: state.grid,
+      cursor: state.cursor,
+      revealed: state.revealed,
+    };
+    if (state.revealed !== prev.revealed) {
+      for (const [word, positions] of Object.entries(state.revealed)) {
+        const before = prev.revealed[word] ?? [];
+        const fresh = positions.find((p) => !before.includes(p));
+        if (fresh !== undefined) {
+          setPlayAnnounce(
+            `Hint: letter ${fresh + 1} of a ${word.length}-letter word is ${word[fresh].toUpperCase()}.`,
+          );
+          return;
+        }
+      }
+    }
+    if (state.grid !== prev.grid) {
+      const keys = new Set([
+        ...Object.keys(state.grid),
+        ...Object.keys(prev.grid),
+      ]);
+      for (const k of keys) {
+        if (state.grid[k] && state.grid[k] !== prev.grid[k]) {
+          setPlayAnnounce(state.grid[k].toUpperCase());
+          return;
+        }
+      }
+      const removed = Object.keys(prev.grid).filter((k) => !state.grid[k]);
+      if (removed.length > 1) setPlayAnnounce("Grid cleared.");
+      else if (removed.length === 1)
+        setPlayAnnounce(`Deleted ${prev.grid[removed[0]].toUpperCase()}.`);
+      return;
+    }
+    if (state.cursor && state.cursor !== prev.cursor) {
+      const l = letterAt(state, state.cursor.row, state.cursor.col);
+      setPlayAnnounce(
+        `Row ${state.cursor.row + 1}, column ${state.cursor.col + 1} — ${
+          l ? l.toUpperCase() : "empty"
+        }, ${state.cursor.dir}.`,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.grid, state.cursor, state.revealed]);
+
   // Submit feedback: a transient toast over the board, narrated for
   // screen readers via the live region below.
   const [toast, setToast] = useState<{ text: string; nonce: number } | null>(
@@ -419,7 +494,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               setWordsOpen(false);
               dispatch({ type: "clearEntry" });
             }}
-            className="-my-2 px-2 py-2 text-xs font-semibold text-ink-soft"
+            className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
           >
             Clear grid
           </button>
@@ -432,7 +507,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               setWordsOpen(true);
               requestHint();
             }}
-            className="-my-2 px-2 py-2 text-xs font-semibold text-accent"
+            className="-my-3 px-3 py-3 text-xs font-semibold text-accent"
           >
             Hint
           </button>
@@ -470,7 +545,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           open={resultsOpen}
           onClose={() => setResultsOpen(false)}
           onNewPuzzle={onNewPuzzle}
-          onReplay={onReplay}
+          onReplay={replay}
         />
       )}
 
@@ -486,9 +561,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
               A letter of an unfound word will be revealed in your word
-              list, and today's result will show a{" "}
-              <span className="font-semibold text-ink">🫣 hint count</span>.
-              Streaks are safe — hints never break them.
+              list, and today's result will note{" "}
+              <span className="font-semibold text-ink">
+                how many hints you used
+              </span>
+              . Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -521,9 +598,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Fill every line",
                 body: (
                   <>
-                    Type a <Key>real word</Key> into every line. The
-                    padlocked letters are fixed, and crossing lines share
-                    their letters.
+                    Type a <Key>real word</Key> into every line — typing
+                    fills only the <Key>empty cells</Key> (the padlocked
+                    letters are fixed). Tap any cell to move there; re-tap
+                    a crossing to switch direction.
                   </>
                 ),
               },
@@ -560,7 +638,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                       className="inline h-3.5 w-3.5 text-good"
                       strokeWidth={3}
                     />{" "}
-                    a new word.
+                    a new word. Tap a chip to jump to its line.
                   </>
                 ),
               },
@@ -591,9 +669,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Outcomes are otherwise visual-only; narrate them politely. */}
+      {/* Outcomes are otherwise visual-only; narrate them politely.
+          Keyed by nonce so an identical repeated outcome still mutates
+          the DOM — screen readers only announce on change. */}
       <div aria-live="polite" role="status" className="sr-only">
-        {toast?.text ?? ""}
+        {toast && <span key={toast.nonce}>{toast.text}</span>}
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {playAnnounce}
       </div>
     </div>
   );

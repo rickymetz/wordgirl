@@ -41,8 +41,17 @@ interface Props {
 }
 
 export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, doneElapsedMs } = usePolygramGame(mode);
+  const { state, dispatch, doneElapsedMs, abandonSession } =
+    usePolygramGame(mode);
   const level = currentLevel(state);
+  // Replay wipes the save; kill this mount's persistence first so the
+  // unmount flush can't write the old progress back over the reset.
+  const replay = onReplay
+    ? () => {
+        abandonSession();
+        onReplay();
+      }
+    : undefined;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -179,6 +188,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       }
       if (modalOpen) return;
       if (e.key === "Enter") {
+        // A FOCUSED control keeps native Enter activation — a keyboard
+        // user pressing Enter on the Hint button must not also submit.
+        const target = e.target as HTMLElement | null;
+        if (target?.closest("button, a, input, select, textarea")) return;
+        e.preventDefault();
         setWordsOpen(false);
         dispatch({ type: "submit" });
       } else if (e.key === "Backspace") {
@@ -194,7 +208,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   }, [state.puzzle.letters, level.size, modalOpen, dispatch]);
 
   // Screen-reader narration for outcomes the UI shows only visually.
-  const [announcement, setAnnouncement] = useState("");
+  // Keyed so an identical repeated outcome (two invalid words in a
+  // row) still mutates the DOM — SRs only announce on change.
+  const [announcement, setAnnouncementState] = useState({ text: "", n: 0 });
+  const setAnnouncement = (text: string) =>
+    setAnnouncementState((prev) => ({ text, n: prev.n + 1 }));
   useEffect(() => {
     const r = state.lastResult;
     if (!r) return;
@@ -365,7 +383,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         open={resultsOpen}
         onClose={() => setResultsOpen(false)}
         onNewPuzzle={onNewPuzzle}
-        onReplay={onReplay}
+        onReplay={replay}
       />
 
       {hintWarningOpen && (
@@ -380,9 +398,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
               A letter of an unfound word will be revealed in your word
-              list, and today's result will show a{" "}
-              <span className="font-semibold text-ink">🫣 hint count</span>.
-              Streaks are safe — hints never break them.
+              list, and today's result will note{" "}
+              <span className="font-semibold text-ink">
+                how many hints you used
+              </span>
+              . Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -458,9 +478,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Hints",
                 body: (
                   <>
-                    <Key>Your words</Key> lists the level as ?-blanks in ABC
-                    order — where a blank sits is itself a clue. <Key>Hint</Key>{" "}
-                    reveals a letter (your result will say so).
+                    Open <Key>Your words</Key> to see the level as ?-blanks
+                    in ABC order — where a blank sits is itself a clue. The{" "}
+                    <Key>Hint</Key> button there reveals a letter (your
+                    result will say so).
                   </>
                 ),
               },
@@ -471,7 +492,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">
-        {announcement}
+        <span key={announcement.n}>{announcement.text}</span>
       </div>
     </div>
   );

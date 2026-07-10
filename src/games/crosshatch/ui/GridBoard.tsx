@@ -1,5 +1,6 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { motion, useAnimationControls } from "motion/react";
+import { useViewport } from "../../../lib/useViewport";
 import { cellKey, slotCells } from "../engine/types";
 import {
   cursorSlot,
@@ -12,35 +13,10 @@ const GAP = 6;
 const MAX_CELL = 60;
 const MIN_CELL = 34;
 /** Rough height of everything that isn't the grid (header, bars,
- * chips, keyboard) — the grid must fit in what's left so the keyboard
- * never falls below the fold on short phones. */
-const CHROME_H = 480;
-
-/** Live viewport size — re-measures on resize/orientation change.
- * Height is what pages can actually use: innerHeight minus #root's
- * safe-area padding, which is real (~93px) in installed/PWA mode. */
-function useViewport(): { vw: number; vh: number } {
-  const snapshot = useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener("resize", onChange);
-      window.addEventListener("orientationchange", onChange);
-      return () => {
-        window.removeEventListener("resize", onChange);
-        window.removeEventListener("orientationchange", onChange);
-      };
-    },
-    () => {
-      const root = document.getElementById("root");
-      const style = root && getComputedStyle(root);
-      const insets = style
-        ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
-        : 0;
-      return `${window.innerWidth}x${window.innerHeight - insets}`;
-    },
-  );
-  const [vw, vh] = snapshot.split("x").map(Number);
-  return { vw, vh };
-}
+ * chips, keyboard) at the default text size — the grid must fit in
+ * what's left so the keyboard never falls below the fold. The chrome
+ * is rem-based, so this budget scales with the root font-size. */
+const CHROME_H = 540;
 
 /**
  * The crossword grid. Cells are buttons (tap to focus; re-tap a
@@ -54,10 +30,11 @@ export function GridBoard({
   onFocus: (row: number, col: number) => void;
 }) {
   const { puzzle } = state;
-  const { vw, vh } = useViewport();
+  const { vw, vh, rem } = useViewport();
   const wCell =
     (Math.min(340, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
-  const hCell = (vh - CHROME_H - (puzzle.rows - 1) * GAP) / puzzle.rows;
+  const hCell =
+    (vh - CHROME_H * (rem / 16) - (puzzle.rows - 1) * GAP) / puzzle.rows;
   const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));
 
   const active = cursorSlot(state);

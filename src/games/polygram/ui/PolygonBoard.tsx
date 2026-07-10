@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useViewport } from "../../../lib/useViewport";
 import { unsolvedWords, type GameState } from "../state/reducer";
 import { CenterShape } from "./CenterShape";
 import { ShapeTile } from "./ShapeTile";
@@ -12,13 +13,22 @@ interface Props {
   onSubmit: () => void;
 }
 
-// Fit narrow phones instead of clipping a hard-coded square.
-const BOARD =
-  typeof window === "undefined" ? 340 : Math.min(340, window.innerWidth - 40);
 /** Whitespace between the central shape's edges and the petals, px. */
 const RING_GAP = 18;
+/** Rough height of everything that isn't the board (header, rank bar,
+ * words bar, typed word, controls) at the default text size. Rem-based
+ * chrome, so the budget scales with the root font-size — big-text users
+ * get a smaller flower instead of losing the controls below the fold. */
+const CHROME_H = 300;
 
 export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
+  const { vw, vh, rem } = useViewport();
+  // Fit narrow phones AND short/large-text viewports instead of
+  // clipping a hard-coded square.
+  const BOARD = Math.max(
+    240,
+    Math.min(340, vw - 40, vh - CHROME_H * (rem / 16)),
+  );
   const sides = state.puzzle.levels[state.levelIndex].size;
   const letters = state.puzzle.letters.slice(0, sides);
   const { d, extent, yOffset } = FLOWER[sides];

@@ -28,7 +28,9 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
     <motion.button
       type="button"
       onClick={onTap}
-      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-accent select-none"
+      // clip-path clips the browser focus ring, so keyboard focus shows
+      // as a fill change instead.
+      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center bg-accent outline-none select-none focus-visible:bg-ink"
       style={{
         width: size,
         height: size,
@@ -56,7 +58,7 @@ export function CenterShape({ sides, size, remaining, lastResult, onTap }: Props
         </span>
         {/* Name the number — it reads as a score otherwise. */}
         {size >= 64 && (
-          <span className="mt-0.5 text-[9px] font-semibold tracking-widest text-surface/80 uppercase">
+          <span className="mt-0.5 text-[10px] font-semibold tracking-widest text-surface uppercase">
             left
           </span>
         )}

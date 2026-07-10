@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  displayStreak,
   loadDailyProgress,
   loadStats,
   recordDailySolved,
   recordRankImproved,
+  recordWordsProgress,
+  saveDailyProgress,
 } from "./persistence";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 
@@ -58,6 +61,66 @@ describe("stats recording", () => {
     await recordDailySolved("2026-07-06", 14, "Genius");
     const stats = await recordDailySolved("2026-07-06", 14, "Genius");
     expect(stats.solved).toBe(1);
+  });
+
+  it("an archive play of yesterday never borrows the grace day", async () => {
+    // It's 2026-07-07; deliberately playing 07-06 from the archive
+    // (allowGrace=false) counts totals but must not move the streak.
+    vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
+    const stats = await recordDailySolved("2026-07-06", 10, "Great", false);
+    expect(stats.solved).toBe(1);
+    expect(stats.currentStreak).toBe(0);
+    expect(stats.lastSolvedDate).toBeNull();
+  });
+
+  it("post-solve words credit the lifetime total", async () => {
+    await recordDailySolved("2026-07-06", 9, "Amazing");
+    await recordWordsProgress(2);
+    const stats = await loadStats();
+    expect(stats.totalWords).toBe(11);
+  });
+
+  it("displayStreak zeroes a lapsed streak but keeps a live one", () => {
+    const base = {
+      played: 5,
+      solved: 5,
+      currentStreak: 4,
+      bestStreak: 4,
+      lastSolvedDate: "2026-07-06",
+      bestRank: null,
+      totalWords: 40,
+    };
+    expect(displayStreak(base, "2026-07-06")).toBe(4); // solved today
+    expect(displayStreak(base, "2026-07-07")).toBe(4); // today still open
+    expect(displayStreak(base, "2026-07-08")).toBe(0); // missed a day
+    expect(
+      displayStreak({ ...base, lastSolvedDate: null }, "2026-07-08"),
+    ).toBe(0);
+  });
+
+  it("a stale tab's save never destroys another tab's words", async () => {
+    // Tab A banked three words...
+    await saveDailyProgress({
+      dateKey: "2026-07-06",
+      dictVersion: DICT_VERSION,
+      foundWords: ["out", "tin", "van"],
+      grid: {},
+      revealed: {},
+      solved: false,
+      elapsedMs: 5000,
+    });
+    // ...tab B, hydrated earlier with one word, flushes its stale state.
+    await saveDailyProgress({
+      dateKey: "2026-07-06",
+      dictVersion: DICT_VERSION,
+      foundWords: ["out"],
+      grid: {},
+      revealed: {},
+      solved: false,
+      elapsedMs: 9000,
+    });
+    const saved = await loadDailyProgress("2026-07-06");
+    expect(saved?.foundWords).toEqual(["out", "tin", "van"]);
   });
 
   it("loadStats merges older blobs over defaults", async () => {

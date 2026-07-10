@@ -139,6 +139,25 @@ function Segmented<T extends string | number>({
   value: T;
   onChange: (value: T) => void;
 }) {
+  // The radio keyboard pattern: one tab stop per group (the checked
+  // option), arrows move AND select. Selection focuses the new option.
+  const selected = Math.max(
+    0,
+    options.findIndex((o) => o.value === value),
+  );
+  const move = (e: React.KeyboardEvent, delta: number) => {
+    e.preventDefault();
+    const next = options[(selected + delta + options.length) % options.length];
+    onChange(next.value);
+    const group = e.currentTarget.closest('[role="radiogroup"]');
+    (
+      group?.querySelectorAll<HTMLElement>('[role="radio"]') ?? []
+    )[(selected + delta + options.length) % options.length]?.focus();
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") move(e, 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") move(e, -1);
+  };
   return (
     <div>
       <div className="pb-2 text-sm font-semibold text-ink-soft">{label}</div>
@@ -147,14 +166,16 @@ function Segmented<T extends string | number>({
         aria-label={label}
         className="flex gap-1.5 rounded-full bg-tile p-1"
       >
-        {options.map((option) => (
+        {options.map((option, i) => (
           <button
             key={option.value}
             type="button"
             role="radio"
             aria-checked={option.value === value}
             aria-label={option.label}
+            tabIndex={i === selected ? 0 : -1}
             onClick={() => onChange(option.value)}
+            onKeyDown={onKeyDown}
             className={`flex h-9 flex-1 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
               option.value === value
                 ? "bg-accent text-surface"

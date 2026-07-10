@@ -24,8 +24,10 @@ export function useModalFocus<T extends HTMLElement>(active: boolean) {
 
     // data-autofocus, not React's autoFocus prop: that fires during
     // commit, BEFORE this effect captures the opener — we'd "restore"
-    // focus to the dialog's own button.
+    // focus to the dialog's own button. The container itself can carry
+    // it: results cards focus their (ring-free) body, not the X.
     (
+      (node.matches("[data-autofocus]") ? node : null) ??
       node.querySelector<HTMLElement>("[data-autofocus]") ??
       focusables()[0] ??
       node
