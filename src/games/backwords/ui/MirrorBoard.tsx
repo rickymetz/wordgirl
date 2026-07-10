@@ -189,7 +189,13 @@ function Row({
       className="flex items-center font-game uppercase"
       style={{ minHeight: Math.round(tile * 1.2) + 4 }}
     >
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-[3px] pr-2.5">
+      {/* Straddle rows drop the line-breathing padding: the middle
+          slot's own 3px insets keep MOM at the board's tile rhythm. */}
+      <div
+        className={`flex min-w-0 flex-1 items-center justify-end gap-[3px] ${
+          straddle ? "" : "pr-2.5"
+        }`}
+      >
         {onBreak && (
           <button
             type="button"
@@ -245,7 +251,9 @@ function Row({
       </span>
       <div
         aria-hidden
-        className="flex min-w-0 flex-1 items-center gap-[3px] pl-2.5"
+        className={`flex min-w-0 flex-1 items-center gap-[3px] ${
+          straddle ? "" : "pl-2.5"
+        }`}
       >
         {active && place.length === 0 && (
           <span
