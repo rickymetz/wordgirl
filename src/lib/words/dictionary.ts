@@ -27,9 +27,9 @@
  * all remaining ENABLE words are bonus. Replaces the v11 suffix-
  * expansion approach with complete Scrabble/crossword coverage.
  */
-export const DICT_VERSION = 11;
+export const DICT_VERSION = 12;
 
-export const MIN_WORD_LEN = 3;
+export const MIN_WORD_LEN = 2;
 export const MAX_WORD_LEN = 10;
 
 export type Tier = "required" | "bonus";
