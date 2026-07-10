@@ -39,6 +39,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const [resultsOpen, setResultsOpen] = useState(true);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
+  const [shakeKey, setShakeKey] = useState(0);
   const placed = placedDominoIds(state);
   const totalDominoes = puzzle.dominoes.length;
   const placedCount = placed.size;
@@ -58,7 +59,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     }
 
     if (state.selectedDominoId !== null) {
-      dispatch({ type: "placeDomino", cell, dict });
+      const [c1, c2] = dominoCells(cell, state.currentOrientation);
+      const k1 = cellKey(c1.row, c1.col);
+      const k2 = cellKey(c2.row, c2.col);
+      const valid =
+        boardCellSet.current.has(k1) &&
+        boardCellSet.current.has(k2) &&
+        !state.grid.has(k1) &&
+        !state.grid.has(k2);
+      if (valid) {
+        dispatch({ type: "placeDomino", cell, dict });
+      } else {
+        setShakeKey((k) => k + 1);
+      }
     }
   };
 
@@ -128,6 +141,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         dominoId: drag.dominoId,
         orientation: drag.orientation,
       });
+    } else if (cell) {
+      setShakeKey((k) => k + 1);
     }
 
     setDrag(null);
@@ -179,11 +194,18 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Board — centered in remaining space */}
       <div className="flex flex-1 flex-col items-center justify-center py-4 [@media(max-height:720px)]:py-2">
-        <Board
-          state={state}
-          onCellTap={handleCellTap}
-          hoverCell={hoverCell}
-        />
+        <motion.div
+          key={shakeKey}
+          animate={shakeKey > 0 ? { x: [0, -4, 4, -3, 3, 0] } : {}}
+          transition={{ duration: 0.35 }}
+        >
+          <Board
+            state={state}
+            onCellTap={handleCellTap}
+            hoverCell={hoverCell}
+            previewOrientation={drag ? drag.orientation : state.selectedDominoId !== null ? state.currentOrientation : null}
+          />
+        </motion.div>
       </div>
 
       {/* Tray — pinned to bottom */}

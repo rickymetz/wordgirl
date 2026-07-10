@@ -84,6 +84,17 @@ function checkSolved(
   return { solved: invalidSlots.length === 0, invalidSlots };
 }
 
+function retainValidInvalidSlots(
+  prevInvalid: number[],
+  grid: Map<string, string>,
+  puzzle: TilewordPuzzle,
+): number[] {
+  return prevInvalid.filter((i) => {
+    const slot = puzzle.slots[i];
+    return slot.cells.every((c) => grid.has(cellKey(c.row, c.col)));
+  });
+}
+
 export function gameReducer(
   state: GameState,
   action: GameAction,
@@ -151,11 +162,16 @@ export function gameReducer(
         action.dict,
       );
 
+      const placedIds = new Set(newPlaced.map((p) => p.dominoId));
+      const nextUnplaced = solved
+        ? null
+        : state.puzzle.dominoes.find((d) => !placedIds.has(d.id))?.id ?? null;
+
       return {
         ...state,
         placed: newPlaced,
         grid: newGrid,
-        selectedDominoId: null,
+        selectedDominoId: nextUnplaced,
         currentOrientation: 0,
         solved,
         invalidSlots,
@@ -164,17 +180,21 @@ export function gameReducer(
 
     case "removeDomino": {
       if (state.solved) return state;
+      const removed = state.placed.find(
+        (p) => p.dominoId === action.dominoId,
+      );
       const newPlaced = state.placed.filter(
         (p) => p.dominoId !== action.dominoId,
       );
       const newGrid = buildGrid(newPlaced, state.puzzle);
+      const invalidSlots = retainValidInvalidSlots(state.invalidSlots, newGrid, state.puzzle);
       return {
         ...state,
         placed: newPlaced,
         grid: newGrid,
         selectedDominoId: action.dominoId,
-        currentOrientation: 0,
-        invalidSlots: [],
+        currentOrientation: removed?.orientation ?? 0,
+        invalidSlots,
       };
     }
 

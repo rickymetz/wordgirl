@@ -31,7 +31,6 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
             selected={d.id === selectedDominoId}
             orientation={d.id === selectedDominoId ? currentOrientation : 0}
             onSelect={() => onSelect(d.id)}
-            onRotate={onRotate}
             onDragStart={onDragStart}
             onDragMove={onDragMove}
             onDragEnd={onDragEnd}
@@ -64,7 +63,6 @@ function DominoChip({
   selected,
   orientation,
   onSelect,
-  onRotate,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -74,7 +72,6 @@ function DominoChip({
   selected: boolean;
   orientation: Orientation;
   onSelect: () => void;
-  onRotate: () => void;
   onDragStart?: (id: number, orientation: Orientation, rect: DOMRect) => void;
   onDragMove?: (x: number, y: number) => void;
   onDragEnd?: () => void;
@@ -116,8 +113,7 @@ function DominoChip({
       dragging.current = false;
       onDragEnd?.();
     } else {
-      if (selected) onRotate();
-      else onSelect();
+      onSelect();
     }
     try {
       (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);

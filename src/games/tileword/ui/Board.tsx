@@ -8,6 +8,7 @@ import {
   dominoCells,
   dominoLetters,
   type Cell,
+  type Orientation,
 } from "../engine/types";
 
 const GAP = 6;
@@ -21,9 +22,10 @@ interface Props {
   state: GameState;
   onCellTap: (cell: Cell) => void;
   hoverCell?: Cell | null;
+  previewOrientation?: Orientation | null;
 }
 
-export function Board({ state, onCellTap, hoverCell }: Props) {
+export function Board({ state, onCellTap, hoverCell, previewOrientation }: Props) {
   const { puzzle, grid, invalidSlots } = state;
   const { vw, vh, rem } = useViewport();
 
@@ -44,6 +46,17 @@ export function Board({ state, onCellTap, hoverCell }: Props) {
       invalidCells.add(cellKey(c.row, c.col));
     }
   }
+
+  const previewCells = useMemo(() => {
+    if (!hoverCell || previewOrientation == null) return null;
+    const [c1, c2] = dominoCells(hoverCell, previewOrientation);
+    const k1 = cellKey(c1.row, c1.col);
+    const k2 = cellKey(c2.row, c2.col);
+    const onBoard = boardCellSet.has(k1) && boardCellSet.has(k2);
+    const unoccupied = !grid.has(k1) && !grid.has(k2);
+    const valid = onBoard && unoccupied;
+    return { keys: new Set([k1, k2]), valid };
+  }, [hoverCell, previewOrientation, boardCellSet, grid]);
 
   const placedPairs = new Map<number, { cells: [Cell, Cell]; letters: [string, string] }>();
   for (const p of state.placed) {
@@ -175,7 +188,13 @@ export function Board({ state, onCellTap, hoverCell }: Props) {
               : "text-ink"
           : "text-ink-soft";
 
-        const isHover = hoverCell && hoverCell.row === row && hoverCell.col === col;
+        const isPreview = previewCells && previewCells.keys.has(k);
+        const isHover = !isPreview && hoverCell && hoverCell.row === row && hoverCell.col === col;
+
+        let cellBg = "bg-surface-tint";
+        if (pd) cellBg = "bg-surface";
+        else if (isPreview) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
+        else if (isHover) cellBg = "bg-accent/15";
 
         return (
           <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1, zIndex: 1 }}>
@@ -186,7 +205,7 @@ export function Board({ state, onCellTap, hoverCell }: Props) {
               className={[
                 "flex items-center justify-center font-game text-lg",
                 "w-full h-full",
-                pd ? "bg-surface" : isHover ? "bg-accent/15" : "bg-surface-tint",
+                cellBg,
                 textClass,
               ].join(" ")}
               style={{
