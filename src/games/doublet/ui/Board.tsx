@@ -15,7 +15,7 @@ const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
 const OUTLINE_PAD = 6;
-const CORNER_R = 6;
+const CORNER_R = 14;
 const BOARD_DRAG_THRESHOLD = 64;
 
 interface Props {
@@ -447,12 +447,21 @@ function computeOutlinePath(
 
     if (verts.length < 3) continue;
 
-    const n = verts.length;
+    const cleaned: V[] = [];
+    for (let i = 0; i < verts.length; i++) {
+      const prev = verts[(i - 1 + verts.length) % verts.length];
+      const curr = verts[i];
+      const next = verts[(i + 1) % verts.length];
+      if (getDir(prev, curr) !== getDir(curr, next)) cleaned.push(curr);
+    }
+    if (cleaned.length < 3) continue;
+
+    const n = cleaned.length;
     const offsetVerts: V[] = [];
     for (let i = 0; i < n; i++) {
-      const prev = verts[(i - 1 + n) % n];
-      const curr = verts[i];
-      const next = verts[(i + 1) % n];
+      const prev = cleaned[(i - 1 + n) % n];
+      const curr = cleaned[i];
+      const next = cleaned[(i + 1) % n];
 
       const inDir = getDir(prev, curr);
       const outDir = getDir(curr, next);
@@ -463,44 +472,38 @@ function computeOutlinePath(
       offsetVerts.push([curr[0] + dx, curr[1] + dy]);
     }
 
-    const segs: string[] = [];
-    for (let i = 0; i < n; i++) {
+    function vertR(i: number): number {
+      const vP = offsetVerts[(i - 1 + n) % n];
+      const vC = offsetVerts[i];
+      const vN = offsetVerts[(i + 1) % n];
+      return Math.min(cornerR, edgeLen(vP, vC) / 2, edgeLen(vC, vN) / 2);
+    }
+    function tangents(i: number): [V, V] {
+      const vP = offsetVerts[(i - 1 + n) % n];
+      const vC = offsetVerts[i];
+      const vN = offsetVerts[(i + 1) % n];
+      const r = vertR(i);
+      const [dxI, dyI] = dirDelta(getDir(vP, vC));
+      const [dxO, dyO] = dirDelta(getDir(vC, vN));
+      return [
+        [vC[0] - r * dxI, vC[1] - r * dyI],
+        [vC[0] + r * dxO, vC[1] + r * dyO],
+      ];
+    }
+
+    const [, t2_0] = tangents(0);
+    const segs: string[] = [`M${t2_0[0]} ${t2_0[1]}`];
+
+    for (let i = 1; i < n; i++) {
       const v = offsetVerts[i];
-      const vNext = offsetVerts[(i + 1) % n];
-      const vPrev = offsetVerts[(i - 1 + n) % n];
-      const ePrev = edgeLen(vPrev, v);
-      const eNext = edgeLen(v, vNext);
-      const r = Math.min(cornerR, ePrev / 2, eNext / 2);
-
-      const inD = getDir(vPrev, v);
-      const outD = getDir(v, vNext);
-      const [dxIn, dyIn] = dirDelta(inD);
-      const [dxOut, dyOut] = dirDelta(outD);
-
-      const t1: V = [v[0] - r * dxIn, v[1] - r * dyIn];
-      const t2: V = [v[0] + r * dxOut, v[1] + r * dyOut];
-
-      if (i === 0) {
-        segs.push(`M${t2[0]} ${t2[1]}`);
-      }
+      const [t1, t2] = tangents(i);
       segs.push(`L${t1[0]} ${t1[1]}`);
       segs.push(`Q${v[0]} ${v[1]} ${t2[0]} ${t2[1]}`);
     }
 
     const v0 = offsetVerts[0];
-    const vLast = offsetVerts[n - 1];
-    const v1 = offsetVerts[1];
-    const e0Prev = edgeLen(vLast, v0);
-    const e0Next = edgeLen(v0, v1);
-    const r0 = Math.min(cornerR, e0Prev / 2, e0Next / 2);
-    const inD0 = getDir(vLast, v0);
-    const [dxIn0, dyIn0] = dirDelta(inD0);
-    const t1_0: V = [v0[0] - r0 * dxIn0, v0[1] - r0 * dyIn0];
-    segs.push(`L${t1_0[0]} ${t1_0[1]}`);
-
-    const outD0 = getDir(v0, v1);
-    const [dxOut0, dyOut0] = dirDelta(outD0);
-    const t2_0: V = [v0[0] + r0 * dxOut0, v0[1] + r0 * dyOut0];
+    const [t1_close] = tangents(0);
+    segs.push(`L${t1_close[0]} ${t1_close[1]}`);
     segs.push(`Q${v0[0]} ${v0[1]} ${t2_0[0]} ${t2_0[1]}`);
     segs.push("Z");
 
