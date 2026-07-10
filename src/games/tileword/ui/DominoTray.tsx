@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "motion/react";
-import { RotateCw } from "lucide-react";
 import type { DominoPiece, Orientation } from "../engine/types";
 import { placedDominoIds, type GameState } from "../state/reducer";
 
@@ -39,21 +38,6 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
           />
         ))}
       </div>
-      {selectedDominoId !== null && (
-        <div className="flex justify-center mt-3">
-          <button
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                       bg-surface-tint text-accent text-sm font-semibold
-                       active:scale-95 touch-manipulation select-none
-                       after:absolute after:inset-x-0 after:-inset-y-1.5"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={onRotate}
-          >
-            <RotateCw className="h-4 w-4" />
-            Rotate
-          </button>
-        </div>
-      )}
     </div>
   );
 }
