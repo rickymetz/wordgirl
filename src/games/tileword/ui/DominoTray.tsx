@@ -12,7 +12,6 @@ interface Props {
 export function DominoTray({ state, onSelect, onRotate }: Props) {
   const { puzzle, selectedDominoId, currentOrientation } = state;
   const placed = placedDominoIds(state);
-
   const available = puzzle.dominoes.filter((d) => !placed.has(d.id));
 
   if (available.length === 0 && state.solved) return null;
@@ -72,15 +71,14 @@ function DominoChip({
     <motion.button
       layout
       className={[
-        "flex items-center justify-center rounded-lg touch-manipulation select-none",
+        "flex items-center justify-center touch-manipulation select-none",
+        "rounded-xl border-2 bg-surface",
         "transition-shadow",
         selected
-          ? "ring-2 ring-accent shadow-md"
-          : "ring-1 ring-line",
+          ? "border-accent shadow-md shadow-accent/20"
+          : "border-line shadow-sm",
       ].join(" ")}
-      style={{
-        flexDirection: isH ? "row" : "column",
-      }}
+      style={{ flexDirection: isH ? "row" : "column" }}
       onPointerDown={(e) => e.preventDefault()}
       onClick={() => {
         if (selected) onRotate();
@@ -89,32 +87,18 @@ function DominoChip({
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
-      <div
-        className={[
-          "flex items-center justify-center font-game text-base",
-          "w-10 h-10",
-          selected ? "bg-accent text-surface" : "bg-tile text-ink",
-        ].join(" ")}
-        style={{
-          borderRadius: isH
-            ? "0.5rem 0 0 0.5rem"
-            : "0.5rem 0.5rem 0 0",
-        }}
-      >
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
         {l0}
       </div>
       <div
-        className={[
-          "flex items-center justify-center font-game text-base",
-          "w-10 h-10",
-          selected ? "bg-accent/80 text-surface" : "bg-tile/70 text-ink",
-        ].join(" ")}
-        style={{
-          borderRadius: isH
-            ? "0 0.5rem 0.5rem 0"
-            : "0 0 0.5rem 0.5rem",
-        }}
-      >
+        className={selected ? "bg-accent/30" : "bg-line"}
+        style={
+          isH
+            ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
+            : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
+        }
+      />
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
         {l1}
       </div>
     </motion.button>

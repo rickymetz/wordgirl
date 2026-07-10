@@ -9,7 +9,8 @@ import {
   type Cell,
 } from "../engine/types";
 
-const GAP = 4;
+const GAP = 6;
+const BW = 2;
 const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
@@ -50,6 +51,12 @@ export function Board({ state, onCellTap }: Props) {
     placedPairs.set(p.dominoId, { cells: [c1, c2], letters: [l1, l2] });
   }
 
+  function isDominoInvalid(dId: number): boolean {
+    const pair = placedPairs.get(dId);
+    if (!pair) return false;
+    return pair.cells.some((c) => invalidCells.has(cellKey(c.row, c.col)));
+  }
+
   function dominoBridge(dId: number): "H" | "V" | null {
     const pair = placedPairs.get(dId);
     if (!pair) return null;
@@ -87,21 +94,49 @@ export function Board({ state, onCellTap }: Props) {
 
         const letter = grid.get(k);
         const pd = dominoAt(state, row, col);
-        const isInvalid = invalidCells.has(k);
 
         const bridge = pd ? dominoBridge(pd.dominoId) : null;
         const pairIdx = pd ? isDominoPairCell(pd.dominoId, row, col) : -1;
+        const domInvalid = pd ? isDominoInvalid(pd.dominoId) : false;
 
-        let borderRadius = "0.375rem";
-        if (bridge === "H" && pairIdx === 0) borderRadius = "0.375rem 0 0 0.375rem";
-        if (bridge === "H" && pairIdx === 1) borderRadius = "0 0.375rem 0.375rem 0";
-        if (bridge === "V" && pairIdx === 0) borderRadius = "0.375rem 0.375rem 0 0";
-        if (bridge === "V" && pairIdx === 1) borderRadius = "0 0 0.375rem 0.375rem";
+        let borderRadius = "0.5rem";
+        if (bridge === "H" && pairIdx === 0) borderRadius = "0.5rem 0 0 0.5rem";
+        if (bridge === "H" && pairIdx === 1) borderRadius = "0 0.5rem 0.5rem 0";
+        if (bridge === "V" && pairIdx === 0) borderRadius = "0.5rem 0.5rem 0 0";
+        if (bridge === "V" && pairIdx === 1) borderRadius = "0 0 0.5rem 0.5rem";
 
-        const hasBridgeRight =
-          bridge === "H" && pairIdx === 0;
-        const hasBridgeDown =
-          bridge === "V" && pairIdx === 0;
+        const hasBridgeRight = bridge === "H" && pairIdx === 0;
+        const hasBridgeDown = bridge === "V" && pairIdx === 0;
+
+        const bColor = state.solved
+          ? "var(--color-accent)"
+          : domInvalid
+            ? "var(--color-warn)"
+            : "var(--color-line)";
+        const full = `${BW}px solid ${bColor}`;
+
+        let borderStyle: React.CSSProperties = {};
+        if (pd) {
+          let bT = full, bR = full, bB = full, bL = full;
+          if (bridge === "H" && pairIdx === 0) bR = "0";
+          if (bridge === "H" && pairIdx === 1) bL = "0";
+          if (bridge === "V" && pairIdx === 0) bB = "0";
+          if (bridge === "V" && pairIdx === 1) bT = "0";
+          borderStyle = {
+            borderTop: bT,
+            borderRight: bR,
+            borderBottom: bB,
+            borderLeft: bL,
+          };
+        }
+
+        const textClass = pd
+          ? state.solved
+            ? "text-accent"
+            : domInvalid
+              ? "text-warn"
+              : "text-ink"
+          : "text-ink-soft";
 
         return (
           <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1 }}>
@@ -109,25 +144,20 @@ export function Board({ state, onCellTap }: Props) {
               className={[
                 "flex items-center justify-center font-game text-lg",
                 "w-full h-full",
-                letter
-                  ? isInvalid
-                    ? "bg-warn/20 text-warn"
-                    : "bg-accent text-surface"
-                  : "bg-surface-tint text-ink-soft",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              style={{ borderRadius }}
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => {
-                if (pd && !state.solved) {
-                  // remove this domino
-                  return onCellTap({ row, col });
-                }
-                onCellTap({ row, col });
+                pd ? "bg-surface" : "bg-surface-tint",
+                textClass,
+              ].join(" ")}
+              style={{
+                borderRadius,
+                ...borderStyle,
+                ...(pd ? { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } : {}),
               }}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => onCellTap({ row, col })}
               aria-label={
-                letter ? `${letter} at row ${row + 1}, column ${col + 1}` : `Empty cell row ${row + 1}, column ${col + 1}`
+                letter
+                  ? `${letter} at row ${row + 1}, column ${col + 1}`
+                  : `Empty cell row ${row + 1}, column ${col + 1}`
               }
             >
               {letter || ""}
@@ -135,27 +165,49 @@ export function Board({ state, onCellTap }: Props) {
 
             {hasBridgeRight && (
               <div
-                className={[
-                  "absolute top-0 h-full pointer-events-none",
-                  isInvalid ? "bg-warn/20" : "bg-accent",
-                ].join(" ")}
+                className="absolute top-0 pointer-events-none flex items-center justify-center"
                 style={{
                   right: `-${GAP}px`,
                   width: `${GAP}px`,
+                  height: "100%",
+                  backgroundColor: "var(--color-surface)",
+                  borderTop: full,
+                  borderBottom: full,
                 }}
-              />
+              >
+                <div
+                  style={{
+                    width: "1px",
+                    alignSelf: "stretch",
+                    marginBlock: `${Math.round(cell * 0.15)}px`,
+                    backgroundColor: bColor,
+                    opacity: 0.35,
+                  }}
+                />
+              </div>
             )}
             {hasBridgeDown && (
               <div
-                className={[
-                  "absolute left-0 w-full pointer-events-none",
-                  isInvalid ? "bg-warn/20" : "bg-accent",
-                ].join(" ")}
+                className="absolute left-0 pointer-events-none flex items-center justify-center"
                 style={{
                   bottom: `-${GAP}px`,
                   height: `${GAP}px`,
+                  width: "100%",
+                  backgroundColor: "var(--color-surface)",
+                  borderLeft: full,
+                  borderRight: full,
                 }}
-              />
+              >
+                <div
+                  style={{
+                    height: "1px",
+                    alignSelf: "stretch",
+                    marginInline: `${Math.round(cell * 0.15)}px`,
+                    backgroundColor: bColor,
+                    opacity: 0.35,
+                  }}
+                />
+              </div>
             )}
           </div>
         );
