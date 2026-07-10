@@ -63,6 +63,8 @@ export function useDoubletGame(mode: GameMode) {
       placed: s.placed,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
+      moves: s.moves,
+      rotations: s.rotations,
       foundWords: [],
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -115,6 +117,8 @@ export function useDoubletGame(mode: GameMode) {
             type: "hydrate",
             placed: saved.placed,
             solved: saved.solved,
+            moves: saved.moves,
+            rotations: saved.rotations,
           });
         } else {
           const stale = await loadStaleDailyProgress(dateKey, mode.difficulty);

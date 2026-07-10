@@ -16,6 +16,10 @@ export interface GameState {
   solved: boolean;
   grid: Map<string, string>;
   invalidSlots: number[];
+  /** Successful placements this board (persisted for trends). */
+  moves: number;
+  /** Tray + on-board rotations (persisted for trends). */
+  rotations: number;
 }
 
 export type GameAction =
@@ -29,6 +33,8 @@ export type GameAction =
       type: "hydrate";
       placed: PlacedDomino[];
       solved: boolean;
+      moves?: number;
+      rotations?: number;
     };
 
 export function initialState(puzzle: DoubletPuzzle): GameState {
@@ -40,6 +46,9 @@ export function initialState(puzzle: DoubletPuzzle): GameState {
     solved: false,
     grid: new Map(),
     invalidSlots: [],
+    // Action counters, persisted per board (trend metrics).
+    moves: 0,
+    rotations: 0,
   };
 }
 
@@ -119,6 +128,7 @@ export function gameReducer(
         ...state,
         currentOrientation: (((state.currentOrientation as number) + 1) %
           4) as Orientation,
+        rotations: state.rotations + 1,
       };
     }
 
@@ -176,6 +186,7 @@ export function gameReducer(
         currentOrientation: 0,
         solved,
         invalidSlots,
+        moves: state.moves + 1,
       };
     }
 
@@ -231,7 +242,14 @@ export function gameReducer(
         state.puzzle,
         action.dict,
       );
-      return { ...state, placed: newPlaced, grid: newGrid, solved, invalidSlots };
+      return {
+        ...state,
+        placed: newPlaced,
+        grid: newGrid,
+        solved,
+        invalidSlots,
+        rotations: state.rotations + 1,
+      };
     }
 
     case "clearBoard": {
@@ -254,6 +272,8 @@ export function gameReducer(
         grid: newGrid,
         solved: action.solved,
         invalidSlots: [],
+        moves: action.moves ?? 0,
+        rotations: action.rotations ?? 0,
       };
     }
 

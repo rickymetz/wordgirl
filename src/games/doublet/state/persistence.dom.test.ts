@@ -93,6 +93,29 @@ describe("archive roll-up", () => {
     expect(rolled.foundWords.sort()).toEqual(["cat", "dog"]);
   });
 
+  it("sums action counters, but a day of pre-tracking saves stays null", async () => {
+    // Legacy saves (no counters) must roll up as null, never zero —
+    // a fake 0 would chart as the best day ever.
+    await saveDailyProgress(day("easy", { solved: true }));
+    await saveDailyProgress(day("medium", { solved: true }));
+    let days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBeNull();
+    expect(days["2026-07-12"].rotations).toBeNull();
+
+    // Counters sum across the boards that have them.
+    localStorage.clear();
+    await saveDailyProgress(
+      day("easy", { solved: true, moves: 4, rotations: 2 }),
+    );
+    await saveDailyProgress(
+      day("medium", { solved: true, moves: 6, rotations: 0 }),
+    );
+    await saveDailyProgress(day("hard", { solved: true })); // legacy board
+    days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBe(10);
+    expect(days["2026-07-12"].rotations).toBe(2);
+  });
+
   it("marks a day stale when any board is from an older dictionary", async () => {
     await saveDailyProgress(day("easy", { solved: true }));
     await saveDailyProgress(

@@ -24,6 +24,20 @@ const config: GameTrendsConfig<ArchivedDay> = {
       format: (v) => `${Math.round(v * 10) / 10}/3`,
     },
     {
+      key: "moves",
+      label: "Moves placed",
+      value: (d) => d.moves,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "rotations",
+      label: "Rotations",
+      value: (d) => d.rotations,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
       key: "time",
       label: "Play time",
       value: (d) => (d.startedCount > 0 ? d.elapsedMs / 1000 : null),

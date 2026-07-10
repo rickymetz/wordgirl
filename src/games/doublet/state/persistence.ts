@@ -12,6 +12,9 @@ export interface DailyProgress extends DailyBase {
   difficulty: Difficulty;
   placed: PlacedDomino[];
   foundWords: string[];
+  /** Action counters (absent on saves from before they shipped). */
+  moves?: number;
+  rotations?: number;
 }
 
 export type DoubletStats = StreakStats;
@@ -59,6 +62,10 @@ export interface ArchivedDay {
   stale: boolean;
   /** Total active time across the day's boards. */
   elapsedMs: number;
+  /** Summed action counters — null for days saved before tracking
+   * shipped (a legacy day must not chart as zero). */
+  moves: number | null;
+  rotations: number | null;
   /** GameArchive's played contract: all boards' words, merged. */
   foundWords: string[];
 }
@@ -76,12 +83,18 @@ export async function loadAllDailyProgress(): Promise<
       startedCount: 0,
       stale: false,
       elapsedMs: 0,
+      moves: null,
+      rotations: null,
       foundWords: [],
     });
     if (saved.solved) day.solvedCount += 1;
     if (saved.solved || saved.placed.length > 0) day.startedCount += 1;
     if (saved.dictVersion !== DICT_VERSION) day.stale = true;
     day.elapsedMs += saved.elapsedMs;
+    if (saved.moves !== undefined) day.moves = (day.moves ?? 0) + saved.moves;
+    if (saved.rotations !== undefined) {
+      day.rotations = (day.rotations ?? 0) + saved.rotations;
+    }
     day.foundWords.push(...(saved.foundWords ?? []));
   }
   return out;
