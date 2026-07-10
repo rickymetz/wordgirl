@@ -9,8 +9,15 @@ export interface CommittedRow {
 export type SubmitResult =
   | { type: "committed"; row: RowDef; nonce: number }
   | { type: "solved"; row: RowDef; nonce: number }
-  /** badWord: which reading fails — the staged word or its mirror. */
-  | { type: "invalid"; place: string; badWord: string; nonce: number }
+  /** badWord: which reading fails — the staged word or its mirror.
+   * reason "rare": badWord IS a word, just not common enough to play. */
+  | {
+      type: "invalid";
+      place: string;
+      badWord: string;
+      reason: "notWord" | "rare";
+      nonce: number;
+    }
   /** A palindrome typed in FULL — only its half belongs on the board. */
   | { type: "halfOnly"; place: string; half: string; nonce: number }
   | { type: "duplicate"; place: string; nonce: number }
@@ -22,6 +29,9 @@ export interface GameState {
   lexicon: Map<string, RowDef>;
   /** The common tier as a flat set — names WHICH reading failed. */
   words: Set<string>;
+  /** Full-dictionary membership (both tiers) — a real-but-rare word
+   * deserves a different message than a non-word. */
+  isWord: (word: string) => boolean;
   /** Letters still in the rack (sorted). */
   bank: string[];
   /** Letters staged in the active row, in placement order. */
@@ -41,17 +51,17 @@ export type Action =
   | { type: "breakRow"; index: number }
   | { type: "hydrate"; places: string[]; solved: boolean };
 
-let nonce = 0;
-
 export function initialState(init: {
   puzzle: Puzzle;
   lexicon: Map<string, RowDef>;
   words: Set<string>;
+  isWord: (word: string) => boolean;
 }): GameState {
   return {
     puzzle: init.puzzle,
     lexicon: init.lexicon,
     words: init.words,
+    isWord: init.isWord,
     bank: [...init.puzzle.bank].sort(),
     current: "",
     rows: [],
@@ -125,8 +135,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
       };
     }
     case "commit": {
+      // Pure, state-derived nonce (crosshatch's pattern): reducers get
+      // double-invoked in StrictMode, so no module-level counters.
+      const nonce = (state.lastResult?.nonce ?? 0) + 1;
       if (state.current.length === 0) {
-        return { ...state, lastResult: { type: "empty", nonce: ++nonce } };
+        return { ...state, lastResult: { type: "empty", nonce } };
       }
       const def = state.lexicon.get(state.current);
       if (!def) {
@@ -141,27 +154,36 @@ export function gameReducer(state: GameState, action: Action): GameState {
               type: "halfOnly",
               place,
               half: place.slice(0, Math.ceil(place.length / 2)),
-              nonce: ++nonce,
+              nonce,
             },
           };
         }
-        // Name the reading that fails: the mirror side when the staged
-        // word is real (BAD -> DAB), otherwise the staged word itself.
+        // Name the reading that fails and HOW it fails: a non-word
+        // beats "too rare" (blame the mirror side when the staged word
+        // is fine: BAD -> DAB isn't a word), and a real-but-bonus-tier
+        // word (WILT, TAM) is never called "not a word".
+        const notWord = !state.isWord(place)
+          ? place
+          : !state.isWord(rev)
+            ? rev
+            : null;
         const badWord =
-          state.words.has(place) && !state.words.has(rev) ? rev : place;
+          notWord ?? (!state.words.has(place) ? place : rev);
         return {
           ...state,
-          lastResult: { type: "invalid", place, badWord, nonce: ++nonce },
+          lastResult: {
+            type: "invalid",
+            place,
+            badWord,
+            reason: notWord ? "notWord" : "rare",
+            nonce,
+          },
         };
       }
       if (state.rows.some((r) => rowKey(r.def) === rowKey(def))) {
         return {
           ...state,
-          lastResult: {
-            type: "duplicate",
-            place: state.current,
-            nonce: ++nonce,
-          },
+          lastResult: { type: "duplicate", place: state.current, nonce },
         };
       }
       const rows = [...state.rows, { place: state.current, def }];
@@ -171,7 +193,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         rows,
         current: "",
         solved,
-        lastResult: { type: solved ? "solved" : "committed", row: def, nonce: ++nonce },
+        lastResult: { type: solved ? "solved" : "committed", row: def, nonce },
       };
     }
     case "breakRow": {

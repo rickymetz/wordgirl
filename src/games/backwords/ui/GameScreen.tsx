@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import {
@@ -148,6 +148,42 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [modalOpen, dispatch]);
 
+  // Play-by-play for screen readers: staging, deleting, and row edits
+  // are otherwise visual-only (there is no focused text field to echo
+  // typed letters, and the toast only narrates commit outcomes).
+  const [playAnnounce, setPlayAnnounce] = useState("");
+  const prevPlayRef = useRef({ current: state.current, rows: state.rows });
+  useEffect(() => {
+    const prev = prevPlayRef.current;
+    prevPlayRef.current = { current: state.current, rows: state.rows };
+    if (state.rows.length < prev.rows.length) {
+      const gone = prev.rows.find(
+        (r) => !state.rows.some((s) => s.place === r.place),
+      );
+      if (gone) {
+        setPlayAnnounce(
+          `Took back ${gone.place.toUpperCase()}. ${state.bank.length} letters left.`,
+        );
+      }
+      return;
+    }
+    if (state.current === prev.current) return;
+    if (state.current.length > prev.current.length) {
+      setPlayAnnounce(
+        `${state.current[state.current.length - 1].toUpperCase()} — row is ${state.current.toUpperCase()}.`,
+      );
+    } else if (state.current.length === 0 && prev.current.length > 1) {
+      setPlayAnnounce(`Cleared ${prev.current.toUpperCase()}.`);
+    } else if (state.current.length < prev.current.length) {
+      setPlayAnnounce(
+        state.current
+          ? `Deleted. Row is ${state.current.toUpperCase()}.`
+          : "Deleted. Row is empty.",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.current, state.rows]);
+
   // Submit feedback: a transient toast over the board, narrated for
   // screen readers via the live region below.
   const [toast, setToast] = useState<{ text: string; nonce: number } | null>(
@@ -159,13 +195,17 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     const messages: Record<string, string> = {
       committed:
         r.type === "committed"
-          ? r.row.words.map((w) => w.toUpperCase()).join(" · ")
+          ? r.row.words.map((w) => w.toUpperCase()).join(" · ") +
+            (r.row.glyph ? " — a true mirror" : "")
           : "",
       solved: "Board clear!",
-      // Name the reading that fails — the staged word or its mirror.
+      // Name the reading that fails — the staged word or its mirror —
+      // and never call a real (bonus-tier) word invalid.
       invalid:
         r.type === "invalid"
-          ? `${r.badWord.toUpperCase()} isn't a valid word`
+          ? r.reason === "rare"
+            ? `${r.badWord.toUpperCase()} is too rare here`
+            : `${r.badWord.toUpperCase()} isn't a valid word`
           : "",
       halfOnly:
         r.type === "halfOnly"
@@ -263,7 +303,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         </p>
       )}
 
-      <div className="text-sm font-medium text-ink-soft">
+      <div role="status" className="text-sm font-medium text-ink-soft">
         {state.solved
           ? "Every letter placed"
           : `${state.bank.length} letters left`}
@@ -306,7 +346,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               type="button"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => dispatch({ type: "clearRow" })}
-              className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
+              className="-my-3 touch-manipulation px-3 py-3 text-xs font-semibold text-ink-soft"
             >
               Clear row
             </button>
@@ -315,7 +355,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => dispatch({ type: "backspace" })}
               aria-label="delete letter"
-              className="relative flex h-9 w-11 items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+              className="relative flex h-9 w-11 touch-manipulation items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
             >
               <Delete aria-hidden className="h-4 w-4" />
             </button>
@@ -323,7 +363,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               type="button"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => dispatch({ type: "commit" })}
-              className={`rounded-full px-6 py-2 text-sm font-semibold transition-colors active:scale-95 ${
+              className={`relative touch-manipulation rounded-full px-6 py-2 text-sm font-semibold transition-colors after:absolute after:-inset-1 after:content-[''] active:scale-95 ${
                 state.current.length > 0
                   ? "bg-accent text-surface"
                   : "bg-tile text-ink-soft"
@@ -411,8 +451,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "True mirror rows",
                 body: (
                   <>
-                    Some rows survive a real mirror — LIT reflects as TIL.
-                    They're marked{" "}
+                    Some rows survive a real mirror, letter for letter —
+                    hold MOM or WOW up to one and it still reads. They're
+                    marked{" "}
                     <Sparkles
                       aria-label="sparkle"
                       className="inline h-3.5 w-3.5 text-accent"
@@ -429,6 +470,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">
         {toast && <span key={toast.nonce}>{toast.text}</span>}
+      </div>
+      <div aria-live="polite" className="sr-only">
+        {playAnnounce}
       </div>
     </div>
   );

@@ -2,21 +2,21 @@ import type { Dictionary } from "../../../lib/words/dictionary";
 import type { RowDef } from "./types";
 
 /**
- * Glyph mirror rules (lowercase, as the board renders): letters that
- * survive a vertical mirror unchanged, plus the b/d and p/q pairs.
- * A row is glyph-true when its full visual reading is unchanged by a
- * real mirror — the ✦ flourish.
+ * Glyph mirror rules for UPPERCASE letterforms — the board renders
+ * caps-only (font-game + uppercase), so the ✦ flourish must hold for
+ * what the player actually sees: A H I M O T U V W X Y survive a
+ * vertical mirror unchanged; no cap is another cap's mirror image
+ * (lowercase b/d p/q tricks don't exist up here). A row is glyph-true
+ * when its full visual reading is unchanged by a real mirror.
  */
-const SELF = new Set(["i", "l", "m", "o", "t", "u", "v", "w", "x"]);
-const FLIP: Record<string, string> = { b: "d", d: "b", p: "q", q: "p" };
+const SELF = new Set(["a", "h", "i", "m", "o", "t", "u", "v", "w", "x", "y"]);
 
 function glyphMirror(word: string): string | null {
   let out = "";
   for (let i = word.length - 1; i >= 0; i--) {
     const ch = word[i];
-    const m = FLIP[ch] ?? (SELF.has(ch) ? ch : null);
-    if (m === null) return null;
-    out += m;
+    if (!SELF.has(ch)) return null;
+    out += ch;
   }
   return out;
 }
@@ -71,7 +71,8 @@ export function buildLexicon(dict: Dictionary): Map<string, RowDef> {
     } else if (common.has(r) && !seenPair.has(r)) {
       seenPair.add(w);
       // ✦ when a REAL mirror would render exactly the reflection we
-      // draw: physical mirror of "lit" reads "til"; of "loot", "tool".
+      // draw. In caps this is rare for pairs (WOT|TOW-shaped), common
+      // for palindromes.
       const glyph = glyphMirror(w) === r;
       for (const orientation of [w, r]) {
         addPlacement(orientation, {

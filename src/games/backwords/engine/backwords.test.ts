@@ -33,13 +33,17 @@ describe("lexicon", () => {
     expect(lexicon.get("de")?.words).toEqual(["deed"]);
   });
 
-  it("flags glyph-true rows and only those", () => {
-    expect(lexicon.get("mo")?.glyph).toBe(true); // mom survives a mirror
-    expect(lexicon.get("wo")?.glyph).toBe(true); // wow
-    expect(lexicon.get("lit")?.glyph).toBe(true); // mirror(lit) = til
-    expect(lexicon.get("loot")?.glyph).toBe(true); // mirror(loot) = tool
-    expect(lexicon.get("da")?.glyph).toBe(false); // dad: a doesn't mirror
-    expect(lexicon.get("mood")?.glyph).toBe(false); // mirror(mood)=boom≠doom
+  it("flags glyph-true rows for UPPERCASE letterforms only", () => {
+    // The board renders caps: MOM, WOW, AHA, TIT survive a real mirror.
+    expect(lexicon.get("mo")?.glyph).toBe(true);
+    expect(lexicon.get("wo")?.glyph).toBe(true);
+    expect(lexicon.get("ah")?.glyph).toBe(true); // aha — A mirrors in caps
+    expect(lexicon.get("ti")?.glyph).toBe(true); // tit
+    // L is NOT symmetric in caps (a mirror shows TI⅃, not TIL), and
+    // B/D are not each other's uppercase mirror images.
+    expect(lexicon.get("lit")?.glyph).toBe(false);
+    expect(lexicon.get("loot")?.glyph).toBe(false);
+    expect(lexicon.get("da")?.glyph).toBe(false); // DAD: D doesn't mirror
     expect(lexicon.get("was")?.glyph).toBe(false);
   });
 
@@ -78,8 +82,8 @@ describe("generateBackwords", () => {
     for (let day = 1; day <= 31; day++) {
       const key = `2026-08-${String(day).padStart(2, "0")}`;
       const p = generateBackwords(dict, dailySeed(key));
-      expect(p.bank.length).toBeGreaterThanOrEqual(12);
-      expect(p.bank.length).toBeLessThanOrEqual(16);
+      expect(p.bank.length).toBeGreaterThanOrEqual(8);
+      expect(p.bank.length).toBeLessThanOrEqual(12);
       expect(p.solutionCount).toBeGreaterThanOrEqual(2);
       // Real strategy choice: at least two distinct row counts.
       expect(p.rowCounts.length).toBeGreaterThanOrEqual(2);

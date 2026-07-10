@@ -2,7 +2,7 @@ import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import { useViewport } from "../../../lib/useViewport";
 import type { CommittedRow } from "../state/reducer";
-import { dragPoint } from "./dragPoint";
+import { dragCancelled, dragPoint } from "./dragPoint";
 
 type DragLive = (
   letter: string | null,
@@ -41,19 +41,28 @@ export function MirrorBoard({
   /** Stream drag positions so the mirror can reflect the tile live. */
   onDragLive: DragLive;
 }) {
-  const { vw } = useViewport();
-  // One tile size for the whole board, sized so the longest row fits
-  // its half — long placements (DRAWER…) shrink everything in step.
+  const { vw, vh, rem } = useViewport();
+  // One tile size for the whole board. Every row's LEFT half must fit
+  // inside its flex share or the row's midpoint walks off the pane
+  // line — so the width budget subtracts what shares that half: the
+  // take-back × rail on committed rows, the caret on the active row.
   const halfW = (Math.min(vw, 448) - 40) / 2 - 12;
-  const longest = Math.max(
-    3,
-    ...rows.map((r) => r.place.length),
-    current.length + 1,
-  );
-  const tile = Math.max(
-    18,
-    Math.min(34, Math.floor((halfW - (longest - 1) * 3) / longest)),
-  );
+  const RAIL = 36; // take-back ×: 24px + 8px margin + slack
+  const fit = (budget: number, n: number) =>
+    Math.floor((budget - (n - 1) * 3) / n);
+  const caps = [34, fit(halfW - 6, Math.max(3, current.length))];
+  if (rows.length > 0) {
+    const longest = Math.max(3, ...rows.map((r) => r.place.length));
+    caps.push(fit(halfW - RAIL, longest));
+  }
+  // Height budget: all rows (committed + active) must fit what the
+  // chrome leaves over, scaled with the Text-size setting — 7-row
+  // days at Huge text shrink tiles instead of scrolling the page.
+  const CHROME_H = 330;
+  const availH = vh - CHROME_H * (rem / 16);
+  const rowsShown = rows.length + (solved ? 0 : 1);
+  caps.push(Math.floor((availH / rowsShown - 12) / 1.2));
+  const tile = Math.max(12, Math.min(...caps));
 
   // Which rack tile does each placed letter occupy? Matches the rack's
   // dimming rule (last duplicates leave first), so layoutIds agree.
@@ -65,7 +74,7 @@ export function MirrorBoard({
   return (
     <div
       id="bw-mirror"
-      className="relative flex max-h-[26rem] min-h-52 w-full grow flex-col justify-center select-none"
+      className="relative flex max-h-[26rem] min-h-52 w-full grow touch-manipulation flex-col justify-center select-none"
     >
       {/* The glass: a filled pane behind the reflections, with a
           diagonal sheen — tokens only, so it re-tints per theme. */}
@@ -99,7 +108,7 @@ export function MirrorBoard({
         <span
           id="bw-drag-ghost"
           style={{ display: "none" }}
-          className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/50 font-game text-xl text-ink-soft/80 uppercase shadow-sm"
+          className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/70 font-game text-xl text-ink-soft uppercase shadow-sm"
         />
       </div>
       <div className="relative flex flex-col gap-2">
@@ -180,23 +189,17 @@ function Row({
       className="flex items-center font-game uppercase"
       style={{ minHeight: Math.round(tile * 1.2) + 4 }}
     >
-      <div className="flex flex-1 items-center justify-end gap-[3px] pr-2.5">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-[3px] pr-2.5">
         {onBreak && (
           <button
             type="button"
             onPointerDown={(e) => e.preventDefault()}
             onClick={onBreak}
             aria-label={`take back ${place}`}
-            className="relative mr-2 flex h-6 w-6 items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2.5 after:content-[''] active:scale-90"
+            className="relative mr-2 flex h-6 w-6 touch-manipulation items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2.5 after:content-[''] active:scale-90"
           >
             <X aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
           </button>
-        )}
-        {glyph && committed && (
-          <Sparkles
-            aria-label="true mirror row"
-            className="mr-1 h-4 w-4 shrink-0 text-accent"
-          />
         )}
         {[...left].map((ch, i) => (
           <PlacedTile
@@ -242,7 +245,7 @@ function Row({
       </span>
       <div
         aria-hidden
-        className="flex flex-1 items-center gap-[3px] pl-2.5"
+        className="flex min-w-0 flex-1 items-center gap-[3px] pl-2.5"
       >
         {active && place.length === 0 && (
           <span
@@ -262,16 +265,24 @@ function Row({
             onDragLive={onDragLive}
           />
         ))}
+        {/* The mirror's seal: lives INSIDE the glass so it never eats
+            the left half's tile budget. Decorative here — the commit
+            toast and results carry the words. */}
+        {glyph && committed && (
+          <Sparkles className="ml-1 h-4 w-4 shrink-0 text-accent" />
+        )}
       </div>
     </div>
   );
 }
 
-/** Dragged outside the board? Then this drop is a take-back. */
+/** Dragged outside the board? Then this drop is a take-back — unless
+ * the system cancelled the gesture, which is never a drop. */
 function droppedOffBoard(
   e?: MouseEvent | TouchEvent | PointerEvent,
   info?: PanInfo,
 ): boolean {
+  if (dragCancelled(e)) return false;
   const board = document.getElementById("bw-board");
   const p = dragPoint(e, info);
   if (!board || !p) return false;
@@ -347,7 +358,7 @@ function ReflectionTile({
         onDragLive?.(null);
         if (onUnstage && droppedOffBoard(e, info)) onUnstage();
       }}
-      className="flex shrink-0 items-center justify-center rounded-lg bg-surface/50 text-ink-soft/80"
+      className="flex shrink-0 items-center justify-center rounded-lg bg-surface/70 text-ink-soft"
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >
       {letter}

@@ -18,3 +18,14 @@ export function dragPoint(
     };
   return null;
 }
+
+/**
+ * motion fires onDragEnd for pointercancel too — the system taking the
+ * gesture back (notification banner, incoming call, edge swipe). A
+ * cancelled drag must ABORT, never count as a drop.
+ */
+export function dragCancelled(
+  e?: MouseEvent | TouchEvent | PointerEvent,
+): boolean {
+  return e?.type === "pointercancel" || e?.type === "touchcancel";
+}

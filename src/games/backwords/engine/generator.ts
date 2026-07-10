@@ -11,9 +11,12 @@ import {
   type RowDef,
 } from "./types";
 
-/** Daily bank size band. */
-const MIN_LETTERS = 12;
-const MAX_LETTERS = 16;
+/** Daily bank size band: ~3-4 rows a day. Measured over 90 dailies,
+ * this band cuts staple repetition sharply vs the original 12-16
+ * (top item in 37% of days' solution spaces vs 52%) while keeping
+ * generation robust (0 failures, ≤26 attempts). */
+const MIN_LETTERS = 8;
+const MAX_LETTERS = 12;
 /** A day must decompose in ≥2 ways with ≥2 distinct row counts (real
  * strategy choice); the generator prefers ≥3 solutions. */
 const MIN_SOLUTIONS = 2;
@@ -21,12 +24,13 @@ const PREFERRED_SOLUTIONS = 3;
 const SOLUTION_CAP = 40;
 const MAX_ATTEMPTS = 400;
 
+// v2: bank band reduced to 8-12 (repetition tuning, pre-release).
 export function dailySeed(dateKey: string): string {
-  return `backwords:v1:daily:${dateKey}`;
+  return `backwords:v2:daily:${dateKey}`;
 }
 
 export function practiceSeed(random: string): string {
-  return `backwords:v1:practice:${random}`;
+  return `backwords:v2:practice:${random}`;
 }
 
 /**

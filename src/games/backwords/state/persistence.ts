@@ -100,19 +100,34 @@ export async function loadAllDailyProgress(): Promise<
   return out;
 }
 
-export async function saveDailyProgress(progress: DailyProgress) {
-  // Multi-tab guard: a finished day is final (the clock stopped there)
-  // — a stale tab's flush must not overwrite it with an unsolved board.
+export async function saveDailyProgress(
+  progress: DailyProgress,
+  opts?: {
+    /** This tab committed or broke a row itself — its rows are the
+     * truth even when they've shrunk back to zero. */
+    rowsEdited?: boolean;
+  },
+) {
   const stored = validShape(
     await store.get<DailyProgress>(`daily:${progress.dateKey}`),
   );
-  if (
-    stored &&
-    stored.dictVersion === progress.dictVersion &&
-    stored.solved &&
-    !progress.solved
-  ) {
-    return;
+  if (stored && stored.dictVersion === progress.dictVersion) {
+    // Multi-tab guard, part 1: a finished day is final (the clock
+    // stopped there) — a stale tab's flush must not overwrite it
+    // with an unsolved board.
+    if (stored.solved && !progress.solved) return;
+    // Part 2: rows legitimately SHRINK here (breakRow), so crosshatch's
+    // growth check can't apply — instead, a tab that never edited a
+    // row itself has no claim over stored rows. Its idle flush must
+    // not wipe progress another tab committed.
+    if (
+      !progress.solved &&
+      progress.rows.length === 0 &&
+      stored.rows.length > 0 &&
+      !opts?.rowsEdited
+    ) {
+      return;
+    }
   }
   await store.set(`daily:${progress.dateKey}`, progress);
 }

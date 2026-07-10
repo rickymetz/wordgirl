@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { motion, type PanInfo } from "motion/react";
 import { toMultiset } from "../engine/types";
-import { dragPoint } from "./dragPoint";
+import { dragCancelled, dragPoint } from "./dragPoint";
 
 /**
  * The day's rack: one socket per bank letter (sorted a-z). A tile
@@ -45,11 +45,13 @@ export function LetterBank({
         const idx = (seen[letter] = (seen[letter] ?? 0) + 1);
         const available = idx <= (left[letter] ?? 0);
         if (!available) {
-          // Empty socket: the tile is out on the board.
+          // Empty socket: the tile is out on the board. Decorative —
+          // "N letters left" and the play-by-play carry the state
+          // (aria-label on a plain div announces nothing anyway).
           return (
             <div
               key={i}
-              aria-label={`letter ${letter} — placed`}
+              aria-hidden
               className="h-11 w-9 rounded-lg border-2 border-dashed border-line"
             />
           );
@@ -73,6 +75,7 @@ export function LetterBank({
             onDragEnd={(e, info) => {
               requestAnimationFrame(() => (draggingRef.current = false));
               onDragLive(null);
+              if (dragCancelled(e)) return; // system stole the gesture
               // Dropped over the board — EITHER side of the glass —
               // and the tile moves there.
               const board = document.getElementById("bw-board");

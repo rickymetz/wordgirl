@@ -19,6 +19,7 @@ const dict = parseDictionary(
 );
 const lexicon = buildLexicon(dict);
 const words = commonWords(dict);
+const isWord = (w: string) => dict.has(w);
 
 // Hand-built day: mom (mo) + lit/til + was/saw = m,o + i,l,t + a,s,w.
 const puzzle: Puzzle = {
@@ -38,7 +39,7 @@ const type = (word: string) =>
   [...word].map((letter) => ({ type: "typeLetter" as const, letter }));
 
 beforeEach(() => {
-  state = initialState({ puzzle, lexicon, words });
+  state = initialState({ puzzle, lexicon, words, isWord });
 });
 
 describe("backwords reducer", () => {
@@ -67,7 +68,8 @@ describe("backwords reducer", () => {
     run(...type("lit"), { type: "commit" });
     expect(state.solved).toBe(true);
     expect(state.lastResult?.type).toBe("solved");
-    expect(glyphRowCount(state.rows)).toBe(2); // mom ✦, lit|til ✦
+    // MOM survives a caps mirror; LIT does not (L isn't symmetric).
+    expect(glyphRowCount(state.rows)).toBe(1);
   });
 
   it("rejects non-mirror words and duplicate rows", () => {
@@ -82,14 +84,49 @@ describe("backwords reducer", () => {
   it("names the reading that fails on an invalid commit", () => {
     // MOST is a common word; its mirror TSOM isn't — blame the mirror.
     run(...type("most"), { type: "commit" });
-    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "tsom" });
+    expect(state.lastResult).toMatchObject({
+      type: "invalid",
+      badWord: "tsom",
+      reason: "notWord",
+    });
     // OWT isn't a word itself (even though TWO is) — blame the staged word.
     run({ type: "clearRow" }, ...type("owt"), { type: "commit" });
-    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "owt" });
-    // WILT reads only in the bonus tier — from the player's side the
-    // staged word itself is the failure.
+    expect(state.lastResult).toMatchObject({
+      type: "invalid",
+      badWord: "owt",
+      reason: "notWord",
+    });
+    // WILT is a real word (bonus tier) and must never be called a
+    // non-word — its mirror TLIW is the failing reading.
     run({ type: "clearRow" }, ...type("wilt"), { type: "commit" });
-    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "wilt" });
+    expect(state.lastResult).toMatchObject({
+      type: "invalid",
+      badWord: "tliw",
+      reason: "notWord",
+    });
+    // MAT and TAM are both real, but TAM is bonus tier: the row fails
+    // on rarity, not validity.
+    run({ type: "clearRow" }, ...type("mat"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({
+      type: "invalid",
+      badWord: "tam",
+      reason: "rare",
+    });
+  });
+
+  it("rejects a duplicate row staged in its other orientation", () => {
+    // Needs a second s/a/w so SAW can be staged after WAS commits.
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."moiltaswsaw"].sort() },
+      lexicon,
+      words,
+      isWord,
+    });
+    run(...type("was"), { type: "commit" });
+    expect(state.lastResult?.type).toBe("committed");
+    run(...type("saw"), { type: "commit" });
+    expect(state.lastResult?.type).toBe("duplicate");
+    expect(state.rows).toHaveLength(1);
   });
 
   it("coaches the half placement when a full palindrome is typed", () => {
@@ -98,6 +135,7 @@ describe("backwords reducer", () => {
       puzzle: { ...puzzle, bank: [..."moiltaswmo"].sort() },
       lexicon,
       words,
+      isWord,
     });
     run(...type("mom"), { type: "commit" });
     expect(state.lastResult).toMatchObject({

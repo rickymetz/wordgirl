@@ -272,17 +272,14 @@ sum
 wha
 wee
 dug
-pam
 cam
 tub
 fry
 rod
 chi
-tae
 aha
 las
 kay
-ana
 bra
 lin
 rot
@@ -321,7 +318,6 @@ rum
 ski
 vet
 nun
-nam
 axe
 zip
 rug
@@ -340,7 +336,6 @@ sip
 lid
 med
 ava
-deb
 ant
 ape
 jun
@@ -365,7 +360,6 @@ ads
 bun
 sly
 yum
-tis
 fin
 dev
 ops
