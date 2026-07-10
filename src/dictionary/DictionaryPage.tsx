@@ -111,14 +111,18 @@ export function DictionaryPage() {
   }, []);
 
   const [scrubbing, setScrubbing] = useState(false);
+  const scrubbingRef = useRef(false);
 
+  const lastScrubIdx = useRef(-1);
   const scrubTo = useCallback(
-    (e: React.PointerEvent) => {
+    (clientY: number) => {
       const el = scrubberRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+      const y = Math.max(0, Math.min(clientY - rect.top, rect.height));
       const idx = Math.min(Math.floor((y / rect.height) * 26), 25);
+      if (idx === lastScrubIdx.current) return;
+      lastScrubIdx.current = idx;
       const letter = ALPHABET[idx];
       setActiveLetter(letter);
       setQuery("");
@@ -129,21 +133,27 @@ export function DictionaryPage() {
 
   const onScrubStart = useCallback(
     (e: React.PointerEvent) => {
+      e.preventDefault();
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      lastScrubIdx.current = -1;
+      scrubbingRef.current = true;
       setScrubbing(true);
-      scrubTo(e);
+      scrubTo(e.clientY);
     },
     [scrubTo],
   );
 
   const onScrubMove = useCallback(
     (e: React.PointerEvent) => {
-      if (e.pressure > 0) scrubTo(e);
+      if (!scrubbingRef.current) return;
+      e.preventDefault();
+      scrubTo(e.clientY);
     },
     [scrubTo],
   );
 
   const onScrubEnd = useCallback(() => {
+    scrubbingRef.current = false;
     setScrubbing(false);
   }, []);
 
