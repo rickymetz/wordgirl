@@ -31,13 +31,22 @@ const config: GameArchiveConfig<ArchivedDay, DoubletStats> = {
     },
     { label: "Unsolved", value: stats.played - stats.solved },
   ],
-  isDone: (day) => day.solved,
-  rowStatus: (_dateKey, day) => ({
-    text: day.solved
-      ? `Solved${day.stale ? " · older words" : ""}`
-      : `In progress · ${day.placed.length} placed`,
-    done: day.solved,
-  }),
+  // A day is done when ALL THREE boards are — matching the hub
+  // card's "All solved".
+  isDone: (day) => day.solvedCount === 3,
+  rowStatus: (_dateKey, day) => {
+    const stale = day.stale ? " · older words" : "";
+    if (day.solvedCount === 3) {
+      return { text: `All solved${stale}`, done: true };
+    }
+    if (day.solvedCount > 0) {
+      return { text: `${day.solvedCount}/3 solved${stale}`, done: false };
+    }
+    return {
+      text: day.stale ? "Not finished · older words" : "In progress",
+      done: false,
+    };
+  },
 };
 
 export default function ArchivePage() {

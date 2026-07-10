@@ -75,8 +75,22 @@ export async function loadStaleDailyProgress(
   return null;
 }
 
-export interface ArchivedDay extends DailyProgress {
+/**
+ * A DATE's roll-up across its three boards — GameArchive looks days
+ * up by plain dateKey, so the per-difficulty saves merge here.
+ */
+export interface ArchivedDay {
+  dateKey: string;
+  /** Boards solved that day (0-3). */
+  solvedCount: number;
+  /** Boards with any progress. */
+  startedCount: number;
+  /** Any board saved under an older dictionary. */
   stale: boolean;
+  /** Total active time across the day's boards. */
+  elapsedMs: number;
+  /** GameArchive's played contract: all boards' words, merged. */
+  foundWords: string[];
 }
 
 export async function loadAllDailyProgress(): Promise<
@@ -85,13 +99,20 @@ export async function loadAllDailyProgress(): Promise<
   const out: Record<string, ArchivedDay> = {};
   for (const key of await store.keys("daily:")) {
     const saved = validShape(await store.get<DailyProgress>(key));
-    if (saved) {
-      const composite = `${saved.difficulty}:${saved.dateKey}`;
-      out[composite] = {
-        ...saved,
-        stale: saved.dictVersion !== DICT_VERSION,
-      };
-    }
+    if (!saved) continue;
+    const day = (out[saved.dateKey] ??= {
+      dateKey: saved.dateKey,
+      solvedCount: 0,
+      startedCount: 0,
+      stale: false,
+      elapsedMs: 0,
+      foundWords: [],
+    });
+    if (saved.solved) day.solvedCount += 1;
+    if (saved.solved || saved.placed.length > 0) day.startedCount += 1;
+    if (saved.dictVersion !== DICT_VERSION) day.stale = true;
+    day.elapsedMs += saved.elapsedMs;
+    day.foundWords.push(...(saved.foundWords ?? []));
   }
   return out;
 }
@@ -148,25 +169,27 @@ export function recordDailyStarted(): Promise<void> {
   });
 }
 
+/**
+ * Call once per solved BOARD (the hook's statsRecorded marker guards
+ * replays and re-opens): `solved` counts boards, matching `played`
+ * from recordDailyStarted, so the archive's Win % is coherent. The
+ * STREAK is per-day — the first board solved on a new day advances
+ * it; the second and third that day don't re-count.
+ */
 export function recordDailySolved(
   dateKey: string,
   allowGrace = true,
 ): Promise<DoubletStats> {
   return serialized(async () => {
     const stats = await loadStats();
-    const alreadyRecordedDate = stats.lastSolvedDate === dateKey;
-
     const today = localDateKey();
     const isToday =
       dateKey === today || (allowGrace && dateKey === previousDateKey(today));
     const advances =
-      !alreadyRecordedDate &&
       isToday &&
       (stats.lastSolvedDate === null || dateKey > stats.lastSolvedDate);
     const continues = stats.lastSolvedDate === previousDateKey(dateKey);
     const currentStreak = continues ? stats.currentStreak + 1 : 1;
-
-    if (alreadyRecordedDate) return stats;
 
     const next: DoubletStats = {
       ...stats,

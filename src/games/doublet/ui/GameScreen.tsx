@@ -2,7 +2,9 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, RotateCcw } from "lucide-react";
-import { formatDuration } from "../../../lib/date";
+import { formatDuration, formatShareDate } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
+import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
@@ -17,6 +19,18 @@ const DIFF_LABELS: Record<Difficulty, string> = {
   medium: "Medium",
   hard: "Hard",
 };
+
+function buildShareText(
+  difficulty: Difficulty,
+  dateKey: string,
+  elapsedMs: number,
+): string {
+  return [
+    `Doublet — ${formatShareDate(dateKey)}`,
+    `${DIFF_LABELS[difficulty]} · ⏱️ ${formatDuration(elapsedMs)}`,
+    SHARE_URL,
+  ].join("\n");
+}
 
 interface DragState {
   dominoId: number;
@@ -314,6 +328,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 <p className="text-ink-soft text-sm">
                   {formatDuration(solvedElapsedMs)}
                 </p>
+              )}
+              {mode.kind !== "practice" && solvedElapsedMs !== null && (
+                <ShareButton
+                  text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs)}
+                />
               )}
               <button
                 className="px-6 py-2 rounded-full bg-accent text-surface
