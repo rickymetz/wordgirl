@@ -5,6 +5,8 @@ import { HomeLink } from "../components/HomeLink";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const BOOKMARKS_KEY = "wg:v1:local:dictionary:bookmarks";
+const MIN_LEN = 2;
+const MAX_LEN = 15;
 
 function loadBookmarks(): Set<string> {
   try {
@@ -27,6 +29,8 @@ export function DictionaryPage() {
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
+  const [lenMin, setLenMin] = useState(MIN_LEN);
+  const [lenMax, setLenMax] = useState(MAX_LEN);
   const listRef = useRef<HTMLDivElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
 
@@ -44,11 +48,21 @@ export function DictionaryPage() {
     return words;
   }, [dict]);
 
+  const lengthActive = lenMin > MIN_LEN || lenMax < MAX_LEN;
+
   const filtered = useMemo(() => {
     let result = allWords;
 
     if (filter === "bookmarked") {
       result = result.filter((w) => bookmarks.has(w.word));
+    }
+
+    if (lengthActive) {
+      result = result.filter(
+        (w) =>
+          w.word.length >= lenMin &&
+          (lenMax >= MAX_LEN || w.word.length <= lenMax),
+      );
     }
 
     const q = query.trim().toLowerCase();
@@ -61,7 +75,7 @@ export function DictionaryPage() {
     }
 
     return result;
-  }, [allWords, query, activeLetter, filter, bookmarks]);
+  }, [allWords, query, activeLetter, filter, bookmarks, lenMin, lenMax, lengthActive]);
 
   const toggleBookmark = useCallback(
     (word: string) => {
@@ -105,7 +119,7 @@ export function DictionaryPage() {
     [],
   );
 
-  const showPrompt = !query.trim() && !activeLetter && filter === "all";
+  const showPrompt = !query.trim() && !activeLetter && filter === "all" && !lengthActive;
   const letterCounts = useMemo(() => {
     const counts = new Map<string, number>();
     const source = filter === "bookmarked"
@@ -167,6 +181,16 @@ export function DictionaryPage() {
           label={`Saved${bookmarks.size ? ` (${bookmarks.size})` : ""}`}
         />
       </div>
+
+      {/* Length filter */}
+      <RangeSlider
+        min={MIN_LEN}
+        max={MAX_LEN}
+        low={lenMin}
+        high={lenMax}
+        onLowChange={setLenMin}
+        onHighChange={setLenMax}
+      />
 
       {/* Main content: word list + scrubber */}
       <div className="relative mt-3 flex min-h-0 grow">
@@ -320,5 +344,133 @@ function FilterPill({
     >
       {label}
     </button>
+  );
+}
+
+function RangeSlider({
+  min,
+  max,
+  low,
+  high,
+  onLowChange,
+  onHighChange,
+}: {
+  min: number;
+  max: number;
+  low: number;
+  high: number;
+  onLowChange: (v: number) => void;
+  onHighChange: (v: number) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<"low" | "high" | null>(null);
+  const range = max - min;
+
+  const pctLow = ((low - min) / range) * 100;
+  const pctHigh = ((high - min) / range) * 100;
+
+  const resolve = useCallback(
+    (clientX: number) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const raw = Math.round(min + pct * range);
+
+      if (dragging.current === "low") {
+        onLowChange(Math.min(raw, high));
+      } else if (dragging.current === "high") {
+        onHighChange(Math.max(raw, low));
+      }
+    },
+    [min, range, low, high, onLowChange, onHighChange],
+  );
+
+  const onPointerDown = useCallback(
+    (thumb: "low" | "high") => (e: React.PointerEvent) => {
+      dragging.current = thumb;
+      (e.currentTarget.parentElement as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [],
+  );
+
+  const onTrackPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      const el = trackRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      const val = min + pct * range;
+      const distLow = Math.abs(val - low);
+      const distHigh = Math.abs(val - high);
+      dragging.current = distLow <= distHigh ? "low" : "high";
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      resolve(e.clientX);
+    },
+    [min, range, low, high, resolve],
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (dragging.current && e.pressure > 0) resolve(e.clientX);
+    },
+    [resolve],
+  );
+
+  const onPointerUp = useCallback(() => {
+    dragging.current = null;
+  }, []);
+
+  const active = low > min || high < max;
+  const label = active
+    ? `${low}–${high} letters`
+    : "Word length";
+
+  return (
+    <div className="mt-3">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-xs font-semibold text-ink-soft">{label}</span>
+        {active && (
+          <button
+            type="button"
+            onClick={() => { onLowChange(min); onHighChange(max); }}
+            className="text-[10px] font-semibold text-accent active:scale-90"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+      <div
+        ref={trackRef}
+        className="relative h-6 touch-none select-none"
+        onPointerDown={onTrackPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+        {/* Track background */}
+        <div className="absolute top-1/2 right-0 left-0 h-1 -translate-y-1/2 rounded-full bg-line" />
+        {/* Active range */}
+        <div
+          className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-accent"
+          style={{ left: `${pctLow}%`, right: `${100 - pctHigh}%` }}
+        />
+        {/* Low thumb */}
+        <div
+          className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-surface shadow-sm"
+          style={{ left: `${pctLow}%` }}
+          onPointerDown={onPointerDown("low")}
+        />
+        {/* High thumb */}
+        <div
+          className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-surface shadow-sm"
+          style={{ left: `${pctHigh}%` }}
+          onPointerDown={onPointerDown("high")}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] text-ink-soft/60">
+        <span>{min}</span>
+        <span>{max}+</span>
+      </div>
+    </div>
   );
 }
