@@ -25,8 +25,8 @@ function snakeColor(index: number, isActive: boolean, matched: boolean): string 
 }
 
 function snakeOpacity(isActive: boolean, matched: boolean): number {
-  if (matched) return 0.9;
-  return isActive ? 1 : 0.35;
+  if (matched) return 0.3;
+  return isActive ? 0.35 : 0.2;
 }
 
 export function SnakeGrid({
@@ -92,16 +92,13 @@ export function SnakeGrid({
 
   // Build cell lookup: which snake owns each cell?
   const cellOwner = new Map<string, number>();
-  const cellIndex = new Map<string, number>();
   for (let si = 0; si < paths.length; si++) {
     for (let ci = 0; ci < paths[si].cells.length; ci++) {
-      const key = cellKey(paths[si].cells[ci]);
-      cellOwner.set(key, si);
-      cellIndex.set(key, ci);
+      cellOwner.set(cellKey(paths[si].cells[ci]), si);
     }
   }
 
-  // Build SVG path data: connectors + dots per snake.
+  // Build SVG shapes per snake: big circles + thick connector pipes.
   const svgSnakes: {
     color: string;
     opacity: number;
@@ -119,6 +116,8 @@ export function SnakeGrid({
     });
   }
 
+  const NODE_R = 0.38;
+  const PIPE_W = 0.32;
   const gap = 3;
 
   return (
@@ -134,7 +133,7 @@ export function SnakeGrid({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {/* SVG overlay: thick path + node dots = the snake */}
+      {/* SVG overlay: Strands-style circles + pipe connectors */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox={`0 0 ${cols} ${rows}`}
@@ -142,48 +141,41 @@ export function SnakeGrid({
       >
         {svgSnakes.map((snake, si) => {
           if (snake.cells.length === 0) return null;
-          const d = snake.cells
-            .map((c, i) => `${i === 0 ? "M" : "L"} ${c.cx} ${c.cy}`)
-            .join(" ");
-          const tail = snake.cells[snake.cells.length - 1];
           return (
             <g key={si} opacity={snake.opacity}>
-              {/* Path line */}
-              <path
-                d={d}
-                fill="none"
-                stroke={snake.color}
-                strokeWidth={0.32}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* Node dots */}
+              {/* Pipe connectors (behind circles) */}
+              {snake.cells.map((c, ci) => {
+                if (ci === 0) return null;
+                const prev = snake.cells[ci - 1];
+                return (
+                  <line
+                    key={`pipe-${ci}`}
+                    x1={prev.cx}
+                    y1={prev.cy}
+                    x2={c.cx}
+                    y2={c.cy}
+                    stroke={snake.color}
+                    strokeWidth={PIPE_W}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+              {/* Node circles */}
               {snake.cells.map((c, ci) => (
                 <circle
                   key={ci}
                   cx={c.cx}
                   cy={c.cy}
-                  r={0.14}
+                  r={NODE_R}
                   fill={snake.color}
                 />
               ))}
-              {/* Tail ring — shows the extend point */}
-              {!solved && (
-                <circle
-                  cx={tail.cx}
-                  cy={tail.cy}
-                  r={0.24}
-                  fill="none"
-                  stroke={snake.color}
-                  strokeWidth={0.06}
-                />
-              )}
             </g>
           );
         })}
       </svg>
 
-      {/* Grid cells */}
+      {/* Grid cells — letters sit on top of SVG */}
       <div
         className="grid h-full w-full"
         style={{
@@ -197,22 +189,14 @@ export function SnakeGrid({
             const key = cellKey({ row: r, col: c });
             const owner = cellOwner.get(key);
             const isOwned = owner !== undefined;
-            const isActive = owner === activeSnake;
-            const matched = isOwned && paths[owner].matchedSnake >= 0;
 
             return (
               <div
                 key={key}
                 className={[
-                  "relative flex items-center justify-center rounded-lg font-game text-sm transition-colors",
-                  isOwned ? "bg-surface-tint" : "bg-tile",
-                  matched
-                    ? "text-good font-bold"
-                    : isActive
-                      ? "text-accent"
-                      : isOwned
-                        ? "text-ink-soft"
-                        : "text-ink",
+                  "relative flex items-center justify-center rounded-full font-game text-sm",
+                  isOwned ? "" : "bg-tile",
+                  "text-ink",
                 ].join(" ")}
               >
                 <span className="relative z-10 select-none">{grid[r][c]}</span>
