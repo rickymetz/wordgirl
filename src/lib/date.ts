@@ -39,6 +39,15 @@ export function formatDateKey(dateKey: string): string {
   });
 }
 
+/** "July 10" — the share-string date every game's result header uses. */
+export function formatShareDate(dateKey: string): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+  });
+}
+
 /** "12:34" (or "1:02:03") for solve times. */
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.round(ms / 1000);

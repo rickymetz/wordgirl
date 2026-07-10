@@ -99,6 +99,9 @@ export async function loadAllDailyProgress(): Promise<
 export async function saveDailyProgress(progress: DailyProgress) {
   const key = progressKey(progress.dateKey, progress.difficulty);
   const stored = validShape(await store.get<DailyProgress>(key));
+  // A tab running an OLDER build must never clobber a newer build's
+  // save - dictVersion only ever grows.
+  if (stored && stored.dictVersion > progress.dictVersion) return;
   if (
     stored &&
     stored.dictVersion === progress.dictVersion &&
