@@ -23,13 +23,26 @@ export function MirrorBoard({
   onBreakRow: (index: number) => void;
 }) {
   return (
-    <div className="relative w-full select-none">
-      {/* The glass: one spine through every row. */}
+    <div className="relative flex min-h-52 w-full flex-col justify-center select-none">
+      {/* The glass: a filled pane behind the reflections, with a
+          diagonal sheen — tokens only, so it re-tints per theme. */}
       <div
         aria-hidden
-        className="absolute top-0 bottom-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-accent-soft"
+        className="absolute inset-y-0 right-0 left-1/2 rounded-r-2xl"
+        style={{
+          background: `linear-gradient(105deg,
+            color-mix(in oklab, var(--color-accent) 18%, var(--color-surface)) 0%,
+            color-mix(in oklab, var(--color-accent) 7%, var(--color-surface)) 42%,
+            color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)) 55%,
+            color-mix(in oklab, var(--color-accent) 6%, var(--color-surface)) 100%)`,
+        }}
       />
-      <div className="flex flex-col gap-2.5">
+      {/* The pane's edge — the line letters press up against. */}
+      <div
+        aria-hidden
+        className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-accent/60"
+      />
+      <div className="relative flex flex-col gap-2.5">
         <AnimatePresence initial={false}>
           {rows.map((row, i) => (
             <motion.div
@@ -118,7 +131,7 @@ function Row({
       </span>
       <div
         aria-hidden
-        className="flex flex-1 items-center gap-[3px] pl-3 text-ink-soft/50"
+        className="flex flex-1 items-center gap-[3px] pl-3 text-ink-soft/60"
       >
         {[...reflection].map((ch, i) => (
           <span key={i}>{ch}</span>
