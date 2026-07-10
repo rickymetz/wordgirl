@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { motion, type PanInfo } from "motion/react";
 import { toMultiset } from "../engine/types";
 import { overBoard } from "./dragPoint";
+import { TileSocket, tileClasses } from "../../../components/game/Tile";
 
 /**
  * The day's rack: one socket per bank letter (sorted a-z). A tile
@@ -48,13 +49,7 @@ export function LetterBank({
           // Empty socket: the tile is out on the board. Decorative —
           // "N letters left" and the play-by-play carry the state
           // (aria-label on a plain div announces nothing anyway).
-          return (
-            <div
-              key={i}
-              aria-hidden
-              className="h-11 w-9 rounded-lg border-2 border-dashed border-line"
-            />
-          );
+          return <TileSocket key={i} className="h-11 w-9" />;
         }
         return (
           <motion.button
@@ -83,7 +78,7 @@ export function LetterBank({
               if (!draggingRef.current) onLetter(letter);
             }}
             aria-label={`letter ${letter}`}
-            className="relative flex h-11 w-9 items-center justify-center rounded-lg bg-tile font-game text-lg text-ink uppercase shadow-sm"
+            className={`relative h-11 w-9 text-lg shadow-sm ${tileClasses("tile")}`}
             // touch-action none: the drag must win over page scrolling.
             style={{ touchAction: "none" }}
           >
