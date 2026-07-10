@@ -1,15 +1,16 @@
 import { Sparkles } from "lucide-react";
 
 /**
- * Hub-card miniature of the real board: WON meets its reflection NOW
- * across the glass, while the palindromes EYE and WOW straddle it —
- * middle tile ON the line, at the same tile rhythm the board uses.
- * WOW survives a caps mirror, so it carries the in-glass sparkle.
- * All three are honestly playable mirror content.
+ * Hub-card miniature of the real board: the glass turns SAW into WAS
+ * (seeing into the past — the game in one image), while the
+ * palindromes MADAM and MOM straddle the line, middle tile ON it at
+ * the board's tile rhythm. MOM survives a caps mirror, so it carries
+ * the in-glass sparkle. All three are honestly playable mirror
+ * content, and MADAM is the coach's own example.
  */
 const TILE = 13;
 const SLOT = TILE + 4; // middle slot: tile + 2px inset each side
-const LEFT = TILE * 3 + 4; // fits WON (3 tiles + gaps)
+const LEFT = TILE * 3 + 4; // fits WAS (3 tiles + gaps)
 const LINE_X = LEFT + SLOT / 2;
 
 export function BackwordsPreview() {
@@ -31,9 +32,9 @@ export function BackwordsPreview() {
         className="absolute inset-y-[-4px] w-[2px] rounded-full bg-accent/60"
         style={{ left: LINE_X - 1 }}
       />
-      <PreviewRow left="WON" right="NOW" accent />
-      <PreviewRow left="E" middle="Y" right="E" />
-      <PreviewRow left="W" middle="O" right="W" glyph />
+      <PreviewRow left="WAS" right="SAW" accent />
+      <PreviewRow left="MA" middle="D" right="AM" />
+      <PreviewRow left="M" middle="O" right="M" glyph />
     </div>
   );
 }
