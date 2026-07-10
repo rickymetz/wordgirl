@@ -443,7 +443,7 @@ function RangeSlider({
     : "Word length";
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 px-2">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-xs font-semibold text-ink-soft">{label}</span>
         {active && (
