@@ -1,58 +1,106 @@
+import { Sparkles } from "lucide-react";
+
 /**
- * Hub-card miniature: thematic words meeting their reflections at the
- * glass — WON reflects as NOW, EYE and WOW look back at themselves.
+ * Hub-card miniature of the real board: WON meets its reflection NOW
+ * across the glass, while the palindromes EYE and WOW straddle it —
+ * middle tile ON the line, at the same tile rhythm the board uses.
+ * WOW survives a caps mirror, so it carries the in-glass sparkle.
  * All three are honestly playable mirror content.
  */
+const TILE = 13;
+const SLOT = TILE + 4; // middle slot: tile + 2px inset each side
+const LEFT = TILE * 3 + 4; // fits WON (3 tiles + gaps)
+const LINE_X = LEFT + SLOT / 2;
+
 export function BackwordsPreview() {
   return (
     <div className="relative flex flex-col gap-[3px] pt-1" aria-hidden>
-      {/* Miniature glass pane behind the reflections. */}
+      {/* The glass pane, its left edge on the mirror line. */}
       <div
-        className="absolute inset-y-[-4px] right-[-6px] left-[49px] rounded-lg"
+        className="absolute inset-y-[-4px] right-[-6px] rounded-lg"
         style={{
+          left: LINE_X,
           background: `linear-gradient(105deg,
             color-mix(in oklab, var(--color-accent) 20%, var(--color-surface)) 0%,
             color-mix(in oklab, var(--color-accent) 8%, var(--color-surface)) 60%,
             color-mix(in oklab, var(--color-accent) 16%, var(--color-surface)) 100%)`,
         }}
       />
+      {/* One continuous line, like the board's. */}
+      <div
+        className="absolute inset-y-[-4px] w-[2px] rounded-full bg-accent/60"
+        style={{ left: LINE_X - 1 }}
+      />
       <PreviewRow left="WON" right="NOW" accent />
-      <PreviewRow left="EYE" right="EYE" />
-      <PreviewRow left="WOW" right="WOW" />
+      <PreviewRow left="E" middle="Y" right="E" />
+      <PreviewRow left="W" middle="O" right="W" glyph />
     </div>
   );
 }
 
 function PreviewRow({
   left,
+  middle,
   right,
   accent = false,
+  glyph = false,
 }: {
   left: string;
+  middle?: string;
   right: string;
   accent?: boolean;
+  glyph?: boolean;
 }) {
   return (
-    <div className="relative flex items-center gap-[2px]">
-      {[...left].map((ch, i) => (
-        <div
-          key={`l${i}`}
-          className={`flex h-[15px] w-[15px] items-center justify-center rounded font-game text-[8px] ${
-            accent ? "bg-accent text-surface" : "bg-surface text-ink"
-          }`}
-        >
-          {ch}
-        </div>
-      ))}
-      <div className="h-[15px] w-[3px] shrink-0 rounded-full bg-accent/60" />
-      {[...right].map((ch, i) => (
-        <div
-          key={`r${i}`}
-          className="flex h-[15px] w-[15px] items-center justify-center font-game text-[8px] text-ink-soft/70"
-        >
-          {ch}
-        </div>
-      ))}
+    <div className="relative flex items-center">
+      <div
+        className="flex shrink-0 items-center justify-end gap-[2px]"
+        style={{ width: LEFT }}
+      >
+        {[...left].map((ch, i) => (
+          <Tile key={i} accent={accent}>
+            {ch}
+          </Tile>
+        ))}
+      </div>
+      {/* The middle slot: a palindrome's center tile sits ON the line. */}
+      <div
+        className="z-10 flex shrink-0 justify-center"
+        style={{ width: SLOT }}
+      >
+        {middle && <Tile accent={accent}>{middle}</Tile>}
+      </div>
+      <div className="flex shrink-0 items-center gap-[2px]">
+        {[...right].map((ch, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-center rounded bg-surface/70 font-game text-[8px] text-ink-soft"
+            style={{ width: TILE, height: TILE }}
+          >
+            {ch}
+          </div>
+        ))}
+        {glyph && <Sparkles className="ml-[2px] h-2.5 w-2.5 text-accent" />}
+      </div>
+    </div>
+  );
+}
+
+function Tile({
+  accent,
+  children,
+}: {
+  accent: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded font-game text-[8px] ${
+        accent ? "bg-accent text-surface" : "bg-surface text-ink shadow-sm"
+      }`}
+      style={{ width: TILE, height: TILE }}
+    >
+      {children}
     </div>
   );
 }
