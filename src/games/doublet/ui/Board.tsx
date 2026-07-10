@@ -14,7 +14,8 @@ const BW = 2;
 const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
-const OUTLINE_PAD = 3;
+const OUTLINE_PAD = 6;
+const CORNER_R = 6;
 const BOARD_DRAG_THRESHOLD = 64;
 
 interface Props {
@@ -113,6 +114,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         puzzle.board.rows,
         puzzle.board.cols,
         OUTLINE_PAD,
+        CORNER_R,
       ),
     [puzzle.board, cell],
   );
@@ -136,6 +138,8 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         gridTemplateColumns: `repeat(${puzzle.board.cols}, ${cell}px)`,
         gridTemplateRows: `repeat(${puzzle.board.rows}, ${cell}px)`,
         gap: `${GAP}px`,
+        width: gridW,
+        height: gridH,
       }}
     >
       {outlinePath && (
@@ -149,7 +153,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
             d={outlinePath}
             fill="var(--color-surface-tint)"
             stroke="var(--color-line)"
-            strokeWidth="1.5"
+            strokeWidth="2.5"
             strokeLinejoin="round"
             strokeOpacity={0.4}
           />
@@ -361,6 +365,17 @@ function getDir(from: [number, number], to: [number, number]): "R" | "D" | "L" |
   return "U";
 }
 
+function dirDelta(d: "R" | "D" | "L" | "U"): [number, number] {
+  if (d === "R") return [1, 0];
+  if (d === "D") return [0, 1];
+  if (d === "L") return [-1, 0];
+  return [0, -1];
+}
+
+function edgeLen(a: [number, number], b: [number, number]): number {
+  return Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+}
+
 function computeOutlinePath(
   boardCells: Cell[],
   cellSize: number,
@@ -368,6 +383,7 @@ function computeOutlinePath(
   rows: number,
   cols: number,
   offset: number,
+  cornerR: number,
 ): string {
   const stride = cellSize + gap;
   const cs = new Set(boardCells.map((c) => `${c.row},${c.col}`));
@@ -447,7 +463,48 @@ function computeOutlinePath(
       offsetVerts.push([curr[0] + dx, curr[1] + dy]);
     }
 
-    paths.push(`M${offsetVerts.map((p) => `${p[0]} ${p[1]}`).join(" L")} Z`);
+    const segs: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const v = offsetVerts[i];
+      const vNext = offsetVerts[(i + 1) % n];
+      const vPrev = offsetVerts[(i - 1 + n) % n];
+      const ePrev = edgeLen(vPrev, v);
+      const eNext = edgeLen(v, vNext);
+      const r = Math.min(cornerR, ePrev / 2, eNext / 2);
+
+      const inD = getDir(vPrev, v);
+      const outD = getDir(v, vNext);
+      const [dxIn, dyIn] = dirDelta(inD);
+      const [dxOut, dyOut] = dirDelta(outD);
+
+      const t1: V = [v[0] - r * dxIn, v[1] - r * dyIn];
+      const t2: V = [v[0] + r * dxOut, v[1] + r * dyOut];
+
+      if (i === 0) {
+        segs.push(`M${t2[0]} ${t2[1]}`);
+      }
+      segs.push(`L${t1[0]} ${t1[1]}`);
+      segs.push(`Q${v[0]} ${v[1]} ${t2[0]} ${t2[1]}`);
+    }
+
+    const v0 = offsetVerts[0];
+    const vLast = offsetVerts[n - 1];
+    const v1 = offsetVerts[1];
+    const e0Prev = edgeLen(vLast, v0);
+    const e0Next = edgeLen(v0, v1);
+    const r0 = Math.min(cornerR, e0Prev / 2, e0Next / 2);
+    const inD0 = getDir(vLast, v0);
+    const [dxIn0, dyIn0] = dirDelta(inD0);
+    const t1_0: V = [v0[0] - r0 * dxIn0, v0[1] - r0 * dyIn0];
+    segs.push(`L${t1_0[0]} ${t1_0[1]}`);
+
+    const outD0 = getDir(v0, v1);
+    const [dxOut0, dyOut0] = dirDelta(outD0);
+    const t2_0: V = [v0[0] + r0 * dxOut0, v0[1] + r0 * dyOut0];
+    segs.push(`Q${v0[0]} ${v0[1]} ${t2_0[0]} ${t2_0[1]}`);
+    segs.push("Z");
+
+    paths.push(segs.join(" "));
   }
 
   return paths.join(" ");
