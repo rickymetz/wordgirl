@@ -125,7 +125,7 @@ export function SnakeGrid({
       ref={gridRef}
       className="relative mx-auto w-full select-none touch-manipulation"
       style={{
-        maxWidth: `min(100%, ${cols * 56}px)`,
+        maxWidth: `min(100%, ${cols * 44}px)`,
         aspectRatio: `${cols} / ${rows}`,
       }}
       onPointerDown={onPointerDown}
