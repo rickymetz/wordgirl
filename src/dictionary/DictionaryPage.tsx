@@ -34,7 +34,7 @@ function saveBookmarks(bookmarks: Set<string>) {
   localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([...bookmarks]));
 }
 
-type Filter = "all" | "bookmarked";
+type Filter = "all" | "core" | "bookmarked";
 
 export function DictionaryPage() {
   const dict = use(loadDictionary());
@@ -66,7 +66,9 @@ export function DictionaryPage() {
   const filtered = useMemo(() => {
     let result = allWords;
 
-    if (filter === "bookmarked") {
+    if (filter === "core") {
+      result = result.filter((w) => w.tier === "required");
+    } else if (filter === "bookmarked") {
       result = result.filter((w) => bookmarks.has(w.word));
     }
 
@@ -148,9 +150,11 @@ export function DictionaryPage() {
   const showPrompt = !query.trim() && !activeLetter && filter === "all" && !lengthActive;
   const letterCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    const source = filter === "bookmarked"
-      ? allWords.filter((w) => bookmarks.has(w.word))
-      : allWords;
+    const source = filter === "core"
+      ? allWords.filter((w) => w.tier === "required")
+      : filter === "bookmarked"
+        ? allWords.filter((w) => bookmarks.has(w.word))
+        : allWords;
     for (const w of source) {
       const ch = w.word[0].toUpperCase();
       counts.set(ch, (counts.get(ch) ?? 0) + 1);
@@ -203,6 +207,11 @@ export function DictionaryPage() {
           active={filter === "all"}
           onClick={() => setFilter("all")}
           label="All"
+        />
+        <FilterPill
+          active={filter === "core"}
+          onClick={() => setFilter("core")}
+          label="Core"
         />
         <FilterPill
           active={filter === "bookmarked"}
