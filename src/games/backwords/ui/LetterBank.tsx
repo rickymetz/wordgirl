@@ -2,13 +2,12 @@ import { motion } from "motion/react";
 import { toMultiset } from "../engine/types";
 
 /**
- * The day's rack: one fixed tile per bank letter (sorted a-z), dimmed
- * while a letter is staged or committed — tiles never move or vanish,
- * so nothing reflows as letters travel to the board and back.
+ * The day's rack: one socket per bank letter (sorted a-z). A tile
+ * LEAVES its socket when placed — the same tile appears on the board
+ * (layoutId flies it there) and the empty socket stays behind, so the
+ * rack reads like a physical tray.
  *
- * Tiles TAP to stage, and also DRAG: pick one up and drop it anywhere
- * on the board to lay it against the mirror. The tile itself snaps
- * home (dimmed) — the letter is what traveled.
+ * Tiles tap to place and drag onto the board; typing works too.
  */
 export function LetterBank({
   all,
@@ -26,22 +25,34 @@ export function LetterBank({
   return (
     <div className="flex flex-wrap justify-center gap-1.5 select-none">
       {all.map((letter, i) => {
-        // Dim the LAST duplicates first so the leftmost copy of each
-        // letter stays live longest — stable, predictable dimming.
+        // The LAST duplicates leave first, so the leftmost copy of
+        // each letter stays racked longest — matches the board's
+        // layoutId assignment.
         const idx = (seen[letter] = (seen[letter] ?? 0) + 1);
         const available = idx <= (left[letter] ?? 0);
+        if (!available) {
+          // Empty socket: the tile is out on the board.
+          return (
+            <div
+              key={i}
+              aria-label={`letter ${letter} — placed`}
+              className="h-11 w-9 rounded-lg border-2 border-dashed border-line"
+            />
+          );
+        }
         return (
           <motion.button
             key={i}
             type="button"
-            disabled={!available}
-            drag={available}
+            layoutId={`bwtile-${i}`}
+            transition={{ type: "spring", stiffness: 500, damping: 34 }}
+            drag
             dragSnapToOrigin
             dragMomentum={false}
             whileDrag={{ scale: 1.25, zIndex: 40 }}
-            whileTap={available ? { scale: 0.9 } : undefined}
+            whileTap={{ scale: 0.9 }}
             onDragEnd={(e) => {
-              // Dropped over the board? The letter joins the row.
+              // Dropped over the board? The tile moves there.
               const board = document.getElementById("bw-board");
               const p = e as PointerEvent;
               if (!board || p.clientX === undefined) return;
@@ -56,14 +67,8 @@ export function LetterBank({
               }
             }}
             onTap={() => onLetter(letter)}
-            aria-label={
-              available ? `letter ${letter}` : `letter ${letter} — placed`
-            }
-            className={`relative flex h-11 w-9 items-center justify-center rounded-lg font-game text-lg uppercase ${
-              available
-                ? "bg-tile text-ink"
-                : "bg-tile/40 text-ink-soft/40"
-            }`}
+            aria-label={`letter ${letter}`}
+            className="relative flex h-11 w-9 items-center justify-center rounded-lg bg-tile font-game text-lg text-ink uppercase shadow-sm"
             // touch-action none: the drag must win over page scrolling.
             style={{ touchAction: "none" }}
           >

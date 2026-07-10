@@ -1,27 +1,53 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X } from "lucide-react";
+import { useViewport } from "../../../lib/useViewport";
 import type { CommittedRow } from "../state/reducer";
 
 /**
- * The board: every row lies against one central mirror spine. The
- * player's letters sit LEFT of the glass; the reflection renders as
- * ghost letters on the right. Palindromes straddle it — an odd
- * middle letter sits ON the line and is shown once.
- *
- * Reflections are drawn in reading order (reversed), not as flipped
- * glyphs — the ✦ marks rows where a real mirror would agree.
+ * The board: every row lies against one central mirror pane. The
+ * player's TILES sit left of the glass — the same tiles that left the
+ * rack, flown here by layoutId — and the reflection renders as ghost
+ * tiles inside the glass. Odd palindromes put their middle tile ON
+ * the line. Breaking a row flies its tiles back to the rack.
  */
 export function MirrorBoard({
   rows,
   current,
   solved,
+  bankAll,
   onBreakRow,
+  onUnstage,
 }: {
   rows: CommittedRow[];
   current: string;
   solved: boolean;
+  /** puzzle.bank — for assigning each placed letter its rack tile. */
+  bankAll: string[];
   onBreakRow: (index: number) => void;
+  /** Drag a staged tile off the board — it returns to the rack. */
+  onUnstage: (index: number) => void;
 }) {
+  const { vw } = useViewport();
+  // One tile size for the whole board, sized so the longest row fits
+  // its half — long placements (DRAWER…) shrink everything in step.
+  const halfW = (Math.min(vw, 448) - 40) / 2 - 12;
+  const longest = Math.max(
+    3,
+    ...rows.map((r) => r.place.length),
+    current.length + 1,
+  );
+  const tile = Math.max(
+    18,
+    Math.min(34, Math.floor((halfW - (longest - 1) * 3) / longest)),
+  );
+
+  // Which rack tile does each placed letter occupy? Matches the rack's
+  // dimming rule (last duplicates leave first), so layoutIds agree.
+  const seq = [...rows.flatMap((r) => [...r.place]), ...current];
+  const ids = assignTileIds(bankAll, seq);
+  let at = 0;
+  const idsFor = (n: number) => ids.slice(at, (at += n));
+
   return (
     <div className="relative flex min-h-52 w-full flex-col justify-center select-none">
       {/* The glass: a filled pane behind the reflections, with a
@@ -37,12 +63,12 @@ export function MirrorBoard({
             color-mix(in oklab, var(--color-accent) 6%, var(--color-surface)) 100%)`,
         }}
       />
-      {/* The pane's edge — the line letters press up against. */}
+      {/* The pane's edge — the line tiles press up against. */}
       <div
         aria-hidden
         className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-accent/60"
       />
-      <div className="relative flex flex-col gap-2.5">
+      <div className="relative flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {rows.map((row, i) => (
             <motion.div
@@ -54,7 +80,8 @@ export function MirrorBoard({
             >
               <Row
                 place={row.place}
-                // Odd palindromes put their middle letter ON the line.
+                ids={idsFor(row.place.length)}
+                tile={tile}
                 straddle={
                   row.def.kind === "palindrome" &&
                   row.def.words[0].length % 2 === 1
@@ -66,7 +93,15 @@ export function MirrorBoard({
             </motion.div>
           ))}
         </AnimatePresence>
-        {!solved && <Row place={current} active />}
+        {!solved && (
+          <Row
+            place={current}
+            ids={idsFor(current.length)}
+            tile={tile}
+            active
+            onUnstage={onUnstage}
+          />
+        )}
       </div>
     </div>
   );
@@ -74,26 +109,40 @@ export function MirrorBoard({
 
 function Row({
   place,
+  ids,
+  tile,
   straddle = false,
   glyph = false,
   committed = false,
   active = false,
   onBreak,
+  onUnstage,
 }: {
   place: string;
+  ids: number[];
+  tile: number;
   straddle?: boolean;
   glyph?: boolean;
   committed?: boolean;
   active?: boolean;
   onBreak?: () => void;
+  onUnstage?: (index: number) => void;
 }) {
   const left = straddle ? place.slice(0, -1) : place;
   const middle = straddle ? place[place.length - 1] : null;
   const reflection = [...left].reverse().join("");
+  const tileStyle = {
+    width: tile,
+    height: Math.round(tile * 1.2),
+    fontSize: Math.max(11, Math.round(tile * 0.5)),
+  };
 
   return (
-    <div className="flex h-9 items-center font-game text-lg uppercase">
-      <div className="flex flex-1 items-center justify-end gap-[3px] pr-3">
+    <div
+      className="flex items-center font-game uppercase"
+      style={{ minHeight: Math.round(tile * 1.2) + 4 }}
+    >
+      <div className="flex flex-1 items-center justify-end gap-[3px] pr-2.5">
         {onBreak && (
           <button
             type="button"
@@ -108,35 +157,124 @@ function Row({
         {glyph && committed && (
           <Sparkles
             aria-label="true mirror row"
-            className="mr-1.5 h-4 w-4 shrink-0 text-accent"
+            className="mr-1 h-4 w-4 shrink-0 text-accent"
           />
         )}
         {[...left].map((ch, i) => (
-          <span key={i} className={committed ? "text-ink" : "text-accent"}>
-            {ch}
-          </span>
+          <PlacedTile
+            key={ids[i]}
+            id={ids[i]}
+            letter={ch}
+            active={active}
+            style={tileStyle}
+            onUnstage={onUnstage && (() => onUnstage(i))}
+          />
         ))}
         {active && (
           <span className="ml-0.5 inline-block h-5 w-[2px] animate-pulse rounded bg-accent" />
         )}
       </div>
-      {/* The middle letter of an odd palindrome lives on the line. */}
-      <span
-        className={`z-10 w-4 shrink-0 text-center ${
-          middle ? "text-ink" : "text-transparent"
-        }`}
-        aria-hidden={!middle}
-      >
-        {middle ?? "·"}
+      {/* The middle tile of an odd palindrome lives ON the line. */}
+      <span className="z-10 flex w-4 shrink-0 justify-center">
+        {middle && (
+          <PlacedTile
+            id={ids[ids.length - 1]}
+            letter={middle}
+            active={active}
+            style={tileStyle}
+            onGlass
+            onUnstage={onUnstage && (() => onUnstage(place.length - 1))}
+          />
+        )}
       </span>
       <div
         aria-hidden
-        className="flex flex-1 items-center gap-[3px] pl-3 text-ink-soft/60"
+        className="flex flex-1 items-center gap-[3px] pl-2.5"
       >
         {[...reflection].map((ch, i) => (
-          <span key={i}>{ch}</span>
+          <span
+            key={i}
+            className="flex items-center justify-center rounded-lg bg-surface/40 text-ink-soft/70"
+            style={tileStyle}
+          >
+            {ch}
+          </span>
         ))}
       </div>
     </div>
   );
+}
+
+/** A rack tile that traveled to the board — layoutId flies it here.
+ * Staged (uncommitted) tiles can be dragged back off the board. */
+function PlacedTile({
+  id,
+  letter,
+  active,
+  style,
+  onGlass = false,
+  onUnstage,
+}: {
+  id: number;
+  letter: string;
+  active: boolean;
+  style: React.CSSProperties;
+  onGlass?: boolean;
+  onUnstage?: () => void;
+}) {
+  return (
+    <motion.span
+      layoutId={id >= 0 ? `bwtile-${id}` : undefined}
+      transition={{ type: "spring", stiffness: 500, damping: 34 }}
+      drag={!!onUnstage}
+      dragSnapToOrigin
+      dragMomentum={false}
+      whileDrag={{ scale: 1.25, zIndex: 40 }}
+      onDragEnd={(e) => {
+        // Dragged OFF the board? Back to the rack it goes.
+        const board = document.getElementById("bw-board");
+        const p = e as PointerEvent;
+        if (!board || !onUnstage || p.clientX === undefined) return;
+        const r = board.getBoundingClientRect();
+        if (
+          p.clientX < r.left ||
+          p.clientX > r.right ||
+          p.clientY < r.top ||
+          p.clientY > r.bottom
+        ) {
+          onUnstage();
+        }
+      }}
+      className={`flex shrink-0 items-center justify-center rounded-lg font-game uppercase shadow-sm ${
+        onGlass
+          ? "bg-tile text-ink ring-1 ring-accent/40"
+          : active
+            ? "bg-tile text-ink ring-1 ring-accent"
+            : "bg-tile text-ink"
+      }`}
+      style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
+    >
+      {letter}
+    </motion.span>
+  );
+}
+
+/**
+ * Rack index for each placed letter occurrence, in placement order.
+ * The rack empties its LAST duplicate sockets first, so the first
+ * placed copy takes the last rack index — stable as more join.
+ */
+function assignTileIds(bankAll: string[], seq: string[]): number[] {
+  const byLetter = new Map<string, number[]>();
+  bankAll.forEach((ch, i) => {
+    const list = byLetter.get(ch) ?? [];
+    list.push(i);
+    byLetter.set(ch, list);
+  });
+  const used: Record<string, number> = {};
+  return seq.map((ch) => {
+    const list = byLetter.get(ch) ?? [];
+    const c = (used[ch] = (used[ch] ?? 0) + 1);
+    return list[list.length - c] ?? -1;
+  });
 }

@@ -78,6 +78,14 @@ describe("backwords reducer", () => {
     expect(state.lastResult?.type).toBe("empty");
   });
 
+  it("unstages a mid-row tile back to the bank", () => {
+    run(...type("was"), { type: "unstage", index: 1 }); // drag the A off
+    expect(state.current).toBe("ws");
+    expect(state.bank).toContain("a");
+    run({ type: "unstage", index: 9 }); // out of range: no-op
+    expect(state.current).toBe("ws");
+  });
+
   it("breaks a committed row back into the bank", () => {
     run(...type("was"), { type: "commit" }, { type: "breakRow", index: 0 });
     expect(state.rows).toHaveLength(0);

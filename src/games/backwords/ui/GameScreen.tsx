@@ -233,7 +233,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           rows={state.rows}
           current={state.current}
           solved={state.solved}
+          bankAll={puzzle.bank}
           onBreakRow={(index) => dispatch({ type: "breakRow", index })}
+          onUnstage={(index) => dispatch({ type: "unstage", index })}
         />
         <AnimatePresence mode="wait">
           {toast && toast.text && (

@@ -29,6 +29,8 @@ export interface GameState {
 export type Action =
   | { type: "typeLetter"; letter: string }
   | { type: "backspace" }
+  /** Drag a staged tile back off the board (any position). */
+  | { type: "unstage"; index: number }
   | { type: "clearRow" }
   | { type: "commit" }
   | { type: "breakRow"; index: number }
@@ -94,6 +96,17 @@ export function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         bank: [...state.bank, letter].sort(),
         current: state.current.slice(0, -1),
+      };
+    }
+    case "unstage": {
+      const letter = state.current[action.index];
+      if (letter === undefined) return state;
+      return {
+        ...state,
+        bank: [...state.bank, letter].sort(),
+        current:
+          state.current.slice(0, action.index) +
+          state.current.slice(action.index + 1),
       };
     }
     case "clearRow": {
