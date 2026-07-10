@@ -8,6 +8,19 @@ const BOOKMARKS_KEY = "wg:v1:local:dictionary:bookmarks";
 const MIN_LEN = 2;
 const MAX_LEN = 15;
 
+function buildMatcher(pattern: string): ((word: string) => boolean) | null {
+  const p = pattern.trim().toLowerCase();
+  if (!p) return null;
+  if (!p.includes("*") && !p.includes("?")) {
+    return (w) => w.includes(p);
+  }
+  const escaped = p.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(
+    "^" + escaped.replace(/\*/g, ".*").replace(/\?/g, ".") + "$",
+  );
+  return (w) => re.test(w);
+}
+
 function loadBookmarks(): Set<string> {
   try {
     const raw = localStorage.getItem(BOOKMARKS_KEY);
@@ -65,9 +78,9 @@ export function DictionaryPage() {
       );
     }
 
-    const q = query.trim().toLowerCase();
-    if (q) {
-      result = result.filter((w) => w.word.includes(q));
+    const match = buildMatcher(query);
+    if (match) {
+      result = result.filter((w) => match(w.word));
     } else if (activeLetter) {
       result = result.filter(
         (w) => w.word[0] === activeLetter.toLowerCase(),
@@ -167,6 +180,9 @@ export function DictionaryPage() {
           </button>
         )}
       </div>
+      <p className="mt-1 text-[10px] text-ink-soft/60">
+        Use <span className="font-semibold">*</span> for any letters, <span className="font-semibold">?</span> for one — e.g. <span className="font-mono">un*ing</span>, <span className="font-mono">p??le</span>
+      </p>
 
       {/* Filter pills */}
       <div className="mt-3 flex gap-2">
