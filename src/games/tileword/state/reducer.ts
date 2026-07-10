@@ -21,7 +21,7 @@ export interface GameState {
 export type GameAction =
   | { type: "selectDomino"; dominoId: number }
   | { type: "rotateDomino" }
-  | { type: "placeDomino"; cell: Cell; dict: Dictionary }
+  | { type: "placeDomino"; cell: Cell; dict: Dictionary; dominoId?: number; orientation?: Orientation }
   | { type: "removeDomino"; dominoId: number }
   | { type: "clearBoard" }
   | {
@@ -111,19 +111,17 @@ export function gameReducer(
     }
 
     case "placeDomino": {
-      if (state.solved || state.selectedDominoId === null) return state;
+      const dId = action.dominoId ?? state.selectedDominoId;
+      const ori = action.orientation ?? state.currentOrientation;
+      if (state.solved || dId === null) return state;
 
-      const domino = state.puzzle.dominoes.find(
-        (d) => d.id === state.selectedDominoId,
-      );
+      const domino = state.puzzle.dominoes.find((d) => d.id === dId);
       if (!domino) return state;
 
-      const alreadyPlaced = state.placed.find(
-        (p) => p.dominoId === state.selectedDominoId,
-      );
+      const alreadyPlaced = state.placed.find((p) => p.dominoId === dId);
       if (alreadyPlaced) return state;
 
-      const [c1, c2] = dominoCells(action.cell, state.currentOrientation);
+      const [c1, c2] = dominoCells(action.cell, ori);
       const boardCells = new Set(
         state.puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
       );
@@ -140,9 +138,9 @@ export function gameReducer(
         return state;
 
       const newPlacement: PlacedDomino = {
-        dominoId: state.selectedDominoId!,
+        dominoId: dId,
         anchor: action.cell,
-        orientation: state.currentOrientation,
+        orientation: ori,
       };
 
       const newPlaced = [...state.placed, newPlacement];

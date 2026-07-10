@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { useViewport } from "../../../lib/useViewport";
 import type { GameState } from "../state/reducer";
@@ -14,13 +15,15 @@ const BW = 2;
 const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
+const OUTLINE_PAD = 3;
 
 interface Props {
   state: GameState;
   onCellTap: (cell: Cell) => void;
+  hoverCell?: Cell | null;
 }
 
-export function Board({ state, onCellTap }: Props) {
+export function Board({ state, onCellTap, hoverCell }: Props) {
   const { puzzle, grid, invalidSlots } = state;
   const { vw, vh, rem } = useViewport();
 
@@ -73,6 +76,22 @@ export function Board({ state, onCellTap }: Props) {
     return -1;
   }
 
+  const outlinePath = useMemo(
+    () =>
+      computeOutlinePath(
+        puzzle.board.cells,
+        cell,
+        GAP,
+        puzzle.board.rows,
+        puzzle.board.cols,
+        OUTLINE_PAD,
+      ),
+    [puzzle.board, cell],
+  );
+
+  const gridW = puzzle.board.cols * (cell + GAP) - GAP;
+  const gridH = puzzle.board.rows * (cell + GAP) - GAP;
+
   return (
     <div
       className="relative mx-auto select-none touch-manipulation"
@@ -83,6 +102,24 @@ export function Board({ state, onCellTap }: Props) {
         gap: `${GAP}px`,
       }}
     >
+      {outlinePath && (
+        <svg
+          className="absolute pointer-events-none"
+          style={{ top: 0, left: 0, overflow: "visible" }}
+          width={gridW}
+          height={gridH}
+        >
+          <path
+            d={outlinePath}
+            fill="none"
+            stroke="var(--color-line)"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+            opacity={0.4}
+          />
+        </svg>
+      )}
+
       {Array.from({ length: puzzle.board.rows * puzzle.board.cols }, (_, i) => {
         const row = Math.floor(i / puzzle.board.cols);
         const col = i % puzzle.board.cols;
@@ -138,13 +175,18 @@ export function Board({ state, onCellTap }: Props) {
               : "text-ink"
           : "text-ink-soft";
 
+        const isHover = hoverCell && hoverCell.row === row && hoverCell.col === col;
+
         return (
-          <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1 }}>
+          <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1, zIndex: 1 }}>
             <motion.button
+              data-cell={k}
+              data-row={row}
+              data-col={col}
               className={[
                 "flex items-center justify-center font-game text-lg",
                 "w-full h-full",
-                pd ? "bg-surface" : "bg-surface-tint",
+                pd ? "bg-surface" : isHover ? "bg-accent/15" : "bg-surface-tint",
                 textClass,
               ].join(" ")}
               style={{
@@ -214,4 +256,105 @@ export function Board({ state, onCellTap }: Props) {
       })}
     </div>
   );
+}
+
+function getDir(from: [number, number], to: [number, number]): "R" | "D" | "L" | "U" {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  if (dx > 0) return "R";
+  if (dx < 0) return "L";
+  if (dy > 0) return "D";
+  return "U";
+}
+
+function computeOutlinePath(
+  boardCells: Cell[],
+  cellSize: number,
+  gap: number,
+  rows: number,
+  cols: number,
+  offset: number,
+): string {
+  const stride = cellSize + gap;
+  const cs = new Set(boardCells.map((c) => `${c.row},${c.col}`));
+
+  const fineOcc = (fr: number, fc: number): boolean => {
+    if (fr < 0 || fc < 0 || fr >= 2 * rows - 1 || fc >= 2 * cols - 1) return false;
+    const re = fr % 2 === 0;
+    const ce = fc % 2 === 0;
+    if (re && ce) return cs.has(`${fr / 2},${fc / 2}`);
+    if (re) return cs.has(`${fr / 2},${(fc - 1) / 2}`) && cs.has(`${fr / 2},${(fc + 1) / 2}`);
+    if (ce) return cs.has(`${(fr - 1) / 2},${fc / 2}`) && cs.has(`${(fr + 1) / 2},${fc / 2}`);
+    return (
+      cs.has(`${(fr - 1) / 2},${(fc - 1) / 2}`) &&
+      cs.has(`${(fr - 1) / 2},${(fc + 1) / 2}`) &&
+      cs.has(`${(fr + 1) / 2},${(fc - 1) / 2}`) &&
+      cs.has(`${(fr + 1) / 2},${(fc + 1) / 2}`)
+    );
+  };
+
+  const fRect = (fr: number, fc: number) => ({
+    x: fc % 2 === 0 ? (fc / 2) * stride : ((fc - 1) / 2) * stride + cellSize,
+    y: fr % 2 === 0 ? (fr / 2) * stride : ((fr - 1) / 2) * stride + cellSize,
+    w: fc % 2 === 0 ? cellSize : gap,
+    h: fr % 2 === 0 ? cellSize : gap,
+  });
+
+  type V = [number, number];
+  const edges: [V, V][] = [];
+
+  for (let fr = 0; fr < 2 * rows - 1; fr++) {
+    for (let fc = 0; fc < 2 * cols - 1; fc++) {
+      if (!fineOcc(fr, fc)) continue;
+      const { x, y, w, h } = fRect(fr, fc);
+      if (!fineOcc(fr - 1, fc)) edges.push([[x, y], [x + w, y]]);
+      if (!fineOcc(fr + 1, fc)) edges.push([[x + w, y + h], [x, y + h]]);
+      if (!fineOcc(fr, fc - 1)) edges.push([[x, y + h], [x, y]]);
+      if (!fineOcc(fr, fc + 1)) edges.push([[x + w, y], [x + w, y + h]]);
+    }
+  }
+
+  if (!edges.length) return "";
+
+  const vk = (v: V) => `${Math.round(v[0] * 100)},${Math.round(v[1] * 100)}`;
+  const startMap = new Map<string, [V, V]>();
+  for (const e of edges) startMap.set(vk(e[0]), e);
+
+  const visited = new Set<string>();
+  const paths: string[] = [];
+
+  for (const e of edges) {
+    const sk = vk(e[0]);
+    if (visited.has(sk)) continue;
+
+    const verts: V[] = [];
+    let cur: [V, V] | undefined = e;
+    while (cur && !visited.has(vk(cur[0]))) {
+      visited.add(vk(cur[0]));
+      verts.push(cur[0]);
+      cur = startMap.get(vk(cur[1]));
+    }
+
+    if (verts.length < 3) continue;
+
+    const n = verts.length;
+    const offsetVerts: V[] = [];
+    for (let i = 0; i < n; i++) {
+      const prev = verts[(i - 1 + n) % n];
+      const curr = verts[i];
+      const next = verts[(i + 1) % n];
+
+      const inDir = getDir(prev, curr);
+      const outDir = getDir(curr, next);
+
+      const dx = inDir === "D" || outDir === "D" ? offset : -offset;
+      const dy = inDir === "R" || outDir === "R" ? -offset : offset;
+
+      offsetVerts.push([curr[0] + dx, curr[1] + dy]);
+    }
+
+    paths.push(`M${offsetVerts.map((p) => `${p[0]} ${p[1]}`).join(" L")} Z`);
+  }
+
+  return paths.join(" ");
 }

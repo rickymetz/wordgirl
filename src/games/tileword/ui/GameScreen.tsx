@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, RotateCcw } from "lucide-react";
 import { formatDuration } from "../../../lib/date";
@@ -7,7 +7,8 @@ import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { useTilewordGame, type GameMode } from "../state/useTilewordGame";
 import { dominoAt, placedDominoIds } from "../state/reducer";
-import type { Cell, Difficulty } from "../engine/types";
+import type { Cell, Difficulty, Orientation } from "../engine/types";
+import { dominoCells, dominoLetters, cellKey } from "../engine/types";
 import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
 
@@ -16,6 +17,14 @@ const DIFF_LABELS: Record<Difficulty, string> = {
   medium: "Medium",
   hard: "Hard",
 };
+
+interface DragState {
+  dominoId: number;
+  orientation: Orientation;
+  x: number;
+  y: number;
+  originRect: DOMRect;
+}
 
 interface Props {
   mode: GameMode;
@@ -28,9 +37,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     useTilewordGame(mode);
 
   const [resultsOpen, setResultsOpen] = useState(true);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [hoverCell, setHoverCell] = useState<Cell | null>(null);
   const placed = placedDominoIds(state);
   const totalDominoes = puzzle.dominoes.length;
   const placedCount = placed.size;
+  const boardCellSet = useRef(new Set<string>());
+
+  boardCellSet.current = new Set(
+    puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
+  );
 
   const handleCellTap = (cell: Cell) => {
     if (state.solved) return;
@@ -45,6 +61,82 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       dispatch({ type: "placeDomino", cell, dict });
     }
   };
+
+  function cellFromPoint(x: number, y: number): Cell | null {
+    const els = document.elementsFromPoint(x, y);
+    for (const el of els) {
+      const btn = el.closest("[data-cell]") as HTMLElement | null;
+      if (btn) {
+        const row = Number(btn.dataset.row);
+        const col = Number(btn.dataset.col);
+        if (!isNaN(row) && !isNaN(col)) return { row, col };
+      }
+    }
+    return null;
+  }
+
+  function canPlace(cell: Cell, orientation: Orientation): boolean {
+    const [c1, c2] = dominoCells(cell, orientation);
+    if (
+      !boardCellSet.current.has(cellKey(c1.row, c1.col)) ||
+      !boardCellSet.current.has(cellKey(c2.row, c2.col))
+    )
+      return false;
+    if (
+      state.grid.has(cellKey(c1.row, c1.col)) ||
+      state.grid.has(cellKey(c2.row, c2.col))
+    )
+      return false;
+    return true;
+  }
+
+  const handleDragStart = useCallback(
+    (id: number, orientation: Orientation, rect: DOMRect) => {
+      setDrag({
+        dominoId: id,
+        orientation,
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        originRect: rect,
+      });
+    },
+    [],
+  );
+
+  const handleDragMove = useCallback(
+    (x: number, y: number) => {
+      setDrag((prev) => (prev ? { ...prev, x, y } : null));
+      const cell = cellFromPoint(x, y);
+      setHoverCell(cell);
+    },
+    [],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (!drag) {
+      setDrag(null);
+      setHoverCell(null);
+      return;
+    }
+
+    const cell = cellFromPoint(drag.x, drag.y);
+    if (cell && canPlace(cell, drag.orientation)) {
+      dispatch({
+        type: "placeDomino",
+        cell,
+        dict,
+        dominoId: drag.dominoId,
+        orientation: drag.orientation,
+      });
+    }
+
+    setDrag(null);
+    setHoverCell(null);
+  }, [drag, dict, dispatch]);
+
+  const dragPiece = drag
+    ? puzzle.dominoes.find((d) => d.id === drag.dominoId)
+    : null;
 
   return (
     <div
@@ -90,6 +182,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         <Board
           state={state}
           onCellTap={handleCellTap}
+          hoverCell={hoverCell}
         />
       </div>
 
@@ -111,8 +204,17 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           state={state}
           onSelect={(id) => dispatch({ type: "selectDomino", dominoId: id })}
           onRotate={() => dispatch({ type: "rotateDomino" })}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragEnd={handleDragEnd}
+          draggedId={drag?.dominoId ?? null}
         />
       </div>
+
+      {/* Drag ghost */}
+      {drag && dragPiece && (
+        <DragGhost drag={drag} piece={dragPiece} />
+      )}
 
       {/* Solved overlay */}
       <AnimatePresence>
@@ -156,6 +258,48 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           </ModalDialog>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function DragGhost({
+  drag,
+  piece,
+}: {
+  drag: DragState;
+  piece: { id: number; letters: [string, string] };
+}) {
+  const isH = drag.orientation === 0 || drag.orientation === 2;
+  const [l0, l1] = dominoLetters(piece as any, drag.orientation);
+
+  return (
+    <div
+      className="fixed pointer-events-none z-50"
+      style={{
+        left: drag.x,
+        top: drag.y,
+        transform: "translate(-50%, -50%)",
+      }}
+    >
+      <div
+        className="flex items-center justify-center rounded-xl border-2 border-accent bg-surface shadow-lg shadow-accent/25"
+        style={{ flexDirection: isH ? "row" : "column" }}
+      >
+        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+          {l0}
+        </div>
+        <div
+          className="bg-accent/30"
+          style={
+            isH
+              ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
+              : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
+          }
+        />
+        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+          {l1}
+        </div>
+      </div>
     </div>
   );
 }

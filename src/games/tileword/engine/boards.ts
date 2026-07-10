@@ -15,16 +15,18 @@ function parseGrid(id: string, rows: number[][]): BoardShape {
 }
 
 const EASY_SHAPES: BoardShape[] = [
-  // 2×3 rectangle (6 cells)
+  // J-hook (6 cells)
   parseGrid("e1", [
     [1, 1, 1],
-    [1, 1, 1],
+    [0, 0, 1],
+    [0, 1, 1],
   ]),
-  // Square ring (8 cells)
+  // Thick L with nub (8 cells)
   parseGrid("e2", [
-    [1, 1, 1],
-    [1, 0, 1],
-    [1, 1, 1],
+    [1, 1, 0, 0],
+    [1, 1, 0, 0],
+    [0, 1, 1, 1],
+    [0, 0, 0, 1],
   ]),
   // C-shape (8 cells)
   parseGrid("e3", [
@@ -50,11 +52,13 @@ const EASY_SHAPES: BoardShape[] = [
 ];
 
 const MEDIUM_SHAPES: BoardShape[] = [
-  // 3×4 rectangle (12 cells)
+  // C with tail (12 cells)
   parseGrid("m1", [
     [1, 1, 1, 1],
-    [1, 1, 1, 1],
-    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 0],
+    [0, 0, 1, 0],
   ]),
   // Wide U (10 cells)
   parseGrid("m2", [
@@ -69,12 +73,12 @@ const MEDIUM_SHAPES: BoardShape[] = [
     [1, 0, 0, 0, 1],
     [1, 0, 0, 0, 1],
   ]),
-  // Cross (12 cells)
+  // Step zigzag (12 cells)
   parseGrid("m4", [
-    [0, 1, 1, 0],
-    [1, 1, 1, 1],
-    [1, 1, 1, 1],
-    [0, 1, 1, 0],
+    [0, 1, 1, 1, 1],
+    [1, 1, 0, 0, 0],
+    [1, 1, 1, 0, 0],
+    [0, 0, 1, 1, 1],
   ]),
   // L-block (10 cells)
   parseGrid("m5", [
@@ -86,29 +90,31 @@ const MEDIUM_SHAPES: BoardShape[] = [
 ];
 
 const HARD_SHAPES: BoardShape[] = [
-  // 4×4 square (16 cells)
+  // Twisted scatter (16 cells)
   parseGrid("h1", [
-    [1, 1, 1, 1],
-    [1, 1, 1, 1],
-    [1, 1, 1, 1],
-    [1, 1, 1, 1],
+    [0, 1, 1, 0, 0],
+    [1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1],
+    [0, 1, 1, 1, 1],
+    [1, 1, 0, 1, 0],
   ]),
-  // 4×5 rectangle (20 cells)
+  // Winding path (20 cells)
   parseGrid("h2", [
     [1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1],
+    [1, 1, 1, 0, 1],
+    [1, 1, 1, 1, 0],
+    [1, 1, 0, 1, 1],
+    [0, 1, 1, 0, 1],
   ]),
-  // Big C (16 cells)
+  // E-shape (16 cells)
   parseGrid("h3", [
     [1, 1, 1, 1, 1],
     [1, 0, 0, 0, 0],
-    [1, 1, 1, 0, 0],
+    [1, 1, 1, 1, 0],
     [1, 0, 0, 0, 0],
     [1, 1, 1, 1, 1],
   ]),
-  // Plus (16 cells)
+  // Plus (20 cells)
   parseGrid("h4", [
     [0, 0, 1, 1, 0, 0],
     [0, 0, 1, 1, 0, 0],
@@ -117,12 +123,13 @@ const HARD_SHAPES: BoardShape[] = [
     [0, 0, 1, 1, 0, 0],
     [0, 0, 1, 1, 0, 0],
   ]),
-  // Zigzag wide (16 cells)
+  // Widening cascade (16 cells)
   parseGrid("h5", [
+    [1, 1, 1, 0, 0],
+    [1, 0, 1, 0, 0],
+    [1, 1, 0, 0, 0],
     [1, 1, 1, 1, 0],
-    [0, 0, 1, 1, 0],
-    [0, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
   ]),
 ];
 
