@@ -330,7 +330,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => setResultsOpen(false)}
               >
-                Done
+                View Puzzle
               </button>
             </motion.div>
           </ModalDialog>
