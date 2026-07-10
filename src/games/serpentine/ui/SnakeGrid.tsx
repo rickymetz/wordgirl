@@ -118,14 +118,14 @@ export function SnakeGrid({
 
   const NODE_R = 0.38;
   const PIPE_W = 0.32;
-  const gap = 3;
+  const gap = 0;
 
   return (
     <div
       ref={gridRef}
       className="relative mx-auto w-full select-none touch-manipulation"
       style={{
-        maxWidth: `min(100%, ${cols * 56 + (cols - 1) * gap}px)`,
+        maxWidth: `min(100%, ${cols * 56}px)`,
         aspectRatio: `${cols} / ${rows}`,
       }}
       onPointerDown={onPointerDown}
