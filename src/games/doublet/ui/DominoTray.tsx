@@ -21,7 +21,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap justify-center gap-3">
+      <div className="flex flex-wrap justify-center gap-1.5">
         {available.map((d) => (
           <DominoChip
             key={d.id}
@@ -42,7 +42,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 }
 
 const DRAG_THRESHOLD = 8;
-const CHIP_SLOT = "calc(5rem + 5px)";
+const CHIP_SLOT = "calc(4rem + 5px)";
 
 function DominoChip({
   piece,
@@ -146,18 +146,18 @@ function DominoChip({
         aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
         aria-pressed={selected}
       >
-        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
           {l0}
         </div>
         <div
           className={selected ? "bg-accent/30" : "bg-line"}
           style={
             isH
-              ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
-              : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
+              ? { width: "1px", alignSelf: "stretch", marginBlock: "5px" }
+              : { height: "1px", alignSelf: "stretch", marginInline: "5px" }
           }
         />
-        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
           {l1}
         </div>
       </button>
