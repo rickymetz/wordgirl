@@ -27,10 +27,11 @@ interface Props {
   onBoardDragMove?: (x: number, y: number) => void;
   onBoardDragEnd?: () => void;
   hoverCell?: Cell | null;
+  resolvedAnchor?: Cell | null;
   previewOrientation?: Orientation | null;
 }
 
-export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, previewOrientation }: Props) {
+export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation }: Props) {
   const { puzzle, grid, invalidSlots } = state;
   const { vw, vh, rem } = useViewport();
 
@@ -53,15 +54,15 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
   }
 
   const previewCells = useMemo(() => {
-    if (!hoverCell || previewOrientation == null) return null;
+    if (previewOrientation == null) return null;
+    if (resolvedAnchor) {
+      const [c1, c2] = dominoCells(resolvedAnchor, previewOrientation);
+      return { keys: new Set([cellKey(c1.row, c1.col), cellKey(c2.row, c2.col)]), valid: true };
+    }
+    if (!hoverCell) return null;
     const [c1, c2] = dominoCells(hoverCell, previewOrientation);
-    const k1 = cellKey(c1.row, c1.col);
-    const k2 = cellKey(c2.row, c2.col);
-    const onBoard = boardCellSet.has(k1) && boardCellSet.has(k2);
-    const unoccupied = !grid.has(k1) && !grid.has(k2);
-    const valid = onBoard && unoccupied;
-    return { keys: new Set([k1, k2]), valid };
-  }, [hoverCell, previewOrientation, boardCellSet, grid]);
+    return { keys: new Set([cellKey(c1.row, c1.col), cellKey(c2.row, c2.col)]), valid: false };
+  }, [hoverCell, resolvedAnchor, previewOrientation, boardCellSet, grid]);
 
   const placedPairs = new Map<number, { cells: [Cell, Cell]; letters: [string, string] }>();
   for (const p of state.placed) {

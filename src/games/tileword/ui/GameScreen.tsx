@@ -53,16 +53,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     if (state.solved) return;
 
     if (state.selectedDominoId !== null) {
-      const [c1, c2] = dominoCells(cell, state.currentOrientation);
-      const k1 = cellKey(c1.row, c1.col);
-      const k2 = cellKey(c2.row, c2.col);
-      const valid =
-        boardCellSet.current.has(k1) &&
-        boardCellSet.current.has(k2) &&
-        !state.grid.has(k1) &&
-        !state.grid.has(k2);
-      if (valid) {
-        dispatch({ type: "placeDomino", cell, dict });
+      const anchor = findValidAnchor(cell, state.currentOrientation);
+      if (anchor) {
+        dispatch({ type: "placeDomino", cell: anchor, dict });
       } else {
         setShakeKey((k) => k + 1);
       }
@@ -128,6 +121,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     return true;
   }
 
+  function findValidAnchor(target: Cell, orientation: Orientation): Cell | null {
+    if (canPlace(target, orientation)) return target;
+    const isH = orientation === 0 || orientation === 2;
+    const reverse: Cell = isH
+      ? { row: target.row, col: target.col - 1 }
+      : { row: target.row - 1, col: target.col };
+    if (canPlace(reverse, orientation)) return reverse;
+    return null;
+  }
+
   const handleDragStart = useCallback(
     (id: number, orientation: Orientation, rect: DOMRect) => {
       setDrag({
@@ -158,16 +161,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     }
 
     const cell = cellFromPoint(drag.x, drag.y);
-    if (cell && canPlace(cell, drag.orientation)) {
-      dispatch({
-        type: "placeDomino",
-        cell,
-        dict,
-        dominoId: drag.dominoId,
-        orientation: drag.orientation,
-      });
-    } else if (cell) {
-      setShakeKey((k) => k + 1);
+    if (cell) {
+      const anchor = findValidAnchor(cell, drag.orientation);
+      if (anchor) {
+        dispatch({
+          type: "placeDomino",
+          cell: anchor,
+          dict,
+          dominoId: drag.dominoId,
+          orientation: drag.orientation,
+        });
+      } else {
+        setShakeKey((k) => k + 1);
+      }
     }
 
     setDrag(null);
@@ -177,6 +183,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const dragPiece = drag
     ? puzzle.dominoes.find((d) => d.id === drag.dominoId)
     : null;
+
+  const previewOri: Orientation | null = drag
+    ? drag.orientation
+    : state.selectedDominoId !== null
+      ? state.currentOrientation
+      : null;
+  const resolvedAnchor =
+    hoverCell && previewOri !== null
+      ? findValidAnchor(hoverCell, previewOri)
+      : null;
 
   return (
     <div
@@ -232,7 +248,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             onBoardDragMove={handleBoardDragMove}
             onBoardDragEnd={handleDragEnd}
             hoverCell={hoverCell}
-            previewOrientation={drag ? drag.orientation : state.selectedDominoId !== null ? state.currentOrientation : null}
+            resolvedAnchor={resolvedAnchor}
+            previewOrientation={previewOri}
           />
         </motion.div>
       </div>
