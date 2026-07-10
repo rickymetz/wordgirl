@@ -420,8 +420,10 @@ function RangeSlider({
 
   const onPointerDown = useCallback(
     (thumb: "low" | "high") => (e: React.PointerEvent) => {
+      e.stopPropagation();
       dragging.current = thumb;
-      (e.currentTarget.parentElement as HTMLElement).setPointerCapture(e.pointerId);
+      const track = trackRef.current;
+      if (track) track.setPointerCapture(e.pointerId);
     },
     [],
   );
@@ -474,7 +476,7 @@ function RangeSlider({
       </div>
       <div
         ref={trackRef}
-        className="relative mx-2 h-6 touch-none select-none"
+        className="relative mx-2 h-8 touch-none select-none"
         onPointerDown={onTrackPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -488,13 +490,13 @@ function RangeSlider({
         />
         {/* Low thumb */}
         <div
-          className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-surface shadow-sm"
+          className="absolute top-1/2 z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-accent bg-surface shadow-sm active:cursor-grabbing"
           style={{ left: `${pctLow}%` }}
           onPointerDown={onPointerDown("low")}
         />
         {/* High thumb */}
         <div
-          className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-surface shadow-sm"
+          className="absolute top-1/2 z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-accent bg-surface shadow-sm active:cursor-grabbing"
           style={{ left: `${pctHigh}%` }}
           onPointerDown={onPointerDown("high")}
         />
