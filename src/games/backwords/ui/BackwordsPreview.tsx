@@ -1,6 +1,7 @@
 /**
- * Hub-card miniature: words meeting their reflections at the glass —
- * WAS|SAW and TOP|POT, one row lit in the game accent.
+ * Hub-card miniature: thematic words meeting their reflections at the
+ * glass — WON reflects as NOW, EYE and WOW look back at themselves.
+ * All three are honestly playable mirror content.
  */
 export function BackwordsPreview() {
   return (
@@ -15,9 +16,9 @@ export function BackwordsPreview() {
             color-mix(in oklab, var(--color-accent) 16%, var(--color-surface)) 100%)`,
         }}
       />
-      <PreviewRow left="WAS" right="SAW" accent />
-      <PreviewRow left="TOP" right="POT" />
-      <PreviewRow left="MOM" right="MOM" />
+      <PreviewRow left="WON" right="NOW" accent />
+      <PreviewRow left="EYE" right="EYE" />
+      <PreviewRow left="WOW" right="WOW" />
     </div>
   );
 }
