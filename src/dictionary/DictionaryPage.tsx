@@ -456,7 +456,9 @@ function RangeSlider({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (dragging.current && e.pressure > 0) resolve(e.clientX);
+      if (!dragging.current) return;
+      e.preventDefault();
+      resolve(e.clientX);
     },
     [resolve],
   );
