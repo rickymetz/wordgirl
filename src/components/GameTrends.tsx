@@ -70,7 +70,7 @@ export function GameTrends<Day extends { dateKey: string }>({
       </div>
 
       {days && (
-        <div className="grid grid-cols-2 gap-x-5">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8">
           {config.metrics.map((m) => (
             <MetricChart key={m.key} metric={m} days={days} dates={from} />
           ))}
@@ -169,7 +169,7 @@ function MetricChart<Day extends { dateKey: string }>({
   };
 
   return (
-    <section className="mb-4 flex min-w-0 flex-col">
+    <section className="flex min-w-0 flex-col">
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
       <p className="pt-0.5 text-xs text-ink-soft">
         {pickedPoint && pickedPoint.v !== null
@@ -304,7 +304,7 @@ function HourChart<Day extends { dateKey: string }>({
   };
 
   return (
-    <section className="mb-5">
+    <section className="mt-8">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-bold">{metric.label}</h2>
         <p className="text-xs text-ink-soft">
