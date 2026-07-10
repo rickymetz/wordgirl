@@ -1,5 +1,5 @@
 import { use, useCallback, useMemo, useRef, useState } from "react";
-import { Search, Bookmark, X } from "lucide-react";
+import { Search, Bookmark, ExternalLink, X } from "lucide-react";
 import { loadDictionary } from "../lib/words/loader";
 import { HomeLink } from "../components/HomeLink";
 
@@ -266,9 +266,15 @@ function WordRow({
       role="listitem"
       className="flex items-center gap-3 border-b border-line/50 py-2"
     >
-      <span className="grow font-mono text-sm tracking-wide text-ink">
+      <a
+        href={`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex grow items-center gap-1.5 font-mono text-sm tracking-wide text-ink active:text-accent"
+      >
         {word}
-      </span>
+        <ExternalLink aria-hidden className="h-3 w-3 shrink-0 text-ink-soft/40" />
+      </a>
       {tier === "required" && (
         <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">
           core
