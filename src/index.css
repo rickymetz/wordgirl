@@ -81,6 +81,10 @@
 /* Crosshatch has its own palette key — Tiffany teal. */
 [data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
 
+/* Backwords' palette key — fuchsia, clearly its own game beside
+   Polygram red and Crosshatch teal. */
+[data-level="backwords"] { --color-accent: light-dark(#a21caf, #e879f9); }
+
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;

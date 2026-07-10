@@ -47,6 +47,24 @@ A small crossword frame with many right answers:
   the first daily hint warns that the share text will carry a 🫣 count.
 - Daily + practice + a replayable archive, same as Polygram.
 
+### Backwords
+
+A race against a hidden clock, played into a mirror:
+
+- Each day deals a **bank of 12–16 letters** and one rule: lay words
+  against the central mirror so the **reflection reads as a word too**
+  (pots|stop) — palindromes straddle the glass, completed by the
+  mirror from just their first half.
+- **Use every letter** to solve the board. Rows stay editable (tap ×
+  to take one back) until the last letter lands.
+- The generator guarantees **multiple valid decompositions with
+  different row counts**, so strategy is real: a few long words or
+  many quick short ones.
+- The **timer runs silently** and is revealed at the end — the share
+  line is your word count and time. No hints.
+- Rows a real mirror would render (LIT reflects as TIL) earn a **✦**.
+- Daily + practice + a replayable archive, same as the others.
+
 ## Development
 
 ```bash
