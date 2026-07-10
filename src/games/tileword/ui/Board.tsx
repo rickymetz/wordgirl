@@ -46,12 +46,15 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     [puzzle.board.cells],
   );
 
-  const invalidCells = new Set<string>();
-  for (const si of invalidSlots) {
-    for (const c of puzzle.slots[si].cells) {
-      invalidCells.add(cellKey(c.row, c.col));
+  const invalidCells = useMemo(() => {
+    const s = new Set<string>();
+    for (const si of invalidSlots) {
+      for (const c of puzzle.slots[si].cells) {
+        s.add(cellKey(c.row, c.col));
+      }
     }
-  }
+    return s;
+  }, [invalidSlots, puzzle.slots]);
 
   const previewCells = useMemo(() => {
     if (previewOrientation == null) return null;
@@ -224,15 +227,16 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
               data-row={row}
               data-col={col}
               className={[
-                "flex items-center justify-center font-game text-lg",
+                "relative flex items-center justify-center font-game text-lg",
                 "w-full h-full",
+                "after:absolute after:inset-[-3px]",
+                pd ? "shadow-sm" : "",
                 cellBg,
                 textClass,
               ].join(" ")}
               style={{
                 borderRadius,
                 ...borderStyle,
-                ...(pd ? { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } : {}),
               }}
               onPointerDown={(e) => {
                 e.preventDefault();
@@ -275,6 +279,16 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
                   } catch { /* already released */ }
                 } else {
                   onCellTap({ row, col });
+                }
+              }}
+              onPointerCancel={(e) => {
+                const ref = boardDragRef.current;
+                if (ref) {
+                  if (ref.dragging) onBoardDragEnd?.();
+                  boardDragRef.current = null;
+                  try {
+                    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+                  } catch { /* already released */ }
                 }
               }}
               aria-label={

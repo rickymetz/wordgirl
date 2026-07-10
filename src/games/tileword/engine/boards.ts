@@ -71,7 +71,7 @@ const MEDIUM_SHAPES: BoardShape[] = [
   parseGrid("m3", [
     [1, 1, 1, 1, 1],
     [1, 0, 0, 0, 1],
-    [1, 0, 0, 0, 1],
+    [1, 0, 0, 1, 1],
   ]),
   // Step zigzag (12 cells)
   parseGrid("m4", [

@@ -163,6 +163,8 @@ export function recordDailySolved(
     const continues = stats.lastSolvedDate === previousDateKey(dateKey);
     const currentStreak = continues ? stats.currentStreak + 1 : 1;
 
+    if (alreadyRecordedDate) return stats;
+
     const next: TilewordStats = {
       ...stats,
       solved: stats.solved + 1,

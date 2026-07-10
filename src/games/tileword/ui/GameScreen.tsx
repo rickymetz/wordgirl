@@ -44,6 +44,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const totalDominoes = puzzle.dominoes.length;
   const placedCount = placed.size;
   const boardCellSet = useRef(new Set<string>());
+  const gridRef = useRef(state.grid);
+  gridRef.current = state.grid;
 
   boardCellSet.current = new Set(
     puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
@@ -106,8 +108,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     )
       return false;
     if (
-      state.grid.has(cellKey(c1.row, c1.col)) ||
-      state.grid.has(cellKey(c2.row, c2.col))
+      gridRef.current.has(cellKey(c1.row, c1.col)) ||
+      gridRef.current.has(cellKey(c2.row, c2.col))
     )
       return false;
     return true;
@@ -136,11 +138,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     [],
   );
 
+  const lastHoverRef = useRef<string | null>(null);
   const handleDragMove = useCallback(
     (x: number, y: number) => {
       setDrag((prev) => (prev ? { ...prev, x, y } : null));
       const cell = cellFromPoint(x, y);
-      setHoverCell(cell);
+      const k = cell ? cellKey(cell.row, cell.col) : null;
+      if (k !== lastHoverRef.current) {
+        lastHoverRef.current = k;
+        setHoverCell(cell);
+      }
     },
     [],
   );

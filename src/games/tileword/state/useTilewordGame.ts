@@ -162,6 +162,7 @@ export function useTilewordGame(mode: GameMode) {
     if (!persisted || !state.solved) return;
     if (!recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
+      statsRecordedRef.current = true;
       void recordDailySolved(dateKey, mode.kind === "daily");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

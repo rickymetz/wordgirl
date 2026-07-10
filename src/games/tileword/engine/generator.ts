@@ -72,9 +72,11 @@ export function generateTileword(
       const origLetters = dominoes[sp.dominoId].letters;
       const newDomino = shuffledDominoes.find(
         (d) =>
-          d.letters[0] === origLetters[0] && d.letters[1] === origLetters[1],
+          d.letters[0] === origLetters[0] &&
+          d.letters[1] === origLetters[1] &&
+          !solutionMap.has(d.id),
       );
-      if (newDomino && !solutionMap.has(newDomino.id)) {
+      if (newDomino) {
         solutionMap.set(newDomino.id, {
           ...sp,
           dominoId: newDomino.id,
@@ -98,8 +100,8 @@ export function generateTileword(
 }
 
 function parseDifficulty(seed: string): Difficulty {
-  if (seed.includes(":easy:") || seed.includes("easy")) return "easy";
-  if (seed.includes(":hard:") || seed.includes("hard")) return "hard";
+  if (seed.includes(":easy:") || seed.endsWith(":easy")) return "easy";
+  if (seed.includes(":hard:") || seed.endsWith(":hard")) return "hard";
   return "medium";
 }
 

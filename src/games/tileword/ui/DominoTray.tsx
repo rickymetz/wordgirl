@@ -112,6 +112,18 @@ function DominoChip({
     }
   }
 
+  function handlePointerCancel(e: React.PointerEvent<HTMLButtonElement>) {
+    if (dragging.current) {
+      dragging.current = false;
+      onDragEnd?.();
+    }
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // already released
+    }
+  }
+
   return (
     <motion.div
       layout
@@ -137,6 +149,7 @@ function DominoChip({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
         aria-pressed={selected}
       >
