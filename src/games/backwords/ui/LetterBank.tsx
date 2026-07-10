@@ -1,5 +1,6 @@
-import { motion } from "motion/react";
+import { motion, type PanInfo } from "motion/react";
 import { toMultiset } from "../engine/types";
+import { dragPoint } from "./dragPoint";
 
 /**
  * The day's rack: one socket per bank letter (sorted a-z). A tile
@@ -21,7 +22,11 @@ export function LetterBank({
   remaining: string[];
   onLetter: (letter: string) => void;
   /** Stream drag positions so the mirror can reflect the tile live. */
-  onDragLive: (letter: string | null, e?: PointerEvent) => void;
+  onDragLive: (
+    letter: string | null,
+    e?: MouseEvent | TouchEvent | PointerEvent,
+    info?: PanInfo,
+  ) => void;
 }) {
   const left = toMultiset(remaining);
   const seen: Record<string, number> = {};
@@ -54,19 +59,20 @@ export function LetterBank({
             dragMomentum={false}
             whileDrag={{ scale: 1.25, zIndex: 40 }}
             whileTap={{ scale: 0.9 }}
-            onDrag={(e) => onDragLive(letter, e as PointerEvent)}
-            onDragEnd={(e) => {
+            onDrag={(e, info) => onDragLive(letter, e, info)}
+            onDragEnd={(e, info) => {
               onDragLive(null);
-              // Dropped over the board? The tile moves there.
+              // Dropped over the board — EITHER side of the glass —
+              // and the tile moves there.
               const board = document.getElementById("bw-board");
-              const p = e as PointerEvent;
-              if (!board || p.clientX === undefined) return;
+              const p = dragPoint(e, info);
+              if (!board || !p) return;
               const r = board.getBoundingClientRect();
               if (
-                p.clientX >= r.left &&
-                p.clientX <= r.right &&
-                p.clientY >= r.top &&
-                p.clientY <= r.bottom
+                p.x >= r.left &&
+                p.x <= r.right &&
+                p.y >= r.top &&
+                p.y <= r.bottom
               ) {
                 onLetter(letter);
               }

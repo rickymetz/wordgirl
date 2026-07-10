@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import {
   CircleHelp,
   CornerDownLeft,
@@ -21,8 +21,9 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { glyphRowCount } from "../state/reducer";
-import { MirrorBoard, type DragGhost } from "./MirrorBoard";
+import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
+import { dragPoint } from "./dragPoint";
 import { SolvedOverlay } from "./Overlays";
 
 interface Props {
@@ -56,19 +57,34 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   const [resultsOpen, setResultsOpen] = useState(true);
 
   // A tile in flight: the mirror reflects it LIVE — the ghost tracks
-  // the drag, mirrored across the glass, converging at the line.
-  const [dragGhost, setDragGhost] = useState<DragGhost | null>(null);
-  const onDragLive = (letter: string | null, e?: PointerEvent) => {
-    if (!letter || !e) {
-      setDragGhost(null);
-      return;
-    }
-    const mirror = document.getElementById("bw-mirror");
-    if (!mirror) return;
-    const r = mirror.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    setDragGhost({ letter, paneX: cx - e.clientX, y: e.clientY - r.top });
-  };
+  // the drag, mirrored across the glass, so it works from EITHER side
+  // of the line. Positioned by writing straight to the DOM: a setState
+  // per drag frame re-renders the board mid-drag, and motion's drag
+  // measurements drift under it (the tile runs away from the finger
+  // on iOS).
+  const onDragLive = useCallback(
+    (
+      letter: string | null,
+      e?: MouseEvent | TouchEvent | PointerEvent,
+      info?: PanInfo,
+    ) => {
+      const ghost = document.getElementById("bw-drag-ghost");
+      if (!ghost) return;
+      const point = letter ? dragPoint(e, info) : null;
+      if (!letter || !point) {
+        ghost.style.display = "none";
+        return;
+      }
+      const mirror = document.getElementById("bw-mirror");
+      if (!mirror) return;
+      const r = mirror.getBoundingClientRect();
+      ghost.style.display = "flex";
+      ghost.style.left = `${r.width - (point.x - r.left)}px`;
+      ghost.style.top = `${point.y - r.top}px`;
+      ghost.textContent = letter;
+    },
+    [],
+  );
 
   // The staged letters already read as an odd palindrome's half: the
   // middle tile slides onto the glass BEFORE commit, so the straddle
@@ -259,7 +275,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           currentStraddle={currentStraddle}
           solved={state.solved}
           bankAll={puzzle.bank}
-          dragGhost={dragGhost}
           onBreakRow={(index) => dispatch({ type: "breakRow", index })}
           onUnstage={(index) => dispatch({ type: "unstage", index })}
           onDragLive={onDragLive}

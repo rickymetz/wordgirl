@@ -1,7 +1,14 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import { useViewport } from "../../../lib/useViewport";
 import type { CommittedRow } from "../state/reducer";
+import { dragPoint } from "./dragPoint";
+
+type DragLive = (
+  letter: string | null,
+  e?: MouseEvent | TouchEvent | PointerEvent,
+  info?: PanInfo,
+) => void;
 
 /**
  * The board: every row lies against one central mirror pane. The
@@ -10,20 +17,12 @@ import type { CommittedRow } from "../state/reducer";
  * tiles inside the glass. Odd palindromes put their middle tile ON
  * the line. Breaking a row flies its tiles back to the rack.
  */
-export interface DragGhost {
-  letter: string;
-  /** Position inside the glass, relative to the pane's top-left. */
-  paneX: number;
-  y: number;
-}
-
 export function MirrorBoard({
   rows,
   current,
   currentStraddle,
   solved,
   bankAll,
-  dragGhost,
   onBreakRow,
   onUnstage,
   onDragLive,
@@ -36,13 +35,11 @@ export function MirrorBoard({
   solved: boolean;
   /** puzzle.bank — for assigning each placed letter its rack tile. */
   bankAll: string[];
-  /** A tile in flight: its live reflection tracks it in the glass. */
-  dragGhost: DragGhost | null;
   onBreakRow: (index: number) => void;
   /** Drag a staged tile off the board — it returns to the rack. */
   onUnstage: (index: number) => void;
   /** Stream drag positions so the mirror can reflect the tile live. */
-  onDragLive: (letter: string | null, e?: PointerEvent) => void;
+  onDragLive: DragLive;
 }) {
   const { vw } = useViewport();
   // One tile size for the whole board, sized so the longest row fits
@@ -88,21 +85,23 @@ export function MirrorBoard({
         aria-hidden
         className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-accent/60"
       />
-      {/* The live reflection of a tile in flight: mirrored across the
-          glass, converging on the dragged tile as it nears the line. */}
-      {dragGhost && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 left-1/2 z-20 overflow-hidden rounded-r-2xl"
-        >
-          <span
-            className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/50 font-game text-xl text-ink-soft/80 uppercase shadow-sm"
-            style={{ left: dragGhost.paneX, top: dragGhost.y }}
-          >
-            {dragGhost.letter}
-          </span>
-        </div>
-      )}
+      {/* The live reflection of a tile in flight: the pointer mirrored
+          across the line, so it converges on the dragged tile at the
+          glass and works from either side — drag over the board and
+          the twin swims in the pane; drag inside the glass and it
+          surfaces on the board side. GameScreen positions it with
+          direct DOM writes (per-frame React state would re-render the
+          board mid-drag and corrupt the drag itself). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-r-2xl"
+      >
+        <span
+          id="bw-drag-ghost"
+          style={{ display: "none" }}
+          className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/50 font-game text-xl text-ink-soft/80 uppercase shadow-sm"
+        />
+      </div>
       <div className="relative flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {rows.map((row, i) => (
@@ -165,7 +164,7 @@ function Row({
   active?: boolean;
   onBreak?: () => void;
   onUnstage?: (index: number) => void;
-  onDragLive?: (letter: string | null, e?: PointerEvent) => void;
+  onDragLive?: DragLive;
 }) {
   const left = straddle ? place.slice(0, -1) : place;
   const middle = straddle ? place[place.length - 1] : null;
@@ -252,18 +251,32 @@ function Row({
           />
         )}
         {[...reflection].map((ch, i) => (
-          // 8. one legibility step up: this is how the second word reads
-          <span
+          <ReflectionTile
             key={i}
-            className="flex items-center justify-center rounded-lg bg-surface/50 text-ink-soft/80"
+            letter={ch}
             style={tileStyle}
-          >
-            {ch}
-          </span>
+            // The ghost at reflection index i mirrors the tile at left
+            // index (len-1-i): dragging it off the board unstages that
+            // letter, so rows rework from either side of the glass.
+            onUnstage={onUnstage && (() => onUnstage(left.length - 1 - i))}
+            onDragLive={onDragLive}
+          />
         ))}
       </div>
     </div>
   );
+}
+
+/** Dragged outside the board? Then this drop is a take-back. */
+function droppedOffBoard(
+  e?: MouseEvent | TouchEvent | PointerEvent,
+  info?: PanInfo,
+): boolean {
+  const board = document.getElementById("bw-board");
+  const p = dragPoint(e, info);
+  if (!board || !p) return false;
+  const r = board.getBoundingClientRect();
+  return p.x < r.left || p.x > r.right || p.y < r.top || p.y > r.bottom;
 }
 
 /** A rack tile that traveled to the board — layoutId flies it here.
@@ -283,7 +296,7 @@ function PlacedTile({
   style: React.CSSProperties;
   onGlass?: boolean;
   onUnstage?: () => void;
-  onDragLive?: (letter: string | null, e?: PointerEvent) => void;
+  onDragLive?: DragLive;
 }) {
   return (
     <motion.span
@@ -293,26 +306,48 @@ function PlacedTile({
       dragSnapToOrigin
       dragMomentum={false}
       whileDrag={{ scale: 1.25, zIndex: 40 }}
-      onDrag={(e) => onDragLive?.(letter, e as PointerEvent)}
-      onDragEnd={(e) => {
+      onDrag={(e, info) => onDragLive?.(letter, e, info)}
+      onDragEnd={(e, info) => {
         onDragLive?.(null);
-        // Dragged OFF the board? Back to the rack it goes.
-        const board = document.getElementById("bw-board");
-        const p = e as PointerEvent;
-        if (!board || !onUnstage || p.clientX === undefined) return;
-        const r = board.getBoundingClientRect();
-        if (
-          p.clientX < r.left ||
-          p.clientX > r.right ||
-          p.clientY < r.top ||
-          p.clientY > r.bottom
-        ) {
-          onUnstage();
-        }
+        if (onUnstage && droppedOffBoard(e, info)) onUnstage();
       }}
       className={`flex shrink-0 items-center justify-center rounded-lg bg-tile font-game text-ink uppercase ${
         active ? "shadow-sm ring-1 ring-accent" : onGlass ? "shadow-md" : "shadow-sm"
       }`}
+      style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
+    >
+      {letter}
+    </motion.span>
+  );
+}
+
+/** A reflection ghost inside the glass. In the active row it's as
+ * grabbable as the tile it mirrors — drag it off the board and the
+ * mirrored letter returns to the rack. */
+function ReflectionTile({
+  letter,
+  style,
+  onUnstage,
+  onDragLive,
+}: {
+  letter: string;
+  style: React.CSSProperties;
+  onUnstage?: () => void;
+  onDragLive?: DragLive;
+}) {
+  return (
+    <motion.span
+      data-bw-reflection={onUnstage ? "active" : "set"}
+      drag={!!onUnstage}
+      dragSnapToOrigin
+      dragMomentum={false}
+      whileDrag={{ scale: 1.25, zIndex: 40 }}
+      onDrag={(e, info) => onDragLive?.(letter, e, info)}
+      onDragEnd={(e, info) => {
+        onDragLive?.(null);
+        if (onUnstage && droppedOffBoard(e, info)) onUnstage();
+      }}
+      className="flex shrink-0 items-center justify-center rounded-lg bg-surface/50 text-ink-soft/80"
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >
       {letter}
