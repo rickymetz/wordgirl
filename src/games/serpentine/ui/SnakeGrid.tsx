@@ -13,8 +13,8 @@ interface Props {
 
 const NODE_R = 0.38;
 const PIPE_W = 0.32;
-const START_OPACITY = 1;
-const END_OPACITY = 1;
+const START_MIX = 40;
+const END_MIX = 100;
 
 export function SnakeGrid({
   rows,
@@ -78,12 +78,12 @@ export function SnakeGrid({
 
   const n = cells.length;
   const claimed = new Set(cells.map((c) => cellKey(c)));
-  const color = solved ? "var(--color-good)" : "var(--color-accent)";
+  const accent = solved ? "var(--color-good)" : "var(--color-accent)";
 
-  function nodeOpacity(i: number): number {
-    if (solved) return 0.75;
-    if (n <= 1) return END_OPACITY;
-    return START_OPACITY + (END_OPACITY - START_OPACITY) * (i / (n - 1));
+  function nodeColor(i: number): string {
+    if (solved) return `color-mix(in oklab, ${accent} 75%, var(--color-surface))`;
+    const pct = n <= 1 ? END_MIX : START_MIX + (END_MIX - START_MIX) * (i / (n - 1));
+    return `color-mix(in oklab, ${accent} ${Math.round(pct)}%, var(--color-surface))`;
   }
 
   return (
@@ -111,7 +111,6 @@ export function SnakeGrid({
             {cells.map((c, i) => {
               if (i === 0) return null;
               const prev = cells[i - 1];
-              const opacity = nodeOpacity(i);
               return (
                 <line
                   key={`pipe-${i}`}
@@ -119,8 +118,7 @@ export function SnakeGrid({
                   y1={prev.row + 0.5}
                   x2={c.col + 0.5}
                   y2={c.row + 0.5}
-                  stroke={color}
-                  strokeOpacity={opacity}
+                  style={{ stroke: nodeColor(i) }}
                   strokeWidth={PIPE_W}
                   strokeLinecap="round"
                 />
@@ -133,8 +131,7 @@ export function SnakeGrid({
                 cx={c.col + 0.5}
                 cy={c.row + 0.5}
                 r={NODE_R}
-                fill={color}
-                fillOpacity={nodeOpacity(i)}
+                style={{ fill: nodeColor(i) }}
               />
             ))}
           </g>
