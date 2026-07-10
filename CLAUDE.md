@@ -5,6 +5,66 @@ a folder under `src/games/<id>/` plus one entry in
 `src/games/registry.ts`. Engines are pure TS (`engine/`), state hooks
 in `state/`, React in `ui/`. See README for architecture.
 
+## Game kit — check here BEFORE building anything
+
+Shared primitives live in `src/components/` (+ `src/components/game/`)
+and `src/lib/`. The rule: before writing any UI piece or state helper
+for a game, check this list; if you catch yourself copying code from a
+sibling game a SECOND time, extract it into the kit instead of pasting.
+
+**Board & feedback** (`src/components/game/`)
+- `Tile` / `tileClasses(tone, mini?)` — THE letter tile, four tones:
+  `tile` (resting), `surface` (punch-out on tinted panels), `accent`,
+  `ghost` (translucent reading). Motion-wrapped tiles (layoutId, drag)
+  take `tileClasses(...)` as their className; `mini` is bento-card
+  sizing. `TileSocket` is the dashed empty home (subdued on tint).
+- `GameToast` + `useToast()` — the floating feedback pill over a
+  board (`mode="wait"`, positioned via className) and its state/timer.
+  Mirror `toast?.text` into an `aria-live` region for narration.
+
+**Results & sharing**
+- `ShareButton` (`components/`) + `useShare()` (`lib/share.ts`) — the
+  accent share pill: native sheet, clipboard fallback, "Copied!"
+  flash. Cards render `<ShareButton text={buildShareText(...)} />`;
+  only the game's share STRING is local. `SHARE_URL` and
+  `formatShareDate()` (`lib/date.ts`) build it.
+
+**Hub & archive**
+- `GameStatus` — the hub-card date + play-state line; games pass
+  `loadState`/`loadStreak` loaders (~15 lines per game).
+- `GameArchive` — the whole archive page from a config (see the
+  Archive section below). Preview art is per-game, composed from
+  `Tile mini` (see `BackwordsPreview` for the idiom).
+
+**Dialogs & chrome**
+- `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,
+  `useModalFocus` (mark initial focus `data-autofocus`), `HomeLink`,
+  `SettingsDialog`.
+
+**State & engine** (`src/lib/`)
+- `createGameStore(gameId)` — namespaced storage.
+- `useToday()` — live local dateKey (midnight rollover, PWA resume).
+- `useViewport()` — `{vw, vh, rem}` for board budgets (vh excludes
+  safe-area; rem is the Text-size setting — scale px constants by
+  `rem/16`).
+- `seededRandom(seed)`, `shuffle` (`lib/random.ts`); date helpers
+  (`localDateKey`, `previousDateKey`, `dateKeyRange`, `formatDateKey`,
+  `formatShareDate`, `formatDuration`); the shared dictionary
+  (`lib/words`: `parseDictionary`, `loadDictionary`, `DICT_VERSION` —
+  bump it whenever puzzle derivation changes).
+
+**Reference implementations** (game-specific, copy the pattern)
+- Drag: `backwords/ui/dragPoint.ts` (`dragPoint`, `dragCancelled`,
+  `overBoard`) + the LetterBank/MirrorBoard wiring — pointer-fallback,
+  cancel-aborts, tap-vs-drag guard, live-ghost via direct DOM writes
+  (never setState per drag frame).
+- Daily persistence + clock recipe: `backwords/state/` or
+  `crosshatch/state/` (see State-integrity below) — including BOTH
+  save guards (solved-final, dictVersion-ordering) and the multi-tab
+  ownership rules.
+- Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
+  morphing: `polygram/ui/`.
+
 ## Style rules (apply to every new game)
 
 **Color**

@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { use, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import {
   Check,
   CircleCheck,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { formatDateKey, localDateKey } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
+import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -467,19 +468,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           />
           {/* Transient submit feedback, floating above the board.
               mode="wait" so rapid submits never stack two pills. */}
-          <AnimatePresence mode="wait">
-            {toast && toast.text && (
-              <motion.div
-                key={toast.nonce}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="pointer-events-none absolute -top-10 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-ink px-4 py-2 text-sm font-bold whitespace-nowrap text-surface"
-              >
-                {toast.text}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <GameToast toast={toast} className="-top-10" />
         </div>
 
         <SlotChips state={state} onFocusSlot={focusSlot} />

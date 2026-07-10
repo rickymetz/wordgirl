@@ -4,6 +4,7 @@ import { useViewport } from "../../../lib/useViewport";
 import { isStraddle, reverse } from "../engine/types";
 import type { CommittedRow } from "../state/reducer";
 import { overBoard } from "./dragPoint";
+import { TileSocket, tileClasses } from "../../../components/game/Tile";
 
 type DragLive = (
   letter: string | null,
@@ -112,7 +113,7 @@ export function MirrorBoard({
         <span
           id="bw-drag-ghost"
           style={{ display: "none" }}
-          className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/70 font-game text-xl text-ink-soft uppercase shadow-sm"
+          className={`${tileClasses("ghost")} absolute h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 text-xl shadow-sm`}
         />
       </div>
       <div className="relative flex flex-col gap-2">
@@ -226,12 +227,7 @@ function Row({
         ))}
         {/* Empty active row: a dashed target socket teaches where the
             first tile lands (the rack's own empty-socket idiom). */}
-        {active && place.length === 0 && (
-          <span
-            className="rounded-lg border-2 border-dashed border-line"
-            style={tileStyle}
-          />
-        )}
+        {active && place.length === 0 && <TileSocket style={tileStyle} />}
         {active && (
           <span className="ml-0.5 inline-block h-5 w-[2px] animate-pulse rounded bg-accent" />
         )}
@@ -265,10 +261,7 @@ function Row({
         }`}
       >
         {active && place.length === 0 && (
-          <span
-            className="rounded-lg border-2 border-dashed border-ink-soft/25"
-            style={tileStyle}
-          />
+          <TileSocket subdued style={tileStyle} />
         )}
         {[...reflection].map((ch, i) =>
           i < extras.length ? (
@@ -358,8 +351,10 @@ function PlacedTile({
       layoutId={id >= 0 ? `bwtile-${id}` : undefined}
       transition={{ type: "spring", stiffness: 500, damping: 34 }}
       {...unstageDragProps(letter, onUnstage, onDragLive)}
-      className={`relative flex shrink-0 items-center justify-center rounded-lg font-game uppercase ${
-        onGlass ? "" : punchOut ? "bg-surface text-ink" : "bg-tile text-ink"
+      className={`relative ${
+        onGlass
+          ? "flex shrink-0 items-center justify-center rounded-lg font-game uppercase"
+          : tileClasses(punchOut ? "surface" : "tile")
       } ${
         active ? "shadow-sm ring-1 ring-accent" : onGlass ? "shadow-md" : "shadow-sm"
       }`}
@@ -371,14 +366,14 @@ function PlacedTile({
         // seamed exactly on the mirror line it straddles.
         <>
           <span
-            className="absolute inset-0 flex items-center justify-center rounded-lg bg-tile text-ink"
+            className={`${tileClasses("tile")} absolute inset-0`}
             style={{ clipPath: "inset(0 50% 0 0)" }}
           >
             {letter}
           </span>
           <span
             aria-hidden
-            className="absolute inset-0 flex items-center justify-center rounded-lg bg-surface/70 text-ink-soft"
+            className={`${tileClasses("ghost")} absolute inset-0`}
             style={{ clipPath: "inset(0 0 0 50%)" }}
           >
             {letter}
@@ -409,7 +404,7 @@ function ReflectionTile({
     <motion.span
       data-bw-reflection={onUnstage ? "active" : "set"}
       {...unstageDragProps(letter, onUnstage, onDragLive)}
-      className="flex shrink-0 items-center justify-center rounded-lg bg-surface/70 text-ink-soft"
+      className={tileClasses("ghost")}
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >
       {letter}

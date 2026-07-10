@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Tile, tileClasses } from "../../../components/game/Tile";
 
 /**
  * Hub-card miniature of the real board: the glass turns SAW into WAS
@@ -53,9 +54,9 @@ function PreviewRow({
         style={{ width: LEFT }}
       >
         {[...left].map((ch, i) => (
-          <Tile key={i} accent={accent}>
+          <SolidTile key={i} accent={accent}>
             {ch}
-          </Tile>
+          </SolidTile>
         ))}
       </div>
       {/* The middle slot: a palindrome's center tile sits ON the line. */}
@@ -67,13 +68,9 @@ function PreviewRow({
       </div>
       <div className="flex shrink-0 items-center gap-[2px]">
         {[...right].map((ch, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-center rounded bg-surface/70 font-game text-[8px] text-ink-soft"
-            style={{ width: TILE, height: TILE }}
-          >
+          <Tile key={i} mini tone="ghost" style={{ width: TILE, height: TILE }}>
             {ch}
-          </div>
+          </Tile>
         ))}
         {glyph && <Sparkles className="ml-[2px] h-2.5 w-2.5 text-accent" />}
       </div>
@@ -89,13 +86,13 @@ function MiddleTile({ children }: { children: React.ReactNode }) {
       style={{ width: TILE, height: TILE }}
     >
       <span
-        className="absolute inset-0 flex items-center justify-center rounded bg-surface text-ink"
+        className={`${tileClasses("surface", true)} absolute inset-0`}
         style={{ clipPath: "inset(0 50% 0 0)" }}
       >
         {children}
       </span>
       <span
-        className="absolute inset-0 flex items-center justify-center rounded bg-surface/70 text-ink-soft"
+        className={`${tileClasses("ghost", true)} absolute inset-0`}
         style={{ clipPath: "inset(0 0 0 50%)" }}
       >
         {children}
@@ -104,7 +101,7 @@ function MiddleTile({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Tile({
+function SolidTile({
   accent,
   children,
 }: {
@@ -112,13 +109,13 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`flex shrink-0 items-center justify-center rounded font-game text-[8px] ${
-        accent ? "bg-accent text-surface" : "bg-surface text-ink shadow-sm"
-      }`}
+    <Tile
+      mini
+      tone={accent ? "accent" : "surface"}
+      className={accent ? "" : "shadow-sm"}
       style={{ width: TILE, height: TILE }}
     >
       {children}
-    </div>
+    </Tile>
   );
 }

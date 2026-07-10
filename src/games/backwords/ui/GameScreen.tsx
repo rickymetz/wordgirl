@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion, type PanInfo } from "motion/react";
+import { AnimatePresence, type PanInfo } from "motion/react";
 import {
   CircleHelp,
   CornerDownLeft,
@@ -22,6 +22,7 @@ import {
 } from "../state/persistence";
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
 import { isStraddle } from "../engine/types";
+import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
 import { dragPoint } from "./dragPoint";
@@ -194,9 +195,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // Submit feedback: a transient toast over the board, narrated for
   // screen readers via the live region below.
-  const [toast, setToast] = useState<{ text: string; nonce: number } | null>(
-    null,
-  );
+  const { toast, show } = useToast();
   useEffect(() => {
     const r = state.lastResult;
     if (!r) return;
@@ -218,12 +217,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       duplicate: "Already placed",
       empty: "Tap letters to build a row",
     };
-    setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
-    const timer = setTimeout(
-      () => setToast(null),
-      r.type === "invalid" ? 3000 : 1600,
-    );
-    return () => clearTimeout(timer);
+    show(messages[r.type] ?? "", r.type === "invalid" ? 3000 : 1600);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.lastResult]);
 
@@ -329,19 +323,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           onUnstage={(index) => dispatch({ type: "unstage", index })}
           onDragLive={onDragLive}
         />
-        <AnimatePresence mode="wait">
-          {toast && toast.text && (
-            <motion.div
-              key={toast.nonce}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none absolute top-0 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-ink px-4 py-2 text-sm font-bold whitespace-nowrap text-surface"
-            >
-              {toast.text}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <GameToast toast={toast} />
       </div>
 
       {!state.solved && (
