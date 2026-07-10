@@ -233,4 +233,35 @@ describe("backwords reducer", () => {
     run({ type: "breakRow", index: 0 });
     expect(state.rows).toHaveLength(3);
   });
+
+  it("counts rejected commits and take-backs for trends", () => {
+    // Both failure reasons count; empty commits and duplicates don't.
+    run(...type("most"), { type: "commit" }); // invalid (notWord)
+    expect(state.invalids).toBe(1);
+    run({ type: "clearRow" }, ...type("mat"), { type: "commit" }); // rare
+    expect(state.invalids).toBe(2);
+    run({ type: "clearRow" }, { type: "commit" }); // empty
+    expect(state.invalids).toBe(2);
+    expect(state.takeBacks).toBe(0);
+    run(...type("was"), { type: "commit" }, { type: "breakRow", index: 0 });
+    expect(state.takeBacks).toBe(1);
+    run({ type: "breakRow", index: 5 }); // out of range: no-op
+    expect(state.takeBacks).toBe(1);
+  });
+
+  it("hydrate restores trend counters and defaults legacy saves to 0", () => {
+    run({
+      type: "hydrate",
+      places: ["mo"],
+      solved: false,
+      takeBacks: 4,
+      invalids: 2,
+    });
+    expect(state.takeBacks).toBe(4);
+    expect(state.invalids).toBe(2);
+    state = initialState({ puzzle, lexicon, words, isWord });
+    run({ type: "hydrate", places: ["mo"], solved: false });
+    expect(state.takeBacks).toBe(0);
+    expect(state.invalids).toBe(0);
+  });
 });

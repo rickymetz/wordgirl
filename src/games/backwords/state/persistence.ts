@@ -12,6 +12,15 @@ export interface DailyProgress extends DailyBase {
   /** Committed placements, in the order they were laid. Palindromes
    * store their FULL word (rowSaveKey) — the bare half is ambiguous. */
   rows: string[];
+  /** Trend counters, absent on saves from before they shipped
+   * (legacy days chart as gaps, never fake zeros). */
+  sessions?: number;
+  takeBacks?: number;
+  invalids?: number;
+  /** ✦ rows on the board (the lifetime total lives in stats). */
+  glyphRows?: number;
+  /** Local hour (0-23) the board was solved. */
+  solvedHour?: number;
 }
 
 export interface BackwordsStats extends StreakStats {
@@ -40,10 +49,17 @@ const base = createDailyPersistence<DailyProgress, BackwordsStats>({
   validDay: (s) =>
     Array.isArray(s.rows) && s.rows.every((r) => typeof r === "string"),
   // Rows legitimately SHRINK here (breakRow), so growth checks can't
-  // apply — instead, a tab that never edited a row itself may only
-  // refresh a save whose rows it agrees with.
+  // apply — instead, a tab that never edited the board itself may only
+  // refresh a save it agrees with: same rows AND no counter regression
+  // (counters change without touching rows, so rows agreement alone no
+  // longer covers everything the save carries; within a day they only
+  // ever grow).
   allowUnsolvedWrite: (stored, progress, { owned }) =>
-    owned === true || stored.rows.join("\n") === progress.rows.join("\n"),
+    owned === true ||
+    (stored.rows.join("\n") === progress.rows.join("\n") &&
+      (progress.takeBacks ?? 0) >= (stored.takeBacks ?? 0) &&
+      (progress.invalids ?? 0) >= (stored.invalids ?? 0) &&
+      (progress.sessions ?? 0) >= (stored.sessions ?? 0)),
 });
 
 export const loadDailyProgress = (dateKey: string) => base.loadDay(dateKey);

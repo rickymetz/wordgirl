@@ -16,6 +16,15 @@ export interface GameState {
   solved: boolean;
   grid: Map<string, string>;
   invalidSlots: number[];
+  /** Successful placements this board (persisted for trends). */
+  moves: number;
+  /** Tray + on-board rotations (persisted for trends). */
+  rotations: number;
+  /** Placed dominoes taken back off the board (persisted for trends). */
+  removals: number;
+  /** Times the board filled completely but a slot wasn't a word
+   * (persisted for trends). */
+  invalidBoards: number;
 }
 
 export type GameAction =
@@ -29,6 +38,10 @@ export type GameAction =
       type: "hydrate";
       placed: PlacedDomino[];
       solved: boolean;
+      moves?: number;
+      rotations?: number;
+      removals?: number;
+      invalidBoards?: number;
     };
 
 export function initialState(puzzle: DoubletPuzzle): GameState {
@@ -40,6 +53,11 @@ export function initialState(puzzle: DoubletPuzzle): GameState {
     solved: false,
     grid: new Map(),
     invalidSlots: [],
+    // Action counters, persisted per board (trend metrics).
+    moves: 0,
+    rotations: 0,
+    removals: 0,
+    invalidBoards: 0,
   };
 }
 
@@ -119,6 +137,7 @@ export function gameReducer(
         ...state,
         currentOrientation: (((state.currentOrientation as number) + 1) %
           4) as Orientation,
+        rotations: state.rotations + 1,
       };
     }
 
@@ -176,6 +195,10 @@ export function gameReducer(
         currentOrientation: 0,
         solved,
         invalidSlots,
+        moves: state.moves + 1,
+        // invalidSlots is only ever non-empty on a FULL board.
+        invalidBoards:
+          state.invalidBoards + (invalidSlots.length > 0 ? 1 : 0),
       };
     }
 
@@ -196,6 +219,7 @@ export function gameReducer(
         selectedDominoId: action.dominoId,
         currentOrientation: removed?.orientation ?? 0,
         invalidSlots,
+        removals: removed ? state.removals + 1 : state.removals,
       };
     }
 
@@ -231,7 +255,17 @@ export function gameReducer(
         state.puzzle,
         action.dict,
       );
-      return { ...state, placed: newPlaced, grid: newGrid, solved, invalidSlots };
+      return {
+        ...state,
+        placed: newPlaced,
+        grid: newGrid,
+        solved,
+        invalidSlots,
+        rotations: state.rotations + 1,
+        // No invalidBoards increment here: a +1 rotation always flips
+        // the domino's axis, which can't succeed on a full board, and
+        // on a non-full board invalidSlots is always empty.
+      };
     }
 
     case "clearBoard": {
@@ -243,6 +277,10 @@ export function gameReducer(
         selectedDominoId: null,
         currentOrientation: 0,
         invalidSlots: [],
+        // Clearing IS taking back — every placed domino comes off, so
+        // it counts like N removals (else clear-board play styles
+        // chart artificially low take-backs).
+        removals: state.removals + state.placed.length,
       };
     }
 
@@ -254,6 +292,10 @@ export function gameReducer(
         grid: newGrid,
         solved: action.solved,
         invalidSlots: [],
+        moves: action.moves ?? 0,
+        rotations: action.rotations ?? 0,
+        removals: action.removals ?? 0,
+        invalidBoards: action.invalidBoards ?? 0,
       };
     }
 

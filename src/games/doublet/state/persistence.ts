@@ -12,6 +12,15 @@ export interface DailyProgress extends DailyBase {
   difficulty: Difficulty;
   placed: PlacedDomino[];
   foundWords: string[];
+  /** Trend counters (absent on saves from before they shipped). */
+  moves?: number;
+  rotations?: number;
+  removals?: number;
+  invalidBoards?: number;
+  /** Opens of this board while unsolved. */
+  sessions?: number;
+  /** Local hour (0-23) this board was solved. */
+  solvedHour?: number;
 }
 
 export type DoubletStats = StreakStats;
@@ -59,30 +68,66 @@ export interface ArchivedDay {
   stale: boolean;
   /** Total active time across the day's boards. */
   elapsedMs: number;
+  /** Summed trend counters — null for days saved before tracking
+   * shipped (a legacy day must not chart as zero). */
+  moves: number | null;
+  rotations: number | null;
+  removals: number | null;
+  invalidBoards: number | null;
+  sessions: number | null;
+  /** An hour one of the day's boards was solved at (any board — the
+   * histogram wants "when do I play", not per-board precision). */
+  solvedHour: number | null;
   /** GameArchive's played contract: all boards' words, merged. */
   foundWords: string[];
 }
 
+/** The counters a day sums across its boards (solvedHour merges, not
+ * sums). One list drives the null-init, the sum, and the gap rule. */
+const COUNTER_KEYS = [
+  "moves",
+  "rotations",
+  "removals",
+  "invalidBoards",
+  "sessions",
+] as const;
+
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  const out: Record<string, ArchivedDay> = {};
+  // Group the per-difficulty saves by date first: counters only chart
+  // when EVERY one of the date's boards carries them — a day mixing
+  // pre-tracking and tracked saves would otherwise present a partial
+  // sum as the day's total (as fake as a zero), so it stays a gap.
+  const byDate: Record<string, DailyProgress[]> = {};
   for (const key of await base.store.keys("daily:")) {
     const saved = base.validShape(await base.store.get<DailyProgress>(key));
-    if (!saved) continue;
-    const day = (out[saved.dateKey] ??= {
-      dateKey: saved.dateKey,
-      solvedCount: 0,
-      startedCount: 0,
-      stale: false,
-      elapsedMs: 0,
-      foundWords: [],
-    });
-    if (saved.solved) day.solvedCount += 1;
-    if (saved.solved || saved.placed.length > 0) day.startedCount += 1;
-    if (saved.dictVersion !== DICT_VERSION) day.stale = true;
-    day.elapsedMs += saved.elapsedMs;
-    day.foundWords.push(...(saved.foundWords ?? []));
+    if (saved) (byDate[saved.dateKey] ??= []).push(saved);
+  }
+  const out: Record<string, ArchivedDay> = {};
+  for (const [dateKey, saves] of Object.entries(byDate)) {
+    const day: ArchivedDay = {
+      dateKey,
+      solvedCount: saves.filter((s) => s.solved).length,
+      startedCount: saves.filter((s) => s.solved || s.placed.length > 0)
+        .length,
+      stale: saves.some((s) => s.dictVersion !== DICT_VERSION),
+      elapsedMs: saves.reduce((a, s) => a + s.elapsedMs, 0),
+      moves: null,
+      rotations: null,
+      removals: null,
+      invalidBoards: null,
+      sessions: null,
+      solvedHour:
+        saves.map((s) => s.solvedHour).find((h) => h !== undefined) ?? null,
+      foundWords: saves.flatMap((s) => s.foundWords ?? []),
+    };
+    for (const k of COUNTER_KEYS) {
+      if (saves.every((s) => s[k] !== undefined)) {
+        day[k] = saves.reduce((a, s) => a + s[k]!, 0);
+      }
+    }
+    out[dateKey] = day;
   }
   return out;
 }

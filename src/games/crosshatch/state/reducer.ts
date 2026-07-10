@@ -31,6 +31,9 @@ export interface GameState {
       of the grid, never un-solves). */
   solved: boolean;
   lastResult: SubmitResult | null;
+  /** Submissions rejected on a word — noFit or repeat (persisted for
+   * trends; incomplete grids and re-arrangements don't count). */
+  invalids: number;
 }
 
 export type GameAction =
@@ -46,6 +49,7 @@ export type GameAction =
       grid: Record<string, string>;
       revealed: Record<string, number[]>;
       solved: boolean;
+      invalids?: number;
     };
 
 export function initialState(puzzle: CrosshatchPuzzle): GameState {
@@ -57,6 +61,7 @@ export function initialState(puzzle: CrosshatchPuzzle): GameState {
     revealed: {},
     solved: false,
     lastResult: null,
+    invalids: 0,
   };
 }
 
@@ -227,7 +232,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const fail = (
         type: Exclude<SubmitResult["type"], "correct">,
         word?: string,
-      ): GameState => ({ ...state, lastResult: { type, word, nonce } });
+      ): GameState => ({
+        ...state,
+        // Only word-level mistakes count as invalid tries.
+        invalids:
+          type === "noFit" || type === "repeat"
+            ? state.invalids + 1
+            : state.invalids,
+        lastResult: { type, word, nonce },
+      });
 
       const words: string[] = [];
       for (const slot of state.puzzle.shape.slots) {
@@ -311,6 +324,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             uniqueWords(state.puzzle.combos).length,
           ),
         lastResult: null,
+        invalids: action.invalids ?? 0,
       };
     }
   }

@@ -37,6 +37,10 @@ export interface GameState {
   rows: CommittedRow[];
   solved: boolean;
   lastResult: SubmitResult | null;
+  /** Committed rows broken back apart (persisted for trends). */
+  takeBacks: number;
+  /** Commits the mirror rejected — invalid or too rare (persisted). */
+  invalids: number;
 }
 
 export type Action =
@@ -47,7 +51,13 @@ export type Action =
   | { type: "clearRow" }
   | { type: "commit" }
   | { type: "breakRow"; index: number }
-  | { type: "hydrate"; places: string[]; solved: boolean };
+  | {
+      type: "hydrate";
+      places: string[];
+      solved: boolean;
+      takeBacks?: number;
+      invalids?: number;
+    };
 
 export function initialState(init: {
   puzzle: Puzzle;
@@ -65,6 +75,8 @@ export function initialState(init: {
     rows: [],
     solved: false,
     lastResult: null,
+    takeBacks: 0,
+    invalids: 0,
   };
 }
 
@@ -186,6 +198,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
           notWord ?? (!state.words.has(place) ? place : rev);
         return {
           ...state,
+          invalids: state.invalids + 1,
           lastResult: {
             type: "invalid",
             place,
@@ -240,6 +253,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         rows: state.rows.filter((_, i) => i !== action.index),
         bank: [...state.bank, ...row.place].sort(),
+        takeBacks: state.takeBacks + 1,
       };
     }
     case "hydrate": {
@@ -254,6 +268,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
         current: "",
         solved: action.solved && applied.bank.length === 0,
         lastResult: null,
+        takeBacks: action.takeBacks ?? 0,
+        invalids: action.invalids ?? 0,
       };
     }
   }

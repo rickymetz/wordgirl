@@ -36,11 +36,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `BackwordsPreview` for the idiom).
 - `GameTrends` — the stats-over-time page from a config: per-metric
-  single-series bar charts in the game's accent (validated: the four
-  accents FAIL as a categorical set, so never chart games against
-  each other), tap-a-bar for the day's value. Route it at `stats`
-  with a "Stats" secondary action; metrics read from the archive day
-  saves (new metrics need new save fields and accrue from ship day).
+  single-series Tufte SPARKLINES in the game's accent (validated: the
+  four accents FAIL as a categorical set, so never chart games against
+  each other), tap-a-day for its value. Route it at `stats` with a
+  "Stats" secondary action; metrics read from the archive day saves
+  (new metrics need new save fields and accrue from ship day; days
+  saved before a metric shipped chart as GAPS via `null`, never fake
+  zeros).
 
 **Dialogs & chrome**
 - `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,
@@ -93,6 +95,18 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   Elements ON a tinted panel punch out with `bg-surface` — never
   `bg-tile`, which is a warm grey tuned for plain surfaces and reads
   as a stain on tint.
+
+**Charts (every new chart, no exceptions)**
+- Invoke the bundled `dataviz` skill BEFORE designing any new chart
+  and follow its procedure (form first, color last, run
+  `scripts/validate_palette.js` — never eyeball CVD/contrast).
+- The house chart style is Tufte: maximize data-ink — sparkline-scale
+  marks, a range-frame spanning only the played days as the sole
+  scaffold, direct labels on the extremes instead of axes, gaps (not
+  zeros) for missing days, values on tap. `GameTrends` is the
+  reference implementation; extend it rather than hand-rolling.
+- One accent hue per chart. Cross-game comparison charts are banned
+  (the four game accents fail as a categorical set — validated).
 
 **Copy & iconography**
 - Neutral, descriptive labels. No flavor text, no bylines, no jargon

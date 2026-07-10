@@ -140,6 +140,27 @@ describe("multi-tab guard", () => {
     expect((await loadDailyProgress("2026-07-06"))?.elapsedMs).toBe(12_000);
   });
 
+  it("a rows-agreeing tab still can't regress the counters", async () => {
+    // Tab A typed five rejected words (no rows change) and flushed;
+    // tab B has the same rows but hydrated before the rejections.
+    await saveDailyProgress(
+      day({ rows: ["mo"], elapsedMs: 10_000, invalids: 5, sessions: 2 }),
+      { rowsEdited: true },
+    );
+    await saveDailyProgress(
+      day({ rows: ["mo"], elapsedMs: 12_000, invalids: 0, sessions: 2 }),
+      { rowsEdited: false },
+    );
+    const stored = await loadDailyProgress("2026-07-06");
+    expect(stored?.invalids).toBe(5);
+    // A non-regressing refresh (same counters, newer clock) is welcome.
+    await saveDailyProgress(
+      day({ rows: ["mo"], elapsedMs: 14_000, invalids: 5, sessions: 2 }),
+      { rowsEdited: false },
+    );
+    expect((await loadDailyProgress("2026-07-06"))?.elapsedMs).toBe(14_000);
+  });
+
   it("an older-build tab never clobbers a newer build's save", async () => {
     await saveDailyProgress(
       day({ rows: ["mo"], solved: true, elapsedMs: 50_000 }),

@@ -37,6 +37,17 @@ export function useDoubletGame(mode: GameMode) {
   const solvedElapsedRef = useRef<number | null>(null);
   const staleRecordRef = useRef(false);
   const abandonedRef = useRef(false);
+  // Opens of this board while unsolved; null = unknowable (solved
+  // before the counter shipped — never backfill).
+  const sessionsRef = useRef<number | null>(null);
+  // Local hour this board was solved, stamped ONLY for a solve that
+  // happens in this session.
+  const solvedHourRef = useRef<number | null>(null);
+  // False when this board hydrated from a save that predates the
+  // action counters: the true counts are unknowable, so they must
+  // never be written — re-saving zeros would turn the legacy day's
+  // GAP into a fake best-ever 0 on the trends charts.
+  const countersKnownRef = useRef(true);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -63,6 +74,16 @@ export function useDoubletGame(mode: GameMode) {
       placed: s.placed,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
+      ...(countersKnownRef.current && {
+        moves: s.moves,
+        rotations: s.rotations,
+        removals: s.removals,
+        invalidBoards: s.invalidBoards,
+      }),
+      ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
+      ...(solvedHourRef.current !== null && {
+        solvedHour: solvedHourRef.current,
+      }),
       foundWords: [],
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -111,10 +132,26 @@ export function useDoubletGame(mode: GameMode) {
           savedElapsedRef.current = saved.elapsedMs ?? 0;
           sessionStartRef.current = Date.now();
           sessionActiveMsRef.current = 0;
+          // A pre-tracking save's session count is unknowable — stays
+          // null even if play continues (a partial count is as fake
+          // as a zero). A solved board's count is final; an unsolved
+          // one counts this open as another session.
+          sessionsRef.current =
+            saved.sessions === undefined
+              ? null
+              : saved.solved
+                ? saved.sessions
+                : saved.sessions + 1;
+          solvedHourRef.current = saved.solvedHour ?? null;
+          countersKnownRef.current = saved.moves !== undefined;
           dispatch({
             type: "hydrate",
             placed: saved.placed,
             solved: saved.solved,
+            moves: saved.moves,
+            rotations: saved.rotations,
+            removals: saved.removals,
+            invalidBoards: saved.invalidBoards,
           });
         } else {
           const stale = await loadStaleDailyProgress(dateKey, mode.difficulty);
@@ -123,10 +160,13 @@ export function useDoubletGame(mode: GameMode) {
             staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.solved || stale.statsRecorded === true;
+            // A fresh run replaces the stale record when play begins.
+            sessionsRef.current = 1;
             hydratedRef.current = true;
             return;
           }
           void recordDailyStarted();
+          sessionsRef.current = 1;
           hydratedRef.current = true;
           persistNow(stateRef.current);
           return;
@@ -154,6 +194,9 @@ export function useDoubletGame(mode: GameMode) {
       solvedElapsedRef.current = rawElapsedMs();
       setSolvedElapsedMs(solvedElapsedRef.current);
     }
+    // Stamp the hour only for a solve that happened THIS session —
+    // runs before the persist effect, so the solving save carries it.
+    solvedHourRef.current ??= new Date().getHours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.solved, solvedElapsedMs]);
 

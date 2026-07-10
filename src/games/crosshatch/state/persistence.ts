@@ -30,6 +30,12 @@ export interface DailyProgress {
   /** Words already credited to stats.totalWords, so post-solve finds
    * keep counting exactly once across sessions. */
   statsWords?: number;
+  /** Trend counters, absent on saves from before they shipped
+   * (legacy days chart as gaps, never fake zeros). */
+  sessions?: number;
+  invalids?: number;
+  /** Local hour (0-23) the solve threshold was crossed. */
+  solvedHour?: number;
 }
 
 export interface CrosshatchStats {
@@ -62,12 +68,16 @@ const base = createDailyPersistence<DailyProgress, CrosshatchStats>({
     (s.revealed === undefined ||
       (s.revealed !== null && typeof s.revealed === "object")),
   // Found words only ever GROW within a day: a stored save holding
-  // words this tab doesn't know about means another tab is ahead.
+  // words this tab doesn't know about means another tab is ahead. The
+  // counters ride the same save and are monotonic too — a tab with a
+  // stale (smaller) count must not regress a fresher one.
   allowUnsolvedWrite: (stored, progress) =>
     !(
       stored.foundWords.length > progress.foundWords.length &&
       stored.foundWords.some((w) => !progress.foundWords.includes(w))
-    ),
+    ) &&
+    (progress.invalids ?? 0) >= (stored.invalids ?? 0) &&
+    (progress.sessions ?? 0) >= (stored.sessions ?? 0),
 });
 const store = base.store;
 

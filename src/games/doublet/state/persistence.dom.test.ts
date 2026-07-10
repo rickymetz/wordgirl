@@ -93,6 +93,63 @@ describe("archive roll-up", () => {
     expect(rolled.foundWords.sort()).toEqual(["cat", "dog"]);
   });
 
+  it("sums action counters, but a day of pre-tracking saves stays null", async () => {
+    // Legacy saves (no counters) must roll up as null, never zero —
+    // a fake 0 would chart as the best day ever.
+    await saveDailyProgress(day("easy", { solved: true }));
+    await saveDailyProgress(day("medium", { solved: true }));
+    let days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBeNull();
+    expect(days["2026-07-12"].rotations).toBeNull();
+    expect(days["2026-07-12"].removals).toBeNull();
+    expect(days["2026-07-12"].invalidBoards).toBeNull();
+    expect(days["2026-07-12"].sessions).toBeNull();
+    expect(days["2026-07-12"].solvedHour).toBeNull();
+
+    // Counters sum when EVERY board of the date carries them.
+    localStorage.clear();
+    await saveDailyProgress(
+      day("easy", {
+        solved: true,
+        moves: 4,
+        rotations: 2,
+        removals: 1,
+        invalidBoards: 1,
+        sessions: 1,
+        solvedHour: 9,
+      }),
+    );
+    await saveDailyProgress(
+      day("medium", {
+        solved: true,
+        moves: 6,
+        rotations: 0,
+        removals: 0,
+        invalidBoards: 0,
+        sessions: 2,
+        solvedHour: 21,
+      }),
+    );
+    days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBe(10);
+    expect(days["2026-07-12"].rotations).toBe(2);
+    expect(days["2026-07-12"].removals).toBe(1);
+    expect(days["2026-07-12"].invalidBoards).toBe(1);
+    expect(days["2026-07-12"].sessions).toBe(3);
+    // Any solved board's hour represents the day.
+    expect([9, 21]).toContain(days["2026-07-12"].solvedHour);
+
+    // A MIXED date — one board's save predates tracking — is a gap:
+    // a partial sum presented as the day's total is as fake as a zero.
+    await saveDailyProgress(day("hard", { solved: true })); // legacy board
+    days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBeNull();
+    expect(days["2026-07-12"].rotations).toBeNull();
+    expect(days["2026-07-12"].sessions).toBeNull();
+    // The hour is a merge, not a sum — it survives the mixed date.
+    expect([9, 21]).toContain(days["2026-07-12"].solvedHour);
+  });
+
   it("marks a day stale when any board is from an older dictionary", async () => {
     await saveDailyProgress(day("easy", { solved: true }));
     await saveDailyProgress(
