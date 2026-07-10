@@ -13,8 +13,8 @@ interface Props {
 
 const NODE_R = 0.38;
 const PIPE_W = 0.32;
-const START_OPACITY = 0.12;
-const END_OPACITY = 0.4;
+const START_OPACITY = 0.25;
+const END_OPACITY = 0.5;
 
 export function SnakeGrid({
   rows,
@@ -80,7 +80,7 @@ export function SnakeGrid({
   const color = solved ? "var(--color-good)" : "var(--color-accent)";
 
   function nodeOpacity(i: number): number {
-    if (solved) return 0.35;
+    if (solved) return 0.4;
     if (n <= 1) return END_OPACITY;
     return START_OPACITY + (END_OPACITY - START_OPACITY) * (i / (n - 1));
   }
