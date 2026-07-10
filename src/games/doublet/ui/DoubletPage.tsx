@@ -3,7 +3,7 @@ import { useToday } from "../../../lib/useToday";
 import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
-export default function TilewordPage() {
+export default function DoubletPage() {
   const dateKey = useToday();
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
 

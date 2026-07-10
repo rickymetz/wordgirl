@@ -9,7 +9,7 @@ import type {
   DominoPiece,
   PlacedDomino,
   Slot,
-  TilewordPuzzle,
+  DoubletPuzzle,
 } from "./types";
 import { cellKey, dominoCells } from "./types";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
@@ -25,12 +25,12 @@ export function practiceSeed(random: string, difficulty: Difficulty): string {
   return `practice:${difficulty}:${random}`;
 }
 
-export function generateTileword(
+export function generateDoublet(
   dict: Dictionary,
   seed: string,
-): TilewordPuzzle {
+): DoubletPuzzle {
   const difficulty = parseDifficulty(seed);
-  const rand = seededRandom("tileword:v1:" + seed);
+  const rand = seededRandom("doublet:v1:" + seed);
   const shapes = SHAPES[difficulty];
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -469,7 +469,7 @@ function generateFallback(
   seed: string,
   difficulty: Difficulty,
   rand: () => number,
-): TilewordPuzzle {
+): DoubletPuzzle {
   const shape = SHAPES[difficulty][0];
   const slots = findSlots(shape);
 
@@ -525,5 +525,5 @@ function generateFallback(
     };
   }
 
-  throw new Error(`Tileword generation failed for seed: ${seed}`);
+  throw new Error(`Doublet generation failed for seed: ${seed}`);
 }

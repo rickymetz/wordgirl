@@ -2,14 +2,14 @@ import type {
   Cell,
   Orientation,
   PlacedDomino,
-  TilewordPuzzle,
+  DoubletPuzzle,
 } from "../engine/types";
 import { cellKey, dominoCells, dominoLetters, slotWord } from "../engine/types";
 import { TWO_LETTER_WORDS } from "../engine/twoLetterWords";
 import type { Dictionary } from "../../../lib/words/dictionary";
 
 export interface GameState {
-  puzzle: TilewordPuzzle;
+  puzzle: DoubletPuzzle;
   placed: PlacedDomino[];
   selectedDominoId: number | null;
   currentOrientation: Orientation;
@@ -31,7 +31,7 @@ export type GameAction =
       solved: boolean;
     };
 
-export function initialState(puzzle: TilewordPuzzle): GameState {
+export function initialState(puzzle: DoubletPuzzle): GameState {
   return {
     puzzle,
     placed: [],
@@ -45,7 +45,7 @@ export function initialState(puzzle: TilewordPuzzle): GameState {
 
 function buildGrid(
   placed: PlacedDomino[],
-  puzzle: TilewordPuzzle,
+  puzzle: DoubletPuzzle,
 ): Map<string, string> {
   const grid = new Map<string, string>();
   for (const p of placed) {
@@ -61,7 +61,7 @@ function buildGrid(
 
 function checkSolved(
   grid: Map<string, string>,
-  puzzle: TilewordPuzzle,
+  puzzle: DoubletPuzzle,
   dict: Dictionary,
 ): { solved: boolean; invalidSlots: number[] } {
   if (grid.size < puzzle.board.cells.length)
@@ -88,7 +88,7 @@ function checkSolved(
 function retainValidInvalidSlots(
   prevInvalid: number[],
   grid: Map<string, string>,
-  puzzle: TilewordPuzzle,
+  puzzle: DoubletPuzzle,
 ): number[] {
   return prevInvalid.filter((i) => {
     const slot = puzzle.slots[i];
