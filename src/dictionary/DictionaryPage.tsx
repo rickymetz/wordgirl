@@ -146,7 +146,7 @@ export function DictionaryPage() {
   }, [allWords, filter, bookmarks]);
 
   return (
-    <div className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-4">
+    <div data-level="neutral" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-4">
       <header className="flex items-center justify-between pt-6 pb-2">
         <HomeLink />
         <span className="text-sm text-ink-soft">
