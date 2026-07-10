@@ -194,7 +194,21 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         <HomeLink />
-        <div className="w-6" />
+        {placedCount > 0 && !state.solved ? (
+          <button
+            className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                       text-ink-soft text-xs font-semibold
+                       active:scale-95 touch-manipulation select-none
+                       after:absolute after:inset-x-0 after:-inset-y-1.5"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => dispatch({ type: "clearBoard" })}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Clear
+          </button>
+        ) : (
+          <div className="w-6" />
+        )}
       </header>
 
       {/* Title + difficulty */}
@@ -249,19 +263,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Tray — pinned to bottom */}
       <div className="flex flex-col items-center gap-2">
-        {placedCount > 0 && !state.solved && (
-          <button
-            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                       bg-surface-tint text-ink-soft text-sm font-semibold
-                       active:scale-95 touch-manipulation select-none
-                       after:absolute after:inset-x-0 after:-inset-y-1.5"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => dispatch({ type: "clearBoard" })}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Clear
-          </button>
-        )}
         <DominoTray
           state={state}
           onSelect={(id) => dispatch({ type: "selectDomino", dominoId: id })}
