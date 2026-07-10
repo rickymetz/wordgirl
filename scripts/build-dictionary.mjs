@@ -84,19 +84,6 @@ const REQUIRED_ALLOWLIST = new Set([
   // Mirror-word staples: backwords rows need BOTH readings in the
   // required tier, and these reversals are words players expect.
   "dab",
-  // Doublet 2-letter words (NWL2023 Scrabble dictionary). These are the
-  // valid plays in the doublet game and belong in the required tier.
-  "aa", "ab", "ad", "ae", "ag", "ah", "ai", "al", "am", "an",
-  "ar", "as", "at", "aw", "ax", "ay", "ba", "be", "bi", "bo",
-  "by", "da", "de", "do", "ed", "ef", "eh", "el", "em", "en",
-  "er", "es", "et", "ew", "ex", "fa", "fe", "gi", "go", "ha",
-  "he", "hi", "hm", "ho", "id", "if", "in", "is", "it", "jo",
-  "ka", "ki", "la", "li", "lo", "ma", "me", "mi", "mm", "mo",
-  "mu", "my", "na", "ne", "no", "nu", "od", "oe", "of", "oh",
-  "oi", "ok", "om", "on", "op", "or", "os", "ow", "ox", "oy",
-  "pa", "pe", "pi", "po", "qi", "re", "sh", "si", "so", "ta",
-  "te", "ti", "to", "uh", "um", "un", "up", "us", "ut", "we",
-  "wo", "xi", "xu", "ya", "ye", "yo", "za",
 ]);
 
 // Crossword-supplement words: real English words that appear in NYT/USA
@@ -185,13 +172,26 @@ for (const word of enableAll) {
   }
 }
 
-// Doublet 2-letter words not in ENABLE but in NWL2023 — force into
-// required so they show as "core" in the dictionary browser.
-for (const word of REQUIRED_ALLOWLIST) {
-  if (word.length !== 2) continue;
-  if (enableAll.has(word)) continue;
+// Doublet 2-letter words (NWL2023). Added as bonus — the dictionary
+// browser labels these "doublet" separately from the core tier.
+const DOUBLET_WORDS = [
+  "aa", "ab", "ad", "ae", "ag", "ah", "ai", "al", "am", "an",
+  "ar", "as", "at", "aw", "ax", "ay", "ba", "be", "bi", "bo",
+  "by", "da", "de", "do", "ed", "ef", "eh", "el", "em", "en",
+  "er", "es", "et", "ew", "ex", "fa", "fe", "gi", "go", "ha",
+  "he", "hi", "hm", "ho", "id", "if", "in", "is", "it", "jo",
+  "ka", "ki", "la", "li", "lo", "ma", "me", "mi", "mm", "mo",
+  "mu", "my", "na", "ne", "no", "nu", "od", "oe", "of", "oh",
+  "oi", "ok", "om", "on", "op", "or", "os", "ow", "ox", "oy",
+  "pa", "pe", "pi", "po", "qi", "re", "sh", "si", "so", "ta",
+  "te", "ti", "to", "uh", "um", "un", "up", "us", "ut", "we",
+  "wo", "xi", "xu", "ya", "ye", "yo", "za",
+];
+for (const word of DOUBLET_WORDS) {
   if (!/^[a-z]+$/.test(word)) continue;
-  required.add(word);
+  if (!required.has(word) && !bonus.has(word)) {
+    bonus.add(word);
+  }
 }
 
 // Crossword supplement: words NOT in ENABLE but common in published
