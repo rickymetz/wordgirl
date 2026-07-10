@@ -51,8 +51,7 @@ export function useSerpentineGame(mode: GameMode) {
       }
       dispatch({
         type: "hydrate",
-        paths: saved.paths,
-        activeSnake: saved.activeSnake,
+        cells: saved.cells,
         solved: saved.solved,
       });
     });
@@ -69,8 +68,7 @@ export function useSerpentineGame(mode: GameMode) {
       elapsedMs: s.solved
         ? (solvedElapsedMs.current ?? clock.rawElapsedMs())
         : clock.rawElapsedMs(),
-      paths: s.paths.map((p) => p.cells),
-      activeSnake: s.activeSnake,
+      cells: s.cells,
       statsRecorded: statsRecorded.current,
     }),
     [dateKey, difficulty, puzzle.id, clock],

@@ -1,40 +1,26 @@
 import { useCallback, useRef } from "react";
 import { type Cell, cellKey, cellsEqual } from "../engine/types";
-import type { SnakeProgress } from "../state/reducer";
 
 interface Props {
   rows: number;
   cols: number;
   grid: string[][];
-  paths: SnakeProgress[];
-  activeSnake: number;
+  targetLen: number;
+  cells: Cell[];
   solved: boolean;
   onTapCell: (row: number, col: number) => void;
 }
 
-const SNAKE_COLORS = [
-  "var(--color-accent)",
-  "var(--color-warn)",
-  "var(--color-good)",
-];
-
-function snakeColor(index: number, isActive: boolean, matched: boolean): string {
-  if (matched) return "var(--color-good)";
-  if (!isActive) return SNAKE_COLORS[index % SNAKE_COLORS.length];
-  return "var(--color-accent)";
-}
-
-function snakeOpacity(isActive: boolean, matched: boolean): number {
-  if (matched) return 0.3;
-  return isActive ? 0.35 : 0.2;
-}
+const NODE_R = 0.38;
+const PIPE_W = 0.32;
+const START_OPACITY = 0.12;
+const END_OPACITY = 0.4;
 
 export function SnakeGrid({
   rows,
   cols,
   grid,
-  paths,
-  activeSnake,
+  cells,
   solved,
   onTapCell,
 }: Props) {
@@ -90,35 +76,14 @@ export function SnakeGrid({
     lastDragCell.current = null;
   }, []);
 
-  // Build cell lookup: which snake owns each cell?
-  const cellOwner = new Map<string, number>();
-  for (let si = 0; si < paths.length; si++) {
-    for (let ci = 0; ci < paths[si].cells.length; ci++) {
-      cellOwner.set(cellKey(paths[si].cells[ci]), si);
-    }
-  }
+  const n = cells.length;
+  const color = solved ? "var(--color-good)" : "var(--color-accent)";
 
-  // Build SVG shapes per snake: big circles + thick connector pipes.
-  const svgSnakes: {
-    color: string;
-    opacity: number;
-    cells: { cx: number; cy: number }[];
-  }[] = [];
-  for (let si = 0; si < paths.length; si++) {
-    const p = paths[si];
-    if (p.cells.length === 0) continue;
-    const isActive = si === activeSnake;
-    const matched = p.matchedSnake >= 0;
-    svgSnakes.push({
-      color: snakeColor(si, isActive, matched),
-      opacity: snakeOpacity(isActive, matched),
-      cells: p.cells.map((c) => ({ cx: c.col + 0.5, cy: c.row + 0.5 })),
-    });
+  function nodeOpacity(i: number): number {
+    if (solved) return 0.35;
+    if (n <= 1) return END_OPACITY;
+    return START_OPACITY + (END_OPACITY - START_OPACITY) * (i / (n - 1));
   }
-
-  const NODE_R = 0.38;
-  const PIPE_W = 0.32;
-  const gap = 0;
 
   return (
     <div
@@ -133,46 +98,46 @@ export function SnakeGrid({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {/* SVG overlay: Strands-style circles + pipe connectors */}
+      {/* SVG overlay: gradient snake with circles + pipes */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox={`0 0 ${cols} ${rows}`}
         preserveAspectRatio="none"
       >
-        {svgSnakes.map((snake, si) => {
-          if (snake.cells.length === 0) return null;
-          return (
-            <g key={si} opacity={snake.opacity}>
-              {/* Pipe connectors (behind circles) */}
-              {snake.cells.map((c, ci) => {
-                if (ci === 0) return null;
-                const prev = snake.cells[ci - 1];
-                return (
-                  <line
-                    key={`pipe-${ci}`}
-                    x1={prev.cx}
-                    y1={prev.cy}
-                    x2={c.cx}
-                    y2={c.cy}
-                    stroke={snake.color}
-                    strokeWidth={PIPE_W}
-                    strokeLinecap="round"
-                  />
-                );
-              })}
-              {/* Node circles */}
-              {snake.cells.map((c, ci) => (
-                <circle
-                  key={ci}
-                  cx={c.cx}
-                  cy={c.cy}
-                  r={NODE_R}
-                  fill={snake.color}
+        {n > 0 && (
+          <g>
+            {/* Pipe connectors */}
+            {cells.map((c, i) => {
+              if (i === 0) return null;
+              const prev = cells[i - 1];
+              const opacity = nodeOpacity(i);
+              return (
+                <line
+                  key={`pipe-${i}`}
+                  x1={prev.col + 0.5}
+                  y1={prev.row + 0.5}
+                  x2={c.col + 0.5}
+                  y2={c.row + 0.5}
+                  stroke={color}
+                  strokeOpacity={opacity}
+                  strokeWidth={PIPE_W}
+                  strokeLinecap="round"
                 />
-              ))}
-            </g>
-          );
-        })}
+              );
+            })}
+            {/* Node circles */}
+            {cells.map((c, i) => (
+              <circle
+                key={`node-${i}`}
+                cx={c.col + 0.5}
+                cy={c.row + 0.5}
+                r={NODE_R}
+                fill={color}
+                fillOpacity={nodeOpacity(i)}
+              />
+            ))}
+          </g>
+        )}
       </svg>
 
       {/* Grid cells — letters sit on top of SVG */}
@@ -181,21 +146,17 @@ export function SnakeGrid({
         style={{
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gridTemplateRows: `repeat(${rows}, 1fr)`,
-          gap: `${gap}px`,
         }}
       >
         {Array.from({ length: rows }, (_, r) =>
-          Array.from({ length: cols }, (_, c) => {
-            const key = cellKey({ row: r, col: c });
-            return (
-              <div
-                key={key}
-                className="relative flex items-center justify-center rounded-full font-game text-sm text-ink"
-              >
-                <span className="relative z-10 select-none">{grid[r][c]}</span>
-              </div>
-            );
-          }),
+          Array.from({ length: cols }, (_, c) => (
+            <div
+              key={cellKey({ row: r, col: c })}
+              className="relative flex items-center justify-center rounded-full font-game text-sm text-ink"
+            >
+              <span className="relative z-10 select-none">{grid[r][c]}</span>
+            </div>
+          )),
         )}
       </div>
     </div>

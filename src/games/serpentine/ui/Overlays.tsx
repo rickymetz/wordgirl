@@ -25,8 +25,7 @@ function buildShareText(
   const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
   const diff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
   const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
-  const snakeCount = puzzle.snakes.length === 1 ? "1 snake" : `${puzzle.snakes.length} snakes`;
-  return `${title}\n${diff}: ${snakeCount}${time} 🐍\n\n${SHARE_URL}`;
+  return `${title}\n${diff}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
 }
 
 export function SolvedOverlay({
@@ -62,14 +61,6 @@ export function SolvedOverlay({
             )}
 
             <div className="flex gap-6 text-center">
-              <div>
-                <div className="text-2xl font-bold text-accent">
-                  {puzzle.snakes.length}
-                </div>
-                <div className="text-xs text-ink-soft">
-                  {puzzle.snakes.length === 1 ? "snake" : "snakes"}
-                </div>
-              </div>
               {elapsedMs !== null && (
                 <div>
                   <div className="text-2xl font-bold text-accent">
@@ -86,13 +77,11 @@ export function SolvedOverlay({
               </div>
             </div>
 
-            {/* Revealed phrases */}
+            {/* Revealed phrase */}
             <div className="flex w-full flex-col gap-1.5 rounded-xl bg-surface-tint p-4">
-              {puzzle.snakes.map((snake, i) => (
-                <p key={i} className="text-center text-sm font-medium text-ink">
-                  {snake.text}
-                </p>
-              ))}
+              <p className="text-center text-sm font-medium text-ink">
+                {puzzle.text}
+              </p>
               <p className="text-center text-xs font-medium text-ink-soft italic">
                 {puzzle.title}
               </p>
@@ -120,12 +109,12 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
           rules={[
             {
               Icon: Route,
-              title: "Trace the snakes",
+              title: "Trace the path",
               body: (
                 <>
-                  Find <Key>continuous paths</Key> through the grid. Each
-                  path snakes through adjacent cells — horizontally,
-                  vertically, or <Key>diagonally</Key>.
+                  Find a <Key>single continuous path</Key> through the
+                  grid. The path snakes through adjacent cells —
+                  horizontally, vertically, or <Key>diagonally</Key>.
                 </>
               ),
             },
@@ -134,9 +123,8 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
               title: "Cover every cell",
               body: (
                 <>
-                  The puzzle is solved when every cell belongs to a snake.
-                  The number of snakes and their <Key>lengths</Key> are
-                  shown below the grid.
+                  The puzzle is solved when every cell is on the path.
+                  The path <Key>length</Key> is shown below the grid.
                 </>
               ),
             },
@@ -145,20 +133,20 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
               title: "Tap and drag",
               body: (
                 <>
-                  <Key>Tap</Key> a cell to extend the active snake, or{" "}
-                  <Key>drag</Key> through cells. Tap a placed cell to undo
-                  back to it. Switch snakes with the labels below.
+                  <Key>Tap</Key> a cell to extend the path, or{" "}
+                  <Key>drag</Key> through cells. Tap a placed cell to
+                  undo back to it.
                 </>
               ),
             },
             {
               Icon: CircleHelp,
-              title: "Hidden phrases",
+              title: "Hidden phrase",
               body: (
                 <>
-                  Each snake spells a hidden phrase. The puzzle{" "}
-                  <Key>title</Key> is your only clue. Phrases are revealed
-                  when a snake is complete.
+                  The path spells a hidden phrase. The puzzle{" "}
+                  <Key>title</Key> is your only clue. The phrase is
+                  revealed when the puzzle is complete.
                 </>
               ),
             },

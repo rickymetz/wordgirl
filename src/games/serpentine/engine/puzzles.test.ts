@@ -6,7 +6,7 @@ describe("serpentine puzzles", () => {
   for (const difficulty of ["easy", "medium", "hard"] as const) {
     const pool = getPuzzlePool(difficulty);
     for (const puzzle of pool) {
-      it(`${puzzle.id} (${difficulty}) has valid paths`, () => {
+      it(`${puzzle.id} (${difficulty}) has a valid path`, () => {
         const error = validatePuzzle(puzzle);
         expect(error).toBeNull();
       });

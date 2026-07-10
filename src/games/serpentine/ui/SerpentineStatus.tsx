@@ -13,7 +13,7 @@ export function SerpentineStatus() {
         for (const diff of ["easy", "medium", "hard"] as const) {
           const daily = await loadDailyProgress(diff, today);
           if (daily?.solved) return "Solved ✓";
-          if (daily && daily.paths.some((p) => p.length > 0))
+          if (daily && daily.cells.length > 0)
             return "In progress";
         }
         return null;

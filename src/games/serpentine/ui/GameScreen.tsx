@@ -10,7 +10,6 @@ import {
 } from "../state/useSerpentineGame";
 import { loadCoachSeen, markCoachSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
-import { SnakeLabels } from "./SnakeLabels";
 import { SolvedOverlay, SerpentineCoach } from "./Overlays";
 import type { Difficulty } from "../engine/types";
 
@@ -50,23 +49,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     if (state.solved) show("Solved!", 2000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.solved]);
-
-  // Show toast when a single snake matches.
-  const matchedCount = state.paths.filter((p) => p.matchedSnake >= 0).length;
-  const prevMatchedRef = { current: 0 };
-  useEffect(() => {
-    if (matchedCount > prevMatchedRef.current && !state.solved) {
-      const matched = state.paths.find(
-        (p) => p.matchedSnake >= 0 && p.matchedSnake === matchedCount - 1,
-      );
-      if (matched) {
-        const snake = puzzle.snakes[matched.matchedSnake];
-        if (snake) show(snake.text, 2000);
-      }
-    }
-    prevMatchedRef.current = matchedCount;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matchedCount]);
 
   const onTapCell = useCallback(
     (row: number, col: number) => dispatch({ type: "tapCell", row, col }),
@@ -116,7 +98,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         </span>
       </div>
 
-      {/* Difficulty pills — matches doublet's picker */}
+      {/* Difficulty pills */}
       {difficulty !== undefined && onDifficultyChange && (
         <div className="flex gap-1 pb-3">
           {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
@@ -145,24 +127,20 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           rows={puzzle.rows}
           cols={puzzle.cols}
           grid={puzzle.grid}
-          paths={state.paths}
-          activeSnake={state.activeSnake}
+          targetLen={puzzle.path.length}
+          cells={state.cells}
           solved={state.solved}
           onTapCell={onTapCell}
         />
         <GameToast toast={toast} />
       </div>
 
-      {/* Snake labels */}
-      <div className="pb-3">
-        <SnakeLabels
-          puzzle={puzzle}
-          paths={state.paths}
-          activeSnake={state.activeSnake}
-          solved={state.solved}
-          onSwitchSnake={(i) => dispatch({ type: "switchSnake", index: i })}
-        />
-      </div>
+      {/* Progress */}
+      {!state.solved && (
+        <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+          {state.cells.length} / {puzzle.path.length} letters
+        </div>
+      )}
 
       {/* Controls */}
       {!state.solved && (

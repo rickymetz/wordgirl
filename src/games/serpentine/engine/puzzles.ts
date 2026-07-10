@@ -5,7 +5,7 @@ import type { PuzzleDef } from "./types";
  * from the pool for its difficulty.
  *
  * Puzzle paths are verified at test time: every step adjacent,
- * no overlaps, all cells covered.
+ * no overlaps, all cells covered, text matches.
  */
 
 const easy: PuzzleDef[] = [
@@ -21,16 +21,12 @@ const easy: PuzzleDef[] = [
       ["E", "I", "S", "P"],
       ["R", "E", "W", "O"],
     ],
-    snakes: [
-      {
-        text: "KNOWLEDGE IS POWER",
-        cells: [
-          { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 },
-          { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
-          { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 },
-          { row: 3, col: 3 }, { row: 3, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 0 },
-        ],
-      },
+    text: "KNOWLEDGE IS POWER",
+    path: [
+      { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 },
+      { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
+      { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 },
+      { row: 3, col: 3 }, { row: 3, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 0 },
     ],
   },
 ];
@@ -38,36 +34,26 @@ const easy: PuzzleDef[] = [
 const medium: PuzzleDef[] = [
   {
     id: "m001",
-    title: "The question",
+    title: "Not all gold",
     difficulty: "medium",
     rows: 6,
     cols: 4,
     grid: [
-      ["T", "O", "B", "E"],
-      ["O", "N", "R", "O"],
-      ["T", "T", "O", "B"],
-      ["S", "H", "A", "E"],
-      ["P", "S", "E", "K"],
-      ["E", "A", "R", "E"],
+      ["A", "L", "L", "T"],
+      ["G", "T", "A", "H"],
+      ["L", "I", "T", "T"],
+      ["I", "S", "R", "E"],
+      ["S", "N", "O", "T"],
+      ["D", "L", "O", "G"],
     ],
-    snakes: [
-      {
-        text: "TO BE OR NOT TO BE",
-        cells: [
-          { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 },
-          { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
-          { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 },
-          { row: 3, col: 3 },
-        ],
-      },
-      {
-        text: "SHAKESPEARE",
-        cells: [
-          { row: 3, col: 0 }, { row: 3, col: 1 }, { row: 3, col: 2 },
-          { row: 4, col: 3 }, { row: 4, col: 2 }, { row: 4, col: 1 }, { row: 4, col: 0 },
-          { row: 5, col: 0 }, { row: 5, col: 1 }, { row: 5, col: 2 }, { row: 5, col: 3 },
-        ],
-      },
+    text: "ALL THAT GLITTERS IS NOT GOLD",
+    path: [
+      { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 },
+      { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
+      { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 },
+      { row: 3, col: 3 }, { row: 3, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 0 },
+      { row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 },
+      { row: 5, col: 3 }, { row: 5, col: 2 }, { row: 5, col: 1 }, { row: 5, col: 0 },
     ],
   },
 ];
@@ -75,37 +61,26 @@ const medium: PuzzleDef[] = [
 const hard: PuzzleDef[] = [
   {
     id: "h001",
-    title: "Slow and steady",
+    title: "Persistence",
     difficulty: "hard",
     rows: 6,
     cols: 6,
     grid: [
-      ["I", "T", "D", "O", "E", "S"],
-      ["T", "A", "M", "T", "O", "N"],
-      ["T", "E", "R", "H", "O", "W"],
-      ["O", "Y", "W", "O", "L", "S"],
-      ["U", "G", "O", "C", "O", "N"],
-      ["S", "U", "I", "C", "U", "F"],
+      ["I", "T", "A", "L", "W", "A"],
+      ["M", "E", "E", "S", "S", "Y"],
+      ["S", "I", "M", "P", "O", "S"],
+      ["U", "E", "L", "B", "I", "S"],
+      ["N", "T", "I", "L", "I", "T"],
+      ["E", "N", "O", "D", "S", "I"],
     ],
-    snakes: [
-      {
-        text: "IT DOES NOT MATTER HOW SLOW YOU GO",
-        cells: [
-          { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 },
-          { row: 1, col: 5 }, { row: 1, col: 4 }, { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
-          { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 }, { row: 2, col: 4 }, { row: 2, col: 5 },
-          { row: 3, col: 5 }, { row: 3, col: 4 }, { row: 3, col: 3 }, { row: 3, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 0 },
-          { row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 },
-        ],
-      },
-      {
-        text: "CONFUCIUS",
-        cells: [
-          { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 5 },
-          { row: 5, col: 5 }, { row: 5, col: 4 }, { row: 5, col: 3 },
-          { row: 5, col: 2 }, { row: 5, col: 1 }, { row: 5, col: 0 },
-        ],
-      },
+    text: "IT ALWAYS SEEMS IMPOSSIBLE UNTIL IT IS DONE",
+    path: [
+      { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 }, { row: 0, col: 5 },
+      { row: 1, col: 5 }, { row: 1, col: 4 }, { row: 1, col: 3 }, { row: 1, col: 2 }, { row: 1, col: 1 }, { row: 1, col: 0 },
+      { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 2, col: 3 }, { row: 2, col: 4 }, { row: 2, col: 5 },
+      { row: 3, col: 5 }, { row: 3, col: 4 }, { row: 3, col: 3 }, { row: 3, col: 2 }, { row: 3, col: 1 }, { row: 3, col: 0 },
+      { row: 4, col: 0 }, { row: 4, col: 1 }, { row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 4, col: 5 },
+      { row: 5, col: 5 }, { row: 5, col: 4 }, { row: 5, col: 3 }, { row: 5, col: 2 }, { row: 5, col: 1 }, { row: 5, col: 0 },
     ],
   },
 ];

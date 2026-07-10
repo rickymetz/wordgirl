@@ -10,8 +10,7 @@ export interface DayProgress extends DailyBase {
   dateKey: string;
   difficulty: Difficulty;
   puzzleId: string;
-  paths: Cell[][];
-  activeSnake: number;
+  cells: Cell[];
 }
 
 export interface SerpentineStats extends StreakStats {
@@ -37,7 +36,7 @@ const daily = createDailyPersistence<DayProgress, SerpentineStats>({
   validDay: (saved) =>
     typeof saved.difficulty === "string" &&
     typeof saved.puzzleId === "string" &&
-    Array.isArray(saved.paths),
+    Array.isArray(saved.cells),
   dayKey: (day) => `${day.difficulty}:${day.dateKey}`,
 });
 
