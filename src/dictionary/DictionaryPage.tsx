@@ -1,5 +1,6 @@
-import { use, useCallback, useMemo, useRef, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Bookmark, ExternalLink, X } from "lucide-react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { loadDictionary } from "../lib/words/loader";
 import { HomeLink } from "../components/HomeLink";
 
@@ -7,6 +8,7 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const BOOKMARKS_KEY = "wg:v1:local:dictionary:bookmarks";
 const MIN_LEN = 2;
 const MAX_LEN = 15;
+const ROW_HEIGHT = 44;
 
 function buildMatcher(pattern: string): ((word: string) => boolean) | null {
   const p = pattern.trim().toLowerCase();
@@ -39,7 +41,6 @@ type Filter = "all" | "core" | "bookmarked";
 export function DictionaryPage() {
   const dict = use(loadDictionary());
   const [query, setQuery] = useState("");
-  const [activeLetter, setActiveLetter] = useState<string | null>("A");
   const [filter, setFilter] = useState<Filter>("all");
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
   const [lenMin, setLenMin] = useState(MIN_LEN);
@@ -83,14 +84,48 @@ export function DictionaryPage() {
     const match = buildMatcher(query);
     if (match) {
       result = result.filter((w) => match(w.word));
-    } else if (activeLetter) {
-      result = result.filter(
-        (w) => w.word[0] === activeLetter.toLowerCase(),
-      );
     }
 
     return result;
-  }, [allWords, query, activeLetter, filter, bookmarks, lenMin, lenMax, lengthActive]);
+  }, [allWords, query, filter, bookmarks, lenMin, lenMax, lengthActive]);
+
+  const letterOffsets = useMemo(() => {
+    const offsets = new Map<string, number>();
+    for (let i = 0; i < filtered.length; i++) {
+      const ch = filtered[i].word[0].toUpperCase();
+      if (!offsets.has(ch)) offsets.set(ch, i);
+    }
+    return offsets;
+  }, [filtered]);
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => listRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
+  });
+
+  const [visibleLetter, setVisibleLetter] = useState("A");
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const scrollTop = el.scrollTop;
+        const idx = Math.floor(scrollTop / ROW_HEIGHT);
+        const entry = filtered[Math.min(idx, filtered.length - 1)];
+        if (entry) setVisibleLetter(entry.word[0].toUpperCase());
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [filtered]);
 
   const toggleBookmark = useCallback(
     (word: string) => {
@@ -107,11 +142,11 @@ export function DictionaryPage() {
 
   const handleSearch = useCallback((value: string) => {
     setQuery(value);
-    if (value.trim()) setActiveLetter(null);
   }, []);
 
   const [scrubbing, setScrubbing] = useState(false);
   const scrubbingRef = useRef(false);
+  const [scrubLetter, setScrubLetter] = useState<string | null>(null);
 
   const lastScrubIdx = useRef(-1);
   const scrubTo = useCallback(
@@ -124,11 +159,14 @@ export function DictionaryPage() {
       if (idx === lastScrubIdx.current) return;
       lastScrubIdx.current = idx;
       const letter = ALPHABET[idx];
-      setActiveLetter(letter);
-      setQuery("");
-      listRef.current?.scrollTo(0, 0);
+      setScrubLetter(letter);
+
+      const offset = letterOffsets.get(letter);
+      if (offset != null) {
+        virtualizer.scrollToIndex(offset, { align: "start" });
+      }
     },
-    [],
+    [letterOffsets, virtualizer],
   );
 
   const onScrubStart = useCallback(
@@ -155,21 +193,10 @@ export function DictionaryPage() {
   const onScrubEnd = useCallback(() => {
     scrubbingRef.current = false;
     setScrubbing(false);
+    setScrubLetter(null);
   }, []);
 
-  const letterCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    const source = filter === "core"
-      ? allWords.filter((w) => w.tier === "required")
-      : filter === "bookmarked"
-        ? allWords.filter((w) => bookmarks.has(w.word))
-        : allWords;
-    for (const w of source) {
-      const ch = w.word[0].toUpperCase();
-      counts.set(ch, (counts.get(ch) ?? 0) + 1);
-    }
-    return counts;
-  }, [allWords, filter, bookmarks]);
+  const activeLetter = scrubbing ? scrubLetter : visibleLetter;
 
   return (
     <div data-level="neutral" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-4">
@@ -239,8 +266,12 @@ export function DictionaryPage() {
         onHighChange={setLenMax}
       />
 
+      <p className="mt-3 text-xs text-ink-soft">
+        {filtered.length.toLocaleString()} word{filtered.length !== 1 ? "s" : ""}
+      </p>
+
       {/* Main content: word list + scrubber */}
-      <div className="relative mt-3 min-h-0 grow">
+      <div className="relative mt-1 min-h-0 grow">
         {/* Word list */}
         <div
           ref={listRef}
@@ -253,30 +284,32 @@ export function DictionaryPage() {
               <p className="text-sm">No words found</p>
             </div>
           ) : (
-            <>
-              <p className="mb-2 text-xs text-ink-soft">
-                {filtered.length.toLocaleString()} word{filtered.length !== 1 ? "s" : ""}
-              </p>
-              {filtered.slice(0, 500).map((entry) => (
-                <WordRow
-                  key={entry.word}
-                  word={entry.word}
-                  tier={entry.tier}
-                  bookmarked={bookmarks.has(entry.word)}
-                  onToggle={toggleBookmark}
-                />
-              ))}
-              {filtered.length > 500 && (
-                <p className="py-4 text-center text-xs text-ink-soft">
-                  Showing first 500 of {filtered.length.toLocaleString()}.
-                  Search to narrow results.
-                </p>
-              )}
-            </>
+            <div
+              className="relative w-full"
+              style={{ height: virtualizer.getTotalSize() }}
+            >
+              {virtualizer.getVirtualItems().map((vRow) => {
+                const entry = filtered[vRow.index];
+                return (
+                  <div
+                    key={entry.word}
+                    className="absolute left-0 w-full"
+                    style={{ top: vRow.start, height: vRow.size }}
+                  >
+                    <WordRow
+                      word={entry.word}
+                      tier={entry.tier}
+                      bookmarked={bookmarks.has(entry.word)}
+                      onToggle={toggleBookmark}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        {/* Alphabet scrubber — fixed height like iOS contacts */}
+        {/* Alphabet scrubber */}
         <div
           ref={scrubberRef}
           className="absolute inset-y-0 right-0 flex touch-none select-none flex-col justify-between py-1"
@@ -287,7 +320,7 @@ export function DictionaryPage() {
           aria-hidden
         >
           {ALPHABET.map((letter) => {
-            const has = (letterCounts.get(letter) ?? 0) > 0;
+            const has = letterOffsets.has(letter);
             const isActive = activeLetter === letter;
             return (
               <div
