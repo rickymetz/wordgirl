@@ -6,7 +6,7 @@ import { BackwordsStatus } from "./ui/BackwordsStatus";
 export const backwords: GameDefinition = {
   id: "backwords",
   name: "Backwords",
-  tagline: "Every word meets its reflection.",
+  tagline: "Every word, a reflection.",
   themeColor: "var(--color-accent)",
   Preview: BackwordsPreview,
   Status: BackwordsStatus,
