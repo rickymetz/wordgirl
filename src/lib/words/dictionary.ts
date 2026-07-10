@@ -15,8 +15,15 @@
  * each length); polygram sorts its display lists itself now.
  * v7: blocklist subtitle name-junk, allowlist everyday concrete words,
  * and cap any one crosshatch line's share of a day's words.
+ * v8: allowlist mirror-word staples (dab) into the required tier so
+ * their reversal pairs (bad|dab) play in backwords.
+ * v9: blocklist junk reversals and name-palindromes (tae, nam, deb,
+ * pam, tis, ana) that backwords' mirror rows would teach as words.
+ * v10: backwords palindrome prefix aliases — the shadowed even
+ * palindromes (poop, peep) join the item pool, changing puzzle
+ * derivation without a dictionary.txt change.
  */
-export const DICT_VERSION = 7;
+export const DICT_VERSION = 10;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

@@ -134,6 +134,9 @@ export async function saveDailyProgress(progress: DailyProgress) {
   const stored = validShape(
     await store.get<DailyProgress>(`daily:${progress.dateKey}`),
   );
+  // A tab running an OLDER build must never clobber a newer build's
+  // save - dictVersion only ever grows.
+  if (stored && stored.dictVersion > progress.dictVersion) return;
   if (
     stored &&
     stored.dictVersion === progress.dictVersion &&
