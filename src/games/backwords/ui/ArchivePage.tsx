@@ -28,7 +28,8 @@ const config: GameArchiveConfig<ArchivedDay, BackwordsStats> = {
       label: "Best time",
       value: stats.bestTimeMs === null ? "—" : formatDuration(stats.bestTimeMs),
     },
-    { label: "✦ rows", value: stats.glyphRows },
+    // "Mirror rows": the ✦ character stays in share strings only.
+    { label: "Mirror rows", value: stats.glyphRows },
   ],
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => {

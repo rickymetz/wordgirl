@@ -5,10 +5,10 @@
  */
 export function BackwordsPreview() {
   return (
-    <div className="relative flex flex-col gap-[3px]" aria-hidden>
+    <div className="relative flex flex-col gap-[3px] pt-1" aria-hidden>
       {/* Miniature glass pane behind the reflections. */}
       <div
-        className="absolute inset-y-[-4px] right-[-6px] left-[73px] rounded-lg"
+        className="absolute inset-y-[-4px] right-[-6px] left-[49px] rounded-lg"
         style={{
           background: `linear-gradient(105deg,
             color-mix(in oklab, var(--color-accent) 20%, var(--color-surface)) 0%,
@@ -33,22 +33,22 @@ function PreviewRow({
   accent?: boolean;
 }) {
   return (
-    <div className="relative flex items-center gap-[3px]">
+    <div className="relative flex items-center gap-[2px]">
       {[...left].map((ch, i) => (
         <div
           key={`l${i}`}
-          className={`flex h-[22px] w-[22px] items-center justify-center rounded font-game text-[10px] ${
+          className={`flex h-[15px] w-[15px] items-center justify-center rounded font-game text-[8px] ${
             accent ? "bg-accent text-surface" : "bg-surface text-ink"
           }`}
         >
           {ch}
         </div>
       ))}
-      <div className="h-[22px] w-[3px] shrink-0 rounded-full bg-accent/60" />
+      <div className="h-[15px] w-[3px] shrink-0 rounded-full bg-accent/60" />
       {[...right].map((ch, i) => (
         <div
           key={`r${i}`}
-          className="flex h-[22px] w-[22px] items-center justify-center font-game text-[10px] text-ink-soft/60"
+          className="flex h-[15px] w-[15px] items-center justify-center font-game text-[8px] text-ink-soft/70"
         >
           {ch}
         </div>

@@ -68,7 +68,7 @@ export function MirrorBoard({
   return (
     <div
       id="bw-mirror"
-      className="relative flex min-h-52 w-full flex-col justify-center select-none"
+      className="relative flex max-h-[26rem] min-h-52 w-full grow flex-col justify-center select-none"
     >
       {/* The glass: a filled pane behind the reflections, with a
           diagonal sheen — tokens only, so it re-tints per theme. */}
@@ -188,7 +188,7 @@ function Row({
             onPointerDown={(e) => e.preventDefault()}
             onClick={onBreak}
             aria-label={`take back ${place}`}
-            className="relative mr-2 flex h-6 w-6 items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2 after:content-[''] active:scale-90"
+            className="relative mr-2 flex h-6 w-6 items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2.5 after:content-[''] active:scale-90"
           >
             <X aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
           </button>
@@ -210,12 +210,25 @@ function Row({
             onDragLive={onDragLive}
           />
         ))}
+        {/* Empty active row: a dashed target socket teaches where the
+            first tile lands (the rack's own empty-socket idiom). */}
+        {active && place.length === 0 && (
+          <span
+            className="rounded-lg border-2 border-dashed border-line"
+            style={tileStyle}
+          />
+        )}
         {active && (
           <span className="ml-0.5 inline-block h-5 w-[2px] animate-pulse rounded bg-accent" />
         )}
       </div>
-      {/* The middle tile of an odd palindrome lives ON the line. */}
-      <span className="z-10 flex w-4 shrink-0 justify-center">
+      {/* The middle tile of an odd palindrome lives ON the line — its
+          slot takes the tile's full width so the ghost beside it never
+          collides. */}
+      <span
+        className="z-10 flex shrink-0 justify-center"
+        style={{ width: middle ? tileStyle.width + 6 : 16 }}
+      >
         {middle && (
           <PlacedTile
             id={ids[ids.length - 1]}
@@ -232,10 +245,17 @@ function Row({
         aria-hidden
         className="flex flex-1 items-center gap-[3px] pl-2.5"
       >
+        {active && place.length === 0 && (
+          <span
+            className="rounded-lg border-2 border-dashed border-ink-soft/25"
+            style={tileStyle}
+          />
+        )}
         {[...reflection].map((ch, i) => (
+          // 8. one legibility step up: this is how the second word reads
           <span
             key={i}
-            className="flex items-center justify-center rounded-lg bg-surface/40 text-ink-soft/70"
+            className="flex items-center justify-center rounded-lg bg-surface/50 text-ink-soft/80"
             style={tileStyle}
           >
             {ch}
@@ -290,12 +310,8 @@ function PlacedTile({
           onUnstage();
         }
       }}
-      className={`flex shrink-0 items-center justify-center rounded-lg font-game uppercase shadow-sm ${
-        onGlass
-          ? "bg-tile text-ink ring-1 ring-accent/40"
-          : active
-            ? "bg-tile text-ink ring-1 ring-accent"
-            : "bg-tile text-ink"
+      className={`flex shrink-0 items-center justify-center rounded-lg bg-tile font-game text-ink uppercase ${
+        active ? "shadow-sm ring-1 ring-accent" : onGlass ? "shadow-md" : "shadow-sm"
       }`}
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >

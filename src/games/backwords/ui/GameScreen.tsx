@@ -392,7 +392,12 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 body: (
                   <>
                     Some rows survive a real mirror — LIT reflects as TIL.
-                    They're marked <Key>✦</Key> and counted in your result.
+                    They're marked{" "}
+                    <Sparkles
+                      aria-label="sparkle"
+                      className="inline h-3.5 w-3.5 text-accent"
+                    />{" "}
+                    and counted in your result.
                   </>
                 ),
               },
