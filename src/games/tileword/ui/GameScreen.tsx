@@ -6,7 +6,7 @@ import { formatDuration } from "../../../lib/date";
 import { HomeLink } from "../../../components/HomeLink";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { useTilewordGame, type GameMode } from "../state/useTilewordGame";
-import { dominoAt, placedDominoIds } from "../state/reducer";
+import { placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
 import { dominoCells, dominoLetters, cellKey } from "../engine/types";
 import { Board } from "./Board";
@@ -52,12 +52,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const handleCellTap = (cell: Cell) => {
     if (state.solved) return;
 
-    const pd = dominoAt(state, cell.row, cell.col);
-    if (pd) {
-      dispatch({ type: "removeDomino", dominoId: pd.dominoId });
-      return;
-    }
-
     if (state.selectedDominoId !== null) {
       const [c1, c2] = dominoCells(cell, state.currentOrientation);
       const k1 = cellKey(c1.row, c1.col);
@@ -74,6 +68,37 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       }
     }
   };
+
+  const handleTapPlaced = useCallback(
+    (dominoId: number) => {
+      if (state.solved) return;
+      dispatch({ type: "rotatePlaced", dominoId, dict });
+    },
+    [state.solved, dict, dispatch],
+  );
+
+  const handleBoardDragStart = useCallback(
+    (dominoId: number, orientation: Orientation) => {
+      dispatch({ type: "removeDomino", dominoId });
+      setDrag({
+        dominoId,
+        orientation,
+        x: 0,
+        y: 0,
+        originRect: new DOMRect(),
+      });
+    },
+    [dispatch],
+  );
+
+  const handleBoardDragMove = useCallback(
+    (x: number, y: number) => {
+      setDrag((prev) => (prev ? { ...prev, x, y } : null));
+      const cell = cellFromPoint(x, y);
+      setHoverCell(cell);
+    },
+    [],
+  );
 
   function cellFromPoint(x: number, y: number): Cell | null {
     const els = document.elementsFromPoint(x, y);
@@ -202,6 +227,10 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <Board
             state={state}
             onCellTap={handleCellTap}
+            onTapPlaced={handleTapPlaced}
+            onBoardDragStart={handleBoardDragStart}
+            onBoardDragMove={handleBoardDragMove}
+            onBoardDragEnd={handleDragEnd}
             hoverCell={hoverCell}
             previewOrientation={drag ? drag.orientation : state.selectedDominoId !== null ? state.currentOrientation : null}
           />

@@ -23,6 +23,7 @@ export type GameAction =
   | { type: "rotateDomino" }
   | { type: "placeDomino"; cell: Cell; dict: Dictionary; dominoId?: number; orientation?: Orientation }
   | { type: "removeDomino"; dominoId: number }
+  | { type: "rotatePlaced"; dominoId: number; dict: Dictionary }
   | { type: "clearBoard" }
   | {
       type: "hydrate";
@@ -196,6 +197,41 @@ export function gameReducer(
         currentOrientation: removed?.orientation ?? 0,
         invalidSlots,
       };
+    }
+
+    case "rotatePlaced": {
+      if (state.solved) return state;
+      const idx = state.placed.findIndex(
+        (p) => p.dominoId === action.dominoId,
+      );
+      if (idx === -1) return state;
+      const p = state.placed[idx];
+      const newOri = (((p.orientation as number) + 1) % 4) as Orientation;
+      const [c1, c2] = dominoCells(p.anchor, newOri);
+      const boardCells = new Set(
+        state.puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
+      );
+      if (
+        !boardCells.has(cellKey(c1.row, c1.col)) ||
+        !boardCells.has(cellKey(c2.row, c2.col))
+      )
+        return state;
+      const tempPlaced = state.placed.filter((_, i) => i !== idx);
+      const tempGrid = buildGrid(tempPlaced, state.puzzle);
+      if (
+        tempGrid.has(cellKey(c1.row, c1.col)) ||
+        tempGrid.has(cellKey(c2.row, c2.col))
+      )
+        return state;
+      const newPlaced = [...state.placed];
+      newPlaced[idx] = { ...p, orientation: newOri };
+      const newGrid = buildGrid(newPlaced, state.puzzle);
+      const { solved, invalidSlots } = checkSolved(
+        newGrid,
+        state.puzzle,
+        action.dict,
+      );
+      return { ...state, placed: newPlaced, grid: newGrid, solved, invalidSlots };
     }
 
     case "clearBoard": {

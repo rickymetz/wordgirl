@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { motion } from "motion/react";
 import { useViewport } from "../../../lib/useViewport";
 import type { GameState } from "../state/reducer";
@@ -17,15 +17,20 @@ const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
 const OUTLINE_PAD = 3;
+const BOARD_DRAG_THRESHOLD = 64;
 
 interface Props {
   state: GameState;
   onCellTap: (cell: Cell) => void;
+  onTapPlaced?: (dominoId: number) => void;
+  onBoardDragStart?: (dominoId: number, orientation: Orientation) => void;
+  onBoardDragMove?: (x: number, y: number) => void;
+  onBoardDragEnd?: () => void;
   hoverCell?: Cell | null;
   previewOrientation?: Orientation | null;
 }
 
-export function Board({ state, onCellTap, hoverCell, previewOrientation }: Props) {
+export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, previewOrientation }: Props) {
   const { puzzle, grid, invalidSlots } = state;
   const { vw, vh, rem } = useViewport();
 
@@ -101,6 +106,14 @@ export function Board({ state, onCellTap, hoverCell, previewOrientation }: Props
       ),
     [puzzle.board, cell],
   );
+
+  const boardDragRef = useRef<{
+    dominoId: number;
+    orientation: Orientation;
+    startX: number;
+    startY: number;
+    dragging: boolean;
+  } | null>(null);
 
   const gridW = puzzle.board.cols * (cell + GAP) - GAP;
   const gridH = puzzle.board.rows * (cell + GAP) - GAP;
@@ -213,8 +226,49 @@ export function Board({ state, onCellTap, hoverCell, previewOrientation }: Props
                 ...borderStyle,
                 ...(pd ? { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } : {}),
               }}
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => onCellTap({ row, col })}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                if (pd) {
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  boardDragRef.current = {
+                    dominoId: pd.dominoId,
+                    orientation: pd.orientation,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    dragging: false,
+                  };
+                }
+              }}
+              onPointerMove={(e) => {
+                const ref = boardDragRef.current;
+                if (!ref || ref.dragging) {
+                  if (ref?.dragging) onBoardDragMove?.(e.clientX, e.clientY);
+                  return;
+                }
+                const dx = e.clientX - ref.startX;
+                const dy = e.clientY - ref.startY;
+                if (dx * dx + dy * dy > BOARD_DRAG_THRESHOLD) {
+                  ref.dragging = true;
+                  onBoardDragStart?.(ref.dominoId, ref.orientation);
+                  onBoardDragMove?.(e.clientX, e.clientY);
+                }
+              }}
+              onPointerUp={(e) => {
+                const ref = boardDragRef.current;
+                if (ref) {
+                  if (ref.dragging) {
+                    onBoardDragEnd?.();
+                  } else {
+                    onTapPlaced?.(ref.dominoId);
+                  }
+                  boardDragRef.current = null;
+                  try {
+                    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+                  } catch { /* already released */ }
+                } else {
+                  onCellTap({ row, col });
+                }
+              }}
               aria-label={
                 letter
                   ? `${letter} at row ${row + 1}, column ${col + 1}`
