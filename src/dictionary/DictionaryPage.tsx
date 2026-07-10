@@ -108,22 +108,15 @@ export function DictionaryPage() {
     if (value.trim()) setActiveLetter(null);
   }, []);
 
-  const handleLetterTap = useCallback((letter: string) => {
-    setActiveLetter((prev) => (prev === letter ? null : letter));
-    setQuery("");
-    listRef.current?.scrollTo(0, 0);
-  }, []);
+  const [scrubbing, setScrubbing] = useState(false);
 
-  const handleScrub = useCallback(
+  const scrubTo = useCallback(
     (e: React.PointerEvent) => {
       const el = scrubberRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-      const idx = Math.min(
-        Math.floor((y / rect.height) * 26),
-        25,
-      );
+      const idx = Math.min(Math.floor((y / rect.height) * 26), 25);
       const letter = ALPHABET[idx];
       setActiveLetter(letter);
       setQuery("");
@@ -131,6 +124,26 @@ export function DictionaryPage() {
     },
     [],
   );
+
+  const onScrubStart = useCallback(
+    (e: React.PointerEvent) => {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      setScrubbing(true);
+      scrubTo(e);
+    },
+    [scrubTo],
+  );
+
+  const onScrubMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.pressure > 0) scrubTo(e);
+    },
+    [scrubTo],
+  );
+
+  const onScrubEnd = useCallback(() => {
+    setScrubbing(false);
+  }, []);
 
   const showPrompt = !query.trim() && !activeLetter && filter === "all" && !lengthActive;
   const letterCounts = useMemo(() => {
@@ -253,27 +266,21 @@ export function DictionaryPage() {
         <div
           ref={scrubberRef}
           className="absolute top-0 right-0 flex h-full touch-none select-none flex-col justify-between py-1"
-          onPointerDown={(e) => {
-            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-            handleScrub(e);
-          }}
-          onPointerMove={(e) => {
-            if (e.pressure > 0) handleScrub(e);
-          }}
+          onPointerDown={onScrubStart}
+          onPointerMove={onScrubMove}
+          onPointerUp={onScrubEnd}
+          onPointerCancel={onScrubEnd}
           aria-hidden
         >
           {ALPHABET.map((letter) => {
             const has = (letterCounts.get(letter) ?? 0) > 0;
+            const isActive = activeLetter === letter;
             return (
               <div
                 key={letter}
                 data-letter={letter}
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  handleLetterTap(letter);
-                }}
-                className={`flex h-full w-6 cursor-pointer items-center justify-center text-[10px] font-semibold leading-none ${
-                  activeLetter === letter
+                className={`relative flex h-full w-6 items-center justify-center text-[10px] font-semibold leading-none ${
+                  isActive
                     ? "text-accent"
                     : has
                       ? "text-ink-soft"
@@ -281,6 +288,11 @@ export function DictionaryPage() {
                 }`}
               >
                 {letter}
+                {isActive && scrubbing && (
+                  <div className="absolute right-8 flex h-10 w-10 items-center justify-center rounded-full bg-accent text-lg font-bold text-surface shadow-lg">
+                    {letter}
+                  </div>
+                )}
               </div>
             );
           })}
