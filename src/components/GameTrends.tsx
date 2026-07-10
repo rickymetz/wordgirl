@@ -115,38 +115,44 @@ function MetricChart<Day extends { dateKey: string }>({
   const minV = Math.min(...values);
   const best = metric.lowerIsBetter ? minV : maxV;
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  const latestIdx = points.reduce(
-    (acc, p, i) => (p.v === null ? acc : i),
-    -1,
-  );
-  const pickedPoint = picked === null ? null : points[picked];
+
+  // The drawing fills its container: trim the window's EMPTY edges
+  // (days before the first play / after the last) and stretch what
+  // remains across the full width. Interior gaps stay — a skipped
+  // day is data; unplayed margin is not.
+  const played = points.flatMap((p, i) => (p.v === null ? [] : [i]));
+  const drawn = points.slice(played[0], played[played.length - 1] + 1);
+  const latestIdx = drawn.length - 1; // trimmed: the last point is played
+  const pickedPoint = picked === null ? null : drawn[picked];
 
   // Sparkline geometry, sized for a HALF-width grid cell: dots on
-  // played days, thin segments joining CONSECUTIVE days only (a
-  // skipped day breaks the line — a gap is data), headroom above and
-  // below for the direct min/max labels.
+  // played days, thin segments joining CONSECUTIVE days only,
+  // headroom above and below for the direct min/max labels.
   const W = 168;
   const H = 64;
   const TOP = 14;
   const BOTTOM = 14;
-  const slot = W / points.length;
-  const x = (i: number) => i * slot + slot / 2;
+  const PAD = 8; // keeps edge dots and rings inside the viewBox
+  const x = (i: number) =>
+    drawn.length === 1
+      ? W / 2
+      : PAD + (i * (W - PAD * 2)) / (drawn.length - 1);
   const y = (v: number) =>
     maxV === minV
       ? TOP + (H - TOP - BOTTOM) / 2
       : TOP + ((maxV - v) / (maxV - minV)) * (H - TOP - BOTTOM);
 
   const segments: string[] = [];
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1].v;
-    const b = points[i].v;
+  for (let i = 1; i < drawn.length; i++) {
+    const a = drawn[i - 1].v;
+    const b = drawn[i].v;
     if (a !== null && b !== null) {
       segments.push(`M${x(i - 1)},${y(a)} L${x(i)},${y(b)}`);
     }
   }
-  const dataIdx = points.flatMap((p, i) => (p.v === null ? [] : [i]));
-  const maxIdx = dataIdx.find((i) => points[i].v === maxV)!;
-  const minIdx = dataIdx.find((i) => points[i].v === minV)!;
+  const dataIdx = drawn.flatMap((p, i) => (p.v === null ? [] : [i]));
+  const maxIdx = dataIdx.find((i) => drawn[i].v === maxV)!;
+  const minIdx = dataIdx.find((i) => drawn[i].v === minV)!;
   // Keep edge labels inside the frame.
   const anchor = (i: number) =>
     x(i) < 26 ? "start" : x(i) > W - 26 ? "end" : "middle";
@@ -165,7 +171,7 @@ function MetricChart<Day extends { dateKey: string }>({
   return (
     <section className="mb-4 flex min-w-0 flex-col">
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
-      <p className="pt-0.5 text-xs font-semibold text-ink-soft">
+      <p className="pt-0.5 text-xs text-ink-soft">
         {pickedPoint && pickedPoint.v !== null
           ? `${shortDate(pickedPoint.dateKey)} · ${metric.format(pickedPoint.v)}`
           : `Best ${metric.format(best)} · Avg ${metric.format(avg)}`}
@@ -174,7 +180,7 @@ function MetricChart<Day extends { dateKey: string }>({
         viewBox={`0 0 ${W} ${H + 8}`}
         className="mt-auto w-full touch-manipulation select-none"
         role="img"
-        aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${latestIdx >= 0 && points[latestIdx].v !== null ? `, latest ${metric.format(points[latestIdx].v)}` : ""}.`}
+        aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${drawn[latestIdx].v !== null ? `, latest ${metric.format(drawn[latestIdx].v)}` : ""}.`}
         onPointerDown={pickNearest}
       >
         {/* Range-frame: the only scaffold, spanning exactly the
@@ -197,7 +203,7 @@ function MetricChart<Day extends { dateKey: string }>({
           />
         ))}
         {dataIdx.map((i) => {
-          const p = points[i];
+          const p = drawn[i];
           const isLatest = i === latestIdx;
           const isPicked = picked === i;
           return (
@@ -225,7 +231,7 @@ function MetricChart<Day extends { dateKey: string }>({
           x={x(maxIdx)}
           y={y(maxV) - 6}
           textAnchor={anchor(maxIdx)}
-          className="fill-ink-soft font-semibold"
+          className="fill-ink-soft"
           fontSize={10}
           pointerEvents="none"
         >
@@ -236,7 +242,7 @@ function MetricChart<Day extends { dateKey: string }>({
             x={x(minIdx)}
             y={y(minV) + 12}
             textAnchor={anchor(minIdx)}
-            className="fill-ink-soft font-semibold"
+            className="fill-ink-soft"
             fontSize={10}
             pointerEvents="none"
           >
@@ -301,7 +307,7 @@ function HourChart<Day extends { dateKey: string }>({
     <section className="mb-5">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-bold">{metric.label}</h2>
-        <p className="text-xs font-semibold text-ink-soft">
+        <p className="text-xs text-ink-soft">
           {picked !== null
             ? `${fmtHour(picked)} · ${dayCount(bins[picked])}`
             : `Most often ${fmtHour(peak)}`}
@@ -341,7 +347,7 @@ function HourChart<Day extends { dateKey: string }>({
           x={x(labeled)}
           y={y(bins[labeled]) - 4}
           textAnchor={x(labeled) < 24 ? "start" : x(labeled) > W - 24 ? "end" : "middle"}
-          className="fill-ink-soft font-semibold"
+          className="fill-ink-soft"
           fontSize={10}
           pointerEvents="none"
         >
