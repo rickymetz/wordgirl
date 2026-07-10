@@ -151,12 +151,13 @@ export function recordDailySolved(
 ): Promise<TilewordStats> {
   return serialized(async () => {
     const stats = await loadStats();
-    if (stats.lastSolvedDate === dateKey) return stats;
+    const alreadyRecordedDate = stats.lastSolvedDate === dateKey;
 
     const today = localDateKey();
     const isToday =
       dateKey === today || (allowGrace && dateKey === previousDateKey(today));
     const advances =
+      !alreadyRecordedDate &&
       isToday &&
       (stats.lastSolvedDate === null || dateKey > stats.lastSolvedDate);
     const continues = stats.lastSolvedDate === previousDateKey(dateKey);

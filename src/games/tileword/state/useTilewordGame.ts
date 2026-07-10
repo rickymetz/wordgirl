@@ -54,6 +54,7 @@ export function useTilewordGame(mode: GameMode) {
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (staleRecordRef.current && s.placed.length === 0) return;
+    staleRecordRef.current = false;
 
     void saveDailyProgress({
       dateKey,

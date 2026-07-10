@@ -2,7 +2,6 @@ import { useMemo, useRef } from "react";
 import { motion } from "motion/react";
 import { useViewport } from "../../../lib/useViewport";
 import type { GameState } from "../state/reducer";
-import { dominoAt } from "../state/reducer";
 import {
   cellKey,
   dominoCells,
@@ -42,8 +41,9 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     puzzle.board.rows;
   const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));
 
-  const boardCellSet = new Set(
-    puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
+  const boardCellSet = useMemo(
+    () => new Set(puzzle.board.cells.map((c) => cellKey(c.row, c.col))),
+    [puzzle.board.cells],
   );
 
   const invalidCells = new Set<string>();
@@ -62,16 +62,23 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     if (!hoverCell) return null;
     const [c1, c2] = dominoCells(hoverCell, previewOrientation);
     return { keys: new Set([cellKey(c1.row, c1.col), cellKey(c2.row, c2.col)]), valid: false };
-  }, [hoverCell, resolvedAnchor, previewOrientation, boardCellSet, grid]);
+  }, [hoverCell, resolvedAnchor, previewOrientation]);
 
-  const placedPairs = new Map<number, { cells: [Cell, Cell]; letters: [string, string] }>();
-  for (const p of state.placed) {
-    const piece = puzzle.dominoes.find((d) => d.id === p.dominoId);
-    if (!piece) continue;
-    const [c1, c2] = dominoCells(p.anchor, p.orientation);
-    const [l1, l2] = dominoLetters(piece, p.orientation);
-    placedPairs.set(p.dominoId, { cells: [c1, c2], letters: [l1, l2] });
-  }
+  const dominoIndex = useMemo(() => {
+    const byId = new Map<number, { cells: [Cell, Cell]; letters: [string, string] }>();
+    const byCell = new Map<string, import("../engine/types").PlacedDomino>();
+    for (const p of state.placed) {
+      const piece = puzzle.dominoes.find((d) => d.id === p.dominoId);
+      if (!piece) continue;
+      const [c1, c2] = dominoCells(p.anchor, p.orientation);
+      const [l1, l2] = dominoLetters(piece, p.orientation);
+      byId.set(p.dominoId, { cells: [c1, c2], letters: [l1, l2] });
+      byCell.set(cellKey(c1.row, c1.col), p);
+      byCell.set(cellKey(c2.row, c2.col), p);
+    }
+    return { byId, byCell };
+  }, [state.placed, puzzle.dominoes]);
+  const placedPairs = dominoIndex.byId;
 
   function isDominoInvalid(dId: number): boolean {
     const pair = placedPairs.get(dId);
@@ -157,7 +164,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         }
 
         const letter = grid.get(k);
-        const pd = dominoAt(state, row, col);
+        const pd = dominoIndex.byCell.get(k) ?? null;
 
         const bridge = pd ? dominoBridge(pd.dominoId) : null;
         const pairIdx = pd ? isDominoPairCell(pd.dominoId, row, col) : -1;

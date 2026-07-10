@@ -23,6 +23,13 @@ const config: GameArchiveConfig<ArchivedDay, TilewordStats> = {
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.solved },
     { label: "Played", value: stats.played },
+    {
+      label: "Win %",
+      value: stats.played > 0
+        ? `${Math.round((stats.solved / stats.played) * 100)}%`
+        : "—",
+    },
+    { label: "Unsolved", value: stats.played - stats.solved },
   ],
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => ({

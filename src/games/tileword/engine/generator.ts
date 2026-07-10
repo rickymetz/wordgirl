@@ -486,17 +486,31 @@ function generateFallback(
       ],
     }));
 
+    const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
+      dominoId: i,
+      anchor: c1,
+      orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
+    }));
+
     const shuffled = shuffle(
       dominoes.map((d) => ({ ...d })),
       rand,
     );
     shuffled.forEach((d, i) => (d.id = i));
 
-    const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
-      dominoId: i,
-      anchor: c1,
-      orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
-    }));
+    const solutionMap = new Map<number, PlacedDomino>();
+    for (const sp of solution) {
+      const origLetters = dominoes[sp.dominoId].letters;
+      const newDomino = shuffled.find(
+        (d) =>
+          d.letters[0] === origLetters[0] &&
+          d.letters[1] === origLetters[1] &&
+          !solutionMap.has(d.id),
+      );
+      if (newDomino) {
+        solutionMap.set(newDomino.id, { ...sp, dominoId: newDomino.id });
+      }
+    }
 
     return {
       seed,
@@ -505,7 +519,7 @@ function generateFallback(
       board: shape,
       slots,
       dominoes: shuffled,
-      solution,
+      solution: Array.from(solutionMap.values()),
     };
   }
 

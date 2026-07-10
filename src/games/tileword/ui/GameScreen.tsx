@@ -84,14 +84,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     [dispatch],
   );
 
-  const handleBoardDragMove = useCallback(
-    (x: number, y: number) => {
-      setDrag((prev) => (prev ? { ...prev, x, y } : null));
-      const cell = cellFromPoint(x, y);
-      setHoverCell(cell);
-    },
-    [],
-  );
 
   function cellFromPoint(x: number, y: number): Cell | null {
     const els = document.elementsFromPoint(x, y);
@@ -219,8 +211,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <button
             key={d}
             className={[
-              "px-4 py-1.5 rounded-full text-sm font-semibold",
+              "relative px-4 py-1.5 rounded-full text-sm font-semibold",
               "touch-manipulation select-none transition-colors",
+              "after:absolute after:inset-x-0 after:-inset-y-1.5",
               d === difficulty
                 ? "bg-accent text-surface"
                 : "bg-surface-tint text-ink-soft",
@@ -245,7 +238,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             onCellTap={handleCellTap}
             onTapPlaced={handleTapPlaced}
             onBoardDragStart={handleBoardDragStart}
-            onBoardDragMove={handleBoardDragMove}
+            onBoardDragMove={handleDragMove}
             onBoardDragEnd={handleDragEnd}
             hoverCell={hoverCell}
             resolvedAnchor={resolvedAnchor}
@@ -258,9 +251,10 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       <div className="flex flex-col items-center gap-2">
         {placedCount > 0 && !state.solved && (
           <button
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full
                        bg-surface-tint text-ink-soft text-sm font-semibold
-                       active:scale-95 touch-manipulation select-none"
+                       active:scale-95 touch-manipulation select-none
+                       after:absolute after:inset-x-0 after:-inset-y-1.5"
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => dispatch({ type: "clearBoard" })}
           >
