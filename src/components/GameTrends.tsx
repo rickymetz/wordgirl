@@ -18,9 +18,34 @@ export interface TrendMetric<Day> {
   label: string;
   /** The day's value, or null when the day doesn't count (unsolved). */
   value: (day: Day) => number | null;
-  format: (v: number) => string;
+  /** Defaults to one-decimal rounding. */
+  format?: (v: number) => string;
   /** Lower is better (solve time) — picks which extreme "Best" shows. */
   lowerIsBetter?: boolean;
+}
+
+/**
+ * The common counter metric: charts only SOLVED days, and a legacy
+ * save without the field charts as a GAP (null) — never a fake zero,
+ * which would read as a best-ever day on a lower-is-better chart.
+ */
+export function solvedCounter<
+  Day extends { dateKey: string; solved: boolean },
+>(
+  key: string,
+  label: string,
+  field: (day: Day) => number | undefined,
+  opts?: { lowerIsBetter?: boolean },
+): TrendMetric<Day> {
+  return {
+    key,
+    label,
+    value: (d) => {
+      const v = field(d);
+      return d.solved && v !== undefined ? v : null;
+    },
+    lowerIsBetter: opts?.lowerIsBetter,
+  };
 }
 
 export interface GameTrendsConfig<Day extends { dateKey: string }> {
@@ -35,6 +60,8 @@ export interface GameTrendsConfig<Day extends { dateKey: string }> {
 }
 
 const WINDOW_DAYS = 30;
+
+const defaultFormat = (v: number) => `${Math.round(v * 10) / 10}`;
 
 export function GameTrends<Day extends { dateKey: string }>({
   config,
@@ -93,6 +120,21 @@ export function GameTrends<Day extends { dateKey: string }>({
   );
 }
 
+/** Marks are far smaller than a fingertip, so a tap anywhere on a
+ * chart picks the candidate whose x position is nearest the pointer. */
+function nearestAt(
+  e: PointerEvent<SVGSVGElement>,
+  W: number,
+  x: (i: number) => number,
+  candidates: number[],
+): number {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const vx = ((e.clientX - rect.left) / rect.width) * W;
+  return candidates.reduce((a, b) =>
+    Math.abs(x(b) - vx) < Math.abs(x(a) - vx) ? b : a,
+  );
+}
+
 function MetricChart<Day extends { dateKey: string }>({
   metric,
   days,
@@ -102,7 +144,11 @@ function MetricChart<Day extends { dateKey: string }>({
   days: Record<string, Day>;
   dates: string[];
 }) {
-  const [picked, setPicked] = useState<number | null>(null);
+  // The picked day is remembered by DATE, not index — indices shift
+  // when the window slides past midnight, and a stale date simply
+  // stops matching instead of silently denoting a different day.
+  const [picked, setPicked] = useState<string | null>(null);
+  const fmt = metric.format ?? defaultFormat;
   const points = dates.map((dateKey) => {
     const day = days[dateKey];
     const v = day ? metric.value(day) : null;
@@ -120,10 +166,18 @@ function MetricChart<Day extends { dateKey: string }>({
   // (days before the first play / after the last) and stretch what
   // remains across the full width. Interior gaps stay — a skipped
   // day is data; unplayed margin is not.
-  const played = points.flatMap((p, i) => (p.v === null ? [] : [i]));
-  const drawn = points.slice(played[0], played[played.length - 1] + 1);
-  const latestIdx = drawn.length - 1; // trimmed: the last point is played
-  const pickedPoint = picked === null ? null : drawn[picked];
+  let firstI = 0;
+  while (points[firstI].v === null) firstI++;
+  let lastI = points.length - 1;
+  while (points[lastI].v === null) lastI--;
+  const drawn = points.slice(firstI, lastI + 1);
+  // Played days, as indices into drawn. Trimming guarantees the first
+  // and last entries are played, so the latest is dataIdx's tail and
+  // every drawn[dataIdx[i]].v is non-null.
+  const dataIdx = drawn.flatMap((p, i) => (p.v === null ? [] : [i]));
+  const latest = dataIdx[dataIdx.length - 1];
+  const pickedIdx = dataIdx.find((i) => drawn[i].dateKey === picked) ?? null;
+  const pickedPoint = pickedIdx === null ? null : drawn[pickedIdx];
 
   // Sparkline geometry, sized for a HALF-width grid cell: dots on
   // played days, thin segments joining CONSECUTIVE days only,
@@ -150,44 +204,37 @@ function MetricChart<Day extends { dateKey: string }>({
       segments.push(`M${x(i - 1)},${y(a)} L${x(i)},${y(b)}`);
     }
   }
-  const dataIdx = drawn.flatMap((p, i) => (p.v === null ? [] : [i]));
   const maxIdx = dataIdx.find((i) => drawn[i].v === maxV)!;
   const minIdx = dataIdx.find((i) => drawn[i].v === minV)!;
   // Keep edge labels inside the frame.
   const anchor = (i: number) =>
     x(i) < 26 ? "start" : x(i) > W - 26 ? "end" : "middle";
 
-  // Half-width day slots are too narrow to hit precisely, so a tap
-  // picks the NEAREST played day (the whole chart is the target).
   const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const vx = ((e.clientX - rect.left) / rect.width) * W;
-    const nearest = dataIdx.reduce((a, b) =>
-      Math.abs(x(b) - vx) < Math.abs(x(a) - vx) ? b : a,
-    );
-    setPicked((cur) => (cur === nearest ? null : nearest));
+    const key = drawn[nearestAt(e, W, x, dataIdx)].dateKey;
+    setPicked((cur) => (cur === key ? null : key));
   };
 
   return (
     <section className="flex min-w-0 flex-col">
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
       <p className="pt-0.5 text-xs text-ink-soft">
-        {pickedPoint && pickedPoint.v !== null
-          ? `${shortDate(pickedPoint.dateKey)} · ${metric.format(pickedPoint.v)}`
-          : `Best ${metric.format(best)} · Avg ${metric.format(avg)}`}
+        {pickedPoint
+          ? `${shortDate(pickedPoint.dateKey)} · ${fmt(pickedPoint.v!)}`
+          : `Best ${fmt(best)} · Avg ${fmt(avg)}`}
       </p>
       <svg
         viewBox={`0 0 ${W} ${H + 8}`}
         className="mt-auto w-full touch-manipulation select-none"
         role="img"
-        aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${drawn[latestIdx].v !== null ? `, latest ${metric.format(drawn[latestIdx].v)}` : ""}.`}
+        aria-label={`${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}.`}
         onPointerDown={pickNearest}
       >
         {/* Range-frame: the only scaffold, spanning exactly the
             played days. */}
         <line
           x1={x(dataIdx[0])}
-          x2={x(dataIdx[dataIdx.length - 1])}
+          x2={x(latest)}
           y1={H}
           y2={H}
           className="stroke-line"
@@ -204,11 +251,9 @@ function MetricChart<Day extends { dateKey: string }>({
         ))}
         {dataIdx.map((i) => {
           const p = drawn[i];
-          const isLatest = i === latestIdx;
-          const isPicked = picked === i;
           return (
             <g key={p.dateKey} pointerEvents="none">
-              {isPicked && (
+              {pickedIdx === i && (
                 <circle
                   cx={x(i)}
                   cy={y(p.v!)}
@@ -220,7 +265,7 @@ function MetricChart<Day extends { dateKey: string }>({
               <circle
                 cx={x(i)}
                 cy={y(p.v!)}
-                r={isLatest ? 3 : 2}
+                r={i === latest ? 3 : 2}
                 className="fill-accent"
               />
             </g>
@@ -235,7 +280,7 @@ function MetricChart<Day extends { dateKey: string }>({
           fontSize={10}
           pointerEvents="none"
         >
-          {metric.format(maxV)}
+          {fmt(maxV)}
         </text>
         {minIdx !== maxIdx && (
           <text
@@ -246,7 +291,7 @@ function MetricChart<Day extends { dateKey: string }>({
             fontSize={10}
             pointerEvents="none"
           >
-            {metric.format(minV)}
+            {fmt(minV)}
           </text>
         )}
       </svg>
@@ -277,8 +322,8 @@ function HourChart<Day extends { dateKey: string }>({
     const h = day ? metric.value(day) : null;
     if (h !== null && h >= 0 && h < 24) bins[Math.floor(h)] += 1;
   }
-  const total = bins.reduce((a, b) => a + b, 0);
-  if (total === 0) return null;
+  const filled = bins.flatMap((n, h) => (n > 0 ? [h] : []));
+  if (filled.length === 0) return null;
 
   const maxN = Math.max(...bins);
   const peak = bins.indexOf(maxN);
@@ -289,18 +334,14 @@ function HourChart<Day extends { dateKey: string }>({
   const barW = 7;
   const x = (h: number) => h * slot + slot / 2;
   const y = (n: number) => H - (n / maxN) * (H - TOP);
-  const labeled = picked ?? peak;
+  // A picked hour whose bin emptied (the window slid) falls back to
+  // the peak instead of labeling a bar that no longer exists.
+  const pickedLive = picked !== null && bins[picked] > 0 ? picked : null;
+  const labeled = pickedLive ?? peak;
   const dayCount = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
-  const filled = bins.flatMap((n, h) => (n > 0 ? [h] : []));
-  // A tap picks the nearest FILLED bin — bars are far too thin to
-  // demand a direct hit.
   const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const vx = ((e.clientX - rect.left) / rect.width) * W;
-    const nearest = filled.reduce((a, b) =>
-      Math.abs(x(b) - vx) < Math.abs(x(a) - vx) ? b : a,
-    );
-    setPicked((cur) => (cur === nearest ? null : nearest));
+    const h = nearestAt(e, W, x, filled);
+    setPicked((cur) => (cur === h ? null : h));
   };
 
   return (
@@ -308,8 +349,8 @@ function HourChart<Day extends { dateKey: string }>({
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-bold">{metric.label}</h2>
         <p className="text-xs text-ink-soft">
-          {picked !== null
-            ? `${fmtHour(picked)} · ${dayCount(bins[picked])}`
+          {pickedLive !== null
+            ? `${fmtHour(pickedLive)} · ${dayCount(bins[pickedLive])}`
             : `Most often ${fmtHour(peak)}`}
         </p>
       </div>
@@ -328,21 +369,18 @@ function HourChart<Day extends { dateKey: string }>({
           className="stroke-line"
           strokeWidth={1}
         />
-        {bins.map(
-          (n, h) =>
-            n > 0 && (
-              <rect
-                key={h}
-                x={x(h) - barW / 2}
-                y={y(n)}
-                width={barW}
-                height={H - y(n)}
-                rx={1.5}
-                className="fill-accent"
-                pointerEvents="none"
-              />
-            ),
-        )}
+        {filled.map((h) => (
+          <rect
+            key={h}
+            x={x(h) - barW / 2}
+            y={y(bins[h])}
+            width={barW}
+            height={H - y(bins[h])}
+            rx={1.5}
+            className="fill-accent"
+            pointerEvents="none"
+          />
+        ))}
         <text
           x={x(labeled)}
           y={y(bins[labeled]) - 4}

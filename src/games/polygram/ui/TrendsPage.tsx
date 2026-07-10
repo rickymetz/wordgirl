@@ -1,15 +1,10 @@
 import { GameTrends, type GameTrendsConfig } from "../../../components/GameTrends";
+import { formatDuration } from "../../../lib/date";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
   type ArchivedDay,
 } from "../state/persistence";
-
-const fmtTime = (s: number) => {
-  const m = Math.floor(s / 60);
-  const sec = Math.round(s % 60);
-  return `${m}:${String(sec).padStart(2, "0")}`;
-};
 
 // Older saves stored per-word COUNTS; newer store position arrays.
 const hintLetters = (d: ArchivedDay) =>
@@ -44,15 +39,14 @@ const config: GameTrendsConfig<ArchivedDay> = {
     {
       key: "time",
       label: "Completion time",
-      value: (d) => (d.completed && !d.stale ? d.elapsedMs / 1000 : null),
-      format: fmtTime,
+      value: (d) => (d.completed && !d.stale ? d.elapsedMs : null),
+      format: formatDuration,
       lowerIsBetter: true,
     },
     {
       key: "hints",
       label: "Hint letters",
       value: (d) => (d.completed ? hintLetters(d) : null),
-      format: (v) => `${Math.round(v * 10) / 10}`,
       lowerIsBetter: true,
     },
   ],

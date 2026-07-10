@@ -262,8 +262,9 @@ export function gameReducer(
         solved,
         invalidSlots,
         rotations: state.rotations + 1,
-        invalidBoards:
-          state.invalidBoards + (invalidSlots.length > 0 ? 1 : 0),
+        // No invalidBoards increment here: a +1 rotation always flips
+        // the domino's axis, which can't succeed on a full board, and
+        // on a non-full board invalidSlots is always empty.
       };
     }
 
@@ -276,6 +277,10 @@ export function gameReducer(
         selectedDominoId: null,
         currentOrientation: 0,
         invalidSlots: [],
+        // Clearing IS taking back — every placed domino comes off, so
+        // it counts like N removals (else clear-board play styles
+        // chart artificially low take-backs).
+        removals: state.removals + state.placed.length,
       };
     }
 

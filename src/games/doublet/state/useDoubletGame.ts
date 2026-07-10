@@ -43,6 +43,11 @@ export function useDoubletGame(mode: GameMode) {
   // Local hour this board was solved, stamped ONLY for a solve that
   // happens in this session.
   const solvedHourRef = useRef<number | null>(null);
+  // False when this board hydrated from a save that predates the
+  // action counters: the true counts are unknowable, so they must
+  // never be written — re-saving zeros would turn the legacy day's
+  // GAP into a fake best-ever 0 on the trends charts.
+  const countersKnownRef = useRef(true);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -69,10 +74,12 @@ export function useDoubletGame(mode: GameMode) {
       placed: s.placed,
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
-      moves: s.moves,
-      rotations: s.rotations,
-      removals: s.removals,
-      invalidBoards: s.invalidBoards,
+      ...(countersKnownRef.current && {
+        moves: s.moves,
+        rotations: s.rotations,
+        removals: s.removals,
+        invalidBoards: s.invalidBoards,
+      }),
       ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
       ...(solvedHourRef.current !== null && {
         solvedHour: solvedHourRef.current,
@@ -125,12 +132,18 @@ export function useDoubletGame(mode: GameMode) {
           savedElapsedRef.current = saved.elapsedMs ?? 0;
           sessionStartRef.current = Date.now();
           sessionActiveMsRef.current = 0;
-          // A solved board's session count is final; an unsolved one
-          // counts this open as another session.
-          sessionsRef.current = saved.solved
-            ? (saved.sessions ?? null)
-            : (saved.sessions ?? 0) + 1;
+          // A pre-tracking save's session count is unknowable — stays
+          // null even if play continues (a partial count is as fake
+          // as a zero). A solved board's count is final; an unsolved
+          // one counts this open as another session.
+          sessionsRef.current =
+            saved.sessions === undefined
+              ? null
+              : saved.solved
+                ? saved.sessions
+                : saved.sessions + 1;
           solvedHourRef.current = saved.solvedHour ?? null;
+          countersKnownRef.current = saved.moves !== undefined;
           dispatch({
             type: "hydrate",
             placed: saved.placed,

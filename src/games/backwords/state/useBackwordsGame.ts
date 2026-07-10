@@ -65,13 +65,16 @@ export function useBackwordsGame(mode: GameMode) {
     lastActionRef.current = action.type;
     rawDispatch(action);
   }, []);
-  const prevRowsRef = useRef(state.rows);
+  // Invalid commits change counters without touching rows — they're
+  // edits too, or a counting tab would never own its own save.
+  const prevEditRef = useRef({ rows: state.rows, invalids: state.invalids });
   useEffect(() => {
-    if (state.rows !== prevRowsRef.current) {
-      prevRowsRef.current = state.rows;
+    const prev = prevEditRef.current;
+    if (state.rows !== prev.rows || state.invalids !== prev.invalids) {
+      prevEditRef.current = { rows: state.rows, invalids: state.invalids };
       if (lastActionRef.current !== "hydrate") rowsEditedRef.current = true;
     }
-  }, [state.rows]);
+  }, [state.rows, state.invalids]);
 
   // hydratedRef flips only AFTER hydration completes — saving before
   // that would clobber the stored progress with the empty initial state.
@@ -107,6 +110,11 @@ export function useBackwordsGame(mode: GameMode) {
   // in this session — never backfilled onto an already-solved hydrate.
   const solvedHourRef = useRef<number | null>(null);
   const hydratedSolvedRef = useRef(false);
+  // False when this day hydrated from a save that predates the action
+  // counters: the true counts are unknowable, so the counters must
+  // never be written — re-saving zeros would turn the legacy day's
+  // GAP into a fake best-ever 0 on the trends charts.
+  const countersKnownRef = useRef(true);
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (staleRecordRef.current) {
@@ -122,8 +130,10 @@ export function useBackwordsGame(mode: GameMode) {
         rows: s.rows.map(rowSaveKey),
         solved: s.solved,
         elapsedMs: clock.currentElapsedMs(),
-        takeBacks: s.takeBacks,
-        invalids: s.invalids,
+        ...(countersKnownRef.current && {
+          takeBacks: s.takeBacks,
+          invalids: s.invalids,
+        }),
         glyphRows: glyphRowCount(s.rows),
         ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
         ...(solvedHourRef.current !== null && {
@@ -150,12 +160,18 @@ export function useBackwordsGame(mode: GameMode) {
           statsRecordedRef.current =
             saved.solved || saved.statsRecorded === true;
           hydratedSolvedRef.current = saved.solved;
-          // A solved day's session count is final; an unsolved one
-          // counts this open as another session.
-          sessionsRef.current = saved.solved
-            ? (saved.sessions ?? null)
-            : (saved.sessions ?? 0) + 1;
+          // A pre-tracking save's session count is unknowable — stays
+          // null even if play continues (a partial count is as fake
+          // as a zero). A solved day's count is final; an unsolved
+          // one counts this open as another session.
+          sessionsRef.current =
+            saved.sessions === undefined
+              ? null
+              : saved.solved
+                ? saved.sessions
+                : saved.sessions + 1;
           solvedHourRef.current = saved.solvedHour ?? null;
+          countersKnownRef.current = saved.takeBacks !== undefined;
           clock.hydrate(saved.elapsedMs ?? 0, saved.solved);
           dispatch({
             type: "hydrate",

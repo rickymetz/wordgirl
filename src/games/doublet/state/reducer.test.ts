@@ -113,6 +113,29 @@ describe("action counters", () => {
     // Removing a domino that isn't on the board is not a take-back.
     s = gameReducer(s, { type: "removeDomino", dominoId: 5 });
     expect(s.removals).toBe(1);
+
+    // Clearing the board takes back every placed domino (vertical
+    // placements keep the board unsolved so clearBoard isn't frozen).
+    s = gameReducer(s, {
+      type: "placeDomino",
+      cell: { row: 0, col: 0 },
+      dict,
+      dominoId: 0,
+      orientation: 1,
+    });
+    s = gameReducer(s, {
+      type: "placeDomino",
+      cell: { row: 0, col: 1 },
+      dict,
+      dominoId: 1,
+      orientation: 1,
+    });
+    s = gameReducer(s, { type: "clearBoard" });
+    expect(s.placed).toHaveLength(0);
+    expect(s.removals).toBe(3);
+    // Clearing an empty board takes back nothing.
+    s = gameReducer(s, { type: "clearBoard" });
+    expect(s.removals).toBe(3);
   });
 
   it("counts each full-but-wrong board exactly once per filling", () => {

@@ -106,7 +106,7 @@ describe("archive roll-up", () => {
     expect(days["2026-07-12"].sessions).toBeNull();
     expect(days["2026-07-12"].solvedHour).toBeNull();
 
-    // Counters sum across the boards that have them.
+    // Counters sum when EVERY board of the date carries them.
     localStorage.clear();
     await saveDailyProgress(
       day("easy", {
@@ -130,7 +130,6 @@ describe("archive roll-up", () => {
         solvedHour: 21,
       }),
     );
-    await saveDailyProgress(day("hard", { solved: true })); // legacy board
     days = await loadAllDailyProgress();
     expect(days["2026-07-12"].moves).toBe(10);
     expect(days["2026-07-12"].rotations).toBe(2);
@@ -138,6 +137,16 @@ describe("archive roll-up", () => {
     expect(days["2026-07-12"].invalidBoards).toBe(1);
     expect(days["2026-07-12"].sessions).toBe(3);
     // Any solved board's hour represents the day.
+    expect([9, 21]).toContain(days["2026-07-12"].solvedHour);
+
+    // A MIXED date — one board's save predates tracking — is a gap:
+    // a partial sum presented as the day's total is as fake as a zero.
+    await saveDailyProgress(day("hard", { solved: true })); // legacy board
+    days = await loadAllDailyProgress();
+    expect(days["2026-07-12"].moves).toBeNull();
+    expect(days["2026-07-12"].rotations).toBeNull();
+    expect(days["2026-07-12"].sessions).toBeNull();
+    // The hour is a merge, not a sum — it survives the mixed date.
     expect([9, 21]).toContain(days["2026-07-12"].solvedHour);
   });
 
