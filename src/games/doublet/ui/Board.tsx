@@ -1,5 +1,4 @@
 import { useMemo, useRef } from "react";
-import { motion } from "motion/react";
 import { useViewport } from "../../../lib/useViewport";
 import type { GameState } from "../state/reducer";
 import {
@@ -222,7 +221,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
 
         return (
           <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1, zIndex: 1 }}>
-            <motion.button
+            <button
               data-cell={k}
               data-row={row}
               data-col={col}
@@ -298,7 +297,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
               }
             >
               {letter || ""}
-            </motion.button>
+            </button>
 
             {hasBridgeRight && (
               <div

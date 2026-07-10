@@ -53,7 +53,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const [resultsOpen, setResultsOpen] = useState(true);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
-  const [shakeKey, setShakeKey] = useState(0);
   const placed = placedDominoIds(state);
   const totalDominoes = puzzle.dominoes.length;
   const placedCount = placed.size;
@@ -72,8 +71,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       const anchor = findValidAnchor(cell, state.currentOrientation);
       if (anchor) {
         dispatch({ type: "placeDomino", cell: anchor, dict });
-      } else {
-        setShakeKey((k) => k + 1);
       }
     }
   };
@@ -81,9 +78,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const handleTapPlaced = useCallback(
     (dominoId: number) => {
       if (state.solved) return;
-      dispatch({ type: "rotatePlaced", dominoId, dict });
+      dispatch({ type: "removeDomino", dominoId });
     },
-    [state.solved, dict, dispatch],
+    [state.solved, dispatch],
   );
 
   const handleBoardDragStart = useCallback(
@@ -184,8 +181,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           dominoId: drag.dominoId,
           orientation: drag.orientation,
         });
-      } else {
-        setShakeKey((k) => k + 1);
       }
     }
 
@@ -263,23 +258,17 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Board — centered in remaining space */}
       <div className="flex flex-1 flex-col items-center justify-center py-4 [@media(max-height:720px)]:py-2">
-        <motion.div
-          key={shakeKey}
-          animate={shakeKey > 0 ? { x: [0, -4, 4, -3, 3, 0] } : {}}
-          transition={{ duration: 0.35 }}
-        >
-          <Board
-            state={state}
-            onCellTap={handleCellTap}
-            onTapPlaced={handleTapPlaced}
-            onBoardDragStart={handleBoardDragStart}
-            onBoardDragMove={handleDragMove}
-            onBoardDragEnd={handleDragEnd}
-            hoverCell={hoverCell}
-            resolvedAnchor={resolvedAnchor}
-            previewOrientation={previewOri}
-          />
-        </motion.div>
+        <Board
+          state={state}
+          onCellTap={handleCellTap}
+          onTapPlaced={handleTapPlaced}
+          onBoardDragStart={handleBoardDragStart}
+          onBoardDragMove={handleDragMove}
+          onBoardDragEnd={handleDragEnd}
+          hoverCell={hoverCell}
+          resolvedAnchor={resolvedAnchor}
+          previewOrientation={previewOri}
+        />
       </div>
 
       {/* Tray — pinned to bottom */}

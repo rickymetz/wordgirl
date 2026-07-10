@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "motion/react";
 import type { DominoPiece, Orientation } from "../engine/types";
 import { placedDominoIds, type GameState } from "../state/reducer";
 
@@ -43,10 +42,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 }
 
 const DRAG_THRESHOLD = 8;
-
-const CHIP_W = "calc(5rem + 5px)";
-const CHIP_SLOT = CHIP_W;
-const SPRING = { type: "spring" as const, stiffness: 500, damping: 30 };
+const CHIP_SLOT = "calc(5rem + 5px)";
 
 function DominoChip({
   piece,
@@ -69,7 +65,10 @@ function DominoChip({
   onDragEnd?: () => void;
   dimmed?: boolean;
 }) {
-  const rotation = (orientation as number) * 90;
+  const isH = orientation === 0 || orientation === 2;
+  const flipped = orientation >= 2;
+  const l0 = flipped ? piece.letters[1] : piece.letters[0];
+  const l1 = flipped ? piece.letters[0] : piece.letters[1];
 
   const dragging = React.useRef(false);
   const startPt = React.useRef({ x: 0, y: 0 });
@@ -126,24 +125,20 @@ function DominoChip({
   return (
     <div
       className="flex items-center justify-center"
-      style={{
-        width: CHIP_SLOT,
-        height: CHIP_SLOT,
-      }}
+      style={{ width: CHIP_SLOT, height: CHIP_SLOT }}
     >
-      <motion.button
-        animate={{ rotate: rotation }}
-        transition={SPRING}
+      <button
         className={[
           "flex items-center justify-center touch-manipulation select-none",
           "rounded-xl border-2 bg-surface",
-          "transition-shadow",
+          "transition-shadow duration-100",
+          "active:scale-95",
           selected
             ? "border-accent shadow-md shadow-accent/20"
             : "border-line shadow-sm",
           dimmed ? "opacity-30" : "",
         ].join(" ")}
-        style={{ flexDirection: "row" }}
+        style={{ flexDirection: isH ? "row" : "column" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -151,25 +146,21 @@ function DominoChip({
         aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
         aria-pressed={selected}
       >
-        <motion.div
-          animate={{ rotate: -rotation }}
-          transition={SPRING}
-          className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
-        >
-          {piece.letters[0]}
-        </motion.div>
+        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+          {l0}
+        </div>
         <div
           className={selected ? "bg-accent/30" : "bg-line"}
-          style={{ width: "1px", alignSelf: "stretch", marginBlock: "6px" }}
+          style={
+            isH
+              ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
+              : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
+          }
         />
-        <motion.div
-          animate={{ rotate: -rotation }}
-          transition={SPRING}
-          className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
-        >
-          {piece.letters[1]}
-        </motion.div>
-      </motion.button>
+        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+          {l1}
+        </div>
+      </button>
     </div>
   );
 }
