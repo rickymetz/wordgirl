@@ -96,6 +96,9 @@
   );
 }
 
+/* Tileword — warm amber. */
+[data-level="tileword"] { --color-accent: light-dark(#92400e, #fbbf24); }
+
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
