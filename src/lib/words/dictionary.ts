@@ -22,8 +22,12 @@
  * v10: backwords palindrome prefix aliases — the shadowed even
  * palindromes (poop, peep) join the item pool, changing puzzle
  * derivation without a dictionary.txt change.
+ * v11: suffix expansion — for every ENABLE word whose base form is
+ * already in the dictionary, add the inflected form (-s, -es, -ed,
+ * -ing, -ly, -er, -est, -ness) to the bonus tier. Fixes inconsistent
+ * suffix coverage (e.g. "pen" accepted but "penned" rejected).
  */
-export const DICT_VERSION = 10;
+export const DICT_VERSION = 11;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

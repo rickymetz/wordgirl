@@ -2,11 +2,13 @@
  * One-off dictionary builder. Output is COMMITTED because daily puzzle
  * determinism depends on exact dictionary contents — rerunning this with
  * newer sources changes future dailies, so bump DICT_VERSION in
- * src/games/polygram/engine/dictionary.ts if you regenerate.
+ * src/lib/words/dictionary.ts if you regenerate.
  *
- * Pipeline: ENABLE word list (validity) ∩ Norvig count_1w top-N (commonness),
- * lengths 3–10, a-z only, blocklist-filtered. Emits newline-separated,
- * sorted by length then alphabetically.
+ * Pipeline:
+ *   1. ENABLE word list (validity) ∩ subtitle-frequency top-N → core dict
+ *   2. Suffix expansion: any ENABLE word whose base form is already in the
+ *      dict gets added to the bonus tier, ensuring consistent inflection
+ *      coverage (-s, -es, -ed, -ing, -ly, -er, -est).
  *
  * Usage: npm run build:dictionary
  */
@@ -79,6 +81,106 @@ const REQUIRED_ALLOWLIST = new Set([
   "dab",
 ]);
 
+/**
+ * Given an inflected word, return candidate base forms by stripping
+ * common English suffixes. We don't need perfect morphology — false
+ * candidates that aren't in ENABLE or our dict are harmlessly ignored.
+ */
+function candidateBases(word) {
+  const bases = new Set();
+  const len = word.length;
+
+  // -s / -es / -ies plurals
+  if (word.endsWith("s") && !word.endsWith("ss") && len > MIN_LEN) {
+    bases.add(word.slice(0, -1));
+  }
+  if (word.endsWith("es") && len > MIN_LEN + 1) {
+    bases.add(word.slice(0, -2));
+  }
+  if (word.endsWith("ies") && len > MIN_LEN + 2) {
+    bases.add(word.slice(0, -3) + "y");
+  }
+
+  // -ed: walked→walk, baked→bake (drop d), penned→pen (doubled cons)
+  if (word.endsWith("ed") && len > MIN_LEN + 1) {
+    const stemEd = word.slice(0, -2);
+    bases.add(stemEd);
+    bases.add(stemEd + "e");
+    if (
+      stemEd.length >= MIN_LEN &&
+      stemEd[stemEd.length - 1] === stemEd[stemEd.length - 2]
+    ) {
+      bases.add(stemEd.slice(0, -1));
+    }
+    if (word.endsWith("ied") && len > MIN_LEN + 2) {
+      bases.add(word.slice(0, -3) + "y");
+    }
+  }
+
+  // -ing: walking→walk, baking→bake, running→run
+  if (word.endsWith("ing") && len > MIN_LEN + 2) {
+    const stemIng = word.slice(0, -3);
+    bases.add(stemIng);
+    bases.add(stemIng + "e");
+    if (
+      stemIng.length >= MIN_LEN &&
+      stemIng[stemIng.length - 1] === stemIng[stemIng.length - 2]
+    ) {
+      bases.add(stemIng.slice(0, -1));
+    }
+  }
+
+  // -ly: quickly→quick, happily→happy
+  if (word.endsWith("ly") && len > MIN_LEN + 1) {
+    bases.add(word.slice(0, -2));
+    if (word.endsWith("ily") && len > MIN_LEN + 2) {
+      bases.add(word.slice(0, -3) + "y");
+    }
+  }
+
+  // -er: taller→tall, baker→bake, runner→run, happier→happy
+  if (word.endsWith("er") && len > MIN_LEN + 1) {
+    const stemEr = word.slice(0, -2);
+    bases.add(stemEr);
+    bases.add(stemEr + "e");
+    if (
+      stemEr.length >= MIN_LEN &&
+      stemEr[stemEr.length - 1] === stemEr[stemEr.length - 2]
+    ) {
+      bases.add(stemEr.slice(0, -1));
+    }
+    if (word.endsWith("ier") && len > MIN_LEN + 2) {
+      bases.add(word.slice(0, -3) + "y");
+    }
+  }
+
+  // -est: tallest→tall, nicest→nice, biggest→big, happiest→happy
+  if (word.endsWith("est") && len > MIN_LEN + 2) {
+    const stemEst = word.slice(0, -3);
+    bases.add(stemEst);
+    bases.add(stemEst + "e");
+    if (
+      stemEst.length >= MIN_LEN &&
+      stemEst[stemEst.length - 1] === stemEst[stemEst.length - 2]
+    ) {
+      bases.add(stemEst.slice(0, -1));
+    }
+    if (word.endsWith("iest") && len > MIN_LEN + 3) {
+      bases.add(word.slice(0, -4) + "y");
+    }
+  }
+
+  // -ness: sadness→sad, kindness→kind
+  if (word.endsWith("ness") && len > MIN_LEN + 3) {
+    bases.add(word.slice(0, -4));
+    if (word.endsWith("iness") && len > MIN_LEN + 4) {
+      bases.add(word.slice(0, -5) + "y");
+    }
+  }
+
+  return bases;
+}
+
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);
   if (existsSync(cachePath)) {
@@ -128,6 +230,31 @@ for (const word of REQUIRED_ALLOWLIST) {
   bonus.delete(word);
   required.add(word);
 }
+
+// --- Suffix expansion ---
+// For every ENABLE word whose base form (after stripping a common suffix)
+// is already in our dictionary, add the inflected form to the bonus tier.
+// This ensures consistent coverage: if "pen" is required, "penned",
+// "penning", "pens" all count as bonus words.
+const allDict = new Set([...required, ...bonus]);
+let suffixAdded = 0;
+for (const word of enable) {
+  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
+  if (!/^[a-z]+$/.test(word)) continue;
+  if (allDict.has(word)) continue;
+  if (BLOCKLIST.has(word)) continue;
+
+  const bases = candidateBases(word);
+  for (const base of bases) {
+    if (allDict.has(base)) {
+      bonus.add(word);
+      allDict.add(word);
+      suffixAdded++;
+      break;
+    }
+  }
+}
+console.log(`suffix expansion: +${suffixAdded} bonus words`);
 
 // Group by length but KEEP frequency order inside each group (Set
 // iteration = insertion = rank order; JS sort is stable): a word's
