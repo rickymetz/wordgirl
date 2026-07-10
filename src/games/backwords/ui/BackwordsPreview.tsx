@@ -69,7 +69,7 @@ function PreviewRow({
         className="z-10 flex shrink-0 justify-center"
         style={{ width: SLOT }}
       >
-        {middle && <Tile accent={accent}>{middle}</Tile>}
+        {middle && <MiddleTile>{middle}</MiddleTile>}
       </div>
       <div className="flex shrink-0 items-center gap-[2px]">
         {[...right].map((ch, i) => (
@@ -83,6 +83,29 @@ function PreviewRow({
         ))}
         {glyph && <Sparkles className="ml-[2px] h-2.5 w-2.5 text-accent" />}
       </div>
+    </div>
+  );
+}
+
+/** Half real, half reflection — like the board's straddle tile. */
+function MiddleTile({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="relative flex shrink-0 rounded font-game text-[8px] shadow-sm"
+      style={{ width: TILE, height: TILE }}
+    >
+      <span
+        className="absolute inset-0 flex items-center justify-center rounded bg-surface text-ink"
+        style={{ clipPath: "inset(0 50% 0 0)" }}
+      >
+        {children}
+      </span>
+      <span
+        className="absolute inset-0 flex items-center justify-center rounded bg-surface/70 text-ink-soft"
+        style={{ clipPath: "inset(0 0 0 50%)" }}
+      >
+        {children}
+      </span>
     </div>
   );
 }

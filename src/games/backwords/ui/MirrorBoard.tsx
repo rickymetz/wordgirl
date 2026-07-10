@@ -330,12 +330,35 @@ function PlacedTile({
         onDragLive?.(null);
         if (onUnstage && droppedOffBoard(e, info)) onUnstage();
       }}
-      className={`flex shrink-0 items-center justify-center rounded-lg bg-tile font-game text-ink uppercase ${
+      className={`relative flex shrink-0 items-center justify-center rounded-lg font-game uppercase ${
+        onGlass ? "" : "bg-tile text-ink"
+      } ${
         active ? "shadow-sm ring-1 ring-accent" : onGlass ? "shadow-md" : "shadow-sm"
       }`}
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >
-      {letter}
+      {onGlass ? (
+        // The middle tile sits half in the glass: its left half wears
+        // the real-tile treatment, its right half the reflection's —
+        // seamed exactly on the mirror line it straddles.
+        <>
+          <span
+            className="absolute inset-0 flex items-center justify-center rounded-lg bg-tile text-ink"
+            style={{ clipPath: "inset(0 50% 0 0)" }}
+          >
+            {letter}
+          </span>
+          <span
+            aria-hidden
+            className="absolute inset-0 flex items-center justify-center rounded-lg bg-surface/70 text-ink-soft"
+            style={{ clipPath: "inset(0 0 0 50%)" }}
+          >
+            {letter}
+          </span>
+        </>
+      ) : (
+        letter
+      )}
     </motion.span>
   );
 }
