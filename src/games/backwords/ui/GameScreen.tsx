@@ -224,7 +224,11 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           : `${state.bank.length} letters left`}
       </div>
 
-      <div className="relative flex flex-1 flex-col justify-center py-4 [@media(max-height:720px)]:py-2">
+      {/* id: the drop target for dragged bank tiles. */}
+      <div
+        id="bw-board"
+        className="relative flex flex-1 flex-col justify-center py-4 [@media(max-height:720px)]:py-2"
+      >
         <MirrorBoard
           rows={state.rows}
           current={state.current}
@@ -311,8 +315,8 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Build rows",
                 body: (
                   <>
-                    Tap letters to lay a word against the mirror. Its
-                    reflection reads it <Key>backwards</Key> — and that
+                    Tap or drag letters to lay a word against the mirror.
+                    Its reflection reads it <Key>backwards</Key> — and that
                     reading must be a <Key>real word</Key> too.
                   </>
                 ),
