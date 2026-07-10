@@ -147,11 +147,11 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         >
           <path
             d={outlinePath}
-            fill="none"
+            fill="var(--color-surface-tint)"
             stroke="var(--color-line)"
             strokeWidth="1.5"
             strokeLinejoin="round"
-            opacity={0.4}
+            strokeOpacity={0.4}
           />
         </svg>
       )}
@@ -214,7 +214,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         const isPreview = previewCells && previewCells.keys.has(k);
         const isHover = !isPreview && hoverCell && hoverCell.row === row && hoverCell.col === col;
 
-        let cellBg = "bg-surface-tint";
+        let cellBg = "bg-surface";
         if (pd) cellBg = "bg-surface";
         else if (isPreview) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
         else if (isHover) cellBg = "bg-accent/15";
