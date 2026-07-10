@@ -39,7 +39,7 @@ type Filter = "all" | "core" | "bookmarked";
 export function DictionaryPage() {
   const dict = use(loadDictionary());
   const [query, setQuery] = useState("");
-  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  const [activeLetter, setActiveLetter] = useState<string | null>("A");
   const [filter, setFilter] = useState<Filter>("all");
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
   const [lenMin, setLenMin] = useState(MIN_LEN);
@@ -147,7 +147,6 @@ export function DictionaryPage() {
     setScrubbing(false);
   }, []);
 
-  const showPrompt = !query.trim() && !activeLetter && filter === "all" && !lengthActive;
   const letterCounts = useMemo(() => {
     const counts = new Map<string, number>();
     const source = filter === "core"
@@ -231,19 +230,15 @@ export function DictionaryPage() {
       />
 
       {/* Main content: word list + scrubber */}
-      <div className="relative mt-3 flex min-h-0 grow">
+      <div className="relative mt-3 min-h-0 grow">
         {/* Word list */}
         <div
           ref={listRef}
-          className="grow overflow-y-auto pr-7"
+          className="absolute inset-0 overflow-y-auto pr-7"
           role="list"
           aria-label="Dictionary words"
         >
-          {showPrompt ? (
-            <div className="flex flex-col items-center justify-center gap-2 pt-16 text-center text-ink-soft">
-              <p className="text-sm">Search or pick a letter to browse</p>
-            </div>
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 pt-16 text-center text-ink-soft">
               <p className="text-sm">No words found</p>
             </div>
@@ -271,10 +266,10 @@ export function DictionaryPage() {
           )}
         </div>
 
-        {/* Alphabet scrubber */}
+        {/* Alphabet scrubber — fixed height like iOS contacts */}
         <div
           ref={scrubberRef}
-          className="absolute top-0 right-0 flex h-full touch-none select-none flex-col justify-between py-1"
+          className="absolute inset-y-0 right-0 flex touch-none select-none flex-col justify-between py-1"
           onPointerDown={onScrubStart}
           onPointerMove={onScrubMove}
           onPointerUp={onScrubEnd}
