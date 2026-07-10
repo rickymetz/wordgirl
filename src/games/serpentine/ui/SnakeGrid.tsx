@@ -77,6 +77,7 @@ export function SnakeGrid({
   }, []);
 
   const n = cells.length;
+  const claimed = new Set(cells.map((c) => cellKey(c)));
   const color = solved ? "var(--color-good)" : "var(--color-accent)";
 
   function nodeOpacity(i: number): number {
@@ -153,6 +154,11 @@ export function SnakeGrid({
             <div
               key={cellKey({ row: r, col: c })}
               className="relative flex items-center justify-center rounded-full font-game text-sm text-ink"
+              style={
+                claimed.has(cellKey({ row: r, col: c }))
+                  ? { color: "var(--color-on-accent)" }
+                  : undefined
+              }
             >
               <span className="relative z-10 select-none">{grid[r][c]}</span>
             </div>
