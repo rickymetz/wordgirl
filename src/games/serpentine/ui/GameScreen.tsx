@@ -14,7 +14,7 @@ import { SnakeLabels } from "./SnakeLabels";
 import { SolvedOverlay, SerpentineCoach } from "./Overlays";
 import type { Difficulty } from "../engine/types";
 
-const DIFFICULTY_LABELS: Record<Difficulty, string> = {
+const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
   medium: "Medium",
   hard: "Hard",
@@ -22,9 +22,11 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 
 interface Props {
   mode: GameMode;
+  difficulty?: Difficulty;
+  onDifficultyChange?: (d: Difficulty) => void;
 }
 
-export function GameScreen({ mode }: Props) {
+export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } =
     useSerpentineGame(mode);
 
@@ -78,7 +80,13 @@ export function GameScreen({ mode }: Props) {
     >
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
-        <HomeLink />
+        {mode.kind === "archive" ? (
+          <span className="text-sm font-semibold text-ink-soft">
+            {formatDateKey(mode.dateKey)}
+          </span>
+        ) : (
+          <HomeLink />
+        )}
         <span className="flex items-center gap-3">
           {state.solved && !resultsOpen && (
             <button
@@ -100,23 +108,36 @@ export function GameScreen({ mode }: Props) {
         </span>
       </header>
 
-      {/* Title */}
-      <div className="flex items-baseline gap-2.5 pb-1">
+      {/* Title + status */}
+      <div className="flex items-baseline gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Serpentine</h1>
-        <span className="text-base font-semibold text-ink-soft">
-          {DIFFICULTY_LABELS[mode.difficulty]}
+        <span className="text-sm font-medium text-accent italic">
+          {puzzle.title}
         </span>
       </div>
-      {mode.kind !== "archive" ? null : (
-        <p className="pb-1 text-sm font-semibold text-ink-soft">
-          {formatDateKey(mode.dateKey)}
-        </p>
-      )}
 
-      {/* Puzzle title hint */}
-      <p className="pb-3 text-sm font-medium text-accent italic">
-        {puzzle.title}
-      </p>
+      {/* Difficulty pills — matches doublet's picker */}
+      {difficulty !== undefined && onDifficultyChange && (
+        <div className="flex gap-1 pb-3">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
+            <button
+              key={d}
+              className={[
+                "relative px-4 py-1.5 rounded-full text-sm font-semibold",
+                "touch-manipulation select-none transition-colors",
+                "after:absolute after:inset-x-0 after:-inset-y-1.5",
+                d === difficulty
+                  ? "bg-accent text-surface"
+                  : "bg-surface-tint text-ink-soft",
+              ].join(" ")}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => onDifficultyChange(d)}
+            >
+              {DIFF_LABELS[d]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Grid */}
       <div className="relative flex flex-1 flex-col justify-center py-2">
