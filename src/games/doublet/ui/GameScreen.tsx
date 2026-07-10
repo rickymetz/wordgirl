@@ -300,7 +300,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="flex flex-col items-center gap-4 p-6"
+              className="flex flex-col items-center gap-4 p-6 outline-none"
               data-autofocus
               tabIndex={-1}
             >
