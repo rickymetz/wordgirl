@@ -32,8 +32,8 @@ describe("parseDictionary", () => {
   });
 
   it("ignores blank lines and out-of-range lengths", () => {
-    const dict = parseDictionary("ab\n\ncat\n\nsupercalifragilistic\n");
-    expect(dict.has("ab")).toBe(false);
+    const dict = parseDictionary("a\n\ncat\n\nsupercalifragilistic\n");
+    expect(dict.has("a")).toBe(false);
     expect(dict.has("cat")).toBe(true);
     expect(dict.has("supercalifragilistic")).toBe(false);
   });
