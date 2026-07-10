@@ -105,6 +105,7 @@
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {
   --color-accent: light-dark(#4d7c0f, #a3e635);
+  --color-accent-trail: light-dark(#6b6e0f, #d4e635);
   --color-on-accent: light-dark(#26242b, #1a1a2e);
 }
 

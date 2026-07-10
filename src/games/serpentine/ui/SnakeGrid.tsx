@@ -13,8 +13,8 @@ interface Props {
 
 const NODE_R = 0.38;
 const PIPE_W = 0.32;
-const START_MIX = 40;
-const END_MIX = 100;
+const TRAIL_START = 0;
+const TRAIL_END = 100;
 
 export function SnakeGrid({
   rows,
@@ -79,11 +79,12 @@ export function SnakeGrid({
   const n = cells.length;
   const claimed = new Set(cells.map((c) => cellKey(c)));
   const accent = solved ? "var(--color-good)" : "var(--color-accent)";
+  const trail = "var(--color-accent-trail)";
 
   function nodeColor(i: number): string {
-    if (solved) return `color-mix(in oklab, ${accent} 75%, var(--color-surface))`;
-    const pct = n <= 1 ? END_MIX : START_MIX + (END_MIX - START_MIX) * (i / (n - 1));
-    return `color-mix(in oklab, ${accent} ${Math.round(pct)}%, var(--color-surface))`;
+    if (solved) return accent;
+    const pct = n <= 1 ? TRAIL_END : TRAIL_START + (TRAIL_END - TRAIL_START) * (i / (n - 1));
+    return `color-mix(in oklch, ${accent} ${Math.round(pct)}%, ${trail})`;
   }
 
   return (
