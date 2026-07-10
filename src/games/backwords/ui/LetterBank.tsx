@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { motion, type PanInfo } from "motion/react";
 import { toMultiset } from "../engine/types";
 import { dragPoint } from "./dragPoint";
@@ -30,6 +31,11 @@ export function LetterBank({
 }) {
   const left = toMultiset(remaining);
   const seen: Record<string, number> = {};
+  // A dragged tile moves WITH the pointer, so the pointer never leaves
+  // it and motion's tap gesture completes too — onTap after onDragEnd
+  // would place the letter twice. One gesture at a time: a shared flag,
+  // cleared a frame after the drag resolves, keeps taps honest.
+  const draggingRef = useRef(false);
   return (
     <div className="flex flex-wrap justify-center gap-1.5 select-none">
       {all.map((letter, i) => {
@@ -52,6 +58,9 @@ export function LetterBank({
           <motion.button
             key={i}
             type="button"
+            // House rule: game-surface buttons never steal focus — a
+            // drag would otherwise focus the tile and hijack Enter.
+            onPointerDown={(e) => e.preventDefault()}
             layoutId={`bwtile-${i}`}
             transition={{ type: "spring", stiffness: 500, damping: 34 }}
             drag
@@ -59,8 +68,10 @@ export function LetterBank({
             dragMomentum={false}
             whileDrag={{ scale: 1.25, zIndex: 40 }}
             whileTap={{ scale: 0.9 }}
+            onDragStart={() => (draggingRef.current = true)}
             onDrag={(e, info) => onDragLive(letter, e, info)}
             onDragEnd={(e, info) => {
+              requestAnimationFrame(() => (draggingRef.current = false));
               onDragLive(null);
               // Dropped over the board — EITHER side of the glass —
               // and the tile moves there.
@@ -77,7 +88,9 @@ export function LetterBank({
                 onLetter(letter);
               }
             }}
-            onTap={() => onLetter(letter)}
+            onTap={() => {
+              if (!draggingRef.current) onLetter(letter);
+            }}
             aria-label={`letter ${letter}`}
             className="relative flex h-11 w-9 items-center justify-center rounded-lg bg-tile font-game text-lg text-ink uppercase shadow-sm"
             // touch-action none: the drag must win over page scrolling.
