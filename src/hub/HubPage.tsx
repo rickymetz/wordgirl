@@ -1,7 +1,8 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence } from "motion/react";
-import { Settings } from "lucide-react";
+import { BookOpen, Settings } from "lucide-react";
 import { games } from "../games/registry";
 import { SettingsDialog } from "../components/SettingsDialog";
 import { GameCard } from "./GameCard";
@@ -13,6 +14,13 @@ export function HubPage() {
       <header className="relative pt-12 pb-8">
         {/* Display font sets the brand apart from the UI text. */}
         <h1 className="text-center font-game text-2xl">WordGirl</h1>
+        <Link
+          to="/dictionary"
+          aria-label="dictionary"
+          className="absolute top-12 left-0 -m-2 flex h-10 w-10 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+        >
+          <BookOpen aria-hidden className="h-5 w-5" />
+        </Link>
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}

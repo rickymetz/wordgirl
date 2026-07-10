@@ -1,9 +1,15 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import type { RouteObject } from "react-router-dom";
 import { HubPage } from "./hub/HubPage";
 import { RouteError } from "./components/RouteError";
 import { games } from "./games/registry";
+
+const DictionaryPage = lazy(() =>
+  import("./dictionary/DictionaryPage").then((m) => ({
+    default: m.DictionaryPage,
+  })),
+);
 
 function lazyPage(Page: React.ComponentType) {
   return (
@@ -35,6 +41,7 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { path: "/", element: <HubPage /> },
+      { path: "/dictionary", element: lazyPage(DictionaryPage) },
       ...gameRoutes,
       { path: "*", element: <Navigate to="/" replace /> },
     ],
