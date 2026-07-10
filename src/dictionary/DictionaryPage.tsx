@@ -443,7 +443,7 @@ function RangeSlider({
     : "Word length";
 
   return (
-    <div className="mt-3 px-2">
+    <div className="mt-3">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-xs font-semibold text-ink-soft">{label}</span>
         {active && (
@@ -458,7 +458,7 @@ function RangeSlider({
       </div>
       <div
         ref={trackRef}
-        className="relative h-6 touch-none select-none"
+        className="relative mx-2 h-6 touch-none select-none"
         onPointerDown={onTrackPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -483,7 +483,7 @@ function RangeSlider({
           onPointerDown={onPointerDown("high")}
         />
       </div>
-      <div className="flex justify-between text-[10px] text-ink-soft/60">
+      <div className="mx-2 flex justify-between text-[10px] text-ink-soft/60">
         <span>{min}</span>
         <span>{max}+</span>
       </div>
