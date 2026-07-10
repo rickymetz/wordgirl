@@ -104,6 +104,47 @@ describe("action counters", () => {
     expect(s.rotations).toBe(2);
   });
 
+  it("counts take-backs only when a domino actually comes off", () => {
+    let s = initialState(puzzle);
+    s = place(s, 0, 0, 0);
+    s = gameReducer(s, { type: "removeDomino", dominoId: 0 });
+    expect(s.placed).toHaveLength(0);
+    expect(s.removals).toBe(1);
+    // Removing a domino that isn't on the board is not a take-back.
+    s = gameReducer(s, { type: "removeDomino", dominoId: 5 });
+    expect(s.removals).toBe(1);
+  });
+
+  it("counts each full-but-wrong board exactly once per filling", () => {
+    // Both dominoes vertical: rows read AO / TN — full grid, no words.
+    let s = initialState(puzzle);
+    s = gameReducer(s, {
+      type: "placeDomino",
+      cell: { row: 0, col: 0 },
+      dict,
+      dominoId: 0,
+      orientation: 1,
+    });
+    expect(s.invalidBoards).toBe(0); // board not full yet
+    s = gameReducer(s, {
+      type: "placeDomino",
+      cell: { row: 0, col: 1 },
+      dict,
+      dominoId: 1,
+      orientation: 1,
+    });
+    expect(s.solved).toBe(false);
+    expect(s.invalidSlots.length).toBeGreaterThan(0);
+    expect(s.invalidBoards).toBe(1);
+    // Fixing it the right way round never counts.
+    s = gameReducer(s, { type: "removeDomino", dominoId: 0 });
+    s = gameReducer(s, { type: "removeDomino", dominoId: 1 });
+    s = place(s, 0, 0, 0);
+    s = place(s, 1, 1, 0);
+    expect(s.solved).toBe(true);
+    expect(s.invalidBoards).toBe(1);
+  });
+
   it("hydrate restores saved counters and defaults missing ones to 0", () => {
     const placed = [
       { dominoId: 0, anchor: { row: 0, col: 0 }, orientation: 0 as const },
@@ -114,9 +155,13 @@ describe("action counters", () => {
       solved: false,
       moves: 7,
       rotations: 3,
+      removals: 2,
+      invalidBoards: 1,
     });
     expect(restored.moves).toBe(7);
     expect(restored.rotations).toBe(3);
+    expect(restored.removals).toBe(2);
+    expect(restored.invalidBoards).toBe(1);
 
     // A save from before the counters shipped hydrates clean.
     const legacy = gameReducer(initialState(puzzle), {
@@ -126,5 +171,7 @@ describe("action counters", () => {
     });
     expect(legacy.moves).toBe(0);
     expect(legacy.rotations).toBe(0);
+    expect(legacy.removals).toBe(0);
+    expect(legacy.invalidBoards).toBe(0);
   });
 });

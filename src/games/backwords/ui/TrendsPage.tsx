@@ -30,7 +30,42 @@ const config: GameTrendsConfig<ArchivedDay> = {
       value: (d) => (d.solved ? d.rows.length : null),
       format: (v) => `${Math.round(v * 10) / 10}`,
     },
+    {
+      key: "glyphRows",
+      label: "Mirror rows",
+      value: (d) =>
+        d.solved && d.glyphRows !== undefined ? d.glyphRows : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+    },
+    {
+      key: "takeBacks",
+      label: "Take-backs",
+      value: (d) =>
+        d.solved && d.takeBacks !== undefined ? d.takeBacks : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "invalids",
+      label: "Rejected words",
+      value: (d) =>
+        d.solved && d.invalids !== undefined ? d.invalids : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "sessions",
+      label: "Sessions to solve",
+      value: (d) =>
+        d.solved && d.sessions !== undefined ? d.sessions : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
   ],
+  hours: {
+    label: "When you solve",
+    value: (d) => (d.solved ? (d.solvedHour ?? null) : null),
+  },
 };
 
 /** Play data over time — the archive's sibling page. */

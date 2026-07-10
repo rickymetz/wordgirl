@@ -29,6 +29,9 @@ export interface GameTrendsConfig<Day extends { dateKey: string }> {
   epoch: string;
   loadAllDays: () => Promise<Record<string, Day>>;
   metrics: TrendMetric<Day>[];
+  /** Optional hour-of-day distribution (a histogram, not a sparkline):
+   * value returns the local hour 0-23 a day was solved, or null. */
+  hours?: { label: string; value: (day: Day) => number | null };
 }
 
 const WINDOW_DAYS = 30;
@@ -70,6 +73,9 @@ export function GameTrends<Day extends { dateKey: string }>({
         config.metrics.map((m) => (
           <MetricChart key={m.key} metric={m} days={days} dates={from} />
         ))}
+      {days && config.hours && (
+        <HourChart metric={config.hours} days={days} dates={from} />
+      )}
       {days &&
         config.metrics.every(
           (m) =>
@@ -238,6 +244,133 @@ function MetricChart<Day extends { dateKey: string }>({
       </svg>
     </section>
   );
+}
+
+/**
+ * The one non-sparkline: a 24-bin histogram of the hour each day was
+ * solved ("when do I play"). Same Tufte discipline — accent bars are
+ * the only ink, the baseline is the sole scaffold, four sparse clock
+ * ticks instead of an axis, and the peak (or tapped) bin is labeled
+ * directly with its day count.
+ */
+function HourChart<Day extends { dateKey: string }>({
+  metric,
+  days,
+  dates,
+}: {
+  metric: { label: string; value: (day: Day) => number | null };
+  days: Record<string, Day>;
+  dates: string[];
+}) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const bins = Array.from({ length: 24 }, () => 0);
+  for (const dateKey of dates) {
+    const day = days[dateKey];
+    const h = day ? metric.value(day) : null;
+    if (h !== null && h >= 0 && h < 24) bins[Math.floor(h)] += 1;
+  }
+  const total = bins.reduce((a, b) => a + b, 0);
+  if (total === 0) return null;
+
+  const maxN = Math.max(...bins);
+  const peak = bins.indexOf(maxN);
+  const W = 360;
+  const H = 56;
+  const TOP = 14;
+  const slot = W / 24;
+  const barW = 7;
+  const x = (h: number) => h * slot + slot / 2;
+  const y = (n: number) => H - (n / maxN) * (H - TOP);
+  const labeled = picked ?? peak;
+  const dayCount = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
+  return (
+    <section className="mb-5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-sm font-bold">{metric.label}</h2>
+        <p className="text-xs font-semibold text-ink-soft">
+          {picked !== null
+            ? `${fmtHour(picked)} · ${dayCount(bins[picked])}`
+            : `Most often ${fmtHour(peak)}`}
+        </p>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H + 18}`}
+        className="mt-1 w-full touch-manipulation select-none"
+        role="img"
+        aria-label={`${metric.label}: most solves around ${fmtHour(peak)}.`}
+      >
+        <line
+          x1={0}
+          x2={W}
+          y1={H}
+          y2={H}
+          className="stroke-line"
+          strokeWidth={1}
+        />
+        {bins.map(
+          (n, h) =>
+            n > 0 && (
+              <rect
+                key={h}
+                x={x(h) - barW / 2}
+                y={y(n)}
+                width={barW}
+                height={H - y(n)}
+                rx={1.5}
+                className="fill-accent"
+                pointerEvents="none"
+              />
+            ),
+        )}
+        {bins.map(
+          (n, h) =>
+            n > 0 && (
+              <rect
+                key={`tap-${h}`}
+                x={h * slot}
+                y={0}
+                width={slot}
+                height={H + 18}
+                fill="transparent"
+                onPointerDown={() =>
+                  setPicked((cur) => (cur === h ? null : h))
+                }
+              />
+            ),
+        )}
+        <text
+          x={x(labeled)}
+          y={y(bins[labeled]) - 4}
+          textAnchor={x(labeled) < 24 ? "start" : x(labeled) > W - 24 ? "end" : "middle"}
+          className="fill-ink-soft font-semibold"
+          fontSize={10}
+          pointerEvents="none"
+        >
+          {bins[labeled]}
+        </text>
+        {[0, 6, 12, 18].map((h) => (
+          <text
+            key={h}
+            x={x(h)}
+            y={H + 13}
+            textAnchor={h === 0 ? "start" : "middle"}
+            className="fill-ink-soft"
+            fontSize={9}
+            pointerEvents="none"
+          >
+            {["12a", "6a", "12p", "6p"][h / 6]}
+          </text>
+        ))}
+      </svg>
+    </section>
+  );
+}
+
+function fmtHour(h: number): string {
+  if (h === 0) return "12am";
+  if (h === 12) return "12pm";
+  return h < 12 ? `${h}am` : `${h - 12}pm`;
 }
 
 function shortDate(dateKey: string): string {

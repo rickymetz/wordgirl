@@ -99,6 +99,14 @@ export function useBackwordsGame(mode: GameMode) {
   // A replay reset wipes the save and remounts; the OLD screen's
   // unmount flush must not write the pre-reset state back over it.
   const abandonedRef = useRef(false);
+  // Opens of this day while unsolved ("sessions to solve"): resumes
+  // from the save and counts this mount; null = unknowable (a legacy
+  // day solved before the counter shipped must not chart).
+  const sessionsRef = useRef<number | null>(null);
+  // Local hour the solve landed, stamped ONLY for a solve that happens
+  // in this session — never backfilled onto an already-solved hydrate.
+  const solvedHourRef = useRef<number | null>(null);
+  const hydratedSolvedRef = useRef(false);
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (staleRecordRef.current) {
@@ -114,6 +122,13 @@ export function useBackwordsGame(mode: GameMode) {
         rows: s.rows.map(rowSaveKey),
         solved: s.solved,
         elapsedMs: clock.currentElapsedMs(),
+        takeBacks: s.takeBacks,
+        invalids: s.invalids,
+        glyphRows: glyphRowCount(s.rows),
+        ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
+        ...(solvedHourRef.current !== null && {
+          solvedHour: solvedHourRef.current,
+        }),
         ...(statsRecordedRef.current && { statsRecorded: true }),
       },
       { rowsEdited: rowsEditedRef.current },
@@ -134,8 +149,21 @@ export function useBackwordsGame(mode: GameMode) {
         if (saved) {
           statsRecordedRef.current =
             saved.solved || saved.statsRecorded === true;
+          hydratedSolvedRef.current = saved.solved;
+          // A solved day's session count is final; an unsolved one
+          // counts this open as another session.
+          sessionsRef.current = saved.solved
+            ? (saved.sessions ?? null)
+            : (saved.sessions ?? 0) + 1;
+          solvedHourRef.current = saved.solvedHour ?? null;
           clock.hydrate(saved.elapsedMs ?? 0, saved.solved);
-          dispatch({ type: "hydrate", places: saved.rows, solved: saved.solved });
+          dispatch({
+            type: "hydrate",
+            places: saved.rows,
+            solved: saved.solved,
+            takeBacks: saved.takeBacks,
+            invalids: saved.invalids,
+          });
         } else {
           const stale = await loadStaleDailyProgress(dateKey);
           if (cancelled) return;
@@ -143,10 +171,13 @@ export function useBackwordsGame(mode: GameMode) {
             staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.solved || stale.statsRecorded === true;
+            // A fresh run replaces the stale record when play begins.
+            sessionsRef.current = 1;
             hydratedRef.current = true;
             return;
           }
           void recordDailyStarted();
+          sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
           hydratedRef.current = true;
@@ -176,6 +207,11 @@ export function useBackwordsGame(mode: GameMode) {
     // its time too; only the stats recording is daily/archive-only.
     const ms = clock.freeze();
     if (solvedElapsedMs === null) setSolvedElapsedMs(ms);
+    // Stamp the hour only for a solve that happened THIS session —
+    // runs before the persist effect, so the solving save carries it.
+    if (!hydratedSolvedRef.current && solvedHourRef.current === null) {
+      solvedHourRef.current = new Date().getHours();
+    }
     if (persisted && !recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
       void recordDailySolved(

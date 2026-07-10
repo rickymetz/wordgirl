@@ -30,6 +30,12 @@ export interface DailyProgress {
   /** Words already credited to stats.totalWords, so post-solve finds
    * keep counting exactly once across sessions. */
   statsWords?: number;
+  /** Trend counters, absent on saves from before they shipped
+   * (legacy days chart as gaps, never fake zeros). */
+  sessions?: number;
+  invalids?: number;
+  /** Local hour (0-23) the solve threshold was crossed. */
+  solvedHour?: number;
 }
 
 export interface CrosshatchStats {

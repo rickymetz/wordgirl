@@ -101,19 +101,44 @@ describe("archive roll-up", () => {
     let days = await loadAllDailyProgress();
     expect(days["2026-07-12"].moves).toBeNull();
     expect(days["2026-07-12"].rotations).toBeNull();
+    expect(days["2026-07-12"].removals).toBeNull();
+    expect(days["2026-07-12"].invalidBoards).toBeNull();
+    expect(days["2026-07-12"].sessions).toBeNull();
+    expect(days["2026-07-12"].solvedHour).toBeNull();
 
     // Counters sum across the boards that have them.
     localStorage.clear();
     await saveDailyProgress(
-      day("easy", { solved: true, moves: 4, rotations: 2 }),
+      day("easy", {
+        solved: true,
+        moves: 4,
+        rotations: 2,
+        removals: 1,
+        invalidBoards: 1,
+        sessions: 1,
+        solvedHour: 9,
+      }),
     );
     await saveDailyProgress(
-      day("medium", { solved: true, moves: 6, rotations: 0 }),
+      day("medium", {
+        solved: true,
+        moves: 6,
+        rotations: 0,
+        removals: 0,
+        invalidBoards: 0,
+        sessions: 2,
+        solvedHour: 21,
+      }),
     );
     await saveDailyProgress(day("hard", { solved: true })); // legacy board
     days = await loadAllDailyProgress();
     expect(days["2026-07-12"].moves).toBe(10);
     expect(days["2026-07-12"].rotations).toBe(2);
+    expect(days["2026-07-12"].removals).toBe(1);
+    expect(days["2026-07-12"].invalidBoards).toBe(1);
+    expect(days["2026-07-12"].sessions).toBe(3);
+    // Any solved board's hour represents the day.
+    expect([9, 21]).toContain(days["2026-07-12"].solvedHour);
   });
 
   it("marks a day stale when any board is from an older dictionary", async () => {

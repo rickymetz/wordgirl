@@ -38,6 +38,27 @@ const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     {
+      key: "removals",
+      label: "Take-backs",
+      value: (d) => d.removals,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "invalidBoards",
+      label: "Invalid boards",
+      value: (d) => d.invalidBoards,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "sessions",
+      label: "Board opens",
+      value: (d) => d.sessions,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
       key: "time",
       label: "Play time",
       value: (d) => (d.startedCount > 0 ? d.elapsedMs / 1000 : null),
@@ -45,6 +66,10 @@ const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
   ],
+  hours: {
+    label: "When you solve",
+    value: (d) => d.solvedHour,
+  },
 };
 
 /** Play data over time — the archive's sibling page. */

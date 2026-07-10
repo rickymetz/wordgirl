@@ -12,9 +12,15 @@ export interface DailyProgress extends DailyBase {
   difficulty: Difficulty;
   placed: PlacedDomino[];
   foundWords: string[];
-  /** Action counters (absent on saves from before they shipped). */
+  /** Trend counters (absent on saves from before they shipped). */
   moves?: number;
   rotations?: number;
+  removals?: number;
+  invalidBoards?: number;
+  /** Opens of this board while unsolved. */
+  sessions?: number;
+  /** Local hour (0-23) this board was solved. */
+  solvedHour?: number;
 }
 
 export type DoubletStats = StreakStats;
@@ -62,10 +68,16 @@ export interface ArchivedDay {
   stale: boolean;
   /** Total active time across the day's boards. */
   elapsedMs: number;
-  /** Summed action counters — null for days saved before tracking
+  /** Summed trend counters — null for days saved before tracking
    * shipped (a legacy day must not chart as zero). */
   moves: number | null;
   rotations: number | null;
+  removals: number | null;
+  invalidBoards: number | null;
+  sessions: number | null;
+  /** An hour one of the day's boards was solved at (any board — the
+   * histogram wants "when do I play", not per-board precision). */
+  solvedHour: number | null;
   /** GameArchive's played contract: all boards' words, merged. */
   foundWords: string[];
 }
@@ -85,6 +97,10 @@ export async function loadAllDailyProgress(): Promise<
       elapsedMs: 0,
       moves: null,
       rotations: null,
+      removals: null,
+      invalidBoards: null,
+      sessions: null,
+      solvedHour: null,
       foundWords: [],
     });
     if (saved.solved) day.solvedCount += 1;
@@ -95,6 +111,16 @@ export async function loadAllDailyProgress(): Promise<
     if (saved.rotations !== undefined) {
       day.rotations = (day.rotations ?? 0) + saved.rotations;
     }
+    if (saved.removals !== undefined) {
+      day.removals = (day.removals ?? 0) + saved.removals;
+    }
+    if (saved.invalidBoards !== undefined) {
+      day.invalidBoards = (day.invalidBoards ?? 0) + saved.invalidBoards;
+    }
+    if (saved.sessions !== undefined) {
+      day.sessions = (day.sessions ?? 0) + saved.sessions;
+    }
+    if (saved.solvedHour !== undefined) day.solvedHour = saved.solvedHour;
     day.foundWords.push(...(saved.foundWords ?? []));
   }
   return out;

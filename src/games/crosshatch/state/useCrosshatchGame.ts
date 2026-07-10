@@ -73,6 +73,12 @@ export function useCrosshatchGame(mode: GameMode) {
   // A replay reset wipes the save and remounts; the OLD screen's
   // unmount flush must not write the pre-reset state back over it.
   const abandonedRef = useRef(false);
+  // Opens of this day while unsolved ("sessions to solve"); null =
+  // unknowable (solved before the counter shipped — never backfill).
+  const sessionsRef = useRef<number | null>(null);
+  // Local hour the solve landed, stamped ONLY for a solve that happens
+  // in this session.
+  const solvedHourRef = useRef<number | null>(null);
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (
@@ -92,6 +98,11 @@ export function useCrosshatchGame(mode: GameMode) {
       solved: s.solved,
       elapsedMs: currentElapsedMs(),
       statsWords: creditedRef.current,
+      invalids: s.invalids,
+      ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
+      ...(solvedHourRef.current !== null && {
+        solvedHour: solvedHourRef.current,
+      }),
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -152,6 +163,12 @@ export function useCrosshatchGame(mode: GameMode) {
           savedElapsedRef.current = saved.elapsedMs ?? 0;
           sessionStartRef.current = Date.now();
           sessionActiveMsRef.current = 0;
+          // A solved day's session count is final; an unsolved one
+          // counts this open as another session.
+          sessionsRef.current = saved.solved
+            ? (saved.sessions ?? null)
+            : (saved.sessions ?? 0) + 1;
+          solvedHourRef.current = saved.solvedHour ?? null;
           dispatch({
             type: "hydrate",
             found: saved.foundWords,
@@ -159,6 +176,7 @@ export function useCrosshatchGame(mode: GameMode) {
             // Older saves predate hints — normalize.
             revealed: saved.revealed ?? {},
             solved: saved.solved,
+            invalids: saved.invalids,
           });
         } else {
           // A save from an older dictionary is a historical record: the
@@ -170,10 +188,13 @@ export function useCrosshatchGame(mode: GameMode) {
             staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.solved || stale.statsRecorded === true;
+            // A fresh run replaces the stale record when play begins.
+            sessionsRef.current = 1;
             hydratedRef.current = true;
             return;
           }
           void recordDailyStarted();
+          sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
           hydratedRef.current = true;
@@ -215,6 +236,9 @@ export function useCrosshatchGame(mode: GameMode) {
       clockFoundRef.current = state.found.length;
       setSolvedElapsedMs(solvedElapsedRef.current);
     }
+    // Stamp the hour only for a solve that happened THIS session —
+    // runs before the persist effect, so the solving save carries it.
+    solvedHourRef.current ??= new Date().getHours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.solved, state.found, solvedElapsedMs]);
 

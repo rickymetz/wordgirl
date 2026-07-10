@@ -31,6 +31,17 @@ const config: GameTrendsConfig<ArchivedDay> = {
       format: (v) => `${Math.round(v)}`,
     },
     {
+      // Level N's words are exactly N letters, so the deepest level
+      // reached is the longest word found — derivable from any save.
+      key: "level",
+      label: "Level reached",
+      value: (d) =>
+        d.foundWords.length > 0
+          ? Math.max(...d.foundWords.map((w) => w.length))
+          : null,
+      format: (v) => `${Math.round(v)}`,
+    },
+    {
       key: "time",
       label: "Completion time",
       value: (d) => (d.completed && !d.stale ? d.elapsedMs / 1000 : null),

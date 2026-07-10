@@ -12,6 +12,15 @@ export interface DailyProgress extends DailyBase {
   /** Committed placements, in the order they were laid. Palindromes
    * store their FULL word (rowSaveKey) — the bare half is ambiguous. */
   rows: string[];
+  /** Trend counters, absent on saves from before they shipped
+   * (legacy days chart as gaps, never fake zeros). */
+  sessions?: number;
+  takeBacks?: number;
+  invalids?: number;
+  /** ✦ rows on the board (the lifetime total lives in stats). */
+  glyphRows?: number;
+  /** Local hour (0-23) the board was solved. */
+  solvedHour?: number;
 }
 
 export interface BackwordsStats extends StreakStats {

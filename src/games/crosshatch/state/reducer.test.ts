@@ -186,6 +186,56 @@ describe("submit", () => {
     expect(s.revealed.bad).toEqual([1, 0]);
   });
 
+  it("counts word-level rejections for trends, not incomplete grids", () => {
+    // Incomplete grid: not a wrong word, no count.
+    let s = play(initialState(puzzle), ...type("ad"), { type: "submit" });
+    expect(s.invalids).toBe(0);
+    // noFit counts.
+    s = play(
+      initialState(puzzle),
+      ...type("ax"),
+      { type: "focusCell", row: 0, col: 1 },
+      ...type("dax"),
+      { type: "submit" },
+    );
+    expect(s.invalids).toBe(1);
+    // repeat counts (the same word in both slots).
+    s = play(
+      initialState(puzzle),
+      ...type("ad"),
+      { type: "focusCell", row: 0, col: 1 },
+      ...type("bad"),
+      { type: "submit" },
+    );
+    expect(s.lastResult?.type).toBe("repeat");
+    expect(s.invalids).toBe(1);
+    // A correct grid then an all-banked resubmit: no count either.
+    s = fillBadDab(initialState(puzzle));
+    s = play(s, { type: "submit" }, { type: "submit" });
+    expect(s.lastResult?.type).toBe("nothingNew");
+    expect(s.invalids).toBe(0);
+  });
+
+  it("hydrate restores the invalids counter, defaulting legacy to 0", () => {
+    const s = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: [],
+      grid: {},
+      revealed: {},
+      solved: false,
+      invalids: 5,
+    });
+    expect(s.invalids).toBe(5);
+    const legacy = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: [],
+      grid: {},
+      revealed: {},
+      solved: false,
+    });
+    expect(legacy.invalids).toBe(0);
+  });
+
   it("hydrates found words, grid, and solved flag", () => {
     const s = gameReducer(initialState(puzzle), {
       type: "hydrate",

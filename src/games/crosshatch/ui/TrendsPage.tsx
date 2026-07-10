@@ -1,4 +1,5 @@
 import { GameTrends, type GameTrendsConfig } from "../../../components/GameTrends";
+import { solveTarget } from "../engine/scoring";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
@@ -40,7 +41,36 @@ const config: GameTrendsConfig<ArchivedDay> = {
       format: (v) => `${Math.round(v * 10) / 10}`,
       lowerIsBetter: true,
     },
+    {
+      key: "extra",
+      label: "Words past the solve",
+      value: (d) =>
+        d.solved && d.totalWords
+          ? Math.max(0, d.foundWords.length - solveTarget(d.totalWords))
+          : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+    },
+    {
+      key: "invalids",
+      label: "Rejected words",
+      value: (d) =>
+        d.solved && d.invalids !== undefined ? d.invalids : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
+    {
+      key: "sessions",
+      label: "Sessions to solve",
+      value: (d) =>
+        d.solved && d.sessions !== undefined ? d.sessions : null,
+      format: (v) => `${Math.round(v * 10) / 10}`,
+      lowerIsBetter: true,
+    },
   ],
+  hours: {
+    label: "When you solve",
+    value: (d) => (d.solved ? (d.solvedHour ?? null) : null),
+  },
 };
 
 /** Play data over time — the archive's sibling page. */

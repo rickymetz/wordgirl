@@ -37,6 +37,12 @@ export function useDoubletGame(mode: GameMode) {
   const solvedElapsedRef = useRef<number | null>(null);
   const staleRecordRef = useRef(false);
   const abandonedRef = useRef(false);
+  // Opens of this board while unsolved; null = unknowable (solved
+  // before the counter shipped — never backfill).
+  const sessionsRef = useRef<number | null>(null);
+  // Local hour this board was solved, stamped ONLY for a solve that
+  // happens in this session.
+  const solvedHourRef = useRef<number | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -65,6 +71,12 @@ export function useDoubletGame(mode: GameMode) {
       elapsedMs: currentElapsedMs(),
       moves: s.moves,
       rotations: s.rotations,
+      removals: s.removals,
+      invalidBoards: s.invalidBoards,
+      ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
+      ...(solvedHourRef.current !== null && {
+        solvedHour: solvedHourRef.current,
+      }),
       foundWords: [],
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -113,12 +125,20 @@ export function useDoubletGame(mode: GameMode) {
           savedElapsedRef.current = saved.elapsedMs ?? 0;
           sessionStartRef.current = Date.now();
           sessionActiveMsRef.current = 0;
+          // A solved board's session count is final; an unsolved one
+          // counts this open as another session.
+          sessionsRef.current = saved.solved
+            ? (saved.sessions ?? null)
+            : (saved.sessions ?? 0) + 1;
+          solvedHourRef.current = saved.solvedHour ?? null;
           dispatch({
             type: "hydrate",
             placed: saved.placed,
             solved: saved.solved,
             moves: saved.moves,
             rotations: saved.rotations,
+            removals: saved.removals,
+            invalidBoards: saved.invalidBoards,
           });
         } else {
           const stale = await loadStaleDailyProgress(dateKey, mode.difficulty);
@@ -127,10 +147,13 @@ export function useDoubletGame(mode: GameMode) {
             staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.solved || stale.statsRecorded === true;
+            // A fresh run replaces the stale record when play begins.
+            sessionsRef.current = 1;
             hydratedRef.current = true;
             return;
           }
           void recordDailyStarted();
+          sessionsRef.current = 1;
           hydratedRef.current = true;
           persistNow(stateRef.current);
           return;
@@ -158,6 +181,9 @@ export function useDoubletGame(mode: GameMode) {
       solvedElapsedRef.current = rawElapsedMs();
       setSolvedElapsedMs(solvedElapsedRef.current);
     }
+    // Stamp the hour only for a solve that happened THIS session —
+    // runs before the persist effect, so the solving save carries it.
+    solvedHourRef.current ??= new Date().getHours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.solved, solvedElapsedMs]);
 
