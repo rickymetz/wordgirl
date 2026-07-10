@@ -13,8 +13,8 @@ interface Props {
 
 const NODE_R = 0.38;
 const PIPE_W = 0.32;
-const START_OPACITY = 0.55;
-const END_OPACITY = 0.9;
+const START_OPACITY = 1;
+const END_OPACITY = 1;
 
 export function SnakeGrid({
   rows,
