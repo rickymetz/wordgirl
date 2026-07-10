@@ -363,18 +363,18 @@ function DragGhost({
         className="flex items-center justify-center rounded-xl border-2 border-accent bg-surface shadow-lg shadow-accent/25"
         style={{ flexDirection: isH ? "row" : "column" }}
       >
-        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
+        <div className="flex items-center justify-center font-game text-sm w-7 h-7 text-ink">
           {l0}
         </div>
         <div
           className="bg-accent/30"
           style={
             isH
-              ? { width: "1px", alignSelf: "stretch", marginBlock: "5px" }
-              : { height: "1px", alignSelf: "stretch", marginInline: "5px" }
+              ? { width: "1px", alignSelf: "stretch", marginBlock: "4px" }
+              : { height: "1px", alignSelf: "stretch", marginInline: "4px" }
           }
         />
-        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
+        <div className="flex items-center justify-center font-game text-sm w-7 h-7 text-ink">
           {l1}
         </div>
       </div>

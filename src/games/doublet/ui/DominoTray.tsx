@@ -21,7 +21,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap justify-center gap-1.5">
+      <div className="flex flex-wrap justify-center gap-2">
         {available.map((d) => (
           <DominoChip
             key={d.id}
@@ -42,7 +42,6 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 }
 
 const DRAG_THRESHOLD = 8;
-const CHIP_SLOT = "calc(4rem + 5px)";
 
 function DominoChip({
   piece,
@@ -123,44 +122,39 @@ function DominoChip({
   }
 
   return (
-    <div
-      className="flex items-center justify-center"
-      style={{ width: CHIP_SLOT, height: CHIP_SLOT }}
+    <button
+      className={[
+        "flex items-center justify-center touch-manipulation select-none",
+        "rounded-lg border-2 bg-surface",
+        "transition-shadow duration-100",
+        "active:scale-95",
+        selected
+          ? "border-accent shadow-md shadow-accent/20"
+          : "border-line shadow-sm",
+        dimmed ? "opacity-30" : "",
+      ].join(" ")}
+      style={{ flexDirection: isH ? "row" : "column" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
+      aria-pressed={selected}
     >
-      <button
-        className={[
-          "flex items-center justify-center touch-manipulation select-none",
-          "rounded-xl border-2 bg-surface",
-          "transition-shadow duration-100",
-          "active:scale-95",
-          selected
-            ? "border-accent shadow-md shadow-accent/20"
-            : "border-line shadow-sm",
-          dimmed ? "opacity-30" : "",
-        ].join(" ")}
-        style={{ flexDirection: isH ? "row" : "column" }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
-        aria-pressed={selected}
-      >
-        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
-          {l0}
-        </div>
-        <div
-          className={selected ? "bg-accent/30" : "bg-line"}
-          style={
-            isH
-              ? { width: "1px", alignSelf: "stretch", marginBlock: "5px" }
-              : { height: "1px", alignSelf: "stretch", marginInline: "5px" }
-          }
-        />
-        <div className="flex items-center justify-center font-game text-sm w-8 h-8 text-ink">
-          {l1}
-        </div>
-      </button>
-    </div>
+      <div className="flex items-center justify-center font-game text-sm w-7 h-7 text-ink">
+        {l0}
+      </div>
+      <div
+        className={selected ? "bg-accent/30" : "bg-line"}
+        style={
+          isH
+            ? { width: "1px", alignSelf: "stretch", marginBlock: "4px" }
+            : { height: "1px", alignSelf: "stretch", marginInline: "4px" }
+        }
+      />
+      <div className="flex items-center justify-center font-game text-sm w-7 h-7 text-ink">
+        {l1}
+      </div>
+    </button>
   );
 }
