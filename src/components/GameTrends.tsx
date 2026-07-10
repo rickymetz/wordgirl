@@ -5,11 +5,13 @@ import { dateKeyRange, localDateKey } from "../lib/date";
 
 /**
  * The stats-over-time page every game gets from a config (GameArchive's
- * sibling). Each metric renders as its OWN single-series bar chart in
- * the game's accent — one hue per chart, no legends needed (the title
- * names the series), text in ink tokens, values on tap. The four game
- * accents fail as a categorical SET (validated), so cross-game
- * comparison charts are deliberately not a thing.
+ * sibling). Tufte rules the drawing: each metric is a word-sized
+ * SPARKLINE in the game's accent — data is the darkest ink, the only
+ * scaffold is a range-frame that spans exactly the played days, and
+ * the extremes are labeled directly instead of implying an axis. One
+ * hue per chart (the four game accents fail as a categorical SET —
+ * validated — so cross-game comparisons are deliberately not a
+ * thing); values on tap.
  */
 export interface TrendMetric<Day> {
   key: string;
@@ -100,24 +102,47 @@ function MetricChart<Day extends { dateKey: string }>({
   const values = points.flatMap((p) => (p.v === null ? [] : [p.v]));
   if (values.length === 0) return null;
 
-  const max = Math.max(...values, 1);
-  const best = metric.lowerIsBetter
-    ? Math.min(...values)
-    : Math.max(...values);
+  const maxV = Math.max(...values);
+  const minV = Math.min(...values);
+  const best = metric.lowerIsBetter ? minV : maxV;
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  const latest = [...points].reverse().find((p) => p.v !== null);
+  const latestIdx = points.reduce(
+    (acc, p, i) => (p.v === null ? acc : i),
+    -1,
+  );
   const pickedPoint = picked === null ? null : points[picked];
 
-  // SVG geometry: 100 units tall, one slot per day, 2-unit surface
-  // gaps between bars (the spacer rule), rounded data-ends.
+  // Sparkline geometry: dots on played days, thin segments joining
+  // CONSECUTIVE days only (a skipped day breaks the line — a gap is
+  // data), headroom above/below for the direct min/max labels.
   const W = 360;
+  const H = 76;
+  const TOP = 16;
+  const BOTTOM = 16;
   const slot = W / points.length;
-  // Slim bars even with a short history: a one-day chart is a bar,
-  // not a slab.
-  const bar = Math.max(2, Math.min(14, slot - 2));
+  const x = (i: number) => i * slot + slot / 2;
+  const y = (v: number) =>
+    maxV === minV
+      ? TOP + (H - TOP - BOTTOM) / 2
+      : TOP + ((maxV - v) / (maxV - minV)) * (H - TOP - BOTTOM);
+
+  const segments: string[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1].v;
+    const b = points[i].v;
+    if (a !== null && b !== null) {
+      segments.push(`M${x(i - 1)},${y(a)} L${x(i)},${y(b)}`);
+    }
+  }
+  const dataIdx = points.flatMap((p, i) => (p.v === null ? [] : [i]));
+  const maxIdx = dataIdx.find((i) => points[i].v === maxV)!;
+  const minIdx = dataIdx.find((i) => points[i].v === minV)!;
+  // Keep edge labels inside the frame.
+  const anchor = (i: number) =>
+    x(i) < 36 ? "start" : x(i) > W - 36 ? "end" : "middle";
 
   return (
-    <section className="mb-4 rounded-2xl bg-surface-tint px-5 py-4">
+    <section className="mb-5">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-bold">{metric.label}</h2>
         <p className="text-xs font-semibold text-ink-soft">
@@ -127,43 +152,89 @@ function MetricChart<Day extends { dateKey: string }>({
         </p>
       </div>
       <svg
-        viewBox={`0 0 ${W} 108`}
-        className="mt-2 w-full touch-manipulation select-none"
+        viewBox={`0 0 ${W} ${H + 8}`}
+        className="mt-1 w-full touch-manipulation select-none"
         role="img"
-        aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${latest && latest.v !== null ? `, latest ${metric.format(latest.v)}` : ""}.`}
+        aria-label={`${metric.label}, last ${dates.length} days. Best ${metric.format(best)}, average ${metric.format(avg)}${latestIdx >= 0 && points[latestIdx].v !== null ? `, latest ${metric.format(points[latestIdx].v)}` : ""}.`}
       >
-        {points.map((p, i) =>
-          p.v === null ? null : (
+        {/* Range-frame: the only scaffold, spanning exactly the
+            played days. */}
+        <line
+          x1={x(dataIdx[0])}
+          x2={x(dataIdx[dataIdx.length - 1])}
+          y1={H}
+          y2={H}
+          className="stroke-line"
+          strokeWidth={1}
+        />
+        {segments.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            className="stroke-accent"
+            strokeWidth={1.5}
+            fill="none"
+          />
+        ))}
+        {dataIdx.map((i) => {
+          const p = points[i];
+          const isLatest = i === latestIdx;
+          const isPicked = picked === i;
+          return (
             <g key={p.dateKey}>
-              {/* Invisible full-height hit target: bigger than the mark. */}
               <rect
                 x={i * slot}
                 y={0}
                 width={slot}
-                height={108}
+                height={H + 8}
                 fill="transparent"
                 onPointerDown={() =>
                   setPicked((cur) => (cur === i ? null : i))
                 }
               />
-              <rect
-                x={i * slot + (slot - bar) / 2}
-                y={104 - (p.v / max) * 100}
-                width={bar}
-                height={Math.max(3, (p.v / max) * 100)}
-                rx={Math.min(2, bar / 2)}
-                className={
-                  picked === null || picked === i
-                    ? "fill-accent"
-                    : "fill-accent/35"
-                }
+              {isPicked && (
+                <circle
+                  cx={x(i)}
+                  cy={y(p.v!)}
+                  r={6}
+                  className="fill-surface stroke-accent"
+                  strokeWidth={1.5}
+                  pointerEvents="none"
+                />
+              )}
+              <circle
+                cx={x(i)}
+                cy={y(p.v!)}
+                r={isLatest ? 3.5 : 2.25}
+                className="fill-accent"
                 pointerEvents="none"
               />
             </g>
-          ),
+          );
+        })}
+        {/* Direct labels on the extremes — the axis Tufte erased. */}
+        <text
+          x={x(maxIdx)}
+          y={y(maxV) - 7}
+          textAnchor={anchor(maxIdx)}
+          className="fill-ink-soft font-semibold"
+          fontSize={10}
+          pointerEvents="none"
+        >
+          {metric.format(maxV)}
+        </text>
+        {minIdx !== maxIdx && (
+          <text
+            x={x(minIdx)}
+            y={y(minV) + 13}
+            textAnchor={anchor(minIdx)}
+            className="fill-ink-soft font-semibold"
+            fontSize={10}
+            pointerEvents="none"
+          >
+            {metric.format(minV)}
+          </text>
         )}
-        {/* Recessive baseline. */}
-        <rect x={0} y={104} width={W} height={1.5} className="fill-line" />
       </svg>
     </section>
   );
