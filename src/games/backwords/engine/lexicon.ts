@@ -24,6 +24,15 @@ function glyphMirror(word: string): string | null {
 const reverse = (w: string) => [...w].reverse().join("");
 const sortLetters = (w: string) => [...w].sort().join("");
 
+/** The COMMON tier as a flat set — the words backwords plays with. */
+export function commonWords(dict: Dictionary): Set<string> {
+  const common = new Set<string>();
+  for (const bucket of dict.required.buckets.values()) {
+    for (const w of bucket) common.add(w);
+  }
+  return common;
+}
+
 /**
  * The playable mirror lexicon, from the COMMON tier only (both the
  * generator and placement validation use this same list, so every
@@ -34,10 +43,7 @@ const sortLetters = (w: string) => [...w].sort().join("");
  * (middle letter included for odd lengths).
  */
 export function buildLexicon(dict: Dictionary): Map<string, RowDef> {
-  const common = new Set<string>();
-  for (const bucket of dict.required.buckets.values()) {
-    for (const w of bucket) common.add(w);
-  }
+  const common = commonWords(dict);
 
   const byPlace = new Map<string, RowDef>();
   const addPlacement = (place: string, def: RowDef) => {

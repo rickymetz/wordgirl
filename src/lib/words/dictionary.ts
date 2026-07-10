@@ -15,8 +15,10 @@
  * each length); polygram sorts its display lists itself now.
  * v7: blocklist subtitle name-junk, allowlist everyday concrete words,
  * and cap any one crosshatch line's share of a day's words.
+ * v8: allowlist mirror-word staples (dab) into the required tier so
+ * their reversal pairs (bad|dab) play in backwords.
  */
-export const DICT_VERSION = 7;
+export const DICT_VERSION = 8;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

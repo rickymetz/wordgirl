@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
-import { buildLexicon } from "../engine/lexicon";
+import { buildLexicon, commonWords } from "../engine/lexicon";
 import type { Puzzle } from "../engine/types";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import {
@@ -18,6 +18,7 @@ const dict = parseDictionary(
   ),
 );
 const lexicon = buildLexicon(dict);
+const words = commonWords(dict);
 
 // Hand-built day: mom (mo) + lit/til + was/saw = m,o + i,l,t + a,s,w.
 const puzzle: Puzzle = {
@@ -37,7 +38,7 @@ const type = (word: string) =>
   [...word].map((letter) => ({ type: "typeLetter" as const, letter }));
 
 beforeEach(() => {
-  state = initialState({ puzzle, lexicon });
+  state = initialState({ puzzle, lexicon, words });
 });
 
 describe("backwords reducer", () => {
@@ -76,6 +77,36 @@ describe("backwords reducer", () => {
     // s,a,w are spent — "saw" can't even be staged, so the row is empty.
     run(...type("saw"), { type: "commit" });
     expect(state.lastResult?.type).toBe("empty");
+  });
+
+  it("names the reading that fails on an invalid commit", () => {
+    // MOST is a common word; its mirror TSOM isn't — blame the mirror.
+    run(...type("most"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "tsom" });
+    // OWT isn't a word itself (even though TWO is) — blame the staged word.
+    run({ type: "clearRow" }, ...type("owt"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "owt" });
+    // WILT reads only in the bonus tier — from the player's side the
+    // staged word itself is the failure.
+    run({ type: "clearRow" }, ...type("wilt"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({ type: "invalid", badWord: "wilt" });
+  });
+
+  it("coaches the half placement when a full palindrome is typed", () => {
+    // Needs a second M in the bank — palindromes repeat letters.
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."moiltaswmo"].sort() },
+      lexicon,
+      words,
+    });
+    run(...type("mom"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({
+      type: "halfOnly",
+      place: "mom",
+      half: "mo",
+    });
+    // The letters stay staged — backspacing one M leaves the valid half.
+    expect(state.current).toBe("mom");
   });
 
   it("unstages a mid-row tile back to the bank", () => {

@@ -162,9 +162,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
           ? r.row.words.map((w) => w.toUpperCase()).join(" · ")
           : "",
       solved: "Board clear!",
+      // Name the reading that fails — the staged word or its mirror.
       invalid:
         r.type === "invalid"
-          ? `${r.place.toUpperCase()} doesn't read both ways`
+          ? `${r.badWord.toUpperCase()} isn't a valid word`
+          : "",
+      halfOnly:
+        r.type === "halfOnly"
+          ? `${r.place.toUpperCase()} only needs ${r.half.toUpperCase()}`
           : "",
       duplicate: "Already placed",
       empty: "Tap letters to build a row",
@@ -172,7 +177,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
     const timer = setTimeout(
       () => setToast(null),
-      r.type === "invalid" ? 3000 : 1600,
+      r.type === "invalid" || r.type === "halfOnly" ? 3000 : 1600,
     );
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

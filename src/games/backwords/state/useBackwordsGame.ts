@@ -1,7 +1,7 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { buildLexicon } from "../engine/lexicon";
+import { buildLexicon, commonWords } from "../engine/lexicon";
 import { dailySeed, generateBackwords } from "../engine/generator";
 import {
   loadDailyProgress,
@@ -32,10 +32,11 @@ export function useBackwordsGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
   const lexicon = useMemo(() => buildLexicon(dict), [dict]);
+  const words = useMemo(() => commonWords(dict), [dict]);
   const puzzle = useMemo(() => generateBackwords(dict, seed), [dict, seed]);
   const [state, dispatch] = useReducer(
     gameReducer,
-    { puzzle, lexicon },
+    { puzzle, lexicon, words },
     initialState,
   );
 

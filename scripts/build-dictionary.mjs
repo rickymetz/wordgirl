@@ -70,6 +70,9 @@ const REQUIRED_ALLOWLIST = new Set([
   "munch", "stomp", "stung", "stout", "stoop", "ore", "bog", "oar",
   "eel", "elm", "imp", "orb", "urn", "yolk", "mime", "ewe", "husk",
   "stoic",
+  // Mirror-word staples: backwords rows need BOTH readings in the
+  // required tier, and these reversals are words players expect.
+  "dab",
 ]);
 
 async function fetchCached(url, name) {

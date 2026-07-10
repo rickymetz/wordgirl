@@ -46,6 +46,8 @@ describe("lexicon", () => {
   it("uses the common tier only", () => {
     // dub is bonus-tier, so bud/dub is not a placeable pair.
     expect(lexicon.get("bud")).toBeUndefined();
+    // dab was allowlisted into the required tier (dict v8): bad|dab plays.
+    expect(lexicon.get("bad")?.words).toEqual(["bad", "dab"]);
   });
 });
 

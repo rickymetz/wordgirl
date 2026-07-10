@@ -9,7 +9,10 @@ export interface CommittedRow {
 export type SubmitResult =
   | { type: "committed"; row: RowDef; nonce: number }
   | { type: "solved"; row: RowDef; nonce: number }
-  | { type: "invalid"; place: string; nonce: number }
+  /** badWord: which reading fails — the staged word or its mirror. */
+  | { type: "invalid"; place: string; badWord: string; nonce: number }
+  /** A palindrome typed in FULL — only its half belongs on the board. */
+  | { type: "halfOnly"; place: string; half: string; nonce: number }
   | { type: "duplicate"; place: string; nonce: number }
   | { type: "empty"; nonce: number };
 
@@ -17,6 +20,8 @@ export interface GameState {
   puzzle: Puzzle;
   /** placement string -> row definition (the playable lexicon). */
   lexicon: Map<string, RowDef>;
+  /** The common tier as a flat set — names WHICH reading failed. */
+  words: Set<string>;
   /** Letters still in the rack (sorted). */
   bank: string[];
   /** Letters staged in the active row, in placement order. */
@@ -41,10 +46,12 @@ let nonce = 0;
 export function initialState(init: {
   puzzle: Puzzle;
   lexicon: Map<string, RowDef>;
+  words: Set<string>;
 }): GameState {
   return {
     puzzle: init.puzzle,
     lexicon: init.lexicon,
+    words: init.words,
     bank: [...init.puzzle.bank].sort(),
     current: "",
     rows: [],
@@ -123,9 +130,28 @@ export function gameReducer(state: GameState, action: Action): GameState {
       }
       const def = state.lexicon.get(state.current);
       if (!def) {
+        const place = state.current;
+        const rev = [...place].reverse().join("");
+        if (place === rev && state.words.has(place)) {
+          // A whole palindrome typed out — MOM instead of MO. The
+          // word is fine; the placement is the lesson.
+          return {
+            ...state,
+            lastResult: {
+              type: "halfOnly",
+              place,
+              half: place.slice(0, Math.ceil(place.length / 2)),
+              nonce: ++nonce,
+            },
+          };
+        }
+        // Name the reading that fails: the mirror side when the staged
+        // word is real (BAD -> DAB), otherwise the staged word itself.
+        const badWord =
+          state.words.has(place) && !state.words.has(rev) ? rev : place;
         return {
           ...state,
-          lastResult: { type: "invalid", place: state.current, nonce: ++nonce },
+          lastResult: { type: "invalid", place, badWord, nonce: ++nonce },
         };
       }
       if (state.rows.some((r) => rowKey(r.def) === rowKey(def))) {
