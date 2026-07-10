@@ -45,7 +45,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 const DRAG_THRESHOLD = 8;
 
 const CHIP_W = "calc(5rem + 5px)";
-const CHIP_H = "calc(2.5rem + 4px)";
+const CHIP_SLOT = CHIP_W;
 const SPRING = { type: "spring" as const, stiffness: 500, damping: 30 };
 
 function DominoChip({
@@ -69,7 +69,6 @@ function DominoChip({
   onDragEnd?: () => void;
   dimmed?: boolean;
 }) {
-  const isH = orientation === 0 || orientation === 2;
   const rotation = (orientation as number) * 90;
 
   const dragging = React.useRef(false);
@@ -125,12 +124,11 @@ function DominoChip({
   }
 
   return (
-    <motion.div
-      layout
+    <div
       className="flex items-center justify-center"
       style={{
-        width: isH ? CHIP_W : CHIP_H,
-        height: isH ? CHIP_H : CHIP_W,
+        width: CHIP_SLOT,
+        height: CHIP_SLOT,
       }}
     >
       <motion.button
@@ -172,6 +170,6 @@ function DominoChip({
           {piece.letters[1]}
         </motion.div>
       </motion.button>
-    </motion.div>
+    </div>
   );
 }
