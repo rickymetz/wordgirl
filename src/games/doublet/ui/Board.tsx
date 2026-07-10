@@ -1,5 +1,4 @@
 import { useMemo, useRef } from "react";
-import { motion } from "motion/react";
 import { useViewport } from "../../../lib/useViewport";
 import type { GameState } from "../state/reducer";
 import {
@@ -15,7 +14,8 @@ const BW = 2;
 const MAX_CELL = 56;
 const MIN_CELL = 32;
 const CHROME_H = 360;
-const OUTLINE_PAD = 3;
+const OUTLINE_PAD = 6;
+const CORNER_R = 14;
 const BOARD_DRAG_THRESHOLD = 64;
 
 interface Props {
@@ -114,6 +114,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         puzzle.board.rows,
         puzzle.board.cols,
         OUTLINE_PAD,
+        CORNER_R,
       ),
     [puzzle.board, cell],
   );
@@ -137,6 +138,8 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         gridTemplateColumns: `repeat(${puzzle.board.cols}, ${cell}px)`,
         gridTemplateRows: `repeat(${puzzle.board.rows}, ${cell}px)`,
         gap: `${GAP}px`,
+        width: gridW,
+        height: gridH,
       }}
     >
       {outlinePath && (
@@ -148,11 +151,11 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         >
           <path
             d={outlinePath}
-            fill="none"
+            fill="var(--color-surface-tint)"
             stroke="var(--color-line)"
-            strokeWidth="1.5"
+            strokeWidth="2.5"
             strokeLinejoin="round"
-            opacity={0.4}
+            strokeOpacity={0.4}
           />
         </svg>
       )}
@@ -215,14 +218,13 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         const isPreview = previewCells && previewCells.keys.has(k);
         const isHover = !isPreview && hoverCell && hoverCell.row === row && hoverCell.col === col;
 
-        let cellBg = "bg-surface-tint";
-        if (pd) cellBg = "bg-surface";
-        else if (isPreview) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
+        let cellBg = "bg-surface";
+        if (isPreview && !pd) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
         else if (isHover) cellBg = "bg-accent/15";
 
         return (
           <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1, zIndex: 1 }}>
-            <motion.button
+            <button
               data-cell={k}
               data-row={row}
               data-col={col}
@@ -298,7 +300,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
               }
             >
               {letter || ""}
-            </motion.button>
+            </button>
 
             {hasBridgeRight && (
               <div
@@ -362,6 +364,17 @@ function getDir(from: [number, number], to: [number, number]): "R" | "D" | "L" |
   return "U";
 }
 
+function dirDelta(d: "R" | "D" | "L" | "U"): [number, number] {
+  if (d === "R") return [1, 0];
+  if (d === "D") return [0, 1];
+  if (d === "L") return [-1, 0];
+  return [0, -1];
+}
+
+function edgeLen(a: [number, number], b: [number, number]): number {
+  return Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+}
+
 function computeOutlinePath(
   boardCells: Cell[],
   cellSize: number,
@@ -369,6 +382,7 @@ function computeOutlinePath(
   rows: number,
   cols: number,
   offset: number,
+  cornerR: number,
 ): string {
   const stride = cellSize + gap;
   const cs = new Set(boardCells.map((c) => `${c.row},${c.col}`));
@@ -432,12 +446,21 @@ function computeOutlinePath(
 
     if (verts.length < 3) continue;
 
-    const n = verts.length;
+    const cleaned: V[] = [];
+    for (let i = 0; i < verts.length; i++) {
+      const prev = verts[(i - 1 + verts.length) % verts.length];
+      const curr = verts[i];
+      const next = verts[(i + 1) % verts.length];
+      if (getDir(prev, curr) !== getDir(curr, next)) cleaned.push(curr);
+    }
+    if (cleaned.length < 3) continue;
+
+    const n = cleaned.length;
     const offsetVerts: V[] = [];
     for (let i = 0; i < n; i++) {
-      const prev = verts[(i - 1 + n) % n];
-      const curr = verts[i];
-      const next = verts[(i + 1) % n];
+      const prev = cleaned[(i - 1 + n) % n];
+      const curr = cleaned[i];
+      const next = cleaned[(i + 1) % n];
 
       const inDir = getDir(prev, curr);
       const outDir = getDir(curr, next);
@@ -448,7 +471,42 @@ function computeOutlinePath(
       offsetVerts.push([curr[0] + dx, curr[1] + dy]);
     }
 
-    paths.push(`M${offsetVerts.map((p) => `${p[0]} ${p[1]}`).join(" L")} Z`);
+    function vertR(i: number): number {
+      const vP = offsetVerts[(i - 1 + n) % n];
+      const vC = offsetVerts[i];
+      const vN = offsetVerts[(i + 1) % n];
+      return Math.min(cornerR, edgeLen(vP, vC) / 2, edgeLen(vC, vN) / 2);
+    }
+    function tangents(i: number): [V, V] {
+      const vP = offsetVerts[(i - 1 + n) % n];
+      const vC = offsetVerts[i];
+      const vN = offsetVerts[(i + 1) % n];
+      const r = vertR(i);
+      const [dxI, dyI] = dirDelta(getDir(vP, vC));
+      const [dxO, dyO] = dirDelta(getDir(vC, vN));
+      return [
+        [vC[0] - r * dxI, vC[1] - r * dyI],
+        [vC[0] + r * dxO, vC[1] + r * dyO],
+      ];
+    }
+
+    const [, t2_0] = tangents(0);
+    const segs: string[] = [`M${t2_0[0]} ${t2_0[1]}`];
+
+    for (let i = 1; i < n; i++) {
+      const v = offsetVerts[i];
+      const [t1, t2] = tangents(i);
+      segs.push(`L${t1[0]} ${t1[1]}`);
+      segs.push(`Q${v[0]} ${v[1]} ${t2[0]} ${t2[1]}`);
+    }
+
+    const v0 = offsetVerts[0];
+    const [t1_close] = tangents(0);
+    segs.push(`L${t1_close[0]} ${t1_close[1]}`);
+    segs.push(`Q${v0[0]} ${v0[1]} ${t2_0[0]} ${t2_0[1]}`);
+    segs.push("Z");
+
+    paths.push(segs.join(" "));
   }
 
   return paths.join(" ");
