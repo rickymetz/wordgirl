@@ -10,22 +10,39 @@ import type { CommittedRow } from "../state/reducer";
  * tiles inside the glass. Odd palindromes put their middle tile ON
  * the line. Breaking a row flies its tiles back to the rack.
  */
+export interface DragGhost {
+  letter: string;
+  /** Position inside the glass, relative to the pane's top-left. */
+  paneX: number;
+  y: number;
+}
+
 export function MirrorBoard({
   rows,
   current,
+  currentStraddle,
   solved,
   bankAll,
+  dragGhost,
   onBreakRow,
   onUnstage,
+  onDragLive,
 }: {
   rows: CommittedRow[];
   current: string;
+  /** The staged letters already read as an odd palindrome's half —
+   * preview the straddle live (middle tile on the glass). */
+  currentStraddle: boolean;
   solved: boolean;
   /** puzzle.bank — for assigning each placed letter its rack tile. */
   bankAll: string[];
+  /** A tile in flight: its live reflection tracks it in the glass. */
+  dragGhost: DragGhost | null;
   onBreakRow: (index: number) => void;
   /** Drag a staged tile off the board — it returns to the rack. */
   onUnstage: (index: number) => void;
+  /** Stream drag positions so the mirror can reflect the tile live. */
+  onDragLive: (letter: string | null, e?: PointerEvent) => void;
 }) {
   const { vw } = useViewport();
   // One tile size for the whole board, sized so the longest row fits
@@ -49,7 +66,10 @@ export function MirrorBoard({
   const idsFor = (n: number) => ids.slice(at, (at += n));
 
   return (
-    <div className="relative flex min-h-52 w-full flex-col justify-center select-none">
+    <div
+      id="bw-mirror"
+      className="relative flex min-h-52 w-full flex-col justify-center select-none"
+    >
       {/* The glass: a filled pane behind the reflections, with a
           diagonal sheen — tokens only, so it re-tints per theme. */}
       <div
@@ -68,6 +88,21 @@ export function MirrorBoard({
         aria-hidden
         className="absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-accent/60"
       />
+      {/* The live reflection of a tile in flight: mirrored across the
+          glass, converging on the dragged tile as it nears the line. */}
+      {dragGhost && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 left-1/2 z-20 overflow-hidden rounded-r-2xl"
+        >
+          <span
+            className="absolute flex h-[55px] w-[45px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-surface/50 font-game text-xl text-ink-soft/80 uppercase shadow-sm"
+            style={{ left: dragGhost.paneX, top: dragGhost.y }}
+          >
+            {dragGhost.letter}
+          </span>
+        </div>
+      )}
       <div className="relative flex flex-col gap-2">
         <AnimatePresence initial={false}>
           {rows.map((row, i) => (
@@ -98,8 +133,10 @@ export function MirrorBoard({
             place={current}
             ids={idsFor(current.length)}
             tile={tile}
+            straddle={currentStraddle}
             active
             onUnstage={onUnstage}
+            onDragLive={onDragLive}
           />
         )}
       </div>
@@ -117,6 +154,7 @@ function Row({
   active = false,
   onBreak,
   onUnstage,
+  onDragLive,
 }: {
   place: string;
   ids: number[];
@@ -127,6 +165,7 @@ function Row({
   active?: boolean;
   onBreak?: () => void;
   onUnstage?: (index: number) => void;
+  onDragLive?: (letter: string | null, e?: PointerEvent) => void;
 }) {
   const left = straddle ? place.slice(0, -1) : place;
   const middle = straddle ? place[place.length - 1] : null;
@@ -168,6 +207,7 @@ function Row({
             active={active}
             style={tileStyle}
             onUnstage={onUnstage && (() => onUnstage(i))}
+            onDragLive={onDragLive}
           />
         ))}
         {active && (
@@ -184,6 +224,7 @@ function Row({
             style={tileStyle}
             onGlass
             onUnstage={onUnstage && (() => onUnstage(place.length - 1))}
+            onDragLive={onDragLive}
           />
         )}
       </span>
@@ -214,6 +255,7 @@ function PlacedTile({
   style,
   onGlass = false,
   onUnstage,
+  onDragLive,
 }: {
   id: number;
   letter: string;
@@ -221,6 +263,7 @@ function PlacedTile({
   style: React.CSSProperties;
   onGlass?: boolean;
   onUnstage?: () => void;
+  onDragLive?: (letter: string | null, e?: PointerEvent) => void;
 }) {
   return (
     <motion.span
@@ -230,7 +273,9 @@ function PlacedTile({
       dragSnapToOrigin
       dragMomentum={false}
       whileDrag={{ scale: 1.25, zIndex: 40 }}
+      onDrag={(e) => onDragLive?.(letter, e as PointerEvent)}
       onDragEnd={(e) => {
+        onDragLive?.(null);
         // Dragged OFF the board? Back to the rack it goes.
         const board = document.getElementById("bw-board");
         const p = e as PointerEvent;

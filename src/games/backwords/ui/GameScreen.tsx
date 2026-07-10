@@ -21,7 +21,7 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { glyphRowCount } from "../state/reducer";
-import { MirrorBoard } from "./MirrorBoard";
+import { MirrorBoard, type DragGhost } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
 import { SolvedOverlay } from "./Overlays";
 
@@ -54,6 +54,30 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // Results card is dismissable — closing reveals the solved board.
   const [resultsOpen, setResultsOpen] = useState(true);
+
+  // A tile in flight: the mirror reflects it LIVE — the ghost tracks
+  // the drag, mirrored across the glass, converging at the line.
+  const [dragGhost, setDragGhost] = useState<DragGhost | null>(null);
+  const onDragLive = (letter: string | null, e?: PointerEvent) => {
+    if (!letter || !e) {
+      setDragGhost(null);
+      return;
+    }
+    const mirror = document.getElementById("bw-mirror");
+    if (!mirror) return;
+    const r = mirror.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    setDragGhost({ letter, paneX: cx - e.clientX, y: e.clientY - r.top });
+  };
+
+  // The staged letters already read as an odd palindrome's half: the
+  // middle tile slides onto the glass BEFORE commit, so the straddle
+  // is a live preview rather than a surprise.
+  const currentDef = state.lexicon.get(state.current);
+  const currentStraddle =
+    !!currentDef &&
+    currentDef.kind === "palindrome" &&
+    currentDef.words[0].length % 2 === 1;
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -232,10 +256,13 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <MirrorBoard
           rows={state.rows}
           current={state.current}
+          currentStraddle={currentStraddle}
           solved={state.solved}
           bankAll={puzzle.bank}
+          dragGhost={dragGhost}
           onBreakRow={(index) => dispatch({ type: "breakRow", index })}
           onUnstage={(index) => dispatch({ type: "unstage", index })}
+          onDragLive={onDragLive}
         />
         <AnimatePresence mode="wait">
           {toast && toast.text && (
@@ -289,6 +316,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             all={puzzle.bank}
             remaining={state.bank}
             onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
+            onDragLive={onDragLive}
           />
         </div>
       )}
@@ -328,9 +356,10 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
                 title: "Palindromes",
                 body: (
                   <>
-                    A word that reads the same both ways needs only its{" "}
-                    <Key>first half</Key> — the mirror completes it across
-                    the glass.
+                    A word that reads the same both ways needs its{" "}
+                    <Key>first half plus the middle letter</Key> — the
+                    middle tile slides onto the glass and the mirror
+                    completes the rest.
                   </>
                 ),
               },

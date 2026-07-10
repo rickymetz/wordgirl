@@ -13,12 +13,15 @@ export function LetterBank({
   all,
   remaining,
   onLetter,
+  onDragLive,
 }: {
   /** puzzle.bank — the full day, fixed. */
   all: string[];
   /** state.bank — letters still available. */
   remaining: string[];
   onLetter: (letter: string) => void;
+  /** Stream drag positions so the mirror can reflect the tile live. */
+  onDragLive: (letter: string | null, e?: PointerEvent) => void;
 }) {
   const left = toMultiset(remaining);
   const seen: Record<string, number> = {};
@@ -51,7 +54,9 @@ export function LetterBank({
             dragMomentum={false}
             whileDrag={{ scale: 1.25, zIndex: 40 }}
             whileTap={{ scale: 0.9 }}
+            onDrag={(e) => onDragLive(letter, e as PointerEvent)}
             onDragEnd={(e) => {
+              onDragLive(null);
               // Dropped over the board? The tile moves there.
               const board = document.getElementById("bw-board");
               const p = e as PointerEvent;
