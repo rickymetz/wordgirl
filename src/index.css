@@ -78,6 +78,9 @@
 [data-level="9"] { --color-accent: var(--level-9); }
 [data-level="10"] { --color-accent: var(--level-10); }
 
+/* Neutral: solid black / white for non-game chrome (dictionary, settings). */
+[data-level="neutral"] { --color-accent: light-dark(#171717, #e5e5e5); }
+
 /* Crosshatch has its own palette key — Tiffany teal. */
 [data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
 

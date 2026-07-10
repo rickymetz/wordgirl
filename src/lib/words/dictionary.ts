@@ -22,8 +22,12 @@
  * v10: backwords palindrome prefix aliases — the shadowed even
  * palindromes (poop, peep) join the item pool, changing puzzle
  * derivation without a dictionary.txt change.
+ * v11: full ENABLE coverage — every valid Scrabble word (3–10 chars)
+ * is now in the dictionary. Required tier is still frequency-gated;
+ * all remaining ENABLE words are bonus. Replaces the v11 suffix-
+ * expansion approach with complete Scrabble/crossword coverage.
  */
-export const DICT_VERSION = 10;
+export const DICT_VERSION = 11;
 
 export const MIN_WORD_LEN = 3;
 export const MAX_WORD_LEN = 10;

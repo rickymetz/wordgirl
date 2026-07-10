@@ -33,53 +33,54 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <BottomSheet labelledBy="settings-title" onClose={onClose}>
-      <div className="flex items-center justify-between pb-4">
-        <h2 id="settings-title" className="text-lg font-bold">
-          Settings
-        </h2>
-        <button
-          type="button"
-          data-autofocus
-          onClick={onClose}
-          aria-label="close settings"
-          className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
-        >
-          <X aria-hidden className="h-5 w-5" />
-        </button>
-      </div>
+      <div data-level="neutral">
+        <div className="flex items-center justify-between pb-4">
+          <h2 id="settings-title" className="text-lg font-bold">
+            Settings
+          </h2>
+          <button
+            type="button"
+            data-autofocus
+            onClick={onClose}
+            aria-label="close settings"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+          >
+            <X aria-hidden className="h-5 w-5" />
+          </button>
+        </div>
 
-      <div className="flex flex-col gap-5">
-        <Segmented
-          label="Theme"
-          options={THEMES.map(({ value, label, Icon }) => ({
-            value,
-            label,
-            content: (
-              <span className="flex items-center gap-1.5">
-                <Icon aria-hidden className="h-4 w-4" />
-                {label}
-              </span>
-            ),
-          }))}
-          value={settings.theme}
-          onChange={(theme) => update({ theme })}
-        />
-        <Segmented
-          label="Text size"
-          options={FONT_SCALES.map((f) => ({
-            value: f.value,
-            label: f.label,
-            // Graduated "Aa" — the option previews its own size.
-            content: (
-              <span aria-hidden style={{ fontSize: `${f.value / 100}em` }}>
-                Aa
-              </span>
-            ),
-          }))}
-          value={settings.fontScale}
-          onChange={(fontScale) => update({ fontScale })}
-        />
-        <UpdateRow />
+        <div className="flex flex-col gap-5">
+          <Segmented
+            label="Theme"
+            options={THEMES.map(({ value, label, Icon }) => ({
+              value,
+              label,
+              content: (
+                <span className="flex items-center gap-1.5">
+                  <Icon aria-hidden className="h-4 w-4" />
+                  {label}
+                </span>
+              ),
+            }))}
+            value={settings.theme}
+            onChange={(theme) => update({ theme })}
+          />
+          <Segmented
+            label="Text size"
+            options={FONT_SCALES.map((f) => ({
+              value: f.value,
+              label: f.label,
+              content: (
+                <span aria-hidden style={{ fontSize: `${f.value / 100}em` }}>
+                  Aa
+                </span>
+              ),
+            }))}
+            value={settings.fontScale}
+            onChange={(fontScale) => update({ fontScale })}
+          />
+          <UpdateRow />
+        </div>
       </div>
     </BottomSheet>
   );

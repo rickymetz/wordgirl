@@ -2,11 +2,18 @@
  * One-off dictionary builder. Output is COMMITTED because daily puzzle
  * determinism depends on exact dictionary contents — rerunning this with
  * newer sources changes future dailies, so bump DICT_VERSION in
- * src/games/polygram/engine/dictionary.ts if you regenerate.
+ * src/lib/words/dictionary.ts if you regenerate.
  *
- * Pipeline: ENABLE word list (validity) ∩ Norvig count_1w top-N (commonness),
- * lengths 3–10, a-z only, blocklist-filtered. Emits newline-separated,
- * sorted by length then alphabetically.
+ * Pipeline:
+ *   1. ENABLE word list — the public-domain Scrabble tournament word list
+ *      (~173k words). Every 3–10 letter a-z word becomes at least bonus.
+ *   2. Subtitle frequency ranks the REQUIRED tier (words players must
+ *      find). Everything else in ENABLE is bonus (counts when entered
+ *      but never required or hinted).
+ *
+ * This makes the dictionary reflective of Scrabble/crossword dictionaries:
+ * every valid ENABLE word is accepted. Frequency-based tiering controls
+ * difficulty — only common words gate advancement.
  *
  * Usage: npm run build:dictionary
  */
@@ -79,6 +86,30 @@ const REQUIRED_ALLOWLIST = new Set([
   "dab",
 ]);
 
+// Crossword-supplement words: real English words that appear in NYT/USA
+// Today crosswords but are missing from ENABLE. Cherry-picked from the
+// Crossword Nexus Collaborative Word List (score >= 50) — only genuine
+// common words, no proper nouns/abbreviations/brands. Added as bonus.
+const CROSSWORD_ALLOWLIST = new Set([
+  // Modern vocabulary that postdates ENABLE
+  "app", "apps", "blog", "blogs", "emoji", "meme", "memes", "vape",
+  "vapes", "vaped", "vaping", "wifi", "wiki", "wikis", "yeet", "yeets",
+  "yeeted", "yeeting",
+  // Established informal/clipped forms in standard dictionaries
+  "acai", "camo", "chai", "cred", "delt", "delts", "fest", "fests",
+  "glam", "glams", "goth", "goths", "grok", "groks", "meds", "mega",
+  "mosh", "moshed", "moshing", "nano", "olde", "reup", "reups",
+  "reupped", "reupping", "sesh", "tech", "uber", "zine", "zines",
+  // Food/drink terms common in crosswords
+  "mahi", "pho",
+  // Words in Merriam-Webster but absent from ENABLE
+  "ugli", "uglis",
+  // Common informal terms crossword solvers expect
+  "bruh", "cigs", "dawg", "heli", "helis", "itsy", "itty", "noob",
+  "noobs", "nyet", "pedi", "pedis", "tada", "todo", "todos", "woah",
+  "yoyo", "yoyos", "fomo",
+]);
+
 async function fetchCached(url, name) {
   const cachePath = path.join(CACHE_DIR, name);
   if (existsSync(cachePath)) {
@@ -99,39 +130,67 @@ const [enableRaw, freqRaw] = await Promise.all([
   fetchCached(FREQ_URL, "count_1w.txt"),
 ]);
 
-const enable = new Set(
-  enableRaw
-    .split(/\r?\n/)
-    .map((w) => w.trim().toLowerCase())
-    .filter(Boolean),
-);
-console.log(`ENABLE: ${enable.size} words`);
+// All ENABLE words, filtered to game constraints.
+const enableAll = new Set();
+for (const line of enableRaw.split(/\r?\n/)) {
+  const word = line.trim().toLowerCase();
+  if (!word) continue;
+  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
+  if (!/^[a-z]+$/.test(word)) continue;
+  if (BLOCKLIST.has(word)) continue;
+  enableAll.add(word);
+}
+console.log(`ENABLE (${MIN_LEN}–${MAX_LEN} chars, filtered): ${enableAll.size} words`);
 
 // Frequency file is sorted by descending frequency: "word count" per line.
+// High-frequency ENABLE words become REQUIRED; mid-frequency become BONUS.
 const required = new Set();
-const bonus = new Set();
+const freqBonus = new Set();
 let rank = 0;
 for (const line of freqRaw.split(/\r?\n/)) {
   if (rank >= FREQ_TOP_N) break;
   const word = line.split(/[\s\t]/)[0]?.trim().toLowerCase();
   if (!word) continue;
   rank++;
-  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
-  if (!/^[a-z]+$/.test(word)) continue;
-  if (!enable.has(word)) continue;
-  if (BLOCKLIST.has(word)) continue;
-  (rank <= REQUIRED_TOP_N ? required : bonus).add(word);
+  if (!enableAll.has(word)) continue;
+  (rank <= REQUIRED_TOP_N ? required : freqBonus).add(word);
 }
 
 for (const word of REQUIRED_ALLOWLIST) {
-  if (!enable.has(word) || BLOCKLIST.has(word)) continue;
-  bonus.delete(word);
+  if (!enableAll.has(word)) continue;
+  freqBonus.delete(word);
   required.add(word);
 }
+
+// Every remaining ENABLE word that isn't already required or frequency-
+// bonus becomes a dictionary-bonus word. This ensures the game accepts
+// every valid Scrabble/crossword word.
+const bonus = new Set(freqBonus);
+for (const word of enableAll) {
+  if (!required.has(word) && !bonus.has(word)) {
+    bonus.add(word);
+  }
+}
+
+// Crossword supplement: words NOT in ENABLE but common in published
+// crosswords. Added to bonus so they count when a player types them.
+let crosswordAdded = 0;
+for (const word of CROSSWORD_ALLOWLIST) {
+  if (word.length < MIN_LEN || word.length > MAX_LEN) continue;
+  if (!/^[a-z]+$/.test(word)) continue;
+  if (BLOCKLIST.has(word)) continue;
+  if (!required.has(word) && !bonus.has(word)) {
+    bonus.add(word);
+    crosswordAdded++;
+  }
+}
+console.log(`crossword supplement: +${crosswordAdded} words`);
 
 // Group by length but KEEP frequency order inside each group (Set
 // iteration = insertion = rank order; JS sort is stable): a word's
 // position in its bucket is its difficulty, read at runtime.
+// Frequency-ranked words come first within each length group, then
+// ENABLE-only words (alphabetically, since they have no frequency rank).
 const sortWords = (set) => [...set].sort((a, b) => a.length - b.length);
 const requiredWords = sortWords(required);
 const bonusWords = sortWords(bonus);
@@ -139,7 +198,8 @@ const bonusWords = sortWords(bonus);
 const byLen = {};
 for (const w of requiredWords) byLen[w.length] = (byLen[w.length] ?? 0) + 1;
 console.log(`required ${requiredWords.length}`, byLen);
-console.log(`bonus ${bonusWords.length}`);
+console.log(`bonus ${bonusWords.length} (${freqBonus.size} freq + ${bonus.size - freqBonus.size} ENABLE-only)`);
+console.log(`total ${requiredWords.length + bonusWords.length}`);
 
 await mkdir(path.dirname(OUT_FILE), { recursive: true });
 await writeFile(
