@@ -116,6 +116,43 @@ describe("multi-tab guard", () => {
     expect(stored?.rows).toEqual([]);
     expect(stored?.elapsedMs).toBe(31_000);
   });
+
+  it("a never-edited tab's STALE nonzero rows don't overwrite either", async () => {
+    // Tab A hydrated 3 rows and never edited; tab B took two back.
+    await saveDailyProgress(day({ rows: ["mo"], elapsedMs: 40_000 }), {
+      rowsEdited: true,
+    });
+    await saveDailyProgress(
+      day({ rows: ["mo", "was", "lit"], elapsedMs: 20_000 }),
+      { rowsEdited: false },
+    );
+    expect((await loadDailyProgress("2026-07-06"))?.rows).toEqual(["mo"]);
+  });
+
+  it("a never-edited tab may refresh a save whose rows it agrees with", async () => {
+    await saveDailyProgress(day({ rows: ["mo"], elapsedMs: 10_000 }), {
+      rowsEdited: true,
+    });
+    // Same rows, newer clock: an elapsed-time flush is welcome.
+    await saveDailyProgress(day({ rows: ["mo"], elapsedMs: 12_000 }), {
+      rowsEdited: false,
+    });
+    expect((await loadDailyProgress("2026-07-06"))?.elapsedMs).toBe(12_000);
+  });
+
+  it("an older-build tab never clobbers a newer build's save", async () => {
+    await saveDailyProgress(
+      day({ rows: ["mo"], solved: true, elapsedMs: 50_000 }),
+    );
+    // A tab still running the previous DICT_VERSION flushes.
+    await saveDailyProgress(
+      day({ dictVersion: DICT_VERSION - 1, rows: [], elapsedMs: 100 }),
+      { rowsEdited: true },
+    );
+    const stored = await loadDailyProgress("2026-07-06");
+    expect(stored?.solved).toBe(true);
+    expect(stored?.dictVersion).toBe(DICT_VERSION);
+  });
 });
 
 describe("save hygiene", () => {

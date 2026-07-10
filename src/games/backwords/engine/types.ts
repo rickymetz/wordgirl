@@ -18,11 +18,19 @@ export interface RowDef {
   /** Letters consumed from the bank (multiset, as a sorted string). */
   cost: string;
   /**
-   * True mirror row: every glyph survives a real mirror (lowercase
-   * self-symmetric letters plus b/d and p/q) — the ✦ flourish.
+   * True mirror row: every glyph survives a real mirror as RENDERED —
+   * the board is caps-only, so only A H I M O T U V W X Y qualify
+   * (no cap is another cap's mirror image) — the ✦ flourish.
    */
   glyph: boolean;
 }
+
+/** The game's most load-bearing operation, defined exactly once. */
+export const reverse = (w: string) => [...w].reverse().join("");
+
+/** Odd palindromes put their middle tile ON the mirror line. */
+export const isStraddle = (def: RowDef) =>
+  def.kind === "palindrome" && def.words[0].length % 2 === 1;
 
 export interface Puzzle {
   seed: string;

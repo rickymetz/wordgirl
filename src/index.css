@@ -83,7 +83,18 @@
 
 /* Backwords' palette key — fuchsia, clearly its own game beside
    Polygram red and Crosshatch teal. */
-[data-level="backwords"] { --color-accent: light-dark(#a21caf, #e879f9); }
+[data-level="backwords"] {
+  --color-accent: light-dark(#a21caf, #e879f9);
+  /* The mirror's glass: one gradient for the board pane AND the hub
+     card's miniature, so a tint tweak lands everywhere at once. */
+  --backwords-glass: linear-gradient(
+    105deg,
+    color-mix(in oklab, var(--color-accent) 18%, var(--color-surface)) 0%,
+    color-mix(in oklab, var(--color-accent) 7%, var(--color-surface)) 42%,
+    color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)) 55%,
+    color-mix(in oklab, var(--color-accent) 6%, var(--color-surface)) 100%
+  );
+}
 
 html {
   /* Resolves every light-dark() pair; follows the system by default. */

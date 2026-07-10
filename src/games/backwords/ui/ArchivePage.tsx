@@ -34,6 +34,11 @@ const config: GameArchiveConfig<ArchivedDay, BackwordsStats> = {
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => {
     if (!day.solved) {
+      // A stale (old-dictionary) unsolved save won't hydrate — opening
+      // the day starts fresh, so don't advertise progress it can't keep.
+      if (day.stale) {
+        return { text: "Not finished · older words", done: false };
+      }
       return {
         text: `In progress · ${day.rows.length} ${
           day.rows.length === 1 ? "word" : "words"

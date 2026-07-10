@@ -1,7 +1,15 @@
-import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { buildLexicon, commonWords } from "../engine/lexicon";
+import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
 import { dailySeed, generateBackwords } from "../engine/generator";
 import {
   loadDailyProgress,
@@ -14,6 +22,8 @@ import {
   gameReducer,
   glyphRowCount,
   initialState,
+  rowSaveKey,
+  type Action,
   type GameState,
 } from "./reducer";
 
@@ -33,22 +43,34 @@ export function useBackwordsGame(mode: GameMode) {
   const dict = use(loadDictionary());
   const lexicon = useMemo(() => buildLexicon(dict), [dict]);
   const words = useMemo(() => commonWords(dict), [dict]);
-  const puzzle = useMemo(() => generateBackwords(dict, seed), [dict, seed]);
+  const items = useMemo(() => lexiconItems(lexicon), [lexicon]);
+  const puzzle = useMemo(
+    () => generateBackwords(dict, seed, items),
+    [dict, seed, items],
+  );
   const [state, rawDispatch] = useReducer(
     gameReducer,
     { puzzle, lexicon, words, isWord: dict.has },
     initialState,
   );
-  // This tab committed or broke a row itself: its rows are the truth,
-  // and the multi-tab guard lets its writes through.
+  // This tab changed its OWN rows: its rows are the truth, and the
+  // multi-tab guard lets its writes through. Ownership is derived from
+  // the actual rows transition below (a failed commit claims nothing);
+  // the wrapper only records which action caused it, so hydration —
+  // which replays the SAVED rows — never claims ownership.
   const rowsEditedRef = useRef(false);
-  // Row edits mark this tab as the owner of its rows.
-  const dispatch = (action: Parameters<typeof rawDispatch>[0]) => {
-    if (action.type === "commit" || action.type === "breakRow") {
-      rowsEditedRef.current = true;
-    }
+  const lastActionRef = useRef<Action["type"] | null>(null);
+  const dispatch = useCallback((action: Action) => {
+    lastActionRef.current = action.type;
     rawDispatch(action);
-  };
+  }, []);
+  const prevRowsRef = useRef(state.rows);
+  useEffect(() => {
+    if (state.rows !== prevRowsRef.current) {
+      prevRowsRef.current = state.rows;
+      if (lastActionRef.current !== "hydrate") rowsEditedRef.current = true;
+    }
+  }, [state.rows]);
 
   // hydratedRef flips only AFTER hydration completes — saving before
   // that would clobber the stored progress with the empty initial state.
@@ -96,7 +118,9 @@ export function useBackwordsGame(mode: GameMode) {
       {
         dateKey,
         dictVersion: DICT_VERSION,
-        rows: s.rows.map((r) => r.place),
+        // rowSaveKey, not place: a palindrome's bare half is ambiguous
+        // (a POOP row saved as "po" would reload as POP).
+        rows: s.rows.map(rowSaveKey),
         solved: s.solved,
         elapsedMs: currentElapsedMs(),
         ...(statsRecordedRef.current && { statsRecorded: true }),

@@ -1,4 +1,4 @@
-import { mulberry32, xmur3 } from "../../../lib/random";
+import { seededRandom } from "../../../lib/random";
 import { DICT_VERSION, type Dictionary } from "../../../lib/words/dictionary";
 import { buildLexicon, lexiconItems } from "./lexicon";
 import {
@@ -42,6 +42,8 @@ export function solveBank(
   items: RowDef[],
   cap = SOLUTION_CAP,
 ): RowDef[][] {
+  // Parse each item's cost once — the walk visits thousands of nodes.
+  const costs = items.map((i) => toMultiset(i.cost));
   const found: RowDef[][] = [];
   const chosen: RowDef[] = [];
   const walk = (left: Multiset, startIdx: number) => {
@@ -51,9 +53,9 @@ export function solveBank(
       return;
     }
     for (let i = startIdx; i < items.length; i++) {
-      if (fitsIn(toMultiset(items[i].cost), left)) {
+      if (fitsIn(costs[i], left)) {
         chosen.push(items[i]);
-        walk(subtract(left, toMultiset(items[i].cost)), i + 1);
+        walk(subtract(left, costs[i]), i + 1);
         chosen.pop();
         if (found.length >= cap) return;
       }
@@ -70,10 +72,13 @@ interface Candidate {
   rowCounts: number[];
 }
 
-function attempt(rng: () => number, items: RowDef[]): Candidate | null {
+function attempt(
+  rng: () => number,
+  items: RowDef[],
+  big: RowDef[],
+): Candidate | null {
   // Seed with one 4+-letter pair so every day has a meaty row, then
   // fill with random distinct items up to the size band.
-  const big = items.filter((i) => i.kind === "pair" && i.cost.length >= 4);
   const pick = <T,>(arr: T[]) => arr[Math.floor(rng() * arr.length)];
   const seed: RowDef[] = [pick(big)];
   let size = seed[0].cost.length;
@@ -98,13 +103,19 @@ function attempt(rng: () => number, items: RowDef[]): Candidate | null {
   return { bank, seedRows: seed.map((i) => i.place), solutions, rowCounts };
 }
 
-export function generateBackwords(dict: Dictionary, seed: string): Puzzle {
-  const rng = mulberry32(xmur3(seed)());
-  const items = lexiconItems(buildLexicon(dict));
+export function generateBackwords(
+  dict: Dictionary,
+  seed: string,
+  // Callers that already built the lexicon (the game hook memoizes it)
+  // pass their items to skip a second full lexicon build at mount.
+  items: RowDef[] = lexiconItems(buildLexicon(dict)),
+): Puzzle {
+  const rng = seededRandom(seed);
+  const big = items.filter((i) => i.kind === "pair" && i.cost.length >= 4);
 
   let fallback: Candidate | null = null;
   for (let t = 0; t < MAX_ATTEMPTS; t++) {
-    const c = attempt(rng, items);
+    const c = attempt(rng, items, big);
     if (!c) continue;
     if (c.solutions.length >= PREFERRED_SOLUTIONS) {
       return toPuzzle(seed, c);

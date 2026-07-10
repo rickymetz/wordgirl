@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { motion, type PanInfo } from "motion/react";
 import { toMultiset } from "../engine/types";
-import { dragCancelled, dragPoint } from "./dragPoint";
+import { overBoard } from "./dragPoint";
 
 /**
  * The day's rack: one socket per bank letter (sorted a-z). A tile
@@ -75,21 +75,9 @@ export function LetterBank({
             onDragEnd={(e, info) => {
               requestAnimationFrame(() => (draggingRef.current = false));
               onDragLive(null);
-              if (dragCancelled(e)) return; // system stole the gesture
               // Dropped over the board — EITHER side of the glass —
-              // and the tile moves there.
-              const board = document.getElementById("bw-board");
-              const p = dragPoint(e, info);
-              if (!board || !p) return;
-              const r = board.getBoundingClientRect();
-              if (
-                p.x >= r.left &&
-                p.x <= r.right &&
-                p.y >= r.top &&
-                p.y <= r.bottom
-              ) {
-                onLetter(letter);
-              }
+              // and the tile moves there (cancelled gestures are null).
+              if (overBoard(e, info) === true) onLetter(letter);
             }}
             onTap={() => {
               if (!draggingRef.current) onLetter(letter);

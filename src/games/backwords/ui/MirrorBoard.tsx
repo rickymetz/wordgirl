@@ -1,8 +1,9 @@
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { Sparkles, X } from "lucide-react";
 import { useViewport } from "../../../lib/useViewport";
+import { isStraddle, reverse } from "../engine/types";
 import type { CommittedRow } from "../state/reducer";
-import { dragCancelled, dragPoint } from "./dragPoint";
+import { overBoard } from "./dragPoint";
 
 type DragLive = (
   letter: string | null,
@@ -50,11 +51,15 @@ export function MirrorBoard({
   // inside its flex share or the row's midpoint walks off the pane
   // line — so the width budget subtracts what shares that half: the
   // take-back × rail on committed rows, the caret on the active row.
-  const halfW = (Math.min(vw, 448) - 40) / 2 - 12;
-  const RAIL = 36; // take-back ×: 24px + 8px margin + slack
+  // The chrome these constants encode (max-w-md, px-5, pr-2.5, h-6,
+  // mr-2) is all rem-based, so the budget scales with Text size like
+  // the height budget below — at Huge everything is 25% wider.
+  const s = rem / 16;
+  const halfW = (Math.min(vw, 448 * s) - 40 * s) / 2 - 12 * s;
+  const RAIL = 36 * s; // take-back ×: 24px + 8px margin + slack
   const fit = (budget: number, n: number) =>
     Math.floor((budget - (n - 1) * 3) / n);
-  const caps = [34, fit(halfW - 6, Math.max(3, activePlace.length))];
+  const caps = [34, fit(halfW - 6 * s, Math.max(3, activePlace.length))];
   if (rows.length > 0) {
     const longest = Math.max(3, ...rows.map((r) => r.place.length));
     caps.push(fit(halfW - RAIL, longest));
@@ -81,17 +86,12 @@ export function MirrorBoard({
       className="relative flex max-h-[26rem] min-h-52 w-full grow touch-manipulation flex-col justify-center select-none"
     >
       {/* The glass: a filled pane behind the reflections, with a
-          diagonal sheen — tokens only, so it re-tints per theme. */}
+          diagonal sheen — the shared --backwords-glass token, so it
+          re-tints per theme and matches the hub card. */}
       <div
         aria-hidden
         className="absolute inset-y-0 right-0 left-1/2 rounded-r-2xl"
-        style={{
-          background: `linear-gradient(105deg,
-            color-mix(in oklab, var(--color-accent) 18%, var(--color-surface)) 0%,
-            color-mix(in oklab, var(--color-accent) 7%, var(--color-surface)) 42%,
-            color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)) 55%,
-            color-mix(in oklab, var(--color-accent) 6%, var(--color-surface)) 100%)`,
-        }}
+        style={{ background: "var(--backwords-glass)" }}
       />
       {/* The pane's edge — the line tiles press up against. */}
       <div
@@ -129,10 +129,7 @@ export function MirrorBoard({
                 place={row.place}
                 ids={idsFor(row.place.length)}
                 tile={tile}
-                straddle={
-                  row.def.kind === "palindrome" &&
-                  row.def.words[0].length % 2 === 1
-                }
+                straddle={isStraddle(row.def)}
                 glyph={row.def.glyph}
                 committed
                 onBreak={solved ? undefined : () => onBreakRow(i)}
@@ -186,7 +183,7 @@ function Row({
 }) {
   const left = straddle ? place.slice(0, -1) : place;
   const middle = straddle ? place[place.length - 1] : null;
-  const reflection = [...left].reverse().join("");
+  const reflection = reverse(left);
   const tileStyle = {
     width: tile,
     height: Math.round(tile * 1.2),
@@ -211,7 +208,7 @@ function Row({
             onPointerDown={(e) => e.preventDefault()}
             onClick={onBreak}
             aria-label={`take back ${place}`}
-            className="relative mr-2 flex h-6 w-6 touch-manipulation items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2.5 after:content-[''] active:scale-90"
+            className="relative mr-2 flex h-6 w-6 shrink-0 touch-manipulation items-center justify-center rounded-full text-ink-soft after:absolute after:-inset-2.5 after:content-[''] active:scale-90"
           >
             <X aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
           </button>
@@ -248,7 +245,10 @@ function Row({
       >
         {middle && (
           <PlacedTile
-            id={ids[ids.length - 1]}
+            // The MIDDLE letter's id — never ids[ids.length-1], which
+            // is the last EXTRA's id when a palindrome is typed past
+            // its half and would collide with the extras tile below.
+            id={ids[place.length - 1]}
             letter={middle}
             active={active}
             style={tileStyle}
@@ -281,6 +281,7 @@ function Row({
               letter={extras[i]}
               active={active}
               style={tileStyle}
+              punchOut
               onUnstage={onUnstage && (() => onUnstage(place.length + i))}
               onDragLive={onDragLive}
             />
@@ -308,18 +309,25 @@ function Row({
   );
 }
 
-/** Dragged outside the board? Then this drop is a take-back — unless
- * the system cancelled the gesture, which is never a drop. */
-function droppedOffBoard(
-  e?: MouseEvent | TouchEvent | PointerEvent,
-  info?: PanInfo,
-): boolean {
-  if (dragCancelled(e)) return false;
-  const board = document.getElementById("bw-board");
-  const p = dragPoint(e, info);
-  if (!board || !p) return false;
-  const r = board.getBoundingClientRect();
-  return p.x < r.left || p.x > r.right || p.y < r.top || p.y > r.bottom;
+/** The drag wiring every board tile shares: stream the live mirror
+ * while in flight, and treat a drop OUTSIDE the board as a take-back
+ * (a cancelled gesture — overBoard null — is never a drop). */
+function unstageDragProps(
+  letter: string,
+  onUnstage?: () => void,
+  onDragLive?: DragLive,
+) {
+  return {
+    drag: !!onUnstage,
+    dragSnapToOrigin: true,
+    dragMomentum: false,
+    whileDrag: { scale: 1.25, zIndex: 40 },
+    onDrag: (e: PointerEvent, info: PanInfo) => onDragLive?.(letter, e, info),
+    onDragEnd: (e: PointerEvent, info: PanInfo) => {
+      onDragLive?.(null);
+      if (onUnstage && overBoard(e, info) === false) onUnstage();
+    },
+  };
 }
 
 /** A rack tile that traveled to the board — layoutId flies it here.
@@ -330,6 +338,7 @@ function PlacedTile({
   active,
   style,
   onGlass = false,
+  punchOut = false,
   onUnstage,
   onDragLive,
 }: {
@@ -338,6 +347,9 @@ function PlacedTile({
   active: boolean;
   style: React.CSSProperties;
   onGlass?: boolean;
+  /** Sitting ON the tinted glass: punch out with bg-surface — never
+   * bg-tile on tint (house rule). */
+  punchOut?: boolean;
   onUnstage?: () => void;
   onDragLive?: DragLive;
 }) {
@@ -345,17 +357,9 @@ function PlacedTile({
     <motion.span
       layoutId={id >= 0 ? `bwtile-${id}` : undefined}
       transition={{ type: "spring", stiffness: 500, damping: 34 }}
-      drag={!!onUnstage}
-      dragSnapToOrigin
-      dragMomentum={false}
-      whileDrag={{ scale: 1.25, zIndex: 40 }}
-      onDrag={(e, info) => onDragLive?.(letter, e, info)}
-      onDragEnd={(e, info) => {
-        onDragLive?.(null);
-        if (onUnstage && droppedOffBoard(e, info)) onUnstage();
-      }}
+      {...unstageDragProps(letter, onUnstage, onDragLive)}
       className={`relative flex shrink-0 items-center justify-center rounded-lg font-game uppercase ${
-        onGlass ? "" : "bg-tile text-ink"
+        onGlass ? "" : punchOut ? "bg-surface text-ink" : "bg-tile text-ink"
       } ${
         active ? "shadow-sm ring-1 ring-accent" : onGlass ? "shadow-md" : "shadow-sm"
       }`}
@@ -404,15 +408,7 @@ function ReflectionTile({
   return (
     <motion.span
       data-bw-reflection={onUnstage ? "active" : "set"}
-      drag={!!onUnstage}
-      dragSnapToOrigin
-      dragMomentum={false}
-      whileDrag={{ scale: 1.25, zIndex: 40 }}
-      onDrag={(e, info) => onDragLive?.(letter, e, info)}
-      onDragEnd={(e, info) => {
-        onDragLive?.(null);
-        if (onUnstage && droppedOffBoard(e, info)) onUnstage();
-      }}
+      {...unstageDragProps(letter, onUnstage, onDragLive)}
       className="flex shrink-0 items-center justify-center rounded-lg bg-surface/70 text-ink-soft"
       style={{ ...style, touchAction: onUnstage ? "none" : undefined }}
     >

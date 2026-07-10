@@ -51,7 +51,7 @@ A small crossword frame with many right answers:
 
 A race against a hidden clock, played into a mirror:
 
-- Each day deals a **bank of 12–16 letters** and one rule: lay words
+- Each day deals a **bank of 8–12 letters** and one rule: lay words
   against the central mirror so the **reflection reads as a word too**
   (pots|stop) — palindromes straddle the glass, completed by the
   mirror from just their first half.

@@ -111,6 +111,9 @@ export async function saveDailyProgress(
   const stored = validShape(
     await store.get<DailyProgress>(`daily:${progress.dateKey}`),
   );
+  // A tab running an OLDER build must never clobber a newer build's
+  // save — dictVersion only ever grows.
+  if (stored && stored.dictVersion > progress.dictVersion) return;
   if (stored && stored.dictVersion === progress.dictVersion) {
     // Multi-tab guard, part 1: a finished day is final (the clock
     // stopped there) — a stale tab's flush must not overwrite it
@@ -118,13 +121,13 @@ export async function saveDailyProgress(
     if (stored.solved && !progress.solved) return;
     // Part 2: rows legitimately SHRINK here (breakRow), so crosshatch's
     // growth check can't apply — instead, a tab that never edited a
-    // row itself has no claim over stored rows. Its idle flush must
-    // not wipe progress another tab committed.
+    // row itself has no claim over stored rows AT ALL. It may only
+    // refresh a save whose rows it agrees with (elapsed-time updates);
+    // any divergence means another tab moved the day.
     if (
       !progress.solved &&
-      progress.rows.length === 0 &&
-      stored.rows.length > 0 &&
-      !opts?.rowsEdited
+      !opts?.rowsEdited &&
+      stored.rows.join("\n") !== progress.rows.join("\n")
     ) {
       return;
     }

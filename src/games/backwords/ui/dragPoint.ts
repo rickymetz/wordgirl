@@ -29,3 +29,21 @@ export function dragCancelled(
 ): boolean {
   return e?.type === "pointercancel" || e?.type === "touchcancel";
 }
+
+/**
+ * Did the drag end over the board? The ONE hit test both drop
+ * directions share: rack tiles place on `true`, staged tiles unstage
+ * on `false`, and `null` (cancelled gesture / unmeasurable) is
+ * neither — nobody acts on it.
+ */
+export function overBoard(
+  e?: MouseEvent | TouchEvent | PointerEvent,
+  info?: PanInfo,
+): boolean | null {
+  if (dragCancelled(e)) return null;
+  const board = document.getElementById("bw-board");
+  const p = dragPoint(e, info);
+  if (!board || !p) return null;
+  const r = board.getBoundingClientRect();
+  return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+}

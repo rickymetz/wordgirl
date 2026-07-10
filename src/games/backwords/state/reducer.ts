@@ -1,4 +1,4 @@
-import type { Puzzle, RowDef } from "../engine/types";
+import { reverse, type Puzzle, type RowDef } from "../engine/types";
 
 export interface CommittedRow {
   /** The letters as placed (a pair orientation or a palindrome half). */
@@ -70,21 +70,50 @@ export function initialState(init: {
 
 const rowKey = (def: RowDef) => [...def.words].sort().join("/");
 
+/**
+ * Resolve staged letters to their row: aliases (POO or POOP -> the
+ * POOP row) keep the canonical placement and hand the extras back.
+ * The single seam the board preview AND the commit path both use.
+ */
+export function resolvePlacement(
+  lexicon: Map<string, RowDef>,
+  staged: string,
+): { def: RowDef | undefined; place: string; extra: string } {
+  const def = lexicon.get(staged);
+  const place = def && staged.startsWith(def.place) ? def.place : staged;
+  return { def, place, extra: staged.slice(place.length) };
+}
+
+/**
+ * What a committed row saves as. Palindromes save their FULL word,
+ * not their placement — the bare half is ambiguous where two
+ * palindromes share it (lexicon.get("po") is POP, so a POOP row saved
+ * as "po" would silently reload as POP).
+ */
+export function rowSaveKey(row: CommittedRow): string {
+  return row.def.kind === "palindrome" ? row.def.words[0] : row.place;
+}
+
 function commitPlaces(
   state: GameState,
-  places: string[],
+  saved: string[],
 ): Pick<GameState, "bank" | "rows"> | null {
   const bank = [...state.puzzle.bank];
   const rows: CommittedRow[] = [];
-  for (const place of places) {
-    const def = state.lexicon.get(place);
+  const placed = new Set<string>();
+  for (const key of saved) {
+    const def = state.lexicon.get(key);
     if (!def) return null;
-    for (const ch of place) {
+    // A corrupt or ambiguous save must not fabricate duplicate rows.
+    if (placed.has(rowKey(def))) return null;
+    placed.add(rowKey(def));
+    // Charge the CANONICAL placement (saved keys may be full words).
+    for (const ch of def.place) {
       const at = bank.indexOf(ch);
       if (at === -1) return null;
       bank.splice(at, 1);
     }
-    rows.push({ place, def });
+    rows.push({ place: def.place, def });
   }
   return { bank: bank.sort(), rows };
 }
@@ -139,10 +168,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (state.current.length === 0) {
         return { ...state, lastResult: { type: "empty", nonce } };
       }
-      const def = state.lexicon.get(state.current);
+      const resolved = resolvePlacement(state.lexicon, state.current);
+      let def = resolved.def;
       if (!def) {
         const place = state.current;
-        const rev = [...place].reverse().join("");
+        const rev = reverse(place);
         // Name the reading that fails and HOW it fails: a non-word
         // beats "too rare" (blame the mirror side when the staged word
         // is fine: BAD -> DAB isn't a word), and a real-but-bonus-tier
@@ -165,21 +195,34 @@ export function gameReducer(state: GameState, action: Action): GameState {
           },
         };
       }
-      if (state.rows.some((r) => rowKey(r.def) === rowKey(def))) {
-        return {
-          ...state,
-          lastResult: { type: "duplicate", place: state.current, nonce },
-        };
+      const placedKeys = new Set(state.rows.map((r) => rowKey(r.def)));
+      if (placedKeys.has(rowKey(def))) {
+        // A placement can read as MORE than one word (PO -> POP or
+        // POOP). When this reading is already on the board, the
+        // mirror offers the next unplaced sibling instead of
+        // stonewalling — otherwise a bank without spare letters could
+        // never reach the longer word after placing the shorter.
+        let sibling: RowDef | undefined;
+        for (const d of state.lexicon.values()) {
+          if (d.place === def.place && !placedKeys.has(rowKey(d))) {
+            sibling = d;
+            break;
+          }
+        }
+        if (!sibling) {
+          return {
+            ...state,
+            lastResult: { type: "duplicate", place: state.current, nonce },
+          };
+        }
+        def = sibling;
       }
-      // An aliased placement (POO or POOP -> the POOP row) staged more
-      // letters than the mirror needs: the row keeps the canonical
-      // placement and the extras go home to the rack.
-      const place = state.current.startsWith(def.place)
-        ? def.place
-        : state.current;
-      const extra = state.current.slice(place.length);
+      // An aliased placement staged more letters than the mirror
+      // needs: the row keeps the canonical placement and the extras
+      // go home to the rack.
+      const { extra } = resolvePlacement(state.lexicon, state.current);
       const bank = extra ? [...state.bank, ...extra].sort() : state.bank;
-      const rows = [...state.rows, { place, def }];
+      const rows = [...state.rows, { place: def.place, def }];
       const solved = bank.length === 0;
       return {
         ...state,

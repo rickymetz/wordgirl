@@ -20,7 +20,8 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { glyphRowCount } from "../state/reducer";
+import { glyphRowCount, resolvePlacement } from "../state/reducer";
+import { isStraddle } from "../engine/types";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
 import { dragPoint } from "./dragPoint";
@@ -62,6 +63,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   // per drag frame re-renders the board mid-drag, and motion's drag
   // measurements drift under it (the tile runs away from the finger
   // on iOS).
+  const mirrorRectRef = useRef<DOMRect | null>(null);
   const onDragLive = useCallback(
     (
       letter: string | null,
@@ -73,11 +75,15 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
       const point = letter ? dragPoint(e, info) : null;
       if (!letter || !point) {
         ghost.style.display = "none";
+        mirrorRectRef.current = null;
         return;
       }
-      const mirror = document.getElementById("bw-mirror");
-      if (!mirror) return;
-      const r = mirror.getBoundingClientRect();
+      // Measure the mirror once per drag — it can't move while a tile
+      // is in flight, and getBoundingClientRect per pointermove forces
+      // a layout flush per frame.
+      const r = (mirrorRectRef.current ??=
+        document.getElementById("bw-mirror")?.getBoundingClientRect() ?? null);
+      if (!r) return;
       ghost.style.display = "flex";
       ghost.style.left = `${r.width - (point.x - r.left)}px`;
       ghost.style.top = `${point.y - r.top}px`;
@@ -88,19 +94,14 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // The staged letters already read as an odd palindrome's half: the
   // middle tile slides onto the glass BEFORE commit, so the straddle
-  // is a live preview rather than a surprise.
-  const currentDef = state.lexicon.get(state.current);
-  const currentStraddle =
-    !!currentDef &&
-    currentDef.kind === "palindrome" &&
-    currentDef.words[0].length % 2 === 1;
-  // Aliased placements (POO -> POOP): the board shows the canonical
-  // placement, and the extra staged letters fill the reflection's
-  // slots — typing INTO the mirror.
-  const activePlace =
-    currentDef && state.current.startsWith(currentDef.place)
-      ? currentDef.place
-      : state.current;
+  // is a live preview rather than a surprise. Aliased placements
+  // (POO -> POOP) show the canonical placement, extras filling the
+  // reflection's slots — typing INTO the mirror. resolvePlacement is
+  // the same seam the reducer's commit uses, so preview and commit
+  // can never disagree.
+  const resolved = resolvePlacement(state.lexicon, state.current);
+  const currentStraddle = !!resolved.def && isStraddle(resolved.def);
+  const activePlace = resolved.place;
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -164,9 +165,9 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     const prev = prevPlayRef.current;
     prevPlayRef.current = { current: state.current, rows: state.rows };
     if (state.rows.length < prev.rows.length) {
-      const gone = prev.rows.find(
-        (r) => !state.rows.some((s) => s.place === r.place),
-      );
+      // Identity, not place: two rows can share a placement string
+      // (POP and POOP both place "po").
+      const gone = prev.rows.find((r) => !state.rows.includes(r));
       if (gone) {
         setPlayAnnounce(
           `Took back ${gone.place.toUpperCase()}. ${state.bank.length} letters left.`,

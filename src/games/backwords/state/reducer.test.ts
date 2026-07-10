@@ -51,8 +51,7 @@ describe("backwords reducer", () => {
     expect(state.current).toBe("wa");
     run({ type: "clearRow" });
     expect(state.current).toBe("");
-    expect(state.bank.join("")).toBe("ailmostw".replace("s", "s")); // full rack
-    expect(state.bank.length).toBe(8);
+    expect(state.bank.join("")).toBe("ailmostw"); // the full rack
   });
 
   it("refuses letters the bank doesn't hold", () => {
@@ -181,6 +180,51 @@ describe("backwords reducer", () => {
     run({ type: "hydrate", places: ["mo", "lit", "was"], solved: true });
     expect(state.rows).toHaveLength(3);
     expect(state.bank).toHaveLength(0);
+    expect(state.solved).toBe(true);
+  });
+
+  it("shadowed palindromes survive the save/hydrate round trip", () => {
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."poopsi"].sort() },
+      lexicon,
+      words,
+      isWord,
+    });
+    // Saves store the FULL word for palindromes (rowSaveKey), so a
+    // POOP row never reloads as POP.
+    run({ type: "hydrate", places: ["poop", "pop", "si"], solved: false });
+    expect(state.rows.map((r) => r.def.words[0])).toEqual([
+      "poop",
+      "pop",
+      "sis",
+    ]);
+    // Both charge their canonical two letters.
+    expect(state.rows.map((r) => r.place)).toEqual(["po", "po", "si"]);
+    expect(state.bank).toHaveLength(0);
+  });
+
+  it("a save that decodes to duplicate rows starts the day fresh", () => {
+    // Legacy/corrupt: two entries resolving to the same row must not
+    // fabricate a duplicated board.
+    run({ type: "hydrate", places: ["mo", "mo"], solved: false });
+    expect(state.rows).toHaveLength(0);
+  });
+
+  it("re-committing a shared half offers the unplaced sibling", () => {
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."poopsi"].sort() },
+      lexicon,
+      words,
+      isWord,
+    });
+    run(...type("po"), { type: "commit" }); // POP
+    // The bank has no spare O to type "poo" — committing PO again
+    // reaches POOP instead of stonewalling with a duplicate.
+    run(...type("po"), { type: "commit" });
+    expect(state.lastResult?.type).toBe("committed");
+    expect(state.rows.map((r) => r.def.words[0])).toEqual(["pop", "poop"]);
+    // A third PO has no sibling left: duplicate.
+    run(...type("si"), { type: "commit" }); // spend the rest
     expect(state.solved).toBe(true);
   });
 

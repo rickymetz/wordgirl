@@ -19,13 +19,7 @@ export function BackwordsPreview() {
       {/* The glass pane, its left edge on the mirror line. */}
       <div
         className="absolute inset-y-[-4px] right-[-6px] rounded-lg"
-        style={{
-          left: LINE_X,
-          background: `linear-gradient(105deg,
-            color-mix(in oklab, var(--color-accent) 20%, var(--color-surface)) 0%,
-            color-mix(in oklab, var(--color-accent) 8%, var(--color-surface)) 60%,
-            color-mix(in oklab, var(--color-accent) 16%, var(--color-surface)) 100%)`,
-        }}
+        style={{ left: LINE_X, background: "var(--backwords-glass)" }}
       />
       {/* One continuous line, like the board's. */}
       <div

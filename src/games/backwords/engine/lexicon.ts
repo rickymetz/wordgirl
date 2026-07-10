@@ -1,5 +1,5 @@
 import type { Dictionary } from "../../../lib/words/dictionary";
-import type { RowDef } from "./types";
+import { reverse, type RowDef } from "./types";
 
 /**
  * Glyph mirror rules for UPPERCASE letterforms — the board renders
@@ -21,7 +21,6 @@ function glyphMirror(word: string): string | null {
   return out;
 }
 
-const reverse = (w: string) => [...w].reverse().join("");
 const sortLetters = (w: string) => [...w].sort().join("");
 
 /** The COMMON tier as a flat set — the words backwords plays with. */
