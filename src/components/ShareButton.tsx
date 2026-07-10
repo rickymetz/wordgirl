@@ -11,7 +11,7 @@ export function ShareButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={share}
-      className="rounded-full bg-accent px-6 py-3 font-semibold text-surface active:scale-95 outline-none"
+      className="rounded-full bg-accent px-6 py-3 font-semibold text-surface active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-white/50"
     >
       {copied ? "Copied!" : "Share"}
     </button>
