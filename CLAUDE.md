@@ -35,6 +35,12 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `BackwordsPreview` for the idiom).
+- `GameTrends` — the stats-over-time page from a config: per-metric
+  single-series bar charts in the game's accent (validated: the four
+  accents FAIL as a categorical set, so never chart games against
+  each other), tap-a-bar for the day's value. Route it at `stats`
+  with a "Stats" secondary action; metrics read from the archive day
+  saves (new metrics need new save fields and accrue from ship day).
 
 **Dialogs & chrome**
 - `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,

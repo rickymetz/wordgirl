@@ -14,6 +14,7 @@ export const crosshatch: GameDefinition = {
   extraRoutes: [
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
+    { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },
     {
       path: "archive/:dateKey",
       Page: lazy(() => import("./ui/ArchivePlayPage")),
@@ -24,5 +25,6 @@ export const crosshatch: GameDefinition = {
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
+    { label: "Stats", path: "stats" },
   ],
 };
