@@ -237,9 +237,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <rect x="11" y="5" width="8" height="10" rx="2" fill="none"
             stroke="currentColor" strokeWidth="2" />
         </svg>
-        <span className="text-base font-semibold text-ink-soft">
-          {placedCount}/{totalDominoes} placed
-        </span>
       </div>
 
       {/* Difficulty tabs */}
@@ -277,6 +274,13 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           previewOrientation={previewOri}
         />
       </div>
+
+      {/* Progress */}
+      {!state.solved && (
+        <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+          {placedCount}/{totalDominoes} placed
+        </div>
+      )}
 
       {/* Tray — pinned to bottom */}
       <div className="flex flex-col items-center gap-2">
