@@ -8,6 +8,7 @@ interface Props {
   targetLen: number;
   cells: Cell[];
   solved: boolean;
+  blocked: Set<string>;
   onTapCell: (row: number, col: number) => void;
 }
 
@@ -22,6 +23,7 @@ export function SnakeGrid({
   grid,
   cells,
   solved,
+  blocked,
   onTapCell,
 }: Props) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -38,9 +40,10 @@ export function SnakeGrid({
       const col = Math.floor((x - rect.left) / cellW);
       const row = Math.floor((y - rect.top) / cellH);
       if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
+      if (blocked.has(cellKey({ row, col }))) return null;
       return { row, col };
     },
-    [rows, cols],
+    [rows, cols, blocked],
   );
 
   const onPointerDown = useCallback(
@@ -148,19 +151,27 @@ export function SnakeGrid({
         }}
       >
         {Array.from({ length: rows }, (_, r) =>
-          Array.from({ length: cols }, (_, c) => (
-            <div
-              key={cellKey({ row: r, col: c })}
-              className="relative flex items-center justify-center rounded-full font-game text-base text-ink"
-              style={
-                claimed.has(cellKey({ row: r, col: c }))
-                  ? { color: "var(--color-on-accent)" }
-                  : undefined
-              }
-            >
-              <span className="relative z-10 select-none">{grid[r][c]}</span>
-            </div>
-          )),
+          Array.from({ length: cols }, (_, c) => {
+            const k = cellKey({ row: r, col: c });
+            const isBlocked = blocked.has(k);
+            return (
+              <div
+                key={k}
+                className={`relative flex items-center justify-center rounded-full font-game text-base ${isBlocked ? "" : "text-ink"}`}
+                style={
+                  isBlocked
+                    ? { visibility: "hidden" }
+                    : claimed.has(k)
+                      ? { color: "var(--color-on-accent)" }
+                      : undefined
+                }
+              >
+                {!isBlocked && (
+                  <span className="relative z-10 select-none">{grid[r][c]}</span>
+                )}
+              </div>
+            );
+          }),
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-export type Difficulty = "easy" | "medium" | "hard";
+export type Difficulty = "haiku" | "poem";
 
 export const MAX_ROWS = 8;
 export const MAX_COLS = 10;
@@ -14,12 +14,14 @@ export interface PuzzleDef {
   difficulty: Difficulty;
   rows: number;
   cols: number;
-  /** grid[row][col] = uppercase letter. */
+  /** grid[row][col] = uppercase letter (empty string for blocked cells). */
   grid: string[][];
   /** The hidden phrase — spaces mark word boundaries for display. */
   text: string;
   /** Ordered solution path through the grid. */
   path: Cell[];
+  /** Cells removed from the grid to fit non-rectangular letter counts. */
+  blocked: Set<string>;
 }
 
 export function cellKey(c: Cell): string {

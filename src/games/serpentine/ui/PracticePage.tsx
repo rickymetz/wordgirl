@@ -5,7 +5,7 @@ import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
 export default function PracticePage() {
-  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("haiku");
   const [seed, setSeed] = useState(() => practiceSeed(randomSeed(), difficulty));
   return (
     <GameScreen

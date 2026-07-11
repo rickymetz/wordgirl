@@ -10,7 +10,7 @@ export function SerpentineStatus() {
     <GameStatus
       loadState={async (today) => {
         // Check if any difficulty is solved or in progress.
-        for (const diff of ["easy", "medium", "hard"] as const) {
+        for (const diff of ["haiku", "poem"] as const) {
           const daily = await loadDailyProgress(diff, today);
           if (daily?.solved) return "Solved ✓";
           if (daily && daily.cells.length > 0)

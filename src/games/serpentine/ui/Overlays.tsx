@@ -25,9 +25,9 @@ function buildShareText(
   elapsedMs: number | null,
 ): string {
   const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
-  const diff = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+  const label = difficulty === "haiku" ? "Haiku" : "Poem";
   const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
-  return `${title}\n${diff}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
+  return `${title}\n${label}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
 }
 
 export function SolvedOverlay({

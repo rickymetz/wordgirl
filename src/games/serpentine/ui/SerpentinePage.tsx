@@ -5,7 +5,7 @@ import { GameScreen } from "./GameScreen";
 
 export default function SerpentinePage() {
   const dateKey = useToday();
-  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("haiku");
 
   return (
     <GameScreen

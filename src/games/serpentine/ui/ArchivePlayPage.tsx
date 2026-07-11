@@ -8,7 +8,7 @@ import { GameScreen } from "./GameScreen";
 export default function ArchivePlayPage() {
   const { dateKey } = useParams();
   const [runId, setRunId] = useState(0);
-  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("haiku");
   const valid =
     dateKey !== undefined &&
     /^\d{4}-\d{2}-\d{2}$/.test(dateKey) &&

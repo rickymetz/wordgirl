@@ -16,9 +16,8 @@ import { SolvedOverlay, SerpentineCoach } from "./Overlays";
 import type { Difficulty } from "../engine/types";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
-  easy: "Easy",
-  medium: "Medium",
-  hard: "Hard",
+  haiku: "Haiku",
+  poem: "Poem",
 };
 
 interface Props {
@@ -124,7 +123,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
       {/* Difficulty pills */}
       {difficulty !== undefined && onDifficultyChange && (
         <div className="flex gap-1 pb-3">
-          {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
+          {(["haiku", "poem"] as Difficulty[]).map((d) => (
             <button
               key={d}
               className={[
@@ -161,6 +160,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           targetLen={puzzle.path.length}
           cells={state.cells}
           solved={state.solved}
+          blocked={puzzle.blocked}
           onTapCell={onTapCell}
         />
         <GameToast toast={toast} />

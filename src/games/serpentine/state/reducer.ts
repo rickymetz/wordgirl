@@ -74,6 +74,9 @@ function handleTapCell(state: GameState, cell: Cell): GameState {
     return applyPathUpdate(state, cells.slice(0, idx + 1));
   }
 
+  // Cell is blocked -> ignore.
+  if (puzzle.blocked.has(key)) return state;
+
   // Cell already claimed -> ignore.
   if (state.claimed.has(key)) return state;
 

@@ -25,18 +25,18 @@ const config: GameArchiveConfig<ArchivedDay, SerpentineStats> = {
     { label: "Solved", value: stats.solved },
     { label: "Played", value: stats.played },
     {
-      label: "Best (easy)",
+      label: "Best (haiku)",
       value:
-        stats.bestTimeEasy === null
+        stats.bestTimeHaiku === null
           ? "---"
-          : formatDuration(stats.bestTimeEasy),
+          : formatDuration(stats.bestTimeHaiku),
     },
     {
-      label: "Best (hard)",
+      label: "Best (poem)",
       value:
-        stats.bestTimeHard === null
+        stats.bestTimePoem === null
           ? "---"
-          : formatDuration(stats.bestTimeHard),
+          : formatDuration(stats.bestTimePoem),
     },
   ],
   isDone: (day) => day.solved,

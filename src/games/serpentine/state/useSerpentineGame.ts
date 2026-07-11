@@ -109,11 +109,7 @@ export function useSerpentineGame(mode: GameMode) {
       const isDaily = mode.kind === "daily";
       void updateStats((s: SerpentineStats) => {
         const bestKey =
-          difficulty === "easy"
-            ? "bestTimeEasy"
-            : difficulty === "medium"
-              ? "bestTimeMedium"
-              : "bestTimeHard";
+          difficulty === "haiku" ? "bestTimeHaiku" : "bestTimePoem";
         const bestTime = s[bestKey];
         return {
           ...s,

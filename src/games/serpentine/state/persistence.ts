@@ -20,9 +20,8 @@ export interface ArchivedDay extends DayProgress {
 }
 
 export interface SerpentineStats extends StreakStats {
-  bestTimeEasy: number | null;
-  bestTimeMedium: number | null;
-  bestTimeHard: number | null;
+  bestTimeHaiku: number | null;
+  bestTimePoem: number | null;
 }
 
 const emptyStats: SerpentineStats = {
@@ -31,9 +30,8 @@ const emptyStats: SerpentineStats = {
   currentStreak: 0,
   bestStreak: 0,
   lastSolvedDate: null,
-  bestTimeEasy: null,
-  bestTimeMedium: null,
-  bestTimeHard: null,
+  bestTimeHaiku: null,
+  bestTimePoem: null,
 };
 
 const daily = createDailyPersistence<DayProgress, SerpentineStats>({

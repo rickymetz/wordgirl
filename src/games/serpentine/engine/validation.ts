@@ -54,8 +54,15 @@ export function validatePuzzle(puzzle: PuzzleDef): string | null {
     }
   }
 
-  if (puzzle.path.length !== totalCells) {
-    return `Path covers ${puzzle.path.length} cells, grid has ${totalCells}`;
+  const liveCells = totalCells - puzzle.blocked.size;
+  if (puzzle.path.length !== liveCells) {
+    return `Path covers ${puzzle.path.length} cells, grid has ${liveCells} live (${puzzle.blocked.size} blocked)`;
+  }
+
+  for (const c of puzzle.path) {
+    if (puzzle.blocked.has(cellKey(c))) {
+      return `Path visits blocked cell ${cellKey(c)}`;
+    }
   }
 
   const letters = puzzle.path.map(c => puzzle.grid[c.row][c.col]).join("");
