@@ -28,6 +28,7 @@ export function WordsPanel({
 }) {
   const recentFirst = [...state.found].reverse();
   // The word list depends only on the puzzle — not on every keystroke.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const words = useMemo(() => allWords(state), [state.puzzle]);
 
   // Puzzle input auto-closes the panel; if keyboard focus was inside

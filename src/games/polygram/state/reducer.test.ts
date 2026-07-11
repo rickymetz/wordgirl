@@ -104,7 +104,7 @@ describe("gameReducer", () => {
   });
 
   it("finishes the puzzle on the last level", () => {
-    let s = play(
+    const s = play(
       initialState(puzzle),
       ...type("abb"), { type: "submit" }, // the bonus word
       ...type("bad"), { type: "submit" },

@@ -88,7 +88,7 @@ describe("cursor and typing", () => {
   });
 
   it("clearEntry wipes typed letters but not givens", () => {
-    let s = play(initialState(puzzle), ...type("ad"), { type: "clearEntry" });
+    const s = play(initialState(puzzle), ...type("ad"), { type: "clearEntry" });
     expect(s.grid).toEqual({});
     expect(letterAt(s, 1, 0)).toBe("b");
   });

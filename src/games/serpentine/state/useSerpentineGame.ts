@@ -30,6 +30,7 @@ export function useSerpentineGame(mode: GameMode) {
       mode.kind === "practice"
         ? getPracticePuzzle(mode.seed, mode.difficulty)
         : getDailyPuzzle(difficulty, dateKey),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode.kind, mode.kind === "practice" ? mode.seed : dateKey, difficulty],
   );
 
@@ -143,6 +144,7 @@ export function useSerpentineGame(mode: GameMode) {
       });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.solved, clock, buildProgress, mode.kind, difficulty, dateKey, persisted]);
 
   const abandonSession = useCallback(() => {
