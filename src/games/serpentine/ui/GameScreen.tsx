@@ -1,5 +1,6 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { CircleHelp, Undo2, Trash2 } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { GameToast, useToast } from "../../../components/game/GameToast";
@@ -69,12 +70,18 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           <span className="text-sm font-semibold text-ink-soft">
             {formatDateKey(mode.dateKey)}
           </span>
-        ) : mode.kind === "practice" ? (
-          <span className="text-sm font-semibold text-ink-soft">Practice</span>
         ) : (
           <HomeLink />
         )}
         <span className="flex items-center gap-3">
+          {mode.kind === "practice" && !state.solved && (
+            <Link
+              to="/games/serpentine"
+              className="text-sm font-semibold text-accent"
+            >
+              New daily puzzle
+            </Link>
+          )}
           {state.solved && !resultsOpen && (
             <button
               type="button"
@@ -98,9 +105,15 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
       {/* Title + status */}
       <div className="flex items-baseline gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Serpentine</h1>
-        <span className="text-sm font-medium text-accent italic">
-          {puzzle.title}
-        </span>
+        {mode.kind === "practice" ? (
+          <span className="text-base font-semibold text-ink-soft">
+            practice
+          </span>
+        ) : mode.kind === "archive" ? (
+          <span className="text-base font-semibold text-ink-soft">
+            {formatDateKey(mode.dateKey)}
+          </span>
+        ) : null}
       </div>
 
       {/* Difficulty pills */}
@@ -126,8 +139,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         </div>
       )}
 
-      {/* Typed-out letters */}
-      <div className="px-1 py-5">
+      {/* Puzzle title + typed-out letters */}
+      <div className="px-1 pt-10 pb-5">
+        <div className="pb-1 text-center text-sm font-medium text-accent italic">
+          {puzzle.title}
+        </div>
         <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} />
       </div>
 
@@ -159,19 +175,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
             type="button"
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => dispatch({ type: "undo" })}
-            aria-label="undo"
-            className="relative flex h-10 w-12 touch-manipulation items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+            className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
           >
             <Undo2 aria-hidden className="h-4 w-4" />
+            Undo
           </button>
           <button
             type="button"
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => dispatch({ type: "clearSnake" })}
-            aria-label="clear snake"
-            className="relative flex h-10 w-12 touch-manipulation items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+            className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
           >
             <Trash2 aria-hidden className="h-4 w-4" />
+            Clear
           </button>
         </div>
       )}
