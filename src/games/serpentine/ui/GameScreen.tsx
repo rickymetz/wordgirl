@@ -180,7 +180,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           rows={puzzle.rows}
           cols={puzzle.cols}
           grid={puzzle.grid}
-          targetLen={puzzle.path.length}
           cells={state.cells}
           claimed={state.claimed}
           solved={state.solved}

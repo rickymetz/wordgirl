@@ -21,7 +21,7 @@ export const FONT_SCALES = [
   { value: 125, label: "Huge" },
 ] as const;
 
-export const DEFAULT_SETTINGS: Settings = { theme: "system", fontScale: 100 };
+const DEFAULT_SETTINGS: Settings = { theme: "system", fontScale: 100 };
 
 const KEY = "wg:v1:local:settings";
 

@@ -12,7 +12,7 @@ export function setSWRegistration(r: ServiceWorkerRegistration) {
   registration = r;
 }
 
-export type UpdateCheckResult =
+type UpdateCheckResult =
   | "updating" // new build found — installing; the app will refresh
   | "current" // already on the latest build
   | "failed" // check didn't complete (offline, server unreachable)

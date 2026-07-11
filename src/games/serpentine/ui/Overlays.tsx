@@ -1,4 +1,5 @@
-import { Route, Undo2, Grid3X3, CircleHelp } from "lucide-react";
+import { useState } from "react";
+import { Route, Undo2, Grid3X3, CircleHelp, Lightbulb } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { ShareButton } from "../../../components/ShareButton";
 import { ModalDialog } from "../../../components/ModalDialog";
@@ -41,6 +42,7 @@ export function SolvedOverlay({
   onReplay,
 }: SolvedProps) {
   const shareText = buildShareText(puzzle, difficulty, dateKey, elapsedMs);
+  const [confirmReplay, setConfirmReplay] = useState(false);
 
   return (
     <AnimatePresence>
@@ -91,7 +93,7 @@ export function SolvedOverlay({
               </p>
             </div>
 
-            <ShareButton text={shareText} />
+            {dateKey && <ShareButton text={shareText} />}
 
             {onNewPuzzle && (
               <button
@@ -103,15 +105,40 @@ export function SolvedOverlay({
                 New puzzle
               </button>
             )}
-            {onReplay && (
+            {onReplay && !confirmReplay && (
               <button
                 type="button"
-                onClick={() => void onReplay()}
+                onClick={() => setConfirmReplay(true)}
                 className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation active:scale-95"
                 onPointerDown={(e) => e.preventDefault()}
               >
                 Play again
               </button>
+            )}
+            {onReplay && confirmReplay && (
+              <div className="rounded-2xl border border-line p-3">
+                <p className="text-sm text-ink-soft">
+                  Replaying replaces this day's saved result.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onReplay()}
+                    className="flex-1 rounded-full bg-accent py-2 text-sm font-semibold text-surface active:scale-95"
+                    onPointerDown={(e) => e.preventDefault()}
+                  >
+                    Replay
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmReplay(false)}
+                    className="flex-1 rounded-full border border-line py-2 text-sm font-semibold active:scale-95"
+                    onPointerDown={(e) => e.preventDefault()}
+                  >
+                    Keep result
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </ModalDialog>
@@ -161,6 +188,16 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
                   <Key>Tap</Key> a cell to extend the path, or{" "}
                   <Key>drag</Key> through cells. Tap a placed cell to
                   undo back to it.
+                </>
+              ),
+            },
+            {
+              Icon: Lightbulb,
+              title: "Use hints",
+              body: (
+                <>
+                  Tap <Key>Hint</Key> to highlight cells where words begin in
+                  the hidden phrase.
                 </>
               ),
             },

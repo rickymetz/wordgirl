@@ -21,6 +21,7 @@ export interface ArchivedDay {
   elapsedMs: number;
   cellCount: number;
   foundWords: string[];
+  solvedHour: number | null;
 }
 
 export interface SerpentineStats extends StreakStats {
@@ -56,6 +57,7 @@ export const {
   recordStarted,
   loadCoachSeen,
   markCoachSeen,
+  validShape,
 } = daily;
 
 export const store = daily.store;
@@ -76,8 +78,8 @@ export async function loadAllDailyProgress(): Promise<
 > {
   const byDate: Record<string, DayProgress[]> = {};
   for (const key of await store.keys("daily:")) {
-    const saved = await store.get<DayProgress>(key);
-    if (saved && typeof saved === "object" && saved.dateKey) {
+    const saved = validShape(await store.get<DayProgress>(key));
+    if (saved && saved.dateKey) {
       (byDate[saved.dateKey] ??= []).push(saved);
     }
   }
@@ -88,12 +90,15 @@ export async function loadAllDailyProgress(): Promise<
     out[dateKey] = {
       dateKey,
       solved: solvedSaves.length > 0,
-      stale: saves.some((s) => (s.dictVersion ?? 0) < DICT_VERSION),
+      stale: saves.some((s) => (s.dictVersion ?? 0) !== DICT_VERSION),
       elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
       cellCount: started
         ? Math.max(...saves.map((s) => s.cells.length))
         : 0,
       foundWords: solvedSaves.map((s) => s.puzzleId),
+      solvedHour: solvedSaves.length > 0
+        ? ((solvedSaves[0] as unknown as Record<string, unknown>).solvedHour as number) ?? null
+        : null,
     };
   }
   return out;

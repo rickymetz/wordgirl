@@ -300,6 +300,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         <DragGhost drag={drag} piece={dragPiece} />
       )}
 
+      {/* Accessibility */}
+      <div aria-live="polite" role="status" className="sr-only">
+        {state.solved && <span>Solved</span>}
+      </div>
+
       {/* Solved overlay */}
       <AnimatePresence>
         {state.solved && resultsOpen && (
