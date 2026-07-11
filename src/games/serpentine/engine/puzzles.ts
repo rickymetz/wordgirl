@@ -1,6 +1,6 @@
 import { seededRandom } from "../../../lib/random";
 import type { Cell, Difficulty, PuzzleDef } from "./types";
-import { MAX_ROWS, MAX_COLS, cellKey } from "./types";
+import { MAX_ROWS, MAX_COLS, cellKey, areAdjacent } from "./types";
 
 /**
  * 365 thematically paired poetry entries. Each day features a haiku
@@ -159,7 +159,7 @@ function hamiltonianPath(
     if (result) return result;
   }
 
-  // Fallback: boustrophedon through live cells
+  // Fallback: boustrophedon through live cells, validating adjacency
   const fallback: Cell[] = [];
   for (let r = 0; r < rows; r++) {
     const rowCells: Cell[] = [];
@@ -170,6 +170,13 @@ function hamiltonianPath(
     }
     if (r % 2 === 1) rowCells.reverse();
     fallback.push(...rowCells);
+  }
+  for (let i = 1; i < fallback.length; i++) {
+    if (!areAdjacent(fallback[i - 1], fallback[i])) {
+      throw new Error(
+        `Hamiltonian path failed after 200 attempts and fallback is non-contiguous at ${cellKey(fallback[i - 1])} → ${cellKey(fallback[i])}`,
+      );
+    }
   }
   return fallback;
 }

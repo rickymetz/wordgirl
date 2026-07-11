@@ -9,6 +9,7 @@ import { gameReducer, initialState, type GameState } from "./reducer";
 import {
   loadDailyProgress,
   saveDailyProgress,
+  recordStarted,
   updateStats,
   type DayProgress,
   type SerpentineStats,
@@ -37,10 +38,13 @@ export function useSerpentineGame(mode: GameMode) {
     ({ puzzle, difficulty }) => initialState(puzzle, difficulty),
   );
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const persistRef = useRef<() => void>(() => {});
   const clock = useDailyClock({
-    flush: useCallback(() => {
-      // Will be wired to save in the effect below.
-    }, []),
+    flush: () => persistRef.current(),
+    resetKey: dateKey,
   });
 
   const solvedElapsedMs = useRef<number | null>(null);
@@ -53,17 +57,20 @@ export function useSerpentineGame(mode: GameMode) {
     if (hydrated.current) return;
     hydrated.current = true;
     void loadDailyProgress(difficulty, dateKey).then((saved) => {
-      if (!saved || saved.puzzleId !== puzzle.id) return;
-      clock.hydrate(saved.elapsedMs, saved.solved);
-      if (saved.solved) {
-        solvedElapsedMs.current = saved.elapsedMs;
-        statsRecorded.current = !!saved.statsRecorded;
+      if (saved && saved.puzzleId === puzzle.id) {
+        clock.hydrate(saved.elapsedMs, saved.solved);
+        if (saved.solved) {
+          solvedElapsedMs.current = saved.elapsedMs;
+          statsRecorded.current = !!saved.statsRecorded;
+        }
+        dispatch({
+          type: "hydrate",
+          cells: saved.cells,
+          solved: saved.solved,
+        });
+      } else if (persisted) {
+        void recordStarted();
       }
-      dispatch({
-        type: "hydrate",
-        cells: saved.cells,
-        solved: saved.solved,
-      });
     });
   }, [difficulty, dateKey, puzzle.id, clock, persisted]);
 
@@ -83,6 +90,11 @@ export function useSerpentineGame(mode: GameMode) {
     }),
     [dateKey, difficulty, puzzle.id, clock],
   );
+
+  persistRef.current = () => {
+    if (!persisted || !hydrated.current || abandoned.current) return;
+    void saveDailyProgress(buildProgress(stateRef.current));
+  };
 
   // Save on every state change.
   useEffect(() => {

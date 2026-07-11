@@ -8,12 +8,11 @@ export function isContiguousPath(path: Cell[]): boolean {
   return true;
 }
 
-/** Check if a player's path cells match the solution path cells (order-independent). */
 function pathMatchesSolution(path: Cell[], solution: Cell[]): boolean {
   if (path.length !== solution.length) return false;
-  const pathSet = new Set(path.map(cellKey));
-  for (const c of solution) {
-    if (!pathSet.has(cellKey(c))) return false;
+  for (let i = 0; i < path.length; i++) {
+    if (path[i].row !== solution[i].row || path[i].col !== solution[i].col)
+      return false;
   }
   return true;
 }
@@ -66,7 +65,7 @@ export function validatePuzzle(puzzle: PuzzleDef): string | null {
   }
 
   const letters = puzzle.path.map(c => puzzle.grid[c.row][c.col]).join("");
-  const expected = puzzle.text.replace(/\s/g, "");
+  const expected = puzzle.text.replace(/[^A-Z]/g, "");
   if (letters !== expected) {
     return `Text mismatch: got "${letters}", expected "${expected}"`;
   }

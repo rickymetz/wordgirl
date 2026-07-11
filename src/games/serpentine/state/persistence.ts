@@ -75,8 +75,9 @@ export async function loadAllDailyProgress(): Promise<
   for (const key of keys) {
     const saved = await store.get<DayProgress>(key);
     if (saved && typeof saved === "object" && saved.dateKey) {
-      const k = `${saved.difficulty}:${saved.dateKey}`;
-      result[k] = {
+      const existing = result[saved.dateKey];
+      if (existing?.solved && !saved.solved) continue;
+      result[saved.dateKey] = {
         ...saved,
         stale: (saved.dictVersion ?? 0) < DICT_VERSION,
         foundWords: saved.solved ? [saved.puzzleId] : [],

@@ -145,10 +145,10 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
             },
             {
               Icon: Grid3X3,
-              title: "Cover every cell",
+              title: "Cover every letter",
               body: (
                 <>
-                  The puzzle is solved when every cell is on the path.
+                  The puzzle is solved when every letter is on the path.
                   The path <Key>length</Key> is shown below the grid.
                 </>
               ),
