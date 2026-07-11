@@ -9,6 +9,7 @@ interface Props {
   cells: Cell[];
   solved: boolean;
   blocked: Set<string>;
+  hintCells?: Set<string>;
   onTapCell: (row: number, col: number) => void;
 }
 
@@ -24,6 +25,7 @@ export function SnakeGrid({
   cells,
   solved,
   blocked,
+  hintCells,
   onTapCell,
 }: Props) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -154,6 +156,8 @@ export function SnakeGrid({
           Array.from({ length: cols }, (_, c) => {
             const k = cellKey({ row: r, col: c });
             const isBlocked = blocked.has(k);
+            const isClaimed = claimed.has(k);
+            const isHint = !isBlocked && !isClaimed && !!hintCells?.has(k);
             return (
               <div
                 key={k}
@@ -161,13 +165,24 @@ export function SnakeGrid({
                 style={
                   isBlocked
                     ? { visibility: "hidden" }
-                    : claimed.has(k)
+                    : isClaimed
                       ? { color: "var(--color-on-accent)" }
-                      : undefined
+                      : isHint
+                        ? { color: "var(--color-accent)" }
+                        : undefined
                 }
               >
                 {!isBlocked && (
                   <span className="relative z-10 select-none">{grid[r][c]}</span>
+                )}
+                {isHint && (
+                  <span
+                    className="absolute inset-[15%] rounded-full"
+                    style={{
+                      border: "2px solid var(--color-accent)",
+                      opacity: 0.5,
+                    }}
+                  />
                 )}
               </div>
             );

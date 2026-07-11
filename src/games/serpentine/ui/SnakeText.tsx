@@ -5,6 +5,7 @@ interface Props {
   puzzle: PuzzleDef;
   cells: Cell[];
   solved: boolean;
+  hintIndices?: Set<number>;
 }
 
 function fontSize(total: number): string {
@@ -15,7 +16,7 @@ function fontSize(total: number): string {
   return "text-sm";
 }
 
-export function SnakeText({ puzzle, cells }: Props) {
+export function SnakeText({ puzzle, cells, hintIndices }: Props) {
   const total = puzzle.path.length;
   const size = fontSize(total);
 
@@ -31,6 +32,10 @@ export function SnakeText({ puzzle, cells }: Props) {
               i < cells.length
                 ? puzzle.grid[cells[i].row][cells[i].col]
                 : null;
+            const isHint = !letter && hintIndices?.has(i);
+            const hintLetter = isHint
+              ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
+              : null;
             return letter ? (
               <motion.span
                 key={`${i}-${letter}`}
@@ -41,6 +46,10 @@ export function SnakeText({ puzzle, cells }: Props) {
               >
                 {letter}
               </motion.span>
+            ) : hintLetter ? (
+              <span key={`hint-${i}`} className="inline-block text-accent/50">
+                {hintLetter}
+              </span>
             ) : (
               <span key={`blank-${i}`} className="inline-block text-ink-soft/70">
                 ?

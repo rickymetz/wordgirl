@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleHelp, Undo2, Trash2 } from "lucide-react";
+import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { formatDateKey } from "../../../lib/date";
@@ -13,7 +13,7 @@ import { loadCoachSeen, markCoachSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SolvedOverlay, SerpentineCoach } from "./Overlays";
-import type { Difficulty } from "../engine/types";
+import { cellKey, type Difficulty } from "../engine/types";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   haiku: "Haiku",
@@ -34,7 +34,28 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
 
   const [resultsOpen, setResultsOpen] = useState(true);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [hintActive, setHintActive] = useState(false);
   const { toast, show } = useToast();
+
+  const { hintIndices, hintCellKeys } = useMemo(() => {
+    const indices = new Set<number>();
+    const keys = new Set<string>();
+    let pi = 0;
+    let atWordStart = true;
+    for (const ch of puzzle.text) {
+      if (ch === " ") {
+        atWordStart = true;
+        continue;
+      }
+      if (atWordStart) {
+        indices.add(pi);
+        keys.add(cellKey(puzzle.path[pi]));
+        atWordStart = false;
+      }
+      pi++;
+    }
+    return { hintIndices: indices, hintCellKeys: keys };
+  }, [puzzle]);
 
   // First-run coach.
   useEffect(() => {
@@ -148,7 +169,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         <div className="pb-1 text-center text-sm font-medium text-accent italic">
           {puzzle.title}
         </div>
-        <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} />
+        <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} hintIndices={hintActive ? hintIndices : undefined} />
       </div>
 
       {/* Grid */}
@@ -161,6 +182,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           cells={state.cells}
           solved={state.solved}
           blocked={puzzle.blocked}
+          hintCells={hintActive ? hintCellKeys : undefined}
           onTapCell={onTapCell}
         />
         <GameToast toast={toast} />
@@ -184,6 +206,18 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           >
             <Undo2 aria-hidden className="h-4 w-4" />
             Undo
+          </button>
+          <button
+            type="button"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => setHintActive((h) => !h)}
+            className={[
+              "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
+              hintActive ? "bg-accent text-on-accent" : "bg-tile text-ink",
+            ].join(" ")}
+          >
+            <Lightbulb aria-hidden className="h-4 w-4" />
+            Hint
           </button>
           <button
             type="button"
