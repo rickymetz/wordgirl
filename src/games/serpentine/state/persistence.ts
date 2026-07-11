@@ -14,8 +14,12 @@ export interface DayProgress extends DailyBase {
   cells: Cell[];
 }
 
-export interface ArchivedDay extends DayProgress {
+export interface ArchivedDay {
+  dateKey: string;
+  solved: boolean;
   stale: boolean;
+  elapsedMs: number;
+  cellCount: number;
   foundWords: string[];
 }
 
@@ -70,21 +74,29 @@ export function saveDailyProgress(progress: DayProgress): Promise<void> {
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  const keys = await store.keys("daily:");
-  const result: Record<string, ArchivedDay> = {};
-  for (const key of keys) {
+  const byDate: Record<string, DayProgress[]> = {};
+  for (const key of await store.keys("daily:")) {
     const saved = await store.get<DayProgress>(key);
     if (saved && typeof saved === "object" && saved.dateKey) {
-      const existing = result[saved.dateKey];
-      if (existing?.solved && !saved.solved) continue;
-      result[saved.dateKey] = {
-        ...saved,
-        stale: (saved.dictVersion ?? 0) < DICT_VERSION,
-        foundWords: saved.solved ? [saved.puzzleId] : [],
-      };
+      (byDate[saved.dateKey] ??= []).push(saved);
     }
   }
-  return result;
+  const out: Record<string, ArchivedDay> = {};
+  for (const [dateKey, saves] of Object.entries(byDate)) {
+    const solvedSaves = saves.filter((s) => s.solved);
+    const started = saves.some((s) => s.cells.length > 0);
+    out[dateKey] = {
+      dateKey,
+      solved: solvedSaves.length > 0,
+      stale: saves.some((s) => (s.dictVersion ?? 0) < DICT_VERSION),
+      elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
+      cellCount: started
+        ? Math.max(...saves.map((s) => s.cells.length))
+        : 0,
+      foundWords: solvedSaves.map((s) => s.puzzleId),
+    };
+  }
+  return out;
 }
 
 export async function resetDailyForReplay(

@@ -12,7 +12,6 @@ export interface GameState {
   puzzle: PuzzleDef;
   difficulty: Difficulty;
   cells: Cell[];
-  matched: boolean;
   solved: boolean;
   claimed: Set<string>;
 }
@@ -35,7 +34,6 @@ export function initialState(
     puzzle,
     difficulty,
     cells: [],
-    matched: false,
     solved: false,
     claimed: new Set(),
   };
@@ -116,7 +114,6 @@ function handleHydrate(
   return {
     ...state,
     cells: action.cells,
-    matched: solved,
     solved,
     claimed: buildClaimed(action.cells),
   };
@@ -127,7 +124,6 @@ function applyPathUpdate(state: GameState, newCells: Cell[]): GameState {
   return {
     ...state,
     cells: newCells,
-    matched: solved,
     solved,
     claimed: buildClaimed(newCells),
   };

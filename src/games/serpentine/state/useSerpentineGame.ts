@@ -59,9 +59,9 @@ export function useSerpentineGame(mode: GameMode) {
     void loadDailyProgress(difficulty, dateKey).then((saved) => {
       if (saved && saved.puzzleId === puzzle.id) {
         clock.hydrate(saved.elapsedMs, saved.solved);
+        statsRecorded.current = !!saved.statsRecorded;
         if (saved.solved) {
           solvedElapsedMs.current = saved.elapsedMs;
-          statsRecorded.current = !!saved.statsRecorded;
         }
         dispatch({
           type: "hydrate",

@@ -29,7 +29,7 @@ interface Props {
 }
 
 export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs } =
+  const { state, dispatch, puzzle, solvedElapsedMs, abandonSession } =
     useSerpentineGame(mode);
 
   const [resultsOpen, setResultsOpen] = useState(true);
@@ -245,7 +245,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           open={resultsOpen}
           onClose={() => setResultsOpen(false)}
           onNewPuzzle={onNewPuzzle}
-          onReplay={onReplay}
+          onReplay={onReplay && (() => { abandonSession(); return onReplay(); })}
         />
       )}
 

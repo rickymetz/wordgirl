@@ -25,7 +25,7 @@ const config: GameTrendsConfig<ArchivedDay> = {
     {
       key: "cells",
       label: "Grid size",
-      value: (d) => (d.solved ? d.cells.length : null),
+      value: (d) => (d.solved ? d.cellCount : null),
     },
   ],
 };
