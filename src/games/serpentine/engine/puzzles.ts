@@ -34,7 +34,44 @@ export function bestGrid(n: number): [number, number] {
  * Pick which cells to block so the grid has exactly `n` live cells.
  * Prefers removing corners then edges for visual balance.
  */
-function pickBlocked(
+export function isConnected(rows: number, cols: number, blocked: Set<string>): boolean {
+  // Find the first non-blocked cell
+  let start: Cell | null = null;
+  let liveCount = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!blocked.has(cellKey({ row: r, col: c }))) {
+        if (!start) start = { row: r, col: c };
+        liveCount++;
+      }
+    }
+  }
+  if (!start || liveCount <= 1) return true;
+
+  // BFS with 8-directional adjacency
+  const visited = new Set<string>();
+  const queue: Cell[] = [start];
+  visited.add(cellKey(start));
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const r2 = cur.row + dr;
+        const c2 = cur.col + dc;
+        if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) continue;
+        const key = cellKey({ row: r2, col: c2 });
+        if (!blocked.has(key) && !visited.has(key)) {
+          visited.add(key);
+          queue.push({ row: r2, col: c2 });
+        }
+      }
+    }
+  }
+  return visited.size === liveCount;
+}
+
+export function pickBlocked(
   rows: number,
   cols: number,
   n: number,
@@ -44,37 +81,45 @@ function pickBlocked(
   const toRemove = total - n;
   if (toRemove <= 0) return new Set();
 
-  const corners: Cell[] = [];
-  const edges: Cell[] = [];
-  const interior: Cell[] = [];
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const corners: Cell[] = [];
+    const edges: Cell[] = [];
+    const interior: Cell[] = [];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const isEdge =
-        r === 0 || r === rows - 1 || c === 0 || c === cols - 1;
-      const isCorner =
-        (r === 0 || r === rows - 1) && (c === 0 || c === cols - 1);
-      if (isCorner) corners.push({ row: r, col: c });
-      else if (isEdge) edges.push({ row: r, col: c });
-      else interior.push({ row: r, col: c });
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const isEdge =
+          r === 0 || r === rows - 1 || c === 0 || c === cols - 1;
+        const isCorner =
+          (r === 0 || r === rows - 1) && (c === 0 || c === cols - 1);
+        if (isCorner) corners.push({ row: r, col: c });
+        else if (isEdge) edges.push({ row: r, col: c });
+        else interior.push({ row: r, col: c });
+      }
+    }
+
+    // Shuffle each tier
+    for (const arr of [corners, edges, interior]) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    const candidates = [...corners, ...edges, ...interior];
+    const blocked = new Set<string>();
+    for (const c of candidates) {
+      if (blocked.size >= toRemove) break;
+      blocked.add(cellKey(c));
+    }
+
+    if (isConnected(rows, cols, blocked)) {
+      return blocked;
     }
   }
 
-  // Shuffle each tier
-  for (const arr of [corners, edges, interior]) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-  }
-
-  const candidates = [...corners, ...edges, ...interior];
-  const blocked = new Set<string>();
-  for (const c of candidates) {
-    if (blocked.size >= toRemove) break;
-    blocked.add(cellKey(c));
-  }
-  return blocked;
+  // All retries failed — return empty set (no blocked cells) as safe fallback
+  return new Set();
 }
 
 function hamiltonianPath(
@@ -203,7 +248,7 @@ function expand(
   return { id, title: displayTitle, difficulty, rows, cols, grid, text, path, blocked };
 }
 
-const TYPE_OFFSET: Record<string, number> = { haiku: 0, poem: 3 };
+const TYPE_OFFSET: Record<Difficulty, number> = { haiku: 0, poem: 3 };
 
 // --- Poetry bank ---
 // Each entry: [haikuAuthor, haikuTitle, haikuText, poemAuthor, poemTitle, poemText]
@@ -669,30 +714,29 @@ const POEMS: PoemPair[] = [
   ["Shiki", "Dust Cloud", "THE DUST CLOUD MARKS WHERE THE HORSE RAN BY", "Shelley", "Journey", "NOTHING IN THE WORLD IS SINGLE ALL THINGS BY A LAW DIVINE IN ONE"],
 ];
 
-export function getPuzzlePool(difficulty: string): PuzzleDef[] {
-  const off = TYPE_OFFSET[difficulty] ?? 0;
-  const diff = (difficulty as Difficulty) ?? "haiku";
+export function getPuzzlePool(difficulty: Difficulty): PuzzleDef[] {
+  const off = TYPE_OFFSET[difficulty];
   return POEMS.map((p, i) => {
-    const prefix = diff === "haiku" ? "h" : "p";
+    const prefix = difficulty === "haiku" ? "h" : "p";
     const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
     const rand = seededRandom(`serpentine:layout:${id}`);
-    return expand(p[off], p[off + 1], p[off + 2], id, diff, rand);
+    return expand(p[off], p[off + 1], p[off + 2], id, difficulty, rand);
   });
 }
 
-export function getPuzzle(difficulty: string, index: number): PuzzleDef {
-  const off = TYPE_OFFSET[difficulty] ?? 0;
-  const diff = (difficulty as Difficulty) ?? "haiku";
+export function getPuzzle(difficulty: Difficulty, index: number): PuzzleDef {
+  const off = TYPE_OFFSET[difficulty];
   const i = index % POEMS.length;
   const p = POEMS[i];
-  const prefix = diff === "haiku" ? "h" : "p";
+  const prefix = difficulty === "haiku" ? "h" : "p";
   const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
   const rand = seededRandom(`serpentine:layout:${id}`);
-  return expand(p[off], p[off + 1], p[off + 2], id, diff, rand);
+  return expand(p[off], p[off + 1], p[off + 2], id, difficulty, rand);
 }
 
-export function getAuthorForDay(index: number): string {
-  return POEMS[index % POEMS.length][0];
+export function getAuthorForDay(index: number, difficulty: Difficulty = "haiku"): string {
+  const off = TYPE_OFFSET[difficulty] ?? 0;
+  return POEMS[index % POEMS.length][off];
 }
 
 export function getPoolSize(): number {

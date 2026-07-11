@@ -22,7 +22,7 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
   return (
     <div
       role="status"
-      className="relative flex h-12 items-center justify-center"
+      className="relative flex min-h-12 items-center justify-center py-1"
       aria-label={`${cells.length} of ${total} letters placed`}
     >
       <span className={`flex flex-wrap justify-center font-game ${size} font-normal uppercase`}>

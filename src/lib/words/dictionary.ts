@@ -29,10 +29,10 @@
  */
 export const DICT_VERSION = 12;
 
-export const MIN_WORD_LEN = 2;
-export const MAX_WORD_LEN = 10;
+const MIN_WORD_LEN = 2;
+const MAX_WORD_LEN = 10;
 
-export type Tier = "required" | "bonus";
+type Tier = "required" | "bonus";
 
 interface TierIndex {
   /** Words bucketed by length: buckets[3] = all 3-letter words (sorted). */

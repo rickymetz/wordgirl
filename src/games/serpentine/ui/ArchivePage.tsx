@@ -42,14 +42,14 @@ const config: GameArchiveConfig<ArchivedDay, SerpentineStats> = {
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => {
     if (!day.solved) {
-      if (day.stale) return { text: "Not finished . older words", done: false };
+      if (day.stale) return { text: "Not finished · older words", done: false };
       return {
-        text: `In progress . ${day.cellCount} cells`,
+        text: `In progress · ${day.cellCount} cells`,
         done: false,
       };
     }
     return {
-      text: `Solved${day.stale ? " . older words" : ""}`,
+      text: `Solved${day.stale ? " · older words" : ""}`,
       done: true,
     };
   },

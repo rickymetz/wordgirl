@@ -4,7 +4,7 @@
  * same generator, different seed, fully reproducible.
  */
 
-export function xmur3(str: string): () => number {
+function xmur3(str: string): () => number {
   let h = 1779033703 ^ str.length;
   for (let i = 0; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
@@ -17,7 +17,7 @@ export function xmur3(str: string): () => number {
   };
 }
 
-export function mulberry32(seed: number): () => number {
+function mulberry32(seed: number): () => number {
   let a = seed;
   return () => {
     a |= 0;

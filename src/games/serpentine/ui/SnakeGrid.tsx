@@ -1,11 +1,11 @@
 import { useCallback, useRef } from "react";
+import { useViewport } from "../../../lib/useViewport";
 import { type Cell, cellKey, cellsEqual } from "../engine/types";
 
 interface Props {
   rows: number;
   cols: number;
   grid: string[][];
-  targetLen: number;
   cells: Cell[];
   claimed: Set<string>;
   solved: boolean;
@@ -30,6 +30,8 @@ export function SnakeGrid({
   hintCells,
   onTapCell,
 }: Props) {
+  const { rem } = useViewport();
+  const cellPx = 44 * (rem / 16);
   const gridRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
@@ -53,6 +55,7 @@ export function SnakeGrid({
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (solved) return;
+      e.preventDefault();
       dragging.current = true;
       lastDragCell.current = null;
       (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -100,7 +103,7 @@ export function SnakeGrid({
       aria-label="Puzzle grid"
       className="relative mx-auto w-full select-none touch-manipulation"
       style={{
-        maxWidth: `min(100%, ${cols * 44}px)`,
+        maxWidth: `min(100%, ${cols * cellPx}px)`,
         aspectRatio: `${cols} / ${rows}`,
       }}
       onPointerDown={onPointerDown}
@@ -112,7 +115,7 @@ export function SnakeGrid({
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox={`0 0 ${cols} ${rows}`}
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
       >
         {n > 0 && (
           <g>

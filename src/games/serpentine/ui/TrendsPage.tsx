@@ -28,6 +28,10 @@ const config: GameTrendsConfig<ArchivedDay> = {
       value: (d) => (d.solved ? d.cellCount : null),
     },
   ],
+  hours: {
+    label: "When you solve",
+    value: (d) => (d.solved ? (d.solvedHour ?? null) : null),
+  },
 };
 
 export default function TrendsPage() {

@@ -20,6 +20,9 @@
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",
     "@types/node": "^26.1.0",

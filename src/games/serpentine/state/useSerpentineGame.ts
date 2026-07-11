@@ -44,19 +44,23 @@ export function useSerpentineGame(mode: GameMode) {
   const persistRef = useRef<() => void>(() => {});
   const clock = useDailyClock({
     flush: () => persistRef.current(),
-    resetKey: dateKey,
+    resetKey: `${difficulty}:${dateKey}`,
   });
 
   const solvedElapsedMs = useRef<number | null>(null);
   const statsRecorded = useRef(false);
   const abandoned = useRef(false);
 
-  // Hydrate from storage.
+  // Hydrate from storage — hydrated flips ONLY after the async load
+  // completes so the save effect cannot clobber stored progress with
+  // the empty initial state.
   const hydrated = useRef(!persisted);
   useEffect(() => {
     if (hydrated.current) return;
-    hydrated.current = true;
+    let cancelled = false;
     void loadDailyProgress(difficulty, dateKey).then((saved) => {
+      if (cancelled) return;
+      hydrated.current = true;
       if (saved && saved.puzzleId === puzzle.id) {
         clock.hydrate(saved.elapsedMs, saved.solved);
         statsRecorded.current = !!saved.statsRecorded;
@@ -72,6 +76,7 @@ export function useSerpentineGame(mode: GameMode) {
         void recordStarted();
       }
     });
+    return () => { cancelled = true; };
   }, [difficulty, dateKey, puzzle.id, clock, persisted]);
 
   // Build the progress blob from current state.
@@ -114,12 +119,10 @@ export function useSerpentineGame(mode: GameMode) {
         ...buildProgress(state),
         elapsedMs: elapsed,
         statsRecorded: true,
-      });
-    }
-
-    if (persisted) {
-      const isDaily = mode.kind === "daily";
-      void updateStats((s: SerpentineStats) => {
+        solvedHour: new Date().getHours(),
+      } as DayProgress).then(() => {
+        const isDaily = mode.kind === "daily";
+        void updateStats((s: SerpentineStats) => {
         const bestKey =
           difficulty === "haiku" ? "bestTimeHaiku" : "bestTimePoem";
         const bestTime = s[bestKey];
@@ -130,6 +133,7 @@ export function useSerpentineGame(mode: GameMode) {
             bestTime === null || elapsed < bestTime ? elapsed : bestTime,
           ...streakAdvance(s, dateKey, isDaily),
         };
+      });
       });
     }
   }, [state.solved, clock, buildProgress, mode.kind, difficulty, dateKey, persisted]);
