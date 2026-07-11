@@ -21,7 +21,7 @@ export function SnakeText({ puzzle, cells }: Props) {
 
   return (
     <div
-      className="relative flex min-h-12 items-center justify-center"
+      className="relative flex h-12 items-center justify-center"
       aria-label={`${cells.length} of ${total} letters placed`}
     >
       <span className={`flex flex-wrap justify-center font-game ${size} font-normal uppercase`}>
@@ -42,7 +42,7 @@ export function SnakeText({ puzzle, cells }: Props) {
                 {letter}
               </motion.span>
             ) : (
-              <span key={`blank-${i}`} className="inline-block text-ink-soft/40">
+              <span key={`blank-${i}`} className="inline-block text-ink-soft/70">
                 ?
               </span>
             );
