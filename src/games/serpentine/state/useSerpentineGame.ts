@@ -8,6 +8,7 @@ import type { Difficulty } from "../engine/types";
 import { gameReducer, initialState, type GameState } from "./reducer";
 import {
   loadDailyProgress,
+  loadStaleDailyProgress,
   saveDailyProgress,
   recordStarted,
   updateStats,
@@ -58,7 +59,7 @@ export function useSerpentineGame(mode: GameMode) {
   useEffect(() => {
     if (hydrated.current) return;
     let cancelled = false;
-    void loadDailyProgress(difficulty, dateKey).then((saved) => {
+    void loadDailyProgress(difficulty, dateKey).then(async (saved) => {
       if (cancelled) return;
       hydrated.current = true;
       if (saved && saved.puzzleId === puzzle.id) {
@@ -73,7 +74,13 @@ export function useSerpentineGame(mode: GameMode) {
           solved: saved.solved,
         });
       } else if (persisted) {
-        void recordStarted();
+        const stale = await loadStaleDailyProgress(difficulty, dateKey);
+        if (cancelled) return;
+        if (stale) {
+          statsRecorded.current = stale.solved || stale.statsRecorded === true;
+        } else {
+          void recordStarted();
+        }
       }
     });
     return () => { cancelled = true; };
