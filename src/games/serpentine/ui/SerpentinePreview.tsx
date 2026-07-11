@@ -2,8 +2,8 @@
  * Bento-card miniature: a 4×3 letter grid with two blocked corners and
  * a Hamiltonian snake path covering every live cell — the three visual
  * signatures of Serpentine. The path includes diagonal moves, visits
- * every non-blocked cell exactly once, and spells "SERPENTINE" — a
- * real hidden phrase, matching the actual game rules.
+ * every non-blocked cell exactly once, and spells "FIND POETRY" —
+ * a real hidden phrase, matching the actual game rules.
  */
 
 const COLS = 4;
@@ -11,15 +11,15 @@ const ROWS = 3;
 const R = 0.34;
 const PIPE = 0.28;
 
-// Path spells SERPENTINE reading along the snake.
+// Path spells FINDPOETRY reading along the snake.
 const GRID: (string | null)[][] = [
-  [null, "R", "E", "S"],
-  ["P", "E", "N", "T"],
-  ["E", "N", "I", null],
+  [null, "N", "I", "F"],
+  ["D", "P", "O", "E"],
+  ["Y", "R", "T", null],
 ];
 
 // Hamiltonian path through all 10 live cells, with diagonal moves.
-// S → E → R → P → E → N → T → I → N → E
+// F → I → N → D → P → O → E → T → R → Y
 const PATH: [number, number][] = [
   [0, 3], [0, 2], [0, 1],
   [1, 0], [1, 1], [1, 2], [1, 3],
