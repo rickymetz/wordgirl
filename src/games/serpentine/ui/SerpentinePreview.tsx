@@ -1,30 +1,30 @@
 /**
- * Bento-card miniature: a 4×4 letter grid with a snake path (circles +
- * pipes) partially traced through it, plus one blocked cell — the three
- * elements that define Serpentine's visual identity.
+ * Bento-card miniature: a 4×3 letter grid with two blocked corners and
+ * a Hamiltonian snake path covering every live cell — the three visual
+ * signatures of Serpentine. The path includes diagonal moves and visits
+ * every non-blocked cell exactly once, matching the actual game rules.
  */
 
 const COLS = 4;
-const ROWS = 4;
-const CELL = 16;
-const W = COLS * CELL;
-const H = ROWS * CELL;
+const ROWS = 3;
+const W = COLS * 16;
+const H = ROWS * 16;
 const R = 0.34;
 const PIPE = 0.28;
 
 const GRID: (string | null)[][] = [
-  ["S", "N", "A", "K"],
-  ["P", "O", "E", "T"],
-  ["R", "Y", null, "H"],
-  ["I", "N", "E", "S"],
+  [null, "O", "N", "E"],
+  ["L", "I", "N", "E"],
+  ["S", "N", "A", null],
 ];
 
+// Hamiltonian path through all 10 live cells, with diagonal moves.
+// Path: E→N→O → L→I→N→E → A→N→S
 const PATH: [number, number][] = [
-  [0, 0], [0, 1], [0, 2], [1, 2], [1, 1], [1, 0],
-  [2, 0], [2, 1],
+  [0, 3], [0, 2], [0, 1],
+  [1, 0], [1, 1], [1, 2], [1, 3],
+  [2, 2], [2, 1], [2, 0],
 ];
-
-const claimed = new Set(PATH.map(([r, c]) => `${r},${c}`));
 
 export function SerpentinePreview() {
   return (
@@ -62,11 +62,10 @@ export function SerpentinePreview() {
         />
       ))}
 
-      {/* Letters */}
+      {/* Letters (on-path = surface, off-path would be ink, but all are on-path) */}
       {GRID.flatMap((row, r) =>
         row.map((ch, c) => {
           if (ch === null) return null;
-          const onPath = claimed.has(`${r},${c}`);
           return (
             <text
               key={`${r},${c}`}
@@ -74,7 +73,7 @@ export function SerpentinePreview() {
               y={r + 0.5}
               dy="0.36em"
               textAnchor="middle"
-              fill={onPath ? "var(--color-surface)" : "var(--color-ink)"}
+              fill="var(--color-surface)"
               style={{ fontSize: "0.42px", fontWeight: 700 }}
               className="font-game"
             >
