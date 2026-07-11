@@ -105,6 +105,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
       {/* Title + status */}
       <div className="flex items-baseline gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Serpentine</h1>
+        <svg role="img" aria-label="serpentine" width="20" height="20" viewBox="0 0 20 20"
+          className="shrink-0 self-center text-accent">
+          <path d="M5 3c0 2 5 3 5 5s-5 3-5 5 5 3 5 5" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
         {mode.kind === "practice" ? (
           <span className="text-base font-semibold text-ink-soft">
             practice
