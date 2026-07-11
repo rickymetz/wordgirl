@@ -127,7 +127,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
       )}
 
       {/* Typed-out letters */}
-      <div className="px-1 py-3">
+      <div className="px-1 py-5">
         <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} />
       </div>
 
