@@ -69,6 +69,13 @@ export function loadDailyProgress(
   return daily.loadDay(`${difficulty}:${dateKey}`);
 }
 
+export function loadStaleDailyProgress(
+  difficulty: Difficulty,
+  dateKey: string,
+): Promise<DayProgress | null> {
+  return daily.loadStaleDay(`${difficulty}:${dateKey}`);
+}
+
 export function saveDailyProgress(progress: DayProgress): Promise<void> {
   return daily.saveDay(progress);
 }

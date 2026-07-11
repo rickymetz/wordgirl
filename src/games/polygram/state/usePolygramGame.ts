@@ -1,5 +1,6 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
+import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
 import { levelBonus, rankFor } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
@@ -80,32 +81,20 @@ export function usePolygramGame(mode: GameMode) {
   // hydratedRef flips only AFTER hydration completes — saving before
   // that would clobber the stored progress with the empty initial state.
   const hydratedRef = useRef(false);
-  // Completed before this session → the timer stays frozen.
-  const alreadyCompletedRef = useRef(false);
   // Stats already counted (completed earlier OR this is a replay run) →
   // don't record completion again.
   const statsRecordedRef = useRef(false);
-  // Play-time tracking: previously saved elapsed + this session's ACTIVE
-  // time. The clock pauses while the app is backgrounded.
-  const savedElapsedRef = useRef(0);
-  const sessionStartRef = useRef(Date.now());
-  const sessionActiveMsRef = useRef(0);
-  // The clock value captured the moment the puzzle completed.
-  const doneElapsedRef = useRef<number | null>(null);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const rawElapsedMs = () =>
-    savedElapsedRef.current +
-    sessionActiveMsRef.current +
-    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
-
-  const currentElapsedMs = () => {
-    if (alreadyCompletedRef.current) return savedElapsedRef.current;
-    if (doneElapsedRef.current !== null) return doneElapsedRef.current;
-    return rawElapsedMs();
-  };
+  const clock = useDailyClock({
+    flush: () => {
+      if (!persisted) return;
+      persistNow(stateRef.current);
+    },
+    resetKey: dateKey,
+  });
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress (a word or a hint), so stray taps can't wipe
@@ -130,46 +119,12 @@ export function usePolygramGame(mode: GameMode) {
       revealed: s.revealed,
       score: s.score,
       completed: s.phase === "done",
-      elapsedMs: currentElapsedMs(),
+      solved: s.phase === "done",
+      elapsedMs: clock.currentElapsedMs(),
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
   };
-
-  // Pause the solve clock while backgrounded, and FLUSH a save when the
-  // app hides — iOS routinely kills suspended PWAs, and reducer-change
-  // saves alone would lose the minutes since the last found word.
-  useEffect(() => {
-    if (!persisted) return;
-    const bank = () => {
-      sessionActiveMsRef.current += Date.now() - sessionStartRef.current;
-      sessionStartRef.current = Date.now();
-    };
-    const onVisibility = () => {
-      if (document.hidden) {
-        bank();
-        persistNow(stateRef.current);
-      } else {
-        sessionStartRef.current = Date.now();
-      }
-    };
-    const onPageHide = () => {
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", onPageHide);
-      // In-app navigation away unmounts without a pagehide — flush the
-      // clock here too. (Safe pre-hydration: persistNow no-ops then.)
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    // persistNow/stateRef are stable enough: they close over refs only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey]);
 
   // Hydrate from storage once. StrictMode-safe: no run-once ref — the
   // first (cancelled) run applies nothing, the second completes.
@@ -181,12 +136,9 @@ export function usePolygramGame(mode: GameMode) {
         const saved = await loadDailyProgress(dateKey);
         if (cancelled) return;
         if (saved) {
-          alreadyCompletedRef.current = saved.completed;
           statsRecordedRef.current =
             saved.completed || saved.statsRecorded === true;
-          savedElapsedRef.current = saved.elapsedMs ?? 0;
-          sessionStartRef.current = Date.now();
-          sessionActiveMsRef.current = 0;
+          clock.hydrate(saved.elapsedMs ?? 0, saved.completed);
           const revealed = normalizeRevealed(saved.revealed);
           const { found, score } = migrateAutoSubmit(
             puzzle,
@@ -237,15 +189,8 @@ export function usePolygramGame(mode: GameMode) {
   const [doneElapsedMs, setDoneElapsedMs] = useState<number | null>(null);
   useEffect(() => {
     if (!persisted || state.phase !== "done") return;
-    if (doneElapsedRef.current === null && !alreadyCompletedRef.current) {
-      doneElapsedRef.current = rawElapsedMs();
-    }
     if (doneElapsedMs === null) {
-      setDoneElapsedMs(
-        alreadyCompletedRef.current
-          ? savedElapsedRef.current
-          : doneElapsedRef.current,
-      );
+      setDoneElapsedMs(clock.freeze());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.phase, doneElapsedMs]);

@@ -1,4 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateDoublet } from "../engine/generator";
@@ -31,10 +32,6 @@ export function useDoubletGame(mode: GameMode) {
   const hydratedRef = useRef(false);
   const alreadySolvedRef = useRef(false);
   const statsRecordedRef = useRef(false);
-  const savedElapsedRef = useRef(0);
-  const sessionStartRef = useRef(Date.now());
-  const sessionActiveMsRef = useRef(0);
-  const solvedElapsedRef = useRef<number | null>(null);
   const staleRecordRef = useRef(false);
   const abandonedRef = useRef(false);
   // Opens of this board while unsolved; null = unknowable (solved
@@ -51,16 +48,13 @@ export function useDoubletGame(mode: GameMode) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const rawElapsedMs = () =>
-    savedElapsedRef.current +
-    sessionActiveMsRef.current +
-    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
-
-  const currentElapsedMs = () => {
-    if (alreadySolvedRef.current) return savedElapsedRef.current;
-    if (solvedElapsedRef.current !== null) return solvedElapsedRef.current;
-    return rawElapsedMs();
-  };
+  const clock = useDailyClock({
+    flush: () => {
+      if (!persisted) return;
+      persistNow(stateRef.current);
+    },
+    resetKey: `${dateKey}:${mode.difficulty}`,
+  });
 
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
@@ -73,7 +67,7 @@ export function useDoubletGame(mode: GameMode) {
       dictVersion: DICT_VERSION,
       placed: s.placed,
       solved: s.solved,
-      elapsedMs: currentElapsedMs(),
+      elapsedMs: clock.currentElapsedMs(),
       ...(countersKnownRef.current && {
         moves: s.moves,
         rotations: s.rotations,
@@ -91,35 +85,6 @@ export function useDoubletGame(mode: GameMode) {
 
   useEffect(() => {
     if (!persisted) return;
-    const bank = () => {
-      sessionActiveMsRef.current += Date.now() - sessionStartRef.current;
-      sessionStartRef.current = Date.now();
-    };
-    const onVisibility = () => {
-      if (document.hidden) {
-        bank();
-        persistNow(stateRef.current);
-      } else {
-        sessionStartRef.current = Date.now();
-      }
-    };
-    const onPageHide = () => {
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", onPageHide);
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, mode.difficulty]);
-
-  useEffect(() => {
-    if (!persisted) return;
     let cancelled = false;
     (async () => {
       try {
@@ -129,9 +94,7 @@ export function useDoubletGame(mode: GameMode) {
           alreadySolvedRef.current = saved.solved;
           statsRecordedRef.current =
             saved.solved || saved.statsRecorded === true;
-          savedElapsedRef.current = saved.elapsedMs ?? 0;
-          sessionStartRef.current = Date.now();
-          sessionActiveMsRef.current = 0;
+          clock.hydrate(saved.elapsedMs ?? 0, saved.solved);
           // A pre-tracking save's session count is unknowable — stays
           // null even if play continues (a partial count is as fake
           // as a zero). A solved board's count is final; an unsolved
@@ -187,12 +150,11 @@ export function useDoubletGame(mode: GameMode) {
   useEffect(() => {
     if (!persisted || !state.solved) return;
     if (alreadySolvedRef.current) {
-      if (solvedElapsedMs === null) setSolvedElapsedMs(savedElapsedRef.current);
+      if (solvedElapsedMs === null) setSolvedElapsedMs(clock.currentElapsedMs());
       return;
     }
-    if (solvedElapsedRef.current === null) {
-      solvedElapsedRef.current = rawElapsedMs();
-      setSolvedElapsedMs(solvedElapsedRef.current);
+    if (solvedElapsedMs === null) {
+      setSolvedElapsedMs(clock.freeze());
     }
     // Stamp the hour only for a solve that happened THIS session —
     // runs before the persist effect, so the solving save carries it.

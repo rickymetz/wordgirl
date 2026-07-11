@@ -1,4 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch } from "../engine/generator";
@@ -42,29 +43,11 @@ export function useCrosshatchGame(mode: GameMode) {
   const alreadySolvedRef = useRef(false);
   // Stats already counted (solved earlier OR this is a replay run).
   const statsRecordedRef = useRef(false);
-  // Play-time tracking: previously saved elapsed + this session's ACTIVE
-  // time. Pauses while backgrounded; freezes at the solve moment.
-  const savedElapsedRef = useRef(0);
-  const sessionStartRef = useRef(Date.now());
-  const sessionActiveMsRef = useRef(0);
-  // The clock value captured when the solve threshold was crossed.
-  const solvedElapsedRef = useRef<number | null>(null);
   // Words already credited to stats.totalWords for this day.
   const creditedRef = useRef(0);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
-
-  const rawElapsedMs = () =>
-    savedElapsedRef.current +
-    sessionActiveMsRef.current +
-    (document.hidden ? 0 : Date.now() - sessionStartRef.current);
-
-  const currentElapsedMs = () => {
-    if (alreadySolvedRef.current) return savedElapsedRef.current;
-    if (solvedElapsedRef.current !== null) return solvedElapsedRef.current;
-    return rawElapsedMs();
-  };
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress (a word or a reveal), so cursor taps and stray
@@ -101,7 +84,7 @@ export function useCrosshatchGame(mode: GameMode) {
       revealed: s.revealed,
       totalWords,
       solved: s.solved,
-      elapsedMs: currentElapsedMs(),
+      elapsedMs: clock.currentElapsedMs(),
       statsWords: creditedRef.current,
       ...(countersKnownRef.current && { invalids: s.invalids }),
       ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
@@ -113,39 +96,13 @@ export function useCrosshatchGame(mode: GameMode) {
     });
   };
 
-  // Pause the solve clock while backgrounded, and FLUSH a save when the
-  // app hides — iOS routinely kills suspended PWAs.
-  useEffect(() => {
-    if (!persisted) return;
-    const bank = () => {
-      sessionActiveMsRef.current += Date.now() - sessionStartRef.current;
-      sessionStartRef.current = Date.now();
-    };
-    const onVisibility = () => {
-      if (document.hidden) {
-        bank();
-        persistNow(stateRef.current);
-      } else {
-        sessionStartRef.current = Date.now();
-      }
-    };
-    const onPageHide = () => {
-      if (!document.hidden) bank();
+  const clock = useDailyClock({
+    flush: () => {
+      if (!persisted) return;
       persistNow(stateRef.current);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("pagehide", onPageHide);
-      // In-app navigation away unmounts without a pagehide — flush the
-      // clock here too. (Safe pre-hydration: persistNow no-ops then.)
-      if (!document.hidden) bank();
-      persistNow(stateRef.current);
-    };
-    // persistNow/stateRef are stable enough: they close over refs only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey]);
+    },
+    resetKey: dateKey,
+  });
 
   // Hydrate from storage once. StrictMode-safe: no run-once ref — the
   // first (cancelled) run applies nothing, the second completes.
@@ -165,9 +122,7 @@ export function useCrosshatchGame(mode: GameMode) {
           creditedRef.current = saved.solved
             ? (saved.statsWords ?? saved.foundWords.length)
             : (saved.statsWords ?? 0);
-          savedElapsedRef.current = saved.elapsedMs ?? 0;
-          sessionStartRef.current = Date.now();
-          sessionActiveMsRef.current = 0;
+          clock.hydrate(saved.elapsedMs ?? 0, saved.solved);
           // A pre-tracking save's session count is unknowable — stays
           // null even if play continues (a partial count is as fake
           // as a zero). A solved day's count is final; an unsolved
@@ -236,16 +191,16 @@ export function useCrosshatchGame(mode: GameMode) {
     if (!persisted || !state.solved) return;
     if (alreadySolvedRef.current) {
       // Solved in an earlier session: the saved time stands.
-      if (solvedElapsedMs === null) setSolvedElapsedMs(savedElapsedRef.current);
+      if (solvedElapsedMs === null) setSolvedElapsedMs(clock.currentElapsedMs());
       return;
     }
     if (
-      solvedElapsedRef.current === null ||
+      solvedElapsedMs === null ||
       state.found.length > clockFoundRef.current
     ) {
-      solvedElapsedRef.current = rawElapsedMs();
+      const t = solvedElapsedMs === null ? clock.freeze() : clock.rawElapsedMs();
       clockFoundRef.current = state.found.length;
-      setSolvedElapsedMs(solvedElapsedRef.current);
+      setSolvedElapsedMs(t);
     }
     // Stamp the hour only for a solve that happened THIS session —
     // runs before the persist effect, so the solving save carries it.
