@@ -54,9 +54,11 @@ const config: GameArchiveConfig<ArchivedDay, PolygramStats> = {
     // real history but doesn't map onto the current puzzle's ranks.
     // `use` is conditional on purpose: the dictionary only loads (and
     // suspends) when a rank is actually displayed.
+    /* eslint-disable react-hooks/rules-of-hooks */
     const rank = day.stale
       ? "Completed"
       : rankForDay(use(loadDictionary()), dateKey, day.score);
+    /* eslint-enable react-hooks/rules-of-hooks */
     return {
       text: `${rank} · ${day.score} pts${
         Object.keys(day.revealed).length > 0 ? " · used hint" : ""

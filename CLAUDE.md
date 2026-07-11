@@ -71,10 +71,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   (version-ordering, solved-final, per-game unsolved veto), stats
   lock/defaults-merge, coachSeen, plus `streakAdvance`/`countsAsToday`/
   `displayStreak`. `lib/daily/useDailyClock.ts` owns active-time
-  (pause on hide, flush, freeze-at-solve). Adopted by backwords,
-  crosshatch, doublet; polygram predates the recipe (its stat field
-  names differ) — migrate it when next touched, without renaming its
-  persisted fields.
+  (pause on hide, flush, freeze-at-solve). All five games use both.
 - Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
   morphing: `polygram/ui/`.
 
@@ -158,6 +155,43 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - Daily puzzles derive from the LOCAL date; dateKey is frozen per
   mount. Streak writes use the midnight grace day ONLY in daily mode
   (`allowGrace=false` for archive plays).
+- On hydration, if `loadDailyProgress` returns null, check
+  `loadStaleDailyProgress` before calling `recordStarted()`. A
+  stale save means the day was already counted — set
+  `statsRecorded` from it and skip the played increment.
+
+## New game checklist
+
+1. `src/games/<id>/` with `engine/`, `state/`, `ui/` subdirs
+2. Entry in `src/games/registry.ts` with `accentLevel`
+3. Color token `[data-level="<id>"]` in `src/index.css`
+4. Persistence via `createDailyPersistence` + `loadStaleDailyProgress`
+5. Clock via `useDailyClock` (never inline)
+6. `ArchivePage` using `GameArchive` component (~30 lines config)
+7. `TrendsPage` using `GameTrends` with `solvedHour` metric
+8. Hub card via `GameStatus`
+9. Bento preview component using `Tile mini`
+10. Coach sheet via `CoachSheet`
+11. Share string ending with `SHARE_URL`
+12. Replay confirmation dialog via `ModalDialog`
+13. `engine/*.test.ts` + `state/reducer.test.ts` + `state/persistence.dom.test.ts`
+14. Run `scripts/validate_palette.js` after adding accent color
+
+## Pre-merge review checklist
+
+Before merging any game feature, verify:
+- Hydration sets `hydrated.current` INSIDE the async callback
+- Clock `resetKey` includes all relevant keys (difficulty, dateKey)
+- `updateStats` chains AFTER `saveDailyProgress` completes
+- `loadStaleDailyProgress` fallback prevents played double-count
+- `preserveAspectRatio="xMidYMid meet"` on SVG overlays
+- Board dimensions scale by `rem/16` via `useViewport`
+- `e.preventDefault()` on game-surface pointer handlers
+- ShareButton gated on `dateKey` (no practice-mode shares)
+- Replay shows a confirmation dialog
+- Archive separators use `·` not `.`
+- No emoji in UI chrome (share strings only)
+- All three test files exist (engine, reducer, persistence DOM)
 
 ## Verification
 

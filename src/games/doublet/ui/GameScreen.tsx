@@ -186,6 +186,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
     setDrag(null);
     setHoverCell(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag, dict, dispatch]);
 
   const dragPiece = drag
