@@ -10,6 +10,7 @@ import {
 } from "../state/useSerpentineGame";
 import { loadCoachSeen, markCoachSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
+import { SnakeText } from "./SnakeText";
 import { SolvedOverlay, SerpentineCoach } from "./Overlays";
 import type { Difficulty } from "../engine/types";
 
@@ -124,6 +125,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           ))}
         </div>
       )}
+
+      {/* Typed-out letters */}
+      <div className="min-h-[2rem] px-1 pb-1">
+        <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} />
+      </div>
 
       {/* Grid */}
       <div className="relative flex flex-1 flex-col justify-center py-2">
