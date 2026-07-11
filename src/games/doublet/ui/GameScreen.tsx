@@ -230,9 +230,13 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {/* Title + difficulty */}
       <div className="flex items-baseline gap-2.5 pb-3">
         <h1 className="text-2xl font-bold tracking-tight">Doublet</h1>
-        <span className="text-base font-semibold text-ink-soft">
-          {placedCount}/{totalDominoes} placed
-        </span>
+        <svg role="img" aria-label="doublet" width="20" height="20" viewBox="0 0 20 20"
+          className="shrink-0 self-center text-accent">
+          <rect x="1" y="5" width="8" height="10" rx="2" fill="none"
+            stroke="currentColor" strokeWidth="2" />
+          <rect x="11" y="5" width="8" height="10" rx="2" fill="none"
+            stroke="currentColor" strokeWidth="2" />
+        </svg>
       </div>
 
       {/* Difficulty tabs */}
@@ -270,6 +274,13 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           previewOrientation={previewOri}
         />
       </div>
+
+      {/* Progress */}
+      {!state.solved && (
+        <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+          {placedCount}/{totalDominoes} placed
+        </div>
+      )}
 
       {/* Tray — pinned to bottom */}
       <div className="flex flex-col items-center gap-2">
