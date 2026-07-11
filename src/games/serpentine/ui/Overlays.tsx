@@ -14,6 +14,8 @@ interface SolvedProps {
   elapsedMs: number | null;
   open: boolean;
   onClose: () => void;
+  onNewPuzzle?: () => void;
+  onReplay?: () => Promise<void>;
 }
 
 function buildShareText(
@@ -35,6 +37,8 @@ export function SolvedOverlay({
   elapsedMs,
   open,
   onClose,
+  onNewPuzzle,
+  onReplay,
 }: SolvedProps) {
   const shareText = buildShareText(puzzle, difficulty, dateKey, elapsedMs);
 
@@ -88,6 +92,27 @@ export function SolvedOverlay({
             </div>
 
             <ShareButton text={shareText} />
+
+            {onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-on-accent touch-manipulation active:scale-95"
+                onPointerDown={(e) => e.preventDefault()}
+              >
+                New puzzle
+              </button>
+            )}
+            {onReplay && (
+              <button
+                type="button"
+                onClick={() => void onReplay()}
+                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-on-accent touch-manipulation active:scale-95"
+                onPointerDown={(e) => e.preventDefault()}
+              >
+                Play again
+              </button>
+            )}
           </div>
         </ModalDialog>
       )}

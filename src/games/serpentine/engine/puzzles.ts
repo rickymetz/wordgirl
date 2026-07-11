@@ -1,3 +1,4 @@
+import { seededRandom } from "../../../lib/random";
 import type { Cell, Difficulty, PuzzleDef } from "./types";
 import { MAX_ROWS, MAX_COLS } from "./types";
 
@@ -8,7 +9,7 @@ import { MAX_ROWS, MAX_COLS } from "./types";
  */
 type AuthorSet = [string, string, string, string, string, string, string];
 
-function bestGrid(n: number): [number, number] {
+export function bestGrid(n: number): [number, number] {
   let best: [number, number] = [3, 3];
   let bestDiff = Infinity;
   for (let r = 3; r <= MAX_ROWS; r++) {
@@ -21,25 +22,97 @@ function bestGrid(n: number): [number, number] {
   return best;
 }
 
+function hamiltonianPath(
+  rows: number,
+  cols: number,
+  rand: () => number,
+): Cell[] {
+  const total = rows * cols;
+
+  function getNeighbors(row: number, col: number): Cell[] {
+    const out: Cell[] = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const r2 = row + dr;
+        const c2 = col + dc;
+        if (r2 >= 0 && r2 < rows && c2 >= 0 && c2 < cols) {
+          out.push({ row: r2, col: c2 });
+        }
+      }
+    }
+    return out;
+  }
+
+  function attempt(): Cell[] | null {
+    const visited = Array.from({ length: rows }, () =>
+      new Array<boolean>(cols).fill(false),
+    );
+
+    const sr = Math.floor(rand() * rows);
+    const sc = Math.floor(rand() * cols);
+    visited[sr][sc] = true;
+    const path: Cell[] = [{ row: sr, col: sc }];
+
+    while (path.length < total) {
+      const tail = path[path.length - 1];
+      const nexts = getNeighbors(tail.row, tail.col).filter(
+        (n) => !visited[n.row][n.col],
+      );
+      if (nexts.length === 0) return null;
+
+      // Warnsdorff: prefer neighbors with fewest onward moves
+      let bestScore = Infinity;
+      const scored: { cell: Cell; score: number }[] = [];
+      for (const n of nexts) {
+        let free = 0;
+        for (const nn of getNeighbors(n.row, n.col)) {
+          if (!visited[nn.row][nn.col]) free++;
+        }
+        scored.push({ cell: n, score: free });
+        if (free < bestScore) bestScore = free;
+      }
+
+      // Collect all candidates tied for best score, pick randomly
+      const best = scored.filter((s) => s.score === bestScore);
+      const pick = best[Math.floor(rand() * best.length)].cell;
+      visited[pick.row][pick.col] = true;
+      path.push(pick);
+    }
+    return path;
+  }
+
+  // Greedy Warnsdorff with random restarts
+  for (let i = 0; i < 100; i++) {
+    const result = attempt();
+    if (result) return result;
+  }
+
+  // Fallback: boustrophedon (guaranteed valid)
+  const fallback: Cell[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      fallback.push({ row: r, col: r % 2 === 0 ? c : cols - 1 - c });
+    }
+  }
+  return fallback;
+}
+
 function expand(
   title: string,
   text: string,
   id: string,
   difficulty: Difficulty,
+  rand: () => number,
 ): PuzzleDef {
   const letters = text.replace(/[^A-Z]/g, "");
   const [rows, cols] = bestGrid(letters.length);
-  const grid: string[][] = [];
-  const path: Cell[] = [];
-  let li = 0;
-  for (let r = 0; r < rows; r++) {
-    const row = new Array(cols) as string[];
-    for (let c = 0; c < cols; c++) {
-      const col = r % 2 === 0 ? c : cols - 1 - c;
-      row[col] = letters[li++];
-      path.push({ row: r, col });
-    }
-    grid.push(row);
+  const path = hamiltonianPath(rows, cols, rand);
+  const grid: string[][] = Array.from({ length: rows }, () =>
+    new Array<string>(cols),
+  );
+  for (let i = 0; i < path.length; i++) {
+    grid[path[i].row][path[i].col] = letters[i];
   }
   return { id, title, difficulty, rows, cols, grid, text, path };
 }
@@ -419,7 +492,9 @@ export function getPuzzlePool(difficulty: string): PuzzleDef[] {
   const diff = (difficulty as Difficulty) ?? "easy";
   return AUTHORS.map((a, i) => {
     const prefix = diff[0];
-    return expand(a[off], a[off + 1], `${prefix}${String(i + 1).padStart(3, "0")}`, diff);
+    const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
+    const rand = seededRandom(`serpentine:layout:${id}`);
+    return expand(a[off], a[off + 1], id, diff, rand);
   });
 }
 
@@ -429,9 +504,15 @@ export function getPuzzle(difficulty: string, index: number): PuzzleDef {
   const i = index % AUTHORS.length;
   const a = AUTHORS[i];
   const prefix = diff[0];
-  return expand(a[off], a[off + 1], `${prefix}${String(i + 1).padStart(3, "0")}`, diff);
+  const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
+  const rand = seededRandom(`serpentine:layout:${id}`);
+  return expand(a[off], a[off + 1], id, diff, rand);
 }
 
 export function getAuthorForDay(index: number): string {
   return AUTHORS[index % AUTHORS.length][0];
+}
+
+export function getPoolSize(): number {
+  return AUTHORS.length;
 }

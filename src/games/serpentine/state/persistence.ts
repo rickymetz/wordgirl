@@ -4,6 +4,7 @@ import {
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
+import { DICT_VERSION } from "../../../lib/words/dictionary";
 import type { Cell, Difficulty } from "../engine/types";
 
 export interface DayProgress extends DailyBase {
@@ -11,6 +12,11 @@ export interface DayProgress extends DailyBase {
   difficulty: Difficulty;
   puzzleId: string;
   cells: Cell[];
+}
+
+export interface ArchivedDay extends DayProgress {
+  stale: boolean;
+  foundWords: string[];
 }
 
 export interface SerpentineStats extends StreakStats {
@@ -64,17 +70,37 @@ export function saveDailyProgress(progress: DayProgress): Promise<void> {
 }
 
 export async function loadAllDailyProgress(): Promise<
-  Record<string, DayProgress>
+  Record<string, ArchivedDay>
 > {
   const keys = await store.keys("daily:");
-  const result: Record<string, DayProgress> = {};
+  const result: Record<string, ArchivedDay> = {};
   for (const key of keys) {
     const saved = await store.get<DayProgress>(key);
     if (saved && typeof saved === "object" && saved.dateKey) {
-      result[`${saved.difficulty}:${saved.dateKey}`] = saved;
+      const k = `${saved.difficulty}:${saved.dateKey}`;
+      result[k] = {
+        ...saved,
+        stale: (saved.dictVersion ?? 0) < DICT_VERSION,
+        foundWords: saved.solved ? [saved.puzzleId] : [],
+      };
     }
   }
   return result;
+}
+
+export async function resetDailyForReplay(
+  difficulty: Difficulty,
+  dateKey: string,
+) {
+  await store.set(`daily:${difficulty}:${dateKey}`, {
+    dateKey,
+    difficulty,
+    dictVersion: DICT_VERSION,
+    cells: [],
+    solved: false,
+    elapsedMs: 0,
+    puzzleId: "",
+  });
 }
 
 export function displayStreak(

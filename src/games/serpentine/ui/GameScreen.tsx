@@ -23,9 +23,11 @@ interface Props {
   mode: GameMode;
   difficulty?: Difficulty;
   onDifficultyChange?: (d: Difficulty) => void;
+  onNewPuzzle?: () => void;
+  onReplay?: () => Promise<void>;
 }
 
-export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
+export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, onReplay }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } =
     useSerpentineGame(mode);
 
@@ -66,6 +68,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <span className="text-sm font-semibold text-ink-soft">
             {formatDateKey(mode.dateKey)}
           </span>
+        ) : mode.kind === "practice" ? (
+          <span className="text-sm font-semibold text-ink-soft">Practice</span>
         ) : (
           <HomeLink />
         )}
@@ -171,10 +175,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         <SolvedOverlay
           puzzle={puzzle}
           difficulty={mode.difficulty}
-          dateKey={mode.dateKey}
+          dateKey={mode.kind !== "practice" ? mode.dateKey : undefined}
           elapsedMs={solvedElapsedMs}
           open={resultsOpen}
           onClose={() => setResultsOpen(false)}
+          onNewPuzzle={onNewPuzzle}
+          onReplay={onReplay}
         />
       )}
 
