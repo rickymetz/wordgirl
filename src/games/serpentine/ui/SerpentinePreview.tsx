@@ -1,8 +1,9 @@
 /**
  * Bento-card miniature: a 4×3 letter grid with two blocked corners and
  * a Hamiltonian snake path covering every live cell — the three visual
- * signatures of Serpentine. The path includes diagonal moves and visits
- * every non-blocked cell exactly once, matching the actual game rules.
+ * signatures of Serpentine. The path includes diagonal moves, visits
+ * every non-blocked cell exactly once, and spells "SERPENTINE" — a
+ * real hidden phrase, matching the actual game rules.
  */
 
 const COLS = 4;
@@ -12,14 +13,15 @@ const H = ROWS * 16;
 const R = 0.34;
 const PIPE = 0.28;
 
+// Path spells SERPENTINE reading along the snake.
 const GRID: (string | null)[][] = [
-  [null, "O", "N", "E"],
-  ["L", "I", "N", "E"],
-  ["S", "N", "A", null],
+  [null, "R", "E", "S"],
+  ["P", "E", "N", "T"],
+  ["E", "N", "I", null],
 ];
 
 // Hamiltonian path through all 10 live cells, with diagonal moves.
-// Path: E→N→O → L→I→N→E → A→N→S
+// S → E → R → P → E → N → T → I → N → E
 const PATH: [number, number][] = [
   [0, 3], [0, 2], [0, 1],
   [1, 0], [1, 1], [1, 2], [1, 3],
@@ -62,7 +64,7 @@ export function SerpentinePreview() {
         />
       ))}
 
-      {/* Letters (on-path = surface, off-path would be ink, but all are on-path) */}
+      {/* Letters — all on path, so all surface-colored */}
       {GRID.flatMap((row, r) =>
         row.map((ch, c) => {
           if (ch === null) return null;
