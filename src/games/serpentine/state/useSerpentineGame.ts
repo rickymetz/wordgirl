@@ -128,7 +128,7 @@ export function useSerpentineGame(mode: GameMode) {
           solved: s.solved + 1,
           [bestKey]:
             bestTime === null || elapsed < bestTime ? elapsed : bestTime,
-          ...(isDaily ? streakAdvance(s, dateKey, true) : {}),
+          ...streakAdvance(s, dateKey, isDaily),
         };
       });
     }

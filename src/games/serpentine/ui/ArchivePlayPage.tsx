@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { localDateKey } from "../../../lib/date";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
+import { getDailyPuzzle } from "../engine/dailySeed";
 import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
@@ -23,7 +24,8 @@ export default function ArchivePlayPage() {
       difficulty={difficulty}
       onDifficultyChange={setDifficulty}
       onReplay={async () => {
-        await resetDailyForReplay(difficulty, dateKey);
+        const puzzle = getDailyPuzzle(difficulty, dateKey);
+        await resetDailyForReplay(difficulty, dateKey, puzzle.id);
         setRunId((n) => n + 1);
       }}
     />

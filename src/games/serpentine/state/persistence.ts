@@ -90,6 +90,7 @@ export async function loadAllDailyProgress(): Promise<
 export async function resetDailyForReplay(
   difficulty: Difficulty,
   dateKey: string,
+  puzzleId: string,
 ) {
   await store.set(`daily:${difficulty}:${dateKey}`, {
     dateKey,
@@ -98,7 +99,8 @@ export async function resetDailyForReplay(
     cells: [],
     solved: false,
     elapsedMs: 0,
-    puzzleId: "",
+    puzzleId,
+    statsRecorded: true,
   });
 }
 

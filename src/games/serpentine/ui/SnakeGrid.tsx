@@ -7,6 +7,7 @@ interface Props {
   grid: string[][];
   targetLen: number;
   cells: Cell[];
+  claimed: Set<string>;
   solved: boolean;
   blocked: Set<string>;
   hintCells?: Set<string>;
@@ -23,6 +24,7 @@ export function SnakeGrid({
   cols,
   grid,
   cells,
+  claimed,
   solved,
   blocked,
   hintCells,
@@ -82,7 +84,6 @@ export function SnakeGrid({
   }, []);
 
   const n = cells.length;
-  const claimed = new Set(cells.map((c) => cellKey(c)));
   const accent = solved ? "var(--color-good)" : "var(--color-accent)";
   const trail = "var(--color-accent-trail)";
 
@@ -95,6 +96,8 @@ export function SnakeGrid({
   return (
     <div
       ref={gridRef}
+      role="group"
+      aria-label="Puzzle grid"
       className="relative mx-auto w-full select-none touch-manipulation"
       style={{
         maxWidth: `min(100%, ${cols * 44}px)`,
@@ -166,7 +169,7 @@ export function SnakeGrid({
                   isBlocked
                     ? { visibility: "hidden" }
                     : isClaimed
-                      ? { color: "var(--color-on-accent)" }
+                      ? { color: "var(--color-surface)" }
                       : isHint
                         ? { color: "var(--color-accent)" }
                         : undefined

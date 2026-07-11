@@ -47,6 +47,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         atWordStart = true;
         continue;
       }
+      if (!/[A-Za-z]/.test(ch)) continue;
       if (atWordStart) {
         indices.add(pi);
         keys.add(cellKey(puzzle.path[pi]));
@@ -143,10 +144,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
 
       {/* Difficulty pills */}
       {difficulty !== undefined && onDifficultyChange && (
-        <div className="flex gap-1 pb-3">
+        <div className="flex gap-1 pb-3" role="group" aria-label="Difficulty">
           {(["haiku", "poem"] as Difficulty[]).map((d) => (
             <button
               key={d}
+              aria-pressed={d === difficulty}
               className={[
                 "relative px-4 py-1.5 rounded-full text-sm font-semibold",
                 "touch-manipulation select-none transition-colors",
@@ -169,7 +171,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         <div className="pb-1 text-center text-sm font-medium text-accent italic">
           {puzzle.title}
         </div>
-        <SnakeText puzzle={puzzle} cells={state.cells} solved={state.solved} hintIndices={hintActive ? hintIndices : undefined} />
+        <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintActive ? hintIndices : undefined} />
       </div>
 
       {/* Grid */}
@@ -180,6 +182,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           grid={puzzle.grid}
           targetLen={puzzle.path.length}
           cells={state.cells}
+          claimed={state.claimed}
           solved={state.solved}
           blocked={puzzle.blocked}
           hintCells={hintActive ? hintCellKeys : undefined}
@@ -209,11 +212,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
           </button>
           <button
             type="button"
+            aria-pressed={hintActive}
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => setHintActive((h) => !h)}
             className={[
               "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
-              hintActive ? "bg-accent text-on-accent" : "bg-tile text-ink",
+              hintActive ? "bg-accent text-surface" : "bg-tile text-ink",
             ].join(" ")}
           >
             <Lightbulb aria-hidden className="h-4 w-4" />

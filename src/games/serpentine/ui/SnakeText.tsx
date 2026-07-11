@@ -4,7 +4,6 @@ import type { Cell, PuzzleDef } from "../engine/types";
 interface Props {
   puzzle: PuzzleDef;
   cells: Cell[];
-  solved: boolean;
   hintIndices?: Set<number>;
 }
 
@@ -22,6 +21,7 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
 
   return (
     <div
+      role="status"
       className="relative flex h-12 items-center justify-center"
       aria-label={`${cells.length} of ${total} letters placed`}
     >

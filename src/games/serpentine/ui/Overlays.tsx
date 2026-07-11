@@ -97,7 +97,7 @@ export function SolvedOverlay({
               <button
                 type="button"
                 onClick={onNewPuzzle}
-                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-on-accent touch-manipulation active:scale-95"
+                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation active:scale-95"
                 onPointerDown={(e) => e.preventDefault()}
               >
                 New puzzle
@@ -107,7 +107,7 @@ export function SolvedOverlay({
               <button
                 type="button"
                 onClick={() => void onReplay()}
-                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-on-accent touch-manipulation active:scale-95"
+                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation active:scale-95"
                 onPointerDown={(e) => e.preventDefault()}
               >
                 Play again
