@@ -29,7 +29,7 @@ const PATH: [number, number][] = [
 export function SerpentinePreview() {
   return (
     <svg
-      width="100%"
+      width="75%"
       viewBox={`0 0 ${COLS} ${ROWS}`}
       className="overflow-visible"
       aria-hidden
