@@ -8,8 +8,6 @@
 
 const COLS = 4;
 const ROWS = 3;
-const W = COLS * 16;
-const H = ROWS * 16;
 const R = 0.34;
 const PIPE = 0.28;
 
@@ -31,8 +29,7 @@ const PATH: [number, number][] = [
 export function SerpentinePreview() {
   return (
     <svg
-      width={W}
-      height={H}
+      width="100%"
       viewBox={`0 0 ${COLS} ${ROWS}`}
       className="overflow-visible"
       aria-hidden
