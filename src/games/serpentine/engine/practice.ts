@@ -11,6 +11,6 @@ export function getPracticePuzzle(
   difficulty: Difficulty,
 ): PuzzleDef {
   const rand = seededRandom(seed);
-  const index = Math.floor(rand() * getPoolSize());
-  return getPuzzle(difficulty, index);
+  const index = Math.floor(rand() * getPoolSize(difficulty));
+  return getPuzzle(difficulty, index, seed);
 }

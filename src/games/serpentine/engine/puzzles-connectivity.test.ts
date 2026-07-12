@@ -61,11 +61,18 @@ describe("getPuzzle with valid difficulties", () => {
   });
 
   it("wraps index around the pool", () => {
-    const size = getPoolSize();
+    const size = getPoolSize("haiku");
     const p1 = getPuzzle("haiku", 0);
     const p2 = getPuzzle("haiku", size);
     expect(p1.id).toBe(p2.id);
     expect(p1.text).toBe(p2.text);
+  });
+
+  it("produces different layout with different salt", () => {
+    const p1 = getPuzzle("haiku", 0);
+    const p2 = getPuzzle("haiku", 0, "2026-07-12");
+    expect(p1.text).toBe(p2.text);
+    expect(p1.path).not.toEqual(p2.path);
   });
 });
 
@@ -85,21 +92,29 @@ describe("getAuthorForDay", () => {
   it("returns poem author for poem difficulty", () => {
     const poemAuthor = getAuthorForDay(0, "poem");
     const haikuAuthor = getAuthorForDay(0, "haiku");
-    // The haiku author (index 0) and poem author (index 3) differ
-    // for the first entry: "Basho" vs "Coleridge"
-    expect(poemAuthor).not.toBe(haikuAuthor);
+    expect(typeof poemAuthor).toBe("string");
+    expect(typeof haikuAuthor).toBe("string");
   });
 
   it("returns correct authors for known entries", () => {
-    // First entry: Basho (haiku) / Coleridge (poem)
     expect(getAuthorForDay(0, "haiku")).toBe("Basho");
     expect(getAuthorForDay(0, "poem")).toBe("Coleridge");
   });
 
   it("wraps index around the pool", () => {
-    const size = getPoolSize();
+    const size = getPoolSize("haiku");
     const a1 = getAuthorForDay(0, "haiku");
     const a2 = getAuthorForDay(size, "haiku");
     expect(a1).toBe(a2);
+  });
+});
+
+describe("independent pool sizes", () => {
+  it("haiku and poem pools have different sizes", () => {
+    const haikuSize = getPoolSize("haiku");
+    const poemSize = getPoolSize("poem");
+    expect(haikuSize).toBeGreaterThan(0);
+    expect(poemSize).toBeGreaterThan(0);
+    expect(haikuSize).not.toBe(poemSize);
   });
 });
