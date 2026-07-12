@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
@@ -15,6 +15,8 @@ import {
 import { HomeLink } from "../../../components/HomeLink";
 import { ShareButton } from "../../../components/ShareButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
@@ -66,31 +68,9 @@ export function GameScreen({ mode }: Props) {
     usePolygramGame(mode);
   const level = currentLevel(state);
 
-  // Warn (once) if this device can't persist progress.
-  const [storageBroken, setStorageBroken] = useState(false);
-  useEffect(() => {
-    const onError = () => setStorageBroken(true);
-    window.addEventListener("wg:storage-error", onError);
-    return () => window.removeEventListener("wg:storage-error", onError);
-  }, []);
-
+  const storageBroken = useStorageBroken();
   const done = state.phase === "done";
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showResults, setShowResults] = useState(() => done);
-  const prevDone = useRef(done);
-  useEffect(() => {
-    if (done && !prevDone.current) {
-      setShowConfetti(true);
-      setShowResults(false);
-      const t = setTimeout(() => {
-        setShowConfetti(false);
-        setShowResults(true);
-      }, 1500);
-      prevDone.current = true;
-      return () => clearTimeout(t);
-    }
-    prevDone.current = done;
-  }, [done]);
+  const { showConfetti, showResults } = useSolveTransition(done);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);

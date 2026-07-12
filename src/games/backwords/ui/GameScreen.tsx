@@ -17,6 +17,8 @@ import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useBackwordsGame, type GameMode } from "../state/useBackwordsGame";
 import {
   loadCoachSeen,
@@ -56,30 +58,8 @@ export function GameScreen({ mode }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } =
     useBackwordsGame(mode);
 
-  // Warn (once) if this device can't persist progress.
-  const [storageBroken, setStorageBroken] = useState(false);
-  useEffect(() => {
-    const onError = () => setStorageBroken(true);
-    window.addEventListener("wg:storage-error", onError);
-    return () => window.removeEventListener("wg:storage-error", onError);
-  }, []);
-
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showResults, setShowResults] = useState(() => state.solved);
-  const prevSolved = useRef(state.solved);
-  useEffect(() => {
-    if (state.solved && !prevSolved.current) {
-      setShowConfetti(true);
-      setShowResults(false);
-      const t = setTimeout(() => {
-        setShowConfetti(false);
-        setShowResults(true);
-      }, 1500);
-      prevSolved.current = true;
-      return () => clearTimeout(t);
-    }
-    prevSolved.current = state.solved;
-  }, [state.solved]);
+  const storageBroken = useStorageBroken();
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
 
   // A tile in flight: the mirror reflects it LIVE — the ghost tracks
   // the drag, mirrored across the glass, so it works from EITHER side

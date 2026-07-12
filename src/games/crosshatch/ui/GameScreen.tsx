@@ -21,6 +21,8 @@ import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
@@ -77,30 +79,8 @@ export function GameScreen({ mode }: Props) {
   } = useCrosshatchGame(mode);
   const dict = use(loadDictionary());
 
-  // Warn (once) if this device can't persist progress.
-  const [storageBroken, setStorageBroken] = useState(false);
-  useEffect(() => {
-    const onError = () => setStorageBroken(true);
-    window.addEventListener("wg:storage-error", onError);
-    return () => window.removeEventListener("wg:storage-error", onError);
-  }, []);
-
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showResults, setShowResults] = useState(() => state.solved);
-  const prevSolved = useRef(state.solved);
-  useEffect(() => {
-    if (state.solved && !prevSolved.current) {
-      setShowConfetti(true);
-      setShowResults(false);
-      const t = setTimeout(() => {
-        setShowConfetti(false);
-        setShowResults(true);
-      }, 1500);
-      prevSolved.current = true;
-      return () => clearTimeout(t);
-    }
-    prevSolved.current = state.solved;
-  }, [state.solved]);
+  const storageBroken = useStorageBroken();
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -379,6 +359,11 @@ export function GameScreen({ mode }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.lastResult]);
 
+  const hintCount = Object.values(state.revealed).reduce(
+    (n, p) => n + p.length,
+    0,
+  );
+
   return (
     <div
       data-level="crosshatch"
@@ -506,16 +491,14 @@ export function GameScreen({ mode }: Props) {
             )}
             <p className="text-sm text-ink-soft">
               {state.found.length}/{total} words
-              {Object.values(state.revealed).reduce((n, p) => n + p.length, 0) > 0
-                ? ` · ${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)} hints`
-                : ""}
+              {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
             {mode.kind !== "practice" && mode.dateKey && solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(
                   state.found.length,
                   total,
-                  Object.values(state.revealed).reduce((n, p) => n + p.length, 0),
+                  hintCount,
                   mode.dateKey,
                   solvedElapsedMs,
                 )}

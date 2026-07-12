@@ -1,11 +1,13 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { ShareButton } from "../../../components/ShareButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -48,29 +50,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } =
     useSerpentineGame(mode);
 
-  const [storageBroken, setStorageBroken] = useState(false);
-  useEffect(() => {
-    const onError = () => setStorageBroken(true);
-    window.addEventListener("wg:storage-error", onError);
-    return () => window.removeEventListener("wg:storage-error", onError);
-  }, []);
-
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showResults, setShowResults] = useState(() => state.solved);
-  const prevSolved = useRef(state.solved);
-  useEffect(() => {
-    if (state.solved && !prevSolved.current) {
-      setShowConfetti(true);
-      setShowResults(false);
-      const t = setTimeout(() => {
-        setShowConfetti(false);
-        setShowResults(true);
-      }, 1500);
-      prevSolved.current = true;
-      return () => clearTimeout(t);
-    }
-    prevSolved.current = state.solved;
-  }, [state.solved]);
+  const storageBroken = useStorageBroken();
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintActive, setHintActive] = useState(false);

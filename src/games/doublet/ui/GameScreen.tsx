@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -14,6 +14,7 @@ import { dominoCells, dominoLetters, cellKey } from "../engine/types";
 import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -51,23 +52,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, dict, solvedElapsedMs } =
     useDoubletGame(mode);
 
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showResults, setShowResults] = useState(() => state.solved);
-  const prevSolved = useRef(state.solved);
-
-  useEffect(() => {
-    if (state.solved && !prevSolved.current) {
-      setShowConfetti(true);
-      setShowResults(false);
-      const t = setTimeout(() => {
-        setShowConfetti(false);
-        setShowResults(true);
-      }, 1500);
-      prevSolved.current = true;
-      return () => clearTimeout(t);
-    }
-    prevSolved.current = state.solved;
-  }, [state.solved]);
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
