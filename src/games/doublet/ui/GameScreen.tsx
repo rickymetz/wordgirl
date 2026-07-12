@@ -1,18 +1,18 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
-import { ModalDialog } from "../../../components/ModalDialog";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
 import { dominoCells, dominoLetters, cellKey } from "../engine/types";
 import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
+import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -50,7 +50,24 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, dict, solvedElapsedMs } =
     useDoubletGame(mode);
 
-  const [resultsOpen, setResultsOpen] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showResults, setShowResults] = useState(() => state.solved);
+  const prevSolved = useRef(state.solved);
+
+  useEffect(() => {
+    if (state.solved && !prevSolved.current) {
+      setShowConfetti(true);
+      setShowResults(false);
+      const t = setTimeout(() => {
+        setShowConfetti(false);
+        setShowResults(true);
+      }, 1500);
+      prevSolved.current = true;
+      return () => clearTimeout(t);
+    }
+    prevSolved.current = state.solved;
+  }, [state.solved]);
+
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
   const placed = placedDominoIds(state);
@@ -276,82 +293,62 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         />
       </div>
 
-      {/* Progress */}
-      {!state.solved && (
-        <div className="pb-3 text-center text-sm font-medium text-ink-soft">
-          {placedCount}/{totalDominoes} placed
-        </div>
-      )}
-
-      {/* Tray — pinned to bottom */}
-      <div className="flex flex-col items-center gap-2">
-        <DominoTray
-          state={state}
-          onSelect={(id) => dispatch({ type: "selectDomino", dominoId: id })}
-          onRotate={() => dispatch({ type: "rotateDomino" })}
-          onDragStart={handleDragStart}
-          onDragMove={handleDragMove}
-          onDragEnd={handleDragEnd}
-          draggedId={drag?.dominoId ?? null}
-        />
-      </div>
+      {/* Bottom area: tray during play, results after solve */}
+      <AnimatePresence mode="wait">
+        {state.solved && showResults ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 pb-2"
+          >
+            <p className="text-lg font-bold text-ink">Solved</p>
+            {solvedElapsedMs !== null && (
+              <p className="text-sm text-ink-soft">
+                {formatDuration(solvedElapsedMs)}
+              </p>
+            )}
+            {mode.kind !== "practice" && solvedElapsedMs !== null && (
+              <ShareButton
+                text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs)}
+              />
+            )}
+          </motion.div>
+        ) : !state.solved ? (
+          <motion.div
+            key="controls"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+              {placedCount}/{totalDominoes} placed
+            </div>
+            <DominoTray
+              state={state}
+              onSelect={(id) => dispatch({ type: "selectDomino", dominoId: id })}
+              onRotate={() => dispatch({ type: "rotateDomino" })}
+              onDragStart={handleDragStart}
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
+              draggedId={drag?.dominoId ?? null}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Drag ghost */}
       {drag && dragPiece && (
         <DragGhost drag={drag} piece={dragPiece} />
       )}
 
+      {/* Confetti burst on solve */}
+      {showConfetti && <ConfettiOverlay />}
+
       {/* Accessibility */}
       <div aria-live="polite" role="status" className="sr-only">
         {state.solved && <span>Solved</span>}
       </div>
-
-      {/* Solved overlay */}
-      <AnimatePresence>
-        {state.solved && resultsOpen && (
-          <ModalDialog
-            labelledBy="doublet-result"
-            onClose={() => setResultsOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="flex flex-col items-center gap-4 p-6 outline-none"
-              data-autofocus
-              tabIndex={-1}
-            >
-              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-good/20">
-                <Check className="h-8 w-8 text-good" />
-              </div>
-              <h2
-                id="doublet-result"
-                className="text-xl font-bold text-ink"
-              >
-                Solved
-              </h2>
-              {solvedElapsedMs !== null && (
-                <p className="text-ink-soft text-sm">
-                  {formatDuration(solvedElapsedMs)}
-                </p>
-              )}
-              {mode.kind !== "practice" && solvedElapsedMs !== null && (
-                <ShareButton
-                  text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs)}
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => setResultsOpen(false)}
-                className="rounded-full bg-accent px-6 py-2 font-semibold text-surface touch-manipulation select-none active:scale-95"
-                onPointerDown={(e) => e.preventDefault()}
-              >
-                View Puzzle
-              </button>
-            </motion.div>
-          </ModalDialog>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
