@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickBlocked, isConnected, getPuzzle, getAuthorForDay, getPoolSize, bestGrid } from "./puzzles";
+import { pickBlocked, isConnected, getPoolSize, getThemedPuzzle, bestGrid } from "./puzzles";
 import { seededRandom } from "../../../lib/random";
 
 describe("pickBlocked connectivity", () => {
@@ -45,61 +45,26 @@ describe("pickBlocked connectivity", () => {
   });
 });
 
-describe("getPuzzle with valid difficulties", () => {
-  it("returns a haiku puzzle", () => {
-    const puzzle = getPuzzle("haiku", 0);
-    expect(puzzle.difficulty).toBe("haiku");
-    expect(puzzle.id).toMatch(/^h\d{3}$/);
-    expect(puzzle.grid.length).toBeGreaterThan(0);
+describe("thematic pairing", () => {
+  it("same index and salt produce valid puzzles for both difficulties", () => {
+    const h = getThemedPuzzle("haiku", 5, "2026-07-12");
+    const p = getThemedPuzzle("poem", 5, "2026-07-12");
+    expect(h.grid.length).toBeGreaterThan(0);
+    expect(p.grid.length).toBeGreaterThan(0);
   });
 
-  it("returns a poem puzzle", () => {
-    const puzzle = getPuzzle("poem", 0);
-    expect(puzzle.difficulty).toBe("poem");
-    expect(puzzle.id).toMatch(/^p\d{3}$/);
-    expect(puzzle.grid.length).toBeGreaterThan(0);
+  it("different salt produces different path for same haiku", () => {
+    const h1 = getThemedPuzzle("haiku", 0, "salt-a");
+    const h2 = getThemedPuzzle("haiku", 0, "salt-b");
+    expect(h1.text).toBe(h2.text);
+    expect(h1.path).not.toEqual(h2.path);
   });
 
   it("wraps index around the pool", () => {
     const size = getPoolSize();
-    const p1 = getPuzzle("haiku", 0);
-    const p2 = getPuzzle("haiku", size);
+    const p1 = getThemedPuzzle("haiku", 0, "wrap");
+    const p2 = getThemedPuzzle("haiku", size, "wrap");
     expect(p1.id).toBe(p2.id);
     expect(p1.text).toBe(p2.text);
-  });
-});
-
-describe("getAuthorForDay", () => {
-  it("returns haiku author by default", () => {
-    const author = getAuthorForDay(0);
-    expect(typeof author).toBe("string");
-    expect(author.length).toBeGreaterThan(0);
-  });
-
-  it("returns haiku author when explicitly requested", () => {
-    const author = getAuthorForDay(0, "haiku");
-    expect(typeof author).toBe("string");
-    expect(author.length).toBeGreaterThan(0);
-  });
-
-  it("returns poem author for poem difficulty", () => {
-    const poemAuthor = getAuthorForDay(0, "poem");
-    const haikuAuthor = getAuthorForDay(0, "haiku");
-    // The haiku author (index 0) and poem author (index 3) differ
-    // for the first entry: "Basho" vs "Coleridge"
-    expect(poemAuthor).not.toBe(haikuAuthor);
-  });
-
-  it("returns correct authors for known entries", () => {
-    // First entry: Basho (haiku) / Coleridge (poem)
-    expect(getAuthorForDay(0, "haiku")).toBe("Basho");
-    expect(getAuthorForDay(0, "poem")).toBe("Coleridge");
-  });
-
-  it("wraps index around the pool", () => {
-    const size = getPoolSize();
-    const a1 = getAuthorForDay(0, "haiku");
-    const a2 = getAuthorForDay(size, "haiku");
-    expect(a1).toBe(a2);
   });
 });
