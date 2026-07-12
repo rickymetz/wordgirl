@@ -231,7 +231,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
                          active:scale-95 touch-manipulation select-none
-                         after:absolute after:inset-x-0 after:-inset-y-1.5"
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => dispatch({ type: "revealHint", dict })}
             >
@@ -243,7 +243,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                            text-ink-soft text-xs font-semibold
                            active:scale-95 touch-manipulation select-none
-                           after:absolute after:inset-x-0 after:-inset-y-1.5"
+                           after:absolute after:inset-x-0 after:-inset-y-2.5"
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => dispatch({ type: "clearBoard" })}
               >

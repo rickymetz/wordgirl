@@ -307,9 +307,10 @@ export function gameReducer(
       newPlaced = [...newPlaced, hint];
       const newGrid = buildGrid(newPlaced, state.puzzle);
       const { solved, invalidSlots } = checkSolved(newGrid, state.puzzle, action.dict);
+      const newPlacedIds = new Set(newPlaced.map((p) => p.dominoId));
       const nextUnplaced = solved
         ? null
-        : state.puzzle.dominoes.find((d) => !new Set(newPlaced.map((p) => p.dominoId)).has(d.id))?.id ?? null;
+        : state.puzzle.dominoes.find((d) => !newPlacedIds.has(d.id))?.id ?? null;
       return {
         ...state,
         placed: newPlaced,

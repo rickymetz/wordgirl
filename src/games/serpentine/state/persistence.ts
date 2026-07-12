@@ -108,11 +108,8 @@ export async function loadAllDailyProgress(): Promise<
       solvedHour: solvedSaves.length > 0
         ? ((solvedSaves[0] as unknown as Record<string, unknown>).solvedHour as number) ?? null
         : null,
-      hints: solvedSaves.length > 0
-        ? solvedSaves.reduce<number | null>((a, s) => {
-            const h = s.hints;
-            return h !== undefined ? (a ?? 0) + h : a;
-          }, null)
+      hints: solvedSaves.length > 0 && saves.every((s) => s.hints !== undefined)
+        ? saves.reduce((a, s) => a + (s.hints ?? 0), 0)
         : null,
     };
   }
