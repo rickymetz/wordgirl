@@ -249,6 +249,34 @@ describe("backwords reducer", () => {
     expect(state.takeBacks).toBe(1);
   });
 
+  it("revealHint places the next seedRow when letters are available", () => {
+    run({ type: "revealHint" });
+    expect(state.hints).toBe(1);
+    expect(state.rows.length).toBe(1);
+    expect(state.rows[0].def.place).toBe("mo");
+    run({ type: "revealHint" });
+    expect(state.hints).toBe(2);
+    expect(state.rows.length).toBe(2);
+  });
+
+  it("revealHint falls back to solver when seedRow letters are unavailable", () => {
+    // Commit "saw" (reverse orientation of the "was" seedRow pair).
+    // This uses the same letters as "was" but is the same rowKey,
+    // so "was" is marked placed. The remaining bank should still
+    // allow two more hints via solver fallback.
+    run(...type("saw"), { type: "commit" });
+    expect(state.rows.length).toBe(1);
+    // "was"/"saw" pair is placed; seedRows "mo" and "lit" should still
+    // fit since their letters are untouched.
+    run({ type: "revealHint" });
+    expect(state.hints).toBe(1);
+    expect(state.rows.length).toBe(2);
+    run({ type: "revealHint" });
+    expect(state.hints).toBe(2);
+    expect(state.rows.length).toBe(3);
+    expect(state.solved).toBe(true);
+  });
+
   it("hydrate restores trend counters and defaults legacy saves to 0", () => {
     run({
       type: "hydrate",
