@@ -341,11 +341,10 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 />
               )}
               <button
-                className="px-6 py-2 rounded-full bg-accent text-surface
-                           font-semibold touch-manipulation select-none
-                           active:scale-95"
-                onPointerDown={(e) => e.preventDefault()}
+                type="button"
                 onClick={() => setResultsOpen(false)}
+                className="rounded-full bg-accent px-6 py-2 font-semibold text-surface touch-manipulation select-none active:scale-95"
+                onPointerDown={(e) => e.preventDefault()}
               >
                 View Puzzle
               </button>

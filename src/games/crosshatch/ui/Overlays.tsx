@@ -118,20 +118,19 @@ export function SolvedOverlay({
           {dateKey && elapsedMs !== null && (
             <ShareButton text={buildShareText(found, total, hints, dateKey, elapsedMs)} />
           )}
-          {!perfect && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-line py-3 font-semibold active:scale-95"
-            >
-              Keep hunting — {total - found} left
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-accent py-3 font-semibold text-surface touch-manipulation select-none active:scale-95"
+            onPointerDown={(e) => e.preventDefault()}
+          >
+            {perfect ? "View Puzzle" : `Keep hunting — ${total - found} left`}
+          </button>
           {mode === "practice" && onNewPuzzle && (
             <button
               type="button"
               onClick={onNewPuzzle}
-              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+              className="rounded-full border border-line py-3 font-semibold active:scale-95"
             >
               New puzzle
             </button>
