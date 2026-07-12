@@ -1,8 +1,9 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence } from "motion/react";
-import { formatDateKey, localDateKey } from "../../../lib/date";
+import { AnimatePresence, motion } from "motion/react";
+import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
 import {
   CircleHelp,
   CornerDownLeft,
@@ -12,6 +13,8 @@ import {
   Type,
 } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { ShareButton } from "../../../components/ShareButton";
+import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
@@ -21,17 +24,35 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
+import { rankFor } from "../engine/scoring";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
 import { Controls } from "./Controls";
 import { RankBar } from "./RankBar";
-import { DoneOverlay } from "./Overlays";
 import {
   POLYGON_NAMES,
   polygonBottomGap,
   regularPolygonClipPath,
 } from "./polygonPath";
+
+function buildShareText(
+  state: { score: number; puzzle: { maxScore: number }; revealed: Record<string, number[]> },
+  dateKey: string,
+  elapsedMs: number,
+): string {
+  const hints = Object.values(state.revealed).reduce(
+    (n, positions) => n + positions.length,
+    0,
+  );
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  const date = formatShareDate(dateKey);
+  return [
+    `Polygram — ${date}`,
+    `${rankFor(state.score, state.puzzle as any)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    SHARE_URL,
+  ].join("\n");
+}
 
 interface Props {
   mode: GameMode;
@@ -40,18 +61,10 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, doneElapsedMs, abandonSession } =
+export function GameScreen({ mode }: Props) {
+  const { state, dispatch, doneElapsedMs } =
     usePolygramGame(mode);
   const level = currentLevel(state);
-  // Replay wipes the save; kill this mount's persistence first so the
-  // unmount flush can't write the old progress back over the reset.
-  const replay = onReplay
-    ? () => {
-        abandonSession();
-        onReplay();
-      }
-    : undefined;
 
   // Warn (once) if this device can't persist progress.
   const [storageBroken, setStorageBroken] = useState(false);
@@ -61,8 +74,23 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     return () => window.removeEventListener("wg:storage-error", onError);
   }, []);
 
-  // Completion card is dismissable — closing reveals the solved board.
-  const [resultsOpen, setResultsOpen] = useState(true);
+  const done = state.phase === "done";
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showResults, setShowResults] = useState(() => done);
+  const prevDone = useRef(done);
+  useEffect(() => {
+    if (done && !prevDone.current) {
+      setShowConfetti(true);
+      setShowResults(false);
+      const t = setTimeout(() => {
+        setShowConfetti(false);
+        setShowResults(true);
+      }, 1500);
+      prevDone.current = true;
+      return () => clearTimeout(t);
+    }
+    prevDone.current = done;
+  }, [done]);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -175,8 +203,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
 
   // Physical keyboard support: letters type, Backspace deletes, Enter
   // submits, Escape closes the hint dialog.
-  const modalOpen =
-    hintWarningOpen || coachOpen || (state.phase === "done" && resultsOpen);
+  const modalOpen = hintWarningOpen || coachOpen;
   useEffect(() => {
     const letters = new Set(state.puzzle.letters.slice(0, level.size));
     const onKeyDown = (e: KeyboardEvent) => {
@@ -265,15 +292,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               New daily puzzle
             </Link>
           )}
-          {state.phase === "done" && !resultsOpen && (
-            <button
-              type="button"
-              onClick={() => setResultsOpen(true)}
-              className="text-sm font-semibold text-accent"
-            >
-              Results
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setCoachOpen(true)}
@@ -359,32 +377,59 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
             dispatch({ type: "submit" });
           }}
         />
-        <Controls
-          onDelete={() => {
-            setWordsOpen(false);
-            dispatch({ type: "backspace" });
-          }}
-          onShuffle={() => {
-            setWordsOpen(false);
-            shuffle();
-          }}
-          onEnter={() => {
-            setWordsOpen(false);
-            dispatch({ type: "submit" });
-          }}
-        />
+        {!done && (
+          <Controls
+            onDelete={() => {
+              setWordsOpen(false);
+              dispatch({ type: "backspace" });
+            }}
+            onShuffle={() => {
+              setWordsOpen(false);
+              shuffle();
+            }}
+            onEnter={() => {
+              setWordsOpen(false);
+              dispatch({ type: "submit" });
+            }}
+          />
+        )}
       </div>
 
-      <DoneOverlay
-        state={state}
-        mode={mode.kind}
-        dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
-        elapsedMs={doneElapsedMs}
-        open={resultsOpen}
-        onClose={() => setResultsOpen(false)}
-        onNewPuzzle={onNewPuzzle}
-        onReplay={replay}
-      />
+      <AnimatePresence mode="wait">
+        {done && showResults ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 pb-2"
+          >
+            <p className="text-lg font-bold text-ink">
+              {mode.kind === "daily" ? "Daily complete" : "Puzzle complete"}
+            </p>
+            <p className="text-2xl font-bold text-accent">
+              {rankFor(state.score, state.puzzle)}
+            </p>
+            {doneElapsedMs !== null && (
+              <p className="font-game text-2xl text-accent">
+                {formatDuration(doneElapsedMs)}
+              </p>
+            )}
+            <p className="text-sm text-ink-soft">
+              {state.score} of {state.puzzle.maxScore} points · {POLYGON_NAMES[state.puzzle.maxLevel]} reached
+            </p>
+            {Object.keys(state.revealed).length > 0 && (
+              <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
+                Used hint
+              </span>
+            )}
+            {mode.kind !== "practice" && mode.dateKey && doneElapsedMs !== null && (
+              <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} />
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      {showConfetti && <ConfettiOverlay />}
 
       {hintWarningOpen && (
         <ModalDialog

@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { use, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Check,
   CircleCheck,
@@ -13,11 +13,14 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { formatDateKey, localDateKey } from "../../../lib/date";
+import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
+import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
+import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
@@ -39,7 +42,23 @@ import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
 import { WordsPanel } from "./WordsPanel";
-import { SolvedOverlay } from "./Overlays";
+import { rankFor } from "../engine/scoring";
+
+function buildShareText(
+  found: number,
+  total: number,
+  hints: number,
+  dateKey: string,
+  elapsedMs: number,
+): string {
+  const date = formatShareDate(dateKey);
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  return [
+    `Crosshatch — ${date}`,
+    `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    SHARE_URL,
+  ].join("\n");
+}
 
 interface Props {
   mode: GameMode;
@@ -48,23 +67,14 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
+export function GameScreen({ mode }: Props) {
   const {
     state,
     dispatch,
     puzzle,
     totalWords: total,
     solvedElapsedMs,
-    abandonSession,
   } = useCrosshatchGame(mode);
-  // Replay wipes the save; kill this mount's persistence first so the
-  // unmount flush can't write the old progress back over the reset.
-  const replay = onReplay
-    ? () => {
-        abandonSession();
-        onReplay();
-      }
-    : undefined;
   const dict = use(loadDictionary());
 
   // Warn (once) if this device can't persist progress.
@@ -75,11 +85,22 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
     return () => window.removeEventListener("wg:storage-error", onError);
   }, []);
 
-  // The solve card is dismissable — and reopens for a perfect sweep.
-  const [resultsOpen, setResultsOpen] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showResults, setShowResults] = useState(() => state.solved);
+  const prevSolved = useRef(state.solved);
   useEffect(() => {
-    if (state.found.length === total && total > 0) setResultsOpen(true);
-  }, [state.found.length, total]);
+    if (state.solved && !prevSolved.current) {
+      setShowConfetti(true);
+      setShowResults(false);
+      const t = setTimeout(() => {
+        setShowConfetti(false);
+        setShowResults(true);
+      }, 1500);
+      prevSolved.current = true;
+      return () => clearTimeout(t);
+    }
+    prevSolved.current = state.solved;
+  }, [state.solved]);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -184,8 +205,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   // dialogs. Enter/Space defer to a FOCUSED control (a keyboard user
   // tabbing the page keeps native button activation), and dialogs own
   // their keys entirely.
-  const modalOpen =
-    hintWarningOpen || coachOpen || (state.solved && resultsOpen);
+  const modalOpen = hintWarningOpen || coachOpen;
   useEffect(() => {
     const moveCursor = (dr: number, dc: number) => {
       const cur = state.cursor;
@@ -384,15 +404,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               New daily puzzle
             </Link>
           )}
-          {state.solved && !resultsOpen && (
-            <button
-              type="button"
-              onClick={() => setResultsOpen(true)}
-              className="text-sm font-semibold text-accent"
-            >
-              Results
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setCoachOpen(true)}
@@ -474,69 +485,96 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <SlotChips state={state} onFocusSlot={focusSlot} />
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-6">
-          <button
-            type="button"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => {
-              setWordsOpen(false);
-              dispatch({ type: "clearEntry" });
-            }}
-            className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
+      <AnimatePresence mode="wait">
+        {state.solved && showResults ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 pb-2"
           >
-            Clear grid
-          </button>
-          <button
-            type="button"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => {
-              // The button says Hint, so it hints — opening the words
-              // panel too shows where the reveal landed.
-              setWordsOpen(true);
-              requestHint();
-            }}
-            className="-my-3 px-3 py-3 text-xs font-semibold text-accent"
+            <p className="text-lg font-bold text-ink">
+              {state.found.length === total ? "Perfect sweep!" : "Solved"}
+            </p>
+            <p className="text-2xl font-bold text-accent">
+              {rankFor(state.found.length, total)}
+            </p>
+            {solvedElapsedMs !== null && (
+              <p className="font-game text-2xl text-accent">
+                {formatDuration(solvedElapsedMs)}
+              </p>
+            )}
+            <p className="text-sm text-ink-soft">
+              {state.found.length}/{total} words
+              {Object.values(state.revealed).reduce((n, p) => n + p.length, 0) > 0
+                ? ` · ${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)} hints`
+                : ""}
+            </p>
+            {mode.kind !== "practice" && mode.dateKey && solvedElapsedMs !== null && (
+              <ShareButton
+                text={buildShareText(
+                  state.found.length,
+                  total,
+                  Object.values(state.revealed).reduce((n, p) => n + p.length, 0),
+                  mode.dateKey,
+                  solvedElapsedMs,
+                )}
+              />
+            )}
+          </motion.div>
+        ) : !state.solved ? (
+          <motion.div
+            key="controls"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-2"
           >
-            Hint
-          </button>
-        </div>
-        <Keyboard
-          onLetter={(letter) => {
-            setWordsOpen(false);
-            dispatch({ type: "typeLetter", letter });
-          }}
-          onBackspace={() => {
-            setWordsOpen(false);
-            dispatch({ type: "backspace" });
-          }}
-          onEnter={() => {
-            setWordsOpen(false);
-            dispatch({ type: "submit" });
-          }}
-          submitReady={puzzle.shape.slots.every(
-            (slot) => slotWord(state, slot).complete,
-          )}
-        />
-      </div>
+            <div className="flex items-center gap-6">
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setWordsOpen(false);
+                  dispatch({ type: "clearEntry" });
+                }}
+                className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
+              >
+                Clear grid
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setWordsOpen(true);
+                  requestHint();
+                }}
+                className="-my-3 px-3 py-3 text-xs font-semibold text-accent"
+              >
+                Hint
+              </button>
+            </div>
+            <Keyboard
+              onLetter={(letter) => {
+                setWordsOpen(false);
+                dispatch({ type: "typeLetter", letter });
+              }}
+              onBackspace={() => {
+                setWordsOpen(false);
+                dispatch({ type: "backspace" });
+              }}
+              onEnter={() => {
+                setWordsOpen(false);
+                dispatch({ type: "submit" });
+              }}
+              submitReady={puzzle.shape.slots.every(
+                (slot) => slotWord(state, slot).complete,
+              )}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-      {state.solved && (
-        <SolvedOverlay
-          found={state.found.length}
-          total={total}
-          hints={Object.values(state.revealed).reduce(
-            (n, p) => n + p.length,
-            0,
-          )}
-          mode={mode.kind}
-          dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
-          elapsedMs={solvedElapsedMs}
-          open={resultsOpen}
-          onClose={() => setResultsOpen(false)}
-          onNewPuzzle={onNewPuzzle}
-          onReplay={replay}
-        />
-      )}
+      {showConfetti && <ConfettiOverlay />}
 
       {hintWarningOpen && (
         <ModalDialog
