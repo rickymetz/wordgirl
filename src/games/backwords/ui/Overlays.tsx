@@ -108,11 +108,19 @@ export function SolvedOverlay({
           {dateKey && elapsedMs !== null && (
             <ShareButton text={buildShareText(words, glyphs, dateKey, elapsedMs)} />
           )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-accent py-3 font-semibold text-surface touch-manipulation select-none active:scale-95"
+            onPointerDown={(e) => e.preventDefault()}
+          >
+            View Puzzle
+          </button>
           {mode === "practice" && onNewPuzzle && (
             <button
               type="button"
               onClick={onNewPuzzle}
-              className="rounded-full bg-accent py-3 font-semibold text-surface active:scale-95"
+              className="rounded-full border border-line py-3 font-semibold active:scale-95"
             >
               New puzzle
             </button>

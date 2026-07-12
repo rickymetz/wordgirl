@@ -95,11 +95,19 @@ export function SolvedOverlay({
 
             {dateKey && <ShareButton text={shareText} />}
 
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation select-none active:scale-95"
+              onPointerDown={(e) => e.preventDefault()}
+            >
+              View Puzzle
+            </button>
             {onNewPuzzle && (
               <button
                 type="button"
                 onClick={onNewPuzzle}
-                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation active:scale-95"
+                className="rounded-full border border-line px-6 py-2 text-sm font-semibold touch-manipulation active:scale-95"
                 onPointerDown={(e) => e.preventDefault()}
               >
                 New puzzle
@@ -109,7 +117,7 @@ export function SolvedOverlay({
               <button
                 type="button"
                 onClick={() => setConfirmReplay(true)}
-                className="rounded-full bg-accent px-6 py-2 text-sm font-semibold text-surface touch-manipulation active:scale-95"
+                className="rounded-full border border-line px-6 py-2 text-sm font-semibold touch-manipulation active:scale-95"
                 onPointerDown={(e) => e.preventDefault()}
               >
                 Play again
