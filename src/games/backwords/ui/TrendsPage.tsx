@@ -32,6 +32,9 @@ const config: GameTrendsConfig<ArchivedDay> = {
     solvedCounter<ArchivedDay>("takeBacks", "Take-backs", (d) => d.takeBacks, {
       lowerIsBetter: true,
     }),
+    solvedCounter<ArchivedDay>("hints", "Hints used", (d) => d.hints, {
+      lowerIsBetter: true,
+    }),
     solvedCounter<ArchivedDay>(
       "invalids",
       "Rejected words",

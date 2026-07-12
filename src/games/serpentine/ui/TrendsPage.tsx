@@ -27,6 +27,12 @@ const config: GameTrendsConfig<ArchivedDay> = {
       label: "Grid size",
       value: (d) => (d.solved ? d.cellCount : null),
     },
+    {
+      key: "hints",
+      label: "Hints used",
+      value: (d) => (d.solved ? (d.hints ?? null) : null),
+      lowerIsBetter: true,
+    },
   ],
   hours: {
     label: "When you solve",

@@ -49,7 +49,7 @@ interface Props {
 }
 
 export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
+  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, hydratedHints, setHints } =
     useSerpentineGame(mode);
 
   const storageBroken = useStorageBroken();
@@ -57,6 +57,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintCount, setHintCount] = useState(0);
+
+  // Sync hint count from hydration.
+  useEffect(() => {
+    if (hydratedHints > 0) setHintCount(hydratedHints);
+  }, [hydratedHints]);
   const { toast, show } = useToast();
 
   const wordStarts = useMemo(() => {
@@ -267,7 +272,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 type="button"
                 disabled={hintCount >= wordStarts.length}
                 onPointerDown={(e) => e.preventDefault()}
-                onClick={() => setHintCount((h) => Math.min(h + 1, wordStarts.length))}
+                onClick={() => {
+                  const next = Math.min(hintCount + 1, wordStarts.length);
+                  setHintCount(next);
+                  setHints(next);
+                }}
                 className={[
                   "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
                   hintCount > 0 ? "bg-accent text-surface" : "bg-tile text-ink",

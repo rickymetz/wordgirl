@@ -12,6 +12,7 @@ export interface DayProgress extends DailyBase {
   difficulty: Difficulty;
   puzzleId: string;
   cells: Cell[];
+  hints?: number;
 }
 
 export interface ArchivedDay {
@@ -22,6 +23,7 @@ export interface ArchivedDay {
   cellCount: number;
   foundWords: string[];
   solvedHour: number | null;
+  hints: number | null;
 }
 
 export interface SerpentineStats extends StreakStats {
@@ -105,6 +107,12 @@ export async function loadAllDailyProgress(): Promise<
       foundWords: solvedSaves.map((s) => s.puzzleId),
       solvedHour: solvedSaves.length > 0
         ? ((solvedSaves[0] as unknown as Record<string, unknown>).solvedHour as number) ?? null
+        : null,
+      hints: solvedSaves.length > 0
+        ? solvedSaves.reduce<number | null>((a, s) => {
+            const h = s.hints;
+            return h !== undefined ? (a ?? 0) + h : a;
+          }, null)
         : null,
     };
   }
