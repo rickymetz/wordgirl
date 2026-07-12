@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, type PanInfo } from "motion/react";
+import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import {
   CircleHelp,
   CornerDownLeft,
@@ -11,9 +11,14 @@ import {
   Sparkles,
   Type,
 } from "lucide-react";
-import { formatDateKey, localDateKey } from "../../../lib/date";
+import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
+import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
+import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useBackwordsGame, type GameMode } from "../state/useBackwordsGame";
 import {
   loadCoachSeen,
@@ -26,7 +31,21 @@ import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
 import { dragPoint } from "./dragPoint";
-import { SolvedOverlay } from "./Overlays";
+
+function buildShareText(
+  words: number,
+  glyphs: number,
+  dateKey: string,
+  elapsedMs: number,
+): string {
+  const date = formatShareDate(dateKey);
+  const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
+  return [
+    `Backwords — ${date}`,
+    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}`,
+    SHARE_URL,
+  ].join("\n");
+}
 
 interface Props {
   mode: GameMode;
@@ -35,28 +54,12 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, abandonSession } =
+export function GameScreen({ mode }: Props) {
+  const { state, dispatch, puzzle, solvedElapsedMs } =
     useBackwordsGame(mode);
-  // Replay wipes the save; kill this mount's persistence first so the
-  // unmount flush can't write the old progress back over the reset.
-  const replay = onReplay
-    ? () => {
-        abandonSession();
-        onReplay();
-      }
-    : undefined;
 
-  // Warn (once) if this device can't persist progress.
-  const [storageBroken, setStorageBroken] = useState(false);
-  useEffect(() => {
-    const onError = () => setStorageBroken(true);
-    window.addEventListener("wg:storage-error", onError);
-    return () => window.removeEventListener("wg:storage-error", onError);
-  }, []);
-
-  // Results card is dismissable — closing reveals the solved board.
-  const [resultsOpen, setResultsOpen] = useState(true);
+  const storageBroken = useStorageBroken();
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
 
   // A tile in flight: the mirror reflects it LIVE — the ghost tracks
   // the drag, mirrored across the glass, so it works from EITHER side
@@ -126,7 +129,7 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
   }, [mode.kind]);
 
   // Physical keyboard: letters stage, Backspace deletes, Enter places.
-  const modalOpen = coachOpen || (state.solved && resultsOpen);
+  const modalOpen = coachOpen;
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -246,15 +249,6 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
               New daily puzzle
             </Link>
           )}
-          {state.solved && !resultsOpen && (
-            <button
-              type="button"
-              onClick={() => setResultsOpen(true)}
-              className="text-sm font-semibold text-accent"
-            >
-              Results
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setCoachOpen(true)}
@@ -326,61 +320,84 @@ export function GameScreen({ mode, onNewPuzzle, onReplay }: Props) {
         <GameToast toast={toast} />
       </div>
 
-      {!state.solved && (
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => dispatch({ type: "clearRow" })}
-              className="-my-3 touch-manipulation px-3 py-3 text-xs font-semibold text-ink-soft"
-            >
-              Clear row
-            </button>
-            <button
-              type="button"
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => dispatch({ type: "backspace" })}
-              aria-label="delete letter"
-              className="relative flex h-9 w-11 touch-manipulation items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
-            >
-              <Delete aria-hidden className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => dispatch({ type: "commit" })}
-              className={`relative touch-manipulation rounded-full px-6 py-2 text-sm font-semibold transition-colors after:absolute after:-inset-1 after:content-[''] active:scale-95 ${
-                state.current.length > 0
-                  ? "bg-accent text-surface"
-                  : "bg-tile text-ink-soft"
-              }`}
-            >
-              Place
-            </button>
-          </div>
-          <LetterBank
-            all={puzzle.bank}
-            remaining={state.bank}
-            onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
-            onDragLive={onDragLive}
-          />
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {state.solved && showResults ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 pb-2"
+          >
+            <p className="text-lg font-bold text-ink">Solved</p>
+            <p className="text-ink-soft">
+              {state.rows.length} {state.rows.length === 1 ? "word" : "words"}
+            </p>
+            {solvedElapsedMs !== null && (
+              <p className="font-game text-2xl text-accent">
+                {formatDuration(solvedElapsedMs)}
+              </p>
+            )}
+            {glyphRowCount(state.rows) > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
+                <Sparkles aria-hidden className="h-3.5 w-3.5 text-accent" />
+                {glyphRowCount(state.rows)} true mirror {glyphRowCount(state.rows) === 1 ? "row" : "rows"}
+              </span>
+            )}
+            {mode.kind !== "practice" && solvedElapsedMs !== null && (
+              <ShareButton
+                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs)}
+              />
+            )}
+          </motion.div>
+        ) : !state.solved ? (
+          <motion.div
+            key="controls"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-3"
+          >
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "clearRow" })}
+                className="-my-3 touch-manipulation px-3 py-3 text-xs font-semibold text-ink-soft"
+              >
+                Clear row
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "backspace" })}
+                aria-label="delete letter"
+                className="relative flex h-9 w-11 touch-manipulation items-center justify-center rounded-lg bg-tile text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+              >
+                <Delete aria-hidden className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "commit" })}
+                className={`relative touch-manipulation rounded-full px-6 py-2 text-sm font-semibold transition-colors after:absolute after:-inset-1 after:content-[''] active:scale-95 ${
+                  state.current.length > 0
+                    ? "bg-accent text-surface"
+                    : "bg-tile text-ink-soft"
+                }`}
+              >
+                Place
+              </button>
+            </div>
+            <LetterBank
+              all={puzzle.bank}
+              remaining={state.bank}
+              onLetter={(letter) => dispatch({ type: "typeLetter", letter })}
+              onDragLive={onDragLive}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-      {state.solved && (
-        <SolvedOverlay
-          words={state.rows.length}
-          glyphs={glyphRowCount(state.rows)}
-          mode={mode.kind}
-          dateKey={mode.kind === "practice" ? undefined : mode.dateKey}
-          elapsedMs={solvedElapsedMs}
-          open={resultsOpen}
-          onClose={() => setResultsOpen(false)}
-          onNewPuzzle={onNewPuzzle}
-          onReplay={replay}
-        />
-      )}
+      {showConfetti && <ConfettiOverlay />}
 
       <AnimatePresence>
         {coachOpen && (

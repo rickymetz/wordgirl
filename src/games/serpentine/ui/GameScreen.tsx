@@ -1,10 +1,16 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { ShareButton } from "../../../components/ShareButton";
+import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { GameToast, useToast } from "../../../components/game/GameToast";
-import { formatDateKey } from "../../../lib/date";
+import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
+import { SHARE_URL } from "../../../lib/share";
 import {
   useSerpentineGame,
   type GameMode,
@@ -12,8 +18,20 @@ import {
 import { loadCoachSeen, markCoachSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
-import { SolvedOverlay, SerpentineCoach } from "./Overlays";
+import { SerpentineCoach } from "./Overlays";
 import { cellKey, type Difficulty } from "../engine/types";
+
+function buildShareText(
+  puzzle: { path: { row: number; col: number }[]; text: string },
+  difficulty: Difficulty,
+  dateKey: string | undefined,
+  elapsedMs: number | null,
+): string {
+  const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
+  const label = difficulty === "haiku" ? "Haiku" : "Poem";
+  const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
+  return `${title}\n${label}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
+}
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   haiku: "Haiku",
@@ -28,11 +46,13 @@ interface Props {
   onReplay?: () => Promise<void>;
 }
 
-export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, onReplay }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, abandonSession } =
+export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
+  const { state, dispatch, puzzle, solvedElapsedMs } =
     useSerpentineGame(mode);
 
-  const [resultsOpen, setResultsOpen] = useState(true);
+  const storageBroken = useStorageBroken();
+  const { showConfetti, showResults } = useSolveTransition(state.solved);
+
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintActive, setHintActive] = useState(false);
   const { toast, show } = useToast();
@@ -88,9 +108,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
-          <span className="text-sm font-semibold text-ink-soft">
-            {formatDateKey(mode.dateKey)}
-          </span>
+          <Link
+            to="/games/serpentine/archive"
+            className="text-sm font-semibold text-ink-soft"
+          >
+            ← Archive
+          </Link>
         ) : (
           <HomeLink />
         )}
@@ -102,15 +125,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
             >
               New daily puzzle
             </Link>
-          )}
-          {state.solved && !resultsOpen && (
-            <button
-              type="button"
-              onClick={() => setResultsOpen(true)}
-              className="text-sm font-semibold text-accent"
-            >
-              Results
-            </button>
           )}
           <button
             type="button"
@@ -166,6 +180,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         </div>
       )}
 
+      {storageBroken && (
+        <p className="pb-2 text-xs font-semibold text-warn" role="alert">
+          Progress can't be saved on this device.
+        </p>
+      )}
+
       {/* Puzzle title + typed-out letters */}
       <div className="px-1 pt-10 pb-5">
         <div className="pb-1 text-center text-sm font-medium text-accent italic">
@@ -190,63 +210,77 @@ export function GameScreen({ mode, difficulty, onDifficultyChange, onNewPuzzle, 
         <GameToast toast={toast} />
       </div>
 
-      {/* Progress */}
-      {!state.solved && (
-        <div className="pb-3 text-center text-sm font-medium text-ink-soft">
-          {state.cells.length} / {puzzle.path.length} letters
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {state.solved && showResults ? (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 pb-2"
+          >
+            <p className="text-lg font-bold text-ink">Solved</p>
+            {solvedElapsedMs !== null && (
+              <p className="font-game text-2xl text-accent">
+                {formatDuration(solvedElapsedMs)}
+              </p>
+            )}
+            <p className="text-sm text-ink-soft">
+              {puzzle.path.length} letters · {puzzle.rows}×{puzzle.cols} grid
+            </p>
+            {mode.kind !== "practice" && solvedElapsedMs !== null && (
+              <ShareButton
+                text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs)}
+              />
+            )}
+          </motion.div>
+        ) : !state.solved ? (
+          <motion.div
+            key="controls"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-3"
+          >
+            <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+              {state.cells.length} / {puzzle.path.length} letters
+            </div>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "undo" })}
+                className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+              >
+                <Undo2 aria-hidden className="h-4 w-4" />
+                Undo
+              </button>
+              <button
+                type="button"
+                aria-pressed={hintActive}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => setHintActive((h) => !h)}
+                className={[
+                  "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
+                  hintActive ? "bg-accent text-surface" : "bg-tile text-ink",
+                ].join(" ")}
+              >
+                <Lightbulb aria-hidden className="h-4 w-4" />
+                Hint
+              </button>
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "clearSnake" })}
+                className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
+              >
+                <Trash2 aria-hidden className="h-4 w-4" />
+                Clear
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
-      {/* Controls */}
-      {!state.solved && (
-        <div className="flex items-center justify-center gap-4">
-          <button
-            type="button"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => dispatch({ type: "undo" })}
-            className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
-          >
-            <Undo2 aria-hidden className="h-4 w-4" />
-            Undo
-          </button>
-          <button
-            type="button"
-            aria-pressed={hintActive}
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => setHintActive((h) => !h)}
-            className={[
-              "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
-              hintActive ? "bg-accent text-surface" : "bg-tile text-ink",
-            ].join(" ")}
-          >
-            <Lightbulb aria-hidden className="h-4 w-4" />
-            Hint
-          </button>
-          <button
-            type="button"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => dispatch({ type: "clearSnake" })}
-            className="relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg bg-tile px-4 text-sm font-semibold text-ink after:absolute after:-inset-1.5 after:content-[''] active:scale-90"
-          >
-            <Trash2 aria-hidden className="h-4 w-4" />
-            Clear
-          </button>
-        </div>
-      )}
-
-      {/* Solved overlay */}
-      {state.solved && (
-        <SolvedOverlay
-          puzzle={puzzle}
-          difficulty={mode.difficulty}
-          dateKey={mode.kind !== "practice" ? mode.dateKey : undefined}
-          elapsedMs={solvedElapsedMs}
-          open={resultsOpen}
-          onClose={() => setResultsOpen(false)}
-          onNewPuzzle={onNewPuzzle}
-          onReplay={onReplay && (() => { abandonSession(); return onReplay(); })}
-        />
-      )}
+      {showConfetti && <ConfettiOverlay />}
 
       {/* Coach */}
       <SerpentineCoach open={coachOpen} onClose={closeCoach} />
