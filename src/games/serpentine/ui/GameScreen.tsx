@@ -26,11 +26,13 @@ function buildShareText(
   difficulty: Difficulty,
   dateKey: string | undefined,
   elapsedMs: number | null,
+  hints: number,
 ): string {
   const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
   const label = difficulty === "haiku" ? "Haiku" : "Poem";
   const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
-  return `${title}\n${label}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  return `${title}\n${label}: ${puzzle.path.length} letters${time}${hintPart} 🐍\n\n${SHARE_URL}`;
 }
 
 const DIFF_LABELS: Record<Difficulty, string> = {
@@ -237,7 +239,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             </p>
             {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs)}
+                text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs, hintCount)}
               />
             )}
           </motion.div>

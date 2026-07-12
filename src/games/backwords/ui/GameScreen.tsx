@@ -38,12 +38,14 @@ function buildShareText(
   glyphs: number,
   dateKey: string,
   elapsedMs: number,
+  hints: number,
 ): string {
   const date = formatShareDate(dateKey);
   const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
     `Backwords — ${date}`,
-    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}`,
+    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -346,7 +348,7 @@ export function GameScreen({ mode }: Props) {
             )}
             {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs)}
+                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs, state.hints)}
               />
             )}
           </motion.div>
