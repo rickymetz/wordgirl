@@ -49,7 +49,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   return [
     `Polygram — ${date}`,
-    `${rankFor(state.score, state.puzzle as any)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${rankFor(state.score, state.puzzle)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }

@@ -48,6 +48,13 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs } =
     useSerpentineGame(mode);
 
+  const [storageBroken, setStorageBroken] = useState(false);
+  useEffect(() => {
+    const onError = () => setStorageBroken(true);
+    window.addEventListener("wg:storage-error", onError);
+    return () => window.removeEventListener("wg:storage-error", onError);
+  }, []);
+
   const [showConfetti, setShowConfetti] = useState(false);
   const [showResults, setShowResults] = useState(() => state.solved);
   const prevSolved = useRef(state.solved);
@@ -120,9 +127,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
-          <span className="text-sm font-semibold text-ink-soft">
-            {formatDateKey(mode.dateKey)}
-          </span>
+          <Link
+            to="/games/serpentine/archive"
+            className="text-sm font-semibold text-ink-soft"
+          >
+            ← Archive
+          </Link>
         ) : (
           <HomeLink />
         )}
@@ -189,6 +199,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         </div>
       )}
 
+      {storageBroken && (
+        <p className="pb-2 text-xs font-semibold text-warn" role="alert">
+          Progress can't be saved on this device.
+        </p>
+      )}
+
       {/* Puzzle title + typed-out letters */}
       <div className="px-1 pt-10 pb-5">
         <div className="pb-1 text-center text-sm font-medium text-accent italic">
@@ -230,7 +246,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             <p className="text-sm text-ink-soft">
               {puzzle.path.length} letters · {puzzle.rows}×{puzzle.cols} grid
             </p>
-            {mode.kind !== "practice" && (
+            {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs)}
               />

@@ -2,7 +2,8 @@ import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { RotateCcw } from "lucide-react";
-import { formatDuration, formatShareDate } from "../../../lib/date";
+import { Link } from "react-router-dom";
+import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
@@ -227,7 +228,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     >
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
-        <HomeLink />
+        {mode.kind === "archive" ? (
+          <Link
+            to="/games/doublet/archive"
+            className="text-sm font-semibold text-ink-soft"
+          >
+            ← Archive
+          </Link>
+        ) : (
+          <HomeLink />
+        )}
         {placedCount > 0 && !state.solved ? (
           <button
             className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
@@ -255,6 +265,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <rect x="11" y="5" width="8" height="10" rx="2" fill="none"
             stroke="currentColor" strokeWidth="2" />
         </svg>
+        {mode.kind === "archive" && (
+          <span className="text-base font-semibold text-ink-soft">
+            {formatDateKey(mode.dateKey)}
+          </span>
+        )}
       </div>
 
       {/* Difficulty tabs */}

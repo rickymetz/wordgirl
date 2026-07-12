@@ -42,7 +42,7 @@ export const RANKS = [
 
 export type RankTitle = (typeof RANKS)[number]["title"];
 
-export function rankFor(score: number, puzzle: Puzzle): RankTitle {
+export function rankFor(score: number, puzzle: Pick<Puzzle, "maxScore">): RankTitle {
   const pct = puzzle.maxScore === 0 ? 0 : (score / puzzle.maxScore) * 100;
   let current: RankTitle = RANKS[0].title;
   for (const rank of RANKS) {
