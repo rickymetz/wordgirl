@@ -1,5 +1,5 @@
 import { seededRandom } from "../../../lib/random";
-import { getPuzzle, getPoolSize } from "./puzzles";
+import { getThemedPuzzle, getPoolSize } from "./puzzles";
 import type { Difficulty, PuzzleDef } from "./types";
 
 export function practiceSeed(random: string, difficulty: Difficulty): string {
@@ -11,6 +11,6 @@ export function getPracticePuzzle(
   difficulty: Difficulty,
 ): PuzzleDef {
   const rand = seededRandom(seed);
-  const index = Math.floor(rand() * getPoolSize(difficulty));
-  return getPuzzle(difficulty, index, seed);
+  const index = Math.floor(rand() * getPoolSize("haiku"));
+  return getThemedPuzzle(difficulty, index, seed);
 }
