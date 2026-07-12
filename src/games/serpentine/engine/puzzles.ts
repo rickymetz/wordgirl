@@ -939,74 +939,24 @@ const THEME_POOLS: ThemeGroup[] = [
   },
 ];
 
-// Flat indices for iteration: each haiku gets a global index
-const HAIKU_FLAT: { theme: number; local: number; entry: PoemEntry }[] = [];
+const HAIKU_FLAT: { theme: number; entry: PoemEntry }[] = [];
 for (let t = 0; t < THEME_POOLS.length; t++) {
   for (let i = 0; i < THEME_POOLS[t].haiku.length; i++) {
-    HAIKU_FLAT.push({ theme: t, local: i, entry: THEME_POOLS[t].haiku[i] });
+    HAIKU_FLAT.push({ theme: t, entry: THEME_POOLS[t].haiku[i] });
   }
 }
 
-const ENGLISH_FLAT: PoemEntry[] = [];
-for (const group of THEME_POOLS) {
-  ENGLISH_FLAT.push(...group.english);
-}
-
-/**
- * Pick a thematic pair for a given index and salt.
- * Returns a haiku entry and an English entry from the same theme.
- * Different salts produce different pairings within the same theme.
- */
 function pickThematicPair(
   index: number,
   salt: string,
-): { haiku: PoemEntry; english: PoemEntry; theme: string } {
-  const hi = index % HAIKU_FLAT.length;
-  const h = HAIKU_FLAT[hi];
-  const themeGroup = THEME_POOLS[h.theme];
-
-  // Pick an English poem from the same theme, seeded by salt + index
+): { haiku: PoemEntry; english: PoemEntry } {
+  const h = HAIKU_FLAT[index % HAIKU_FLAT.length];
+  const group = THEME_POOLS[h.theme];
   const pairRand = seededRandom(`serpentine:pair:${salt}:${index}`);
-  const ei = Math.floor(pairRand() * themeGroup.english.length);
-
-  return {
-    haiku: h.entry,
-    english: themeGroup.english[ei],
-    theme: themeGroup.theme,
-  };
+  const ei = Math.floor(pairRand() * group.english.length);
+  return { haiku: h.entry, english: group.english[ei] };
 }
 
-export function getPuzzlePool(difficulty: Difficulty): PuzzleDef[] {
-  const pool = difficulty === "haiku" ? HAIKU_FLAT.map(h => h.entry) : ENGLISH_FLAT;
-  const prefix = difficulty === "haiku" ? "h" : "p";
-  return pool.map((p, i) => {
-    const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
-    const rand = seededRandom(`serpentine:layout:${id}`);
-    return expand(p[0], p[1], p[2], id, difficulty, rand);
-  });
-}
-
-export function getPuzzle(
-  difficulty: Difficulty,
-  index: number,
-  layoutSalt = "",
-): PuzzleDef {
-  const pool = difficulty === "haiku" ? HAIKU_FLAT.map(h => h.entry) : ENGLISH_FLAT;
-  const i = index % pool.length;
-  const p = pool[i];
-  const prefix = difficulty === "haiku" ? "h" : "p";
-  const id = `${prefix}${String(i + 1).padStart(3, "0")}`;
-  const seed = layoutSalt
-    ? `serpentine:layout:${id}:${layoutSalt}`
-    : `serpentine:layout:${id}`;
-  const rand = seededRandom(seed);
-  return expand(p[0], p[1], p[2], id, difficulty, rand);
-}
-
-/**
- * Get a thematic daily puzzle pair. Both difficulties for a given
- * dateKey draw from the same theme.
- */
 export function getThemedPuzzle(
   difficulty: Difficulty,
   index: number,
@@ -1016,20 +966,10 @@ export function getThemedPuzzle(
   const entry = difficulty === "haiku" ? pair.haiku : pair.english;
   const prefix = difficulty === "haiku" ? "h" : "p";
   const id = `${prefix}${String(index % HAIKU_FLAT.length + 1).padStart(3, "0")}`;
-  const seed = `serpentine:layout:${id}:${salt}`;
-  const rand = seededRandom(seed);
+  const rand = seededRandom(`serpentine:layout:${id}:${salt}`);
   return expand(entry[0], entry[1], entry[2], id, difficulty, rand);
 }
 
-export function getAuthorForDay(index: number, difficulty: Difficulty = "haiku"): string {
-  const pool = difficulty === "haiku" ? HAIKU_FLAT.map(h => h.entry) : ENGLISH_FLAT;
-  return pool[index % pool.length][0];
-}
-
-export function getPoolSize(difficulty: Difficulty = "haiku"): number {
-  return difficulty === "haiku" ? HAIKU_FLAT.length : ENGLISH_FLAT.length;
-}
-
-export function getThemeForDay(index: number): string {
-  return THEME_POOLS[HAIKU_FLAT[index % HAIKU_FLAT.length].theme].theme;
+export function getPoolSize(): number {
+  return HAIKU_FLAT.length;
 }

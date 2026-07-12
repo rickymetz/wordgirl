@@ -10,6 +10,6 @@ export function dailySeed(difficulty: Difficulty, dateKey: string): string {
 
 export function getDailyPuzzle(difficulty: Difficulty, dateKey: string): PuzzleDef {
   const rand = seededRandom(dailySeed(difficulty, dateKey));
-  const index = Math.floor(rand() * getPoolSize("haiku"));
+  const index = Math.floor(rand() * getPoolSize());
   return getThemedPuzzle(difficulty, index, dateKey);
 }

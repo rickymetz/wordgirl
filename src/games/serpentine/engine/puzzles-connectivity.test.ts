@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickBlocked, isConnected, getPuzzle, getAuthorForDay, getPoolSize, getThemeForDay, getThemedPuzzle, bestGrid } from "./puzzles";
+import { pickBlocked, isConnected, getPoolSize, getThemedPuzzle, bestGrid } from "./puzzles";
 import { seededRandom } from "../../../lib/random";
 
 describe("pickBlocked connectivity", () => {
@@ -45,56 +45,12 @@ describe("pickBlocked connectivity", () => {
   });
 });
 
-describe("getPuzzle with valid difficulties", () => {
-  it("returns a haiku puzzle", () => {
-    const puzzle = getPuzzle("haiku", 0);
-    expect(puzzle.difficulty).toBe("haiku");
-    expect(puzzle.id).toMatch(/^h\d{3}$/);
-    expect(puzzle.grid.length).toBeGreaterThan(0);
-  });
-
-  it("returns a poem puzzle", () => {
-    const puzzle = getPuzzle("poem", 0);
-    expect(puzzle.difficulty).toBe("poem");
-    expect(puzzle.id).toMatch(/^p\d{3}$/);
-    expect(puzzle.grid.length).toBeGreaterThan(0);
-  });
-
-  it("wraps index around the pool", () => {
-    const size = getPoolSize("haiku");
-    const p1 = getPuzzle("haiku", 0);
-    const p2 = getPuzzle("haiku", size);
-    expect(p1.id).toBe(p2.id);
-    expect(p1.text).toBe(p2.text);
-  });
-
-  it("produces different layout with different salt", () => {
-    const p1 = getPuzzle("haiku", 0);
-    const p2 = getPuzzle("haiku", 0, "2026-07-12");
-    expect(p1.text).toBe(p2.text);
-    expect(p1.path).not.toEqual(p2.path);
-  });
-});
-
 describe("thematic pairing", () => {
-  it("same index and salt produce same theme for both difficulties", () => {
+  it("same index and salt produce valid puzzles for both difficulties", () => {
     const h = getThemedPuzzle("haiku", 5, "2026-07-12");
     const p = getThemedPuzzle("poem", 5, "2026-07-12");
-    const theme = getThemeForDay(5);
-    expect(typeof theme).toBe("string");
-    expect(theme.length).toBeGreaterThan(0);
-    // Both should have valid puzzles
     expect(h.grid.length).toBeGreaterThan(0);
     expect(p.grid.length).toBeGreaterThan(0);
-  });
-
-  it("different salt produces different poem for same haiku index", () => {
-    const p1 = getThemedPuzzle("poem", 0, "2026-07-12");
-    const p2 = getThemedPuzzle("poem", 0, "2026-07-13");
-    // Same theme but likely different poem text
-    // (could theoretically collide but very unlikely with different salts)
-    expect(p1.difficulty).toBe("poem");
-    expect(p2.difficulty).toBe("poem");
   });
 
   it("different salt produces different path for same haiku", () => {
@@ -103,35 +59,12 @@ describe("thematic pairing", () => {
     expect(h1.text).toBe(h2.text);
     expect(h1.path).not.toEqual(h2.path);
   });
-});
-
-describe("getAuthorForDay", () => {
-  it("returns haiku author by default", () => {
-    const author = getAuthorForDay(0);
-    expect(typeof author).toBe("string");
-    expect(author.length).toBeGreaterThan(0);
-  });
-
-  it("returns haiku author when explicitly requested", () => {
-    const author = getAuthorForDay(0, "haiku");
-    expect(typeof author).toBe("string");
-    expect(author.length).toBeGreaterThan(0);
-  });
 
   it("wraps index around the pool", () => {
-    const size = getPoolSize("haiku");
-    const a1 = getAuthorForDay(0, "haiku");
-    const a2 = getAuthorForDay(size, "haiku");
-    expect(a1).toBe(a2);
-  });
-});
-
-describe("independent pool sizes", () => {
-  it("haiku and poem pools have different sizes", () => {
-    const haikuSize = getPoolSize("haiku");
-    const poemSize = getPoolSize("poem");
-    expect(haikuSize).toBeGreaterThan(0);
-    expect(poemSize).toBeGreaterThan(0);
-    expect(haikuSize).not.toBe(poemSize);
+    const size = getPoolSize();
+    const p1 = getThemedPuzzle("haiku", 0, "wrap");
+    const p2 = getThemedPuzzle("haiku", size, "wrap");
+    expect(p1.id).toBe(p2.id);
+    expect(p1.text).toBe(p2.text);
   });
 });

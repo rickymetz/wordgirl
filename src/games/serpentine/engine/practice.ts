@@ -11,6 +11,6 @@ export function getPracticePuzzle(
   difficulty: Difficulty,
 ): PuzzleDef {
   const rand = seededRandom(seed);
-  const index = Math.floor(rand() * getPoolSize("haiku"));
+  const index = Math.floor(rand() * getPoolSize());
   return getThemedPuzzle(difficulty, index, seed);
 }
