@@ -15,23 +15,26 @@ function fontSize(total: number): string {
   return "text-sm";
 }
 
-function wordBreaks(text: string): Set<number> {
-  const breaks = new Set<number>();
+function wordRanges(text: string): [number, number][] {
+  const ranges: [number, number][] = [];
   let letterIndex = 0;
+  let wordStart = 0;
   for (const ch of text) {
     if (ch === " ") {
-      breaks.add(letterIndex);
+      if (letterIndex > wordStart) ranges.push([wordStart, letterIndex]);
+      wordStart = letterIndex;
     } else {
       letterIndex++;
     }
   }
-  return breaks;
+  if (letterIndex > wordStart) ranges.push([wordStart, letterIndex]);
+  return ranges;
 }
 
 export function SnakeText({ puzzle, cells, hintIndices }: Props) {
   const total = puzzle.path.length;
   const size = fontSize(total);
-  const breaks = wordBreaks(puzzle.text);
+  const words = wordRanges(puzzle.text);
 
   return (
     <div
@@ -39,40 +42,43 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
       className="relative flex min-h-12 items-center justify-center py-1"
       aria-label={`${cells.length} of ${total} letters placed`}
     >
-      <span className={`flex flex-wrap justify-center font-game ${size} font-normal uppercase`}>
-        <AnimatePresence mode="popLayout">
-          {Array.from({ length: total }, (_, i) => {
-            const letter =
-              i < cells.length
-                ? puzzle.grid[cells[i].row][cells[i].col]
-                : null;
-            const isHint = !letter && hintIndices?.has(i);
-            const hintLetter = isHint
-              ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
-              : null;
-            const gap = breaks.has(i) ? <span key={`sp-${i}`} className="inline-block w-2" /> : null;
-            const char = letter ? (
-              <motion.span
-                key={`${i}-${letter}`}
-                className="inline-block text-accent"
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 500, damping: 26 }}
-              >
-                {letter}
-              </motion.span>
-            ) : hintLetter ? (
-              <span key={`hint-${i}`} className="inline-block text-accent/50">
-                {hintLetter}
-              </span>
-            ) : (
-              <span key={`blank-${i}`} className="inline-block text-ink-soft/70">
-                ?
-              </span>
-            );
-            return gap ? [gap, char] : char;
-          })}
-        </AnimatePresence>
+      <span className={`flex flex-wrap justify-center gap-x-2 font-game ${size} font-normal uppercase`}>
+        {words.map(([start, end]) => (
+          <span key={start} className="inline-flex whitespace-nowrap">
+            <AnimatePresence mode="popLayout">
+              {Array.from({ length: end - start }, (_, j) => {
+                const i = start + j;
+                const letter =
+                  i < cells.length
+                    ? puzzle.grid[cells[i].row][cells[i].col]
+                    : null;
+                const isHint = !letter && hintIndices?.has(i);
+                const hintLetter = isHint
+                  ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
+                  : null;
+                return letter ? (
+                  <motion.span
+                    key={`${i}-${letter}`}
+                    className="inline-block text-accent"
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 26 }}
+                  >
+                    {letter}
+                  </motion.span>
+                ) : hintLetter ? (
+                  <span key={`hint-${i}`} className="inline-block text-accent/50">
+                    {hintLetter}
+                  </span>
+                ) : (
+                  <span key={`blank-${i}`} className="inline-block text-ink-soft/70">
+                    ?
+                  </span>
+                );
+              })}
+            </AnimatePresence>
+          </span>
+        ))}
       </span>
     </div>
   );
