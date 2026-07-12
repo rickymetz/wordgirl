@@ -21,7 +21,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {available.map((d) => (
           <DominoChip
             key={d.id}

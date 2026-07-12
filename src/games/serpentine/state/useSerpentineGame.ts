@@ -52,6 +52,7 @@ export function useSerpentineGame(mode: GameMode) {
   const solvedElapsedMs = useRef<number | null>(null);
   const statsRecorded = useRef(false);
   const abandoned = useRef(false);
+  const hydratedAsSolved = useRef(false);
 
   // Hydrate from storage — hydrated flips ONLY after the async load
   // completes so the save effect cannot clobber stored progress with
@@ -68,6 +69,7 @@ export function useSerpentineGame(mode: GameMode) {
         statsRecorded.current = !!saved.statsRecorded;
         if (saved.solved) {
           solvedElapsedMs.current = saved.elapsedMs;
+          hydratedAsSolved.current = true;
         }
         dispatch({
           type: "hydrate",
@@ -156,6 +158,7 @@ export function useSerpentineGame(mode: GameMode) {
     dispatch,
     puzzle,
     solvedElapsedMs: solvedElapsedMs.current,
+    hydratedAsSolved: hydratedAsSolved.current,
     abandonSession,
   };
 }

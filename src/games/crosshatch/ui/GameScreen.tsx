@@ -76,11 +76,12 @@ export function GameScreen({ mode }: Props) {
     puzzle,
     totalWords: total,
     solvedElapsedMs,
+    hydratedAsSolved,
   } = useCrosshatchGame(mode);
   const dict = use(loadDictionary());
 
   const storageBroken = useStorageBroken();
-  const { showConfetti, showResults } = useSolveTransition(state.solved);
+  const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);

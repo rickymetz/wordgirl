@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { RotateCcw } from "lucide-react";
+import { Lightbulb, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -49,10 +49,10 @@ interface Props {
 }
 
 export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
-  const { state, dispatch, puzzle, dict, solvedElapsedMs } =
+  const { state, dispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved } =
     useDoubletGame(mode);
 
-  const { showConfetti, showResults } = useSolveTransition(state.solved);
+  const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
@@ -223,18 +223,33 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         ) : (
           <HomeLink />
         )}
-        {placedCount > 0 && !state.solved ? (
-          <button
-            className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
-                       text-ink-soft text-xs font-semibold
-                       active:scale-95 touch-manipulation select-none
-                       after:absolute after:inset-x-0 after:-inset-y-1.5"
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => dispatch({ type: "clearBoard" })}
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Clear
-          </button>
+        {!state.solved ? (
+          <span className="flex items-center gap-2">
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-1.5"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => dispatch({ type: "revealHint", dict })}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{state.hints > 0 ? ` (${state.hints})` : ""}
+            </button>
+            {placedCount > 0 && (
+              <button
+                className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                           text-ink-soft text-xs font-semibold
+                           active:scale-95 touch-manipulation select-none
+                           after:absolute after:inset-x-0 after:-inset-y-1.5"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "clearBoard" })}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Clear
+              </button>
+            )}
+          </span>
         ) : (
           <div className="w-6" />
         )}

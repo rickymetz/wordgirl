@@ -17,6 +17,7 @@ export interface DailyProgress extends DailyBase {
   rotations?: number;
   removals?: number;
   invalidBoards?: number;
+  hints?: number;
   /** Opens of this board while unsolved. */
   sessions?: number;
   /** Local hour (0-23) this board was solved. */

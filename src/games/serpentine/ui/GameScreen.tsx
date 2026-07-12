@@ -47,19 +47,18 @@ interface Props {
 }
 
 export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs } =
+  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
     useSerpentineGame(mode);
 
   const storageBroken = useStorageBroken();
-  const { showConfetti, showResults } = useSolveTransition(state.solved);
+  const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   const [coachOpen, setCoachOpen] = useState(false);
-  const [hintActive, setHintActive] = useState(false);
+  const [hintCount, setHintCount] = useState(0);
   const { toast, show } = useToast();
 
-  const { hintIndices, hintCellKeys } = useMemo(() => {
-    const indices = new Set<number>();
-    const keys = new Set<string>();
+  const wordStarts = useMemo(() => {
+    const starts: { index: number; key: string }[] = [];
     let pi = 0;
     let atWordStart = true;
     for (const ch of puzzle.text) {
@@ -69,14 +68,23 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       }
       if (!/[A-Za-z]/.test(ch)) continue;
       if (atWordStart) {
-        indices.add(pi);
-        keys.add(cellKey(puzzle.path[pi]));
+        starts.push({ index: pi, key: cellKey(puzzle.path[pi]) });
         atWordStart = false;
       }
       pi++;
     }
-    return { hintIndices: indices, hintCellKeys: keys };
+    return starts;
   }, [puzzle]);
+
+  const { hintIndices, hintCellKeys } = useMemo(() => {
+    const indices = new Set<number>();
+    const keys = new Set<string>();
+    for (let i = 0; i < hintCount && i < wordStarts.length; i++) {
+      indices.add(wordStarts[i].index);
+      keys.add(wordStarts[i].key);
+    }
+    return { hintIndices: indices, hintCellKeys: keys };
+  }, [wordStarts, hintCount]);
 
   // First-run coach.
   useEffect(() => {
@@ -191,7 +199,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         <div className="pb-1 text-center text-sm font-medium text-accent italic">
           {puzzle.title}
         </div>
-        <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintActive ? hintIndices : undefined} />
+        <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintCount > 0 ? hintIndices : undefined} />
       </div>
 
       {/* Grid */}
@@ -204,7 +212,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           claimed={state.claimed}
           solved={state.solved}
           blocked={puzzle.blocked}
-          hintCells={hintActive ? hintCellKeys : undefined}
+          hintCells={hintCount > 0 ? hintCellKeys : undefined}
           onTapCell={onTapCell}
         />
         <GameToast toast={toast} />
@@ -255,16 +263,17 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               </button>
               <button
                 type="button"
-                aria-pressed={hintActive}
+                disabled={hintCount >= wordStarts.length}
                 onPointerDown={(e) => e.preventDefault()}
-                onClick={() => setHintActive((h) => !h)}
+                onClick={() => setHintCount((h) => Math.min(h + 1, wordStarts.length))}
                 className={[
                   "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
-                  hintActive ? "bg-accent text-surface" : "bg-tile text-ink",
+                  hintCount > 0 ? "bg-accent text-surface" : "bg-tile text-ink",
+                  hintCount >= wordStarts.length ? "opacity-40" : "",
                 ].join(" ")}
               >
                 <Lightbulb aria-hidden className="h-4 w-4" />
-                Hint
+                Hint{hintCount > 0 ? ` (${hintCount})` : ""}
               </button>
               <button
                 type="button"

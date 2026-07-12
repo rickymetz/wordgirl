@@ -133,6 +133,7 @@ export function useBackwordsGame(mode: GameMode) {
         ...(countersKnownRef.current && {
           takeBacks: s.takeBacks,
           invalids: s.invalids,
+          hints: s.hints,
         }),
         glyphRows: glyphRowCount(s.rows),
         ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
@@ -179,6 +180,7 @@ export function useBackwordsGame(mode: GameMode) {
             solved: saved.solved,
             takeBacks: saved.takeBacks,
             invalids: saved.invalids,
+            hints: saved.hints,
           });
         } else {
           const stale = await loadStaleDailyProgress(dateKey);
@@ -251,5 +253,5 @@ export function useBackwordsGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, solvedElapsedMs, abandonSession };
+  return { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved: hydratedSolvedRef.current, abandonSession };
 }

@@ -257,5 +257,5 @@ export function useCrosshatchGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, totalWords, solvedElapsedMs, abandonSession };
+  return { state, dispatch, puzzle, totalWords, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
 }

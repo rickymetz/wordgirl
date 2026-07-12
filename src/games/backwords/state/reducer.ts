@@ -41,6 +41,8 @@ export interface GameState {
   takeBacks: number;
   /** Commits the mirror rejected — invalid or too rare (persisted). */
   invalids: number;
+  /** Rows placed via the hint button (persisted for trends). */
+  hints: number;
 }
 
 export type Action =
@@ -51,12 +53,14 @@ export type Action =
   | { type: "clearRow" }
   | { type: "commit" }
   | { type: "breakRow"; index: number }
+  | { type: "revealHint" }
   | {
       type: "hydrate";
       places: string[];
       solved: boolean;
       takeBacks?: number;
       invalids?: number;
+      hints?: number;
     };
 
 export function initialState(init: {
@@ -77,6 +81,7 @@ export function initialState(init: {
     lastResult: null,
     takeBacks: 0,
     invalids: 0,
+    hints: 0,
   };
 }
 
@@ -256,6 +261,36 @@ export function gameReducer(state: GameState, action: Action): GameState {
         takeBacks: state.takeBacks + 1,
       };
     }
+    case "revealHint": {
+      const placedKeys = new Set(state.rows.map((r) => rowKey(r.def)));
+      const seed = state.puzzle.seedRows.find((key) => {
+        const def = state.lexicon.get(key);
+        return def && !placedKeys.has(rowKey(def));
+      });
+      if (!seed) return state;
+      const def = state.lexicon.get(seed)!;
+      // Return staged letters to bank, then charge the hint row.
+      const bankWithCurrent = [...state.bank, ...state.current].sort();
+      const bank = [...bankWithCurrent];
+      for (const ch of def.place) {
+        const at = bank.indexOf(ch);
+        if (at === -1) return state;
+        bank.splice(at, 1);
+      }
+      bank.sort();
+      const nonce = (state.lastResult?.nonce ?? 0) + 1;
+      const rows = [...state.rows, { place: def.place, def }];
+      const solved = bank.length === 0;
+      return {
+        ...state,
+        rows,
+        current: "",
+        bank,
+        solved,
+        lastResult: { type: solved ? "solved" : "committed", row: def, nonce },
+        hints: state.hints + 1,
+      };
+    }
     case "hydrate": {
       // Replay the saved placements against the CURRENT lexicon; a save
       // that no longer validates starts the day fresh (dictVersion
@@ -270,6 +305,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         lastResult: null,
         takeBacks: action.takeBacks ?? 0,
         invalids: action.invalids ?? 0,
+        hints: action.hints ?? 0,
       };
     }
   }
