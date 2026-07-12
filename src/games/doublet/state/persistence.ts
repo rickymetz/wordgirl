@@ -17,6 +17,7 @@ export interface DailyProgress extends DailyBase {
   rotations?: number;
   removals?: number;
   invalidBoards?: number;
+  hints?: number;
   /** Opens of this board while unsolved. */
   sessions?: number;
   /** Local hour (0-23) this board was solved. */
@@ -74,6 +75,7 @@ export interface ArchivedDay {
   rotations: number | null;
   removals: number | null;
   invalidBoards: number | null;
+  hints: number | null;
   sessions: number | null;
   /** An hour one of the day's boards was solved at (any board — the
    * histogram wants "when do I play", not per-board precision). */
@@ -89,6 +91,7 @@ const COUNTER_KEYS = [
   "rotations",
   "removals",
   "invalidBoards",
+  "hints",
   "sessions",
 ] as const;
 
@@ -117,6 +120,7 @@ export async function loadAllDailyProgress(): Promise<
       rotations: null,
       removals: null,
       invalidBoards: null,
+      hints: null,
       sessions: null,
       solvedHour:
         saves.map((s) => s.solvedHour).find((h) => h !== undefined) ?? null,

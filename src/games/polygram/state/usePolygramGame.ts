@@ -81,6 +81,7 @@ export function usePolygramGame(mode: GameMode) {
   // hydratedRef flips only AFTER hydration completes — saving before
   // that would clobber the stored progress with the empty initial state.
   const hydratedRef = useRef(false);
+  const hydratedAsSolvedRef = useRef(false);
   // Stats already counted (completed earlier OR this is a replay run) →
   // don't record completion again.
   const statsRecordedRef = useRef(false);
@@ -139,6 +140,7 @@ export function usePolygramGame(mode: GameMode) {
           statsRecordedRef.current =
             saved.completed || saved.statsRecorded === true;
           clock.hydrate(saved.elapsedMs ?? 0, saved.completed);
+          if (saved.completed) hydratedAsSolvedRef.current = true;
           const revealed = normalizeRevealed(saved.revealed);
           const { found, score } = migrateAutoSubmit(
             puzzle,
@@ -227,5 +229,5 @@ export function usePolygramGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, doneElapsedMs, abandonSession };
+  return { state, dispatch, puzzle, doneElapsedMs, hydratedAsSolved: hydratedAsSolvedRef.current, abandonSession };
 }

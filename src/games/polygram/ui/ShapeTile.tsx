@@ -4,6 +4,8 @@ import { regularPolygonClipPath } from "./polygonPath";
 interface Props {
   letter: string;
   sides: number;
+  /** The polygon size (3–10) at which this letter was introduced. */
+  introLevel: number;
   size: number;
   x: number;
   y: number;
@@ -12,7 +14,7 @@ interface Props {
   onTap: () => void;
 }
 
-export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props) {
+export function ShapeTile({ letter, sides, introLevel, size, x, y, rotation, onTap }: Props) {
   return (
     <motion.button
       type="button"
@@ -39,7 +41,10 @@ export function ShapeTile({ letter, sides, size, x, y, rotation, onTap }: Props)
           dead-centered — no optical nudging. Fixed size: type stays
           consistent while the shapes change scale across levels. */}
       {/* Rubik Mono One ships a single (heavy) 400 weight — no bold. */}
-      <span className="relative font-game text-[24px] leading-none font-normal text-ink uppercase">
+      <span
+        className={`relative font-game text-[24px] leading-none font-normal uppercase${introLevel <= 3 ? " text-ink" : ""}`}
+        style={introLevel > 3 ? { color: `var(--level-${introLevel})` } : undefined}
+      >
         {letter}
       </span>
     </motion.button>

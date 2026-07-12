@@ -73,6 +73,7 @@ export function useDoubletGame(mode: GameMode) {
         rotations: s.rotations,
         removals: s.removals,
         invalidBoards: s.invalidBoards,
+        hints: s.hints,
       }),
       ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
       ...(solvedHourRef.current !== null && {
@@ -115,6 +116,7 @@ export function useDoubletGame(mode: GameMode) {
             rotations: saved.rotations,
             removals: saved.removals,
             invalidBoards: saved.invalidBoards,
+            hints: saved.hints,
           });
         } else {
           const stale = await loadStaleDailyProgress(dateKey, mode.difficulty);
@@ -182,5 +184,5 @@ export function useDoubletGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, dict, solvedElapsedMs, abandonSession };
+  return { state, dispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
 }

@@ -64,13 +64,13 @@ interface Props {
 }
 
 export function GameScreen({ mode }: Props) {
-  const { state, dispatch, doneElapsedMs } =
+  const { state, dispatch, doneElapsedMs, hydratedAsSolved } =
     usePolygramGame(mode);
   const level = currentLevel(state);
 
   const storageBroken = useStorageBroken();
   const done = state.phase === "done";
-  const { showConfetti, showResults } = useSolveTransition(done);
+  const { showConfetti, showResults } = useSolveTransition(done, hydratedAsSolved);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);

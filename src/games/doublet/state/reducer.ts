@@ -25,6 +25,8 @@ export interface GameState {
   /** Times the board filled completely but a slot wasn't a word
    * (persisted for trends). */
   invalidBoards: number;
+  /** Dominoes placed via the hint button (persisted for trends). */
+  hints: number;
 }
 
 export type GameAction =
@@ -34,6 +36,7 @@ export type GameAction =
   | { type: "removeDomino"; dominoId: number }
   | { type: "rotatePlaced"; dominoId: number; dict: Dictionary }
   | { type: "clearBoard" }
+  | { type: "revealHint"; dict: Dictionary }
   | {
       type: "hydrate";
       placed: PlacedDomino[];
@@ -42,6 +45,7 @@ export type GameAction =
       rotations?: number;
       removals?: number;
       invalidBoards?: number;
+      hints?: number;
     };
 
 export function initialState(puzzle: DoubletPuzzle): GameState {
@@ -58,6 +62,7 @@ export function initialState(puzzle: DoubletPuzzle): GameState {
     rotations: 0,
     removals: 0,
     invalidBoards: 0,
+    hints: 0,
   };
 }
 
@@ -284,6 +289,40 @@ export function gameReducer(
       };
     }
 
+    case "revealHint": {
+      if (state.solved) return state;
+      const placedIds = new Set(state.placed.map((p) => p.dominoId));
+      const hint = state.puzzle.solution.find((s) => !placedIds.has(s.dominoId));
+      if (!hint) return state;
+      // Remove any domino currently occupying the hint's target cells.
+      const [hc1, hc2] = dominoCells(hint.anchor, hint.orientation);
+      const hk1 = cellKey(hc1.row, hc1.col);
+      const hk2 = cellKey(hc2.row, hc2.col);
+      let newPlaced = state.placed.filter((p) => {
+        const [c1, c2] = dominoCells(p.anchor, p.orientation);
+        const k1 = cellKey(c1.row, c1.col);
+        const k2 = cellKey(c2.row, c2.col);
+        return k1 !== hk1 && k1 !== hk2 && k2 !== hk1 && k2 !== hk2;
+      });
+      newPlaced = [...newPlaced, hint];
+      const newGrid = buildGrid(newPlaced, state.puzzle);
+      const { solved, invalidSlots } = checkSolved(newGrid, state.puzzle, action.dict);
+      const newPlacedIds = new Set(newPlaced.map((p) => p.dominoId));
+      const nextUnplaced = solved
+        ? null
+        : state.puzzle.dominoes.find((d) => !newPlacedIds.has(d.id))?.id ?? null;
+      return {
+        ...state,
+        placed: newPlaced,
+        grid: newGrid,
+        selectedDominoId: nextUnplaced,
+        currentOrientation: 0,
+        solved,
+        invalidSlots,
+        hints: state.hints + 1,
+      };
+    }
+
     case "hydrate": {
       const newGrid = buildGrid(action.placed, state.puzzle);
       return {
@@ -296,6 +335,7 @@ export function gameReducer(
         rotations: action.rotations ?? 0,
         removals: action.removals ?? 0,
         invalidBoards: action.invalidBoards ?? 0,
+        hints: action.hints ?? 0,
       };
     }
 

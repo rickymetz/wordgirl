@@ -8,6 +8,7 @@ import {
   Delete,
   FlipHorizontal2,
   Hourglass,
+  Lightbulb,
   Sparkles,
   Type,
 } from "lucide-react";
@@ -37,12 +38,14 @@ function buildShareText(
   glyphs: number,
   dateKey: string,
   elapsedMs: number,
+  hints: number,
 ): string {
   const date = formatShareDate(dateKey);
   const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
     `Backwords — ${date}`,
-    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}`,
+    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -55,11 +58,11 @@ interface Props {
 }
 
 export function GameScreen({ mode }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs } =
+  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
     useBackwordsGame(mode);
 
   const storageBroken = useStorageBroken();
-  const { showConfetti, showResults } = useSolveTransition(state.solved);
+  const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   // A tile in flight: the mirror reflects it LIVE — the ghost tracks
   // the drag, mirrored across the glass, so it works from EITHER side
@@ -345,7 +348,7 @@ export function GameScreen({ mode }: Props) {
             )}
             {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs)}
+                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs, state.hints)}
               />
             )}
           </motion.div>
@@ -357,6 +360,18 @@ export function GameScreen({ mode }: Props) {
             className="flex flex-col items-center gap-3"
           >
             <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "revealHint" })}
+                className={[
+                  "relative flex h-9 touch-manipulation items-center gap-1.5 rounded-lg px-3 text-xs font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
+                  state.hints > 0 ? "bg-accent text-surface" : "bg-tile text-ink",
+                ].join(" ")}
+              >
+                <Lightbulb aria-hidden className="h-3.5 w-3.5" />
+                Hint{state.hints > 0 ? ` (${state.hints})` : ""}
+              </button>
               <button
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}

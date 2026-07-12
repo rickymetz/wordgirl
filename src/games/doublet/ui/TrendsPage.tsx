@@ -47,6 +47,12 @@ const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     {
+      key: "hints",
+      label: "Hints used",
+      value: (d) => (d.startedCount > 0 ? d.hints : null),
+      lowerIsBetter: true,
+    },
+    {
       key: "sessions",
       label: "Board opens",
       value: (d) => (d.startedCount > 0 ? d.sessions : null),

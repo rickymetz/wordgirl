@@ -52,6 +52,8 @@ export function useSerpentineGame(mode: GameMode) {
   const solvedElapsedMs = useRef<number | null>(null);
   const statsRecorded = useRef(false);
   const abandoned = useRef(false);
+  const hydratedAsSolved = useRef(false);
+  const hintsRef = useRef(0);
 
   // Hydrate from storage — hydrated flips ONLY after the async load
   // completes so the save effect cannot clobber stored progress with
@@ -66,8 +68,10 @@ export function useSerpentineGame(mode: GameMode) {
       if (saved && saved.puzzleId === puzzle.id) {
         clock.hydrate(saved.elapsedMs, saved.solved);
         statsRecorded.current = !!saved.statsRecorded;
+        hintsRef.current = saved.hints ?? 0;
         if (saved.solved) {
           solvedElapsedMs.current = saved.elapsedMs;
+          hydratedAsSolved.current = true;
         }
         dispatch({
           type: "hydrate",
@@ -100,6 +104,7 @@ export function useSerpentineGame(mode: GameMode) {
         : clock.rawElapsedMs(),
       cells: s.cells,
       statsRecorded: statsRecorded.current,
+      hints: hintsRef.current,
     }),
     [dateKey, difficulty, puzzle.id, clock],
   );
@@ -151,11 +156,21 @@ export function useSerpentineGame(mode: GameMode) {
     abandoned.current = true;
   }, []);
 
+  const setHints = useCallback((count: number) => {
+    hintsRef.current = count;
+    if (persisted && hydrated.current && !abandoned.current) {
+      void saveDailyProgress(buildProgress(stateRef.current));
+    }
+  }, [persisted, buildProgress]);
+
   return {
     state,
     dispatch,
     puzzle,
     solvedElapsedMs: solvedElapsedMs.current,
+    hydratedAsSolved: hydratedAsSolved.current,
+    hydratedHints: hintsRef.current,
+    setHints,
     abandonSession,
   };
 }

@@ -17,6 +17,7 @@ export interface DailyProgress extends DailyBase {
   sessions?: number;
   takeBacks?: number;
   invalids?: number;
+  hints?: number;
   /** ✦ rows on the board (the lifetime total lives in stats). */
   glyphRows?: number;
   /** Local hour (0-23) the board was solved. */

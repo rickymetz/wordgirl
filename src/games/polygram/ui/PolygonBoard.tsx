@@ -69,6 +69,7 @@ export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
               key={letterIdx}
               letter={letter}
               sides={sides}
+              introLevel={letterIdx < 3 ? 3 : letterIdx + 1}
               size={tileSize}
               x={dist * Math.cos(rad)}
               y={dist * Math.sin(rad)}
