@@ -348,9 +348,7 @@ export function GameScreen({ mode }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">
-              {mode.kind === "daily" ? "Daily solved" : "Puzzle solved"}
-            </p>
+            <p className="text-lg font-bold text-ink">Solved</p>
             <p className="text-ink-soft">
               {state.rows.length} {state.rows.length === 1 ? "word" : "words"}
             </p>

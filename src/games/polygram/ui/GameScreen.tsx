@@ -377,22 +377,6 @@ export function GameScreen({ mode }: Props) {
             dispatch({ type: "submit" });
           }}
         />
-        {!done && (
-          <Controls
-            onDelete={() => {
-              setWordsOpen(false);
-              dispatch({ type: "backspace" });
-            }}
-            onShuffle={() => {
-              setWordsOpen(false);
-              shuffle();
-            }}
-            onEnter={() => {
-              setWordsOpen(false);
-              dispatch({ type: "submit" });
-            }}
-          />
-        )}
       </div>
 
       <AnimatePresence mode="wait">
@@ -403,9 +387,7 @@ export function GameScreen({ mode }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">
-              {mode.kind === "daily" ? "Daily complete" : "Puzzle complete"}
-            </p>
+            <p className="text-lg font-bold text-ink">Solved</p>
             <p className="text-2xl font-bold text-accent">
               {rankFor(state.score, state.puzzle)}
             </p>
@@ -425,6 +407,27 @@ export function GameScreen({ mode }: Props) {
             {mode.kind !== "practice" && mode.dateKey && doneElapsedMs !== null && (
               <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} />
             )}
+          </motion.div>
+        ) : !done ? (
+          <motion.div
+            key="controls"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Controls
+              onDelete={() => {
+                setWordsOpen(false);
+                dispatch({ type: "backspace" });
+              }}
+              onShuffle={() => {
+                setWordsOpen(false);
+                shuffle();
+              }}
+              onEnter={() => {
+                setWordsOpen(false);
+                dispatch({ type: "submit" });
+              }}
+            />
           </motion.div>
         ) : null}
       </AnimatePresence>
