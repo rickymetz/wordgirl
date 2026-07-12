@@ -15,9 +15,23 @@ function fontSize(total: number): string {
   return "text-sm";
 }
 
+function wordBreaks(text: string): Set<number> {
+  const breaks = new Set<number>();
+  let letterIndex = 0;
+  for (const ch of text) {
+    if (ch === " ") {
+      breaks.add(letterIndex);
+    } else {
+      letterIndex++;
+    }
+  }
+  return breaks;
+}
+
 export function SnakeText({ puzzle, cells, hintIndices }: Props) {
   const total = puzzle.path.length;
   const size = fontSize(total);
+  const breaks = wordBreaks(puzzle.text);
 
   return (
     <div
@@ -36,7 +50,8 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
             const hintLetter = isHint
               ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
               : null;
-            return letter ? (
+            const gap = breaks.has(i) ? <span key={`sp-${i}`} className="inline-block w-2" /> : null;
+            const char = letter ? (
               <motion.span
                 key={`${i}-${letter}`}
                 className="inline-block text-accent"
@@ -55,6 +70,7 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
                 ?
               </span>
             );
+            return gap ? [gap, char] : char;
           })}
         </AnimatePresence>
       </span>
