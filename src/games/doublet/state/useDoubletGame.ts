@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { trackSolved } from "../../../lib/analytics";
+import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -132,6 +132,7 @@ export function useDoubletGame(mode: GameMode) {
             return;
           }
           void recordDailyStarted();
+          trackStarted("doublet");
           sessionsRef.current = 1;
           hydratedRef.current = true;
           persistNow(stateRef.current);
