@@ -5,7 +5,6 @@ import type {
   DoubletPuzzle,
 } from "../engine/types";
 import { cellKey, dominoCells, dominoLetters, slotWord } from "../engine/types";
-import { TWO_LETTER_WORDS } from "../engine/twoLetterWords";
 import type { Dictionary } from "../../../lib/words/dictionary";
 
 export interface GameState {
@@ -97,12 +96,7 @@ function checkSolved(
       invalidSlots.push(i);
       continue;
     }
-    const upper = word.toUpperCase();
-    if (word.length === 2) {
-      if (!TWO_LETTER_WORDS.has(upper)) invalidSlots.push(i);
-    } else {
-      if (!dict.has(word.toLowerCase())) invalidSlots.push(i);
-    }
+    if (!dict.has(word.toLowerCase())) invalidSlots.push(i);
   }
 
   return { solved: invalidSlots.length === 0, invalidSlots };

@@ -2,7 +2,6 @@ import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Bookmark, ExternalLink, X } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { loadDictionary } from "../lib/words/loader";
-import { TWO_LETTER_WORDS } from "../games/doublet/engine/twoLetterWords";
 import { HomeLink } from "../components/HomeLink";
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -375,7 +374,7 @@ function WordRow({
         {word}
         <ExternalLink aria-hidden className="h-3 w-3 shrink-0 text-ink-soft/40" />
       </a>
-      {TWO_LETTER_WORDS.has(word.toUpperCase()) ? (
+      {word.length === 2 ? (
         <span className="shrink-0 rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-semibold text-ink-soft">
           doublet
         </span>
