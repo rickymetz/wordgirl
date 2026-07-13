@@ -13,8 +13,11 @@ interface Props {
 }
 
 const CHIP_H = 44; // horizontal chip height: border-2 (4px) + h-10 (40px)
+const CHIP_V = 85; // vertical chip height: border-2 (4px) + h-10×2 (80px) + 1px divider
 const GAP = 8; // gap-2
 const CHIPS_PER_ROW = 3;
+const V_OVERFLOW = (CHIP_V - CHIP_H) / 2; // 20.5px visual overshoot when rotated
+
 const ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "90deg", 2: "180deg", 3: "-90deg" };
 const COUNTER_ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "-90deg", 2: "180deg", 3: "90deg" };
 
@@ -30,7 +33,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap items-center justify-center gap-2" style={{ minHeight: trayMinH }}>
+      <div className="flex flex-wrap items-center justify-center gap-2" style={{ minHeight: trayMinH, paddingBlock: V_OVERFLOW }}>
         {available.map((d) => (
           <DominoChip
             key={d.id}
