@@ -30,7 +30,7 @@ export function HubPage() {
           <Settings aria-hidden className="h-5 w-5" />
         </button>
       </header>
-      <main className="flex flex-col gap-5 md:grid md:grid-cols-2">
+      <main className="flex flex-col gap-5">
         {games.map((game) => (
           <GameCard key={game.id} game={game} />
         ))}
