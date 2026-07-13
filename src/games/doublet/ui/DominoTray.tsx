@@ -12,6 +12,15 @@ interface Props {
   draggedId?: number | null;
 }
 
+const CHIP_H = 44; // horizontal chip height: border-2 (4px) + h-10 (40px)
+const CHIP_V = 85; // vertical chip height: border-2 (4px) + h-10×2 (80px) + 1px divider
+const GAP = 8; // gap-2
+const CHIPS_PER_ROW = 3;
+const V_OVERFLOW = (CHIP_V - CHIP_H) / 2; // 20.5px visual overshoot when rotated
+
+const ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "90deg", 2: "180deg", 3: "-90deg" };
+const COUNTER_ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "-90deg", 2: "180deg", 3: "90deg" };
+
 export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove, onDragEnd, draggedId }: Props) {
   const { puzzle, selectedDominoId, currentOrientation } = state;
   const placed = placedDominoIds(state);
@@ -19,9 +28,12 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   if (available.length === 0 && state.solved) return null;
 
+  const rows = Math.ceil(available.length / CHIPS_PER_ROW);
+  const trayMinH = rows * CHIP_H + Math.max(0, rows - 1) * GAP;
+
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2" style={{ minHeight: trayMinH, paddingBlock: V_OVERFLOW }}>
         {available.map((d) => (
           <DominoChip
             key={d.id}
@@ -64,10 +76,8 @@ function DominoChip({
   onDragEnd?: () => void;
   dimmed?: boolean;
 }) {
-  const isH = orientation === 0 || orientation === 2;
-  const flipped = orientation >= 2;
-  const l0 = flipped ? piece.letters[1] : piece.letters[0];
-  const l1 = flipped ? piece.letters[0] : piece.letters[1];
+  const rot = ROTATIONS[orientation];
+  const counterRot = COUNTER_ROTATIONS[orientation];
 
   const dragging = React.useRef(false);
   const startPt = React.useRef({ x: 0, y: 0 });
@@ -124,7 +134,7 @@ function DominoChip({
   return (
     <button
       className={[
-        "flex items-center justify-center touch-manipulation select-none",
+        "relative flex items-center justify-center touch-manipulation select-none",
         "rounded-lg border-2 bg-surface",
         "transition-shadow duration-100",
         "active:scale-95",
@@ -133,7 +143,10 @@ function DominoChip({
           : "border-line shadow-sm",
         dimmed ? "opacity-30" : "",
       ].join(" ")}
-      style={{ flexDirection: isH ? "row" : "column" }}
+      style={{
+        rotate: rot,
+        zIndex: rot && selected ? 1 : undefined,
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -141,19 +154,17 @@ function DominoChip({
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-        {l0}
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ rotate: counterRot }}>
+        {piece.letters[0]}
       </div>
       <div
         className={selected ? "bg-accent/30" : "bg-line"}
-        style={
-          isH
-            ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
-            : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
-        }
+        style={{ width: "1px", alignSelf: "stretch", marginBlock: "6px" }}
       />
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-        {l1}
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ rotate: counterRot }}>
+        {piece.letters[1]}
       </div>
     </button>
   );

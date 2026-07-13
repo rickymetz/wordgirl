@@ -78,6 +78,14 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const gridRef = useRef(state.grid);
   gridRef.current = state.grid;
 
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const frozenBottomH = useRef(0);
+  useEffect(() => {
+    if (!state.solved && bottomRef.current) {
+      frozenBottomH.current = bottomRef.current.getBoundingClientRect().height;
+    }
+  }, [state.solved, placedCount]);
+
   boardCellSet.current = new Set(
     puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
   );
@@ -317,27 +325,31 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       </div>
 
       {/* Bottom area: tray during play, results after solve */}
-      <AnimatePresence mode="wait">
-        {state.solved && showResults ? (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-3 pb-2"
-          >
-            <p className="text-lg font-bold text-ink">Solved</p>
-            {solvedElapsedMs !== null && (
-              <p className="text-sm text-ink-soft">
-                {formatDuration(solvedElapsedMs)}
-              </p>
-            )}
-            {mode.kind !== "practice" && solvedElapsedMs !== null && (
-              <ShareButton
-                text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs, state.hints)}
-              />
-            )}
-          </motion.div>
-        ) : !state.solved ? (
+      <div
+        ref={bottomRef}
+        style={state.solved ? { minHeight: frozenBottomH.current } : undefined}
+      >
+        <AnimatePresence mode="wait">
+          {state.solved && showResults ? (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center gap-3 pb-2"
+            >
+              <p className="text-lg font-bold text-ink">Solved</p>
+              {solvedElapsedMs !== null && (
+                <p className="text-sm text-ink-soft">
+                  {formatDuration(solvedElapsedMs)}
+                </p>
+              )}
+              {mode.kind !== "practice" && solvedElapsedMs !== null && (
+                <ShareButton
+                  text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs, state.hints)}
+                />
+              )}
+            </motion.div>
+          ) : !state.solved ? (
           <motion.div
             key="controls"
             exit={{ opacity: 0 }}
@@ -374,6 +386,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      </div>
 
       {/* Drag ghost */}
       {drag && dragPiece && (
