@@ -118,8 +118,8 @@ export function GameScreen({ mode }: Props) {
   useEffect(() => {
     setHintTargetWord(null);
   }, [state.levelIndex]);
-  // Reveal a RANDOM still-hidden letter of the (chosen or default) word.
-  const revealRandomLetter = () => {
+  // Reveal the first still-hidden letter of the (chosen or default) word.
+  const revealNextLetter = () => {
     const chosen =
       hintTargetWord &&
       unsolvedWords(state).includes(hintTargetWord) &&
@@ -136,19 +136,19 @@ export function GameScreen({ mode }: Props) {
     dispatch({
       type: "revealHint",
       word: target,
-      letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
+      letterIndex: candidates[0],
     });
   };
   const requestHint = () => {
     if (mode.kind !== "practice" && !hintUsed) {
       setHintWarningOpen(true);
     } else {
-      revealRandomLetter();
+      revealNextLetter();
     }
   };
   const confirmHint = () => {
     setHintWarningOpen(false);
-    revealRandomLetter();
+    revealNextLetter();
   };
 
   // Display-only permutation of the petal letters; shuffling never
