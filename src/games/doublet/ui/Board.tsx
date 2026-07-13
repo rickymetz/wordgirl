@@ -141,7 +141,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
             stroke="var(--color-line)"
             strokeWidth="2.5"
             strokeLinejoin="round"
-            strokeOpacity={0.4}
+            strokeOpacity={0.8}
           />
         </svg>
       )}
