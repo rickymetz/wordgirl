@@ -362,6 +362,7 @@ export function GameScreen({ mode }: Props) {
             {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs, state.hints)}
+                gameId="backwords"
               />
             )}
           </motion.div>

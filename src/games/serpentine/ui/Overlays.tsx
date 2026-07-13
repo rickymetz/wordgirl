@@ -93,7 +93,7 @@ export function SolvedOverlay({
               </p>
             </div>
 
-            {dateKey && <ShareButton text={shareText} />}
+            {dateKey && <ShareButton text={shareText} gameId="serpentine" />}
 
             <button
               type="button"

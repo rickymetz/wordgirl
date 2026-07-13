@@ -1,4 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -147,6 +148,15 @@ export function useDoubletGame(mode: GameMode) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, mode.difficulty, puzzle]);
+
+  // Track analytics solve event (all modes, once per session).
+  const solveTrackedRef = useRef(false);
+  useEffect(() => {
+    if (state.solved && !solveTrackedRef.current && !alreadySolvedRef.current) {
+      solveTrackedRef.current = true;
+      trackSolved("doublet");
+    }
+  }, [state.solved]);
 
   const [solvedElapsedMs, setSolvedElapsedMs] = useState<number | null>(null);
   useEffect(() => {

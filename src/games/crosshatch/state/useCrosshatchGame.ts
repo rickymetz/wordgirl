@@ -1,4 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -206,6 +207,15 @@ export function useCrosshatchGame(mode: GameMode) {
     solvedHourRef.current ??= new Date().getHours();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, state.solved, state.found, solvedElapsedMs]);
+
+  // Track analytics solve event (all modes, once per session).
+  const solveTrackedRef = useRef(false);
+  useEffect(() => {
+    if (state.solved && !solveTrackedRef.current && !alreadySolvedRef.current) {
+      solveTrackedRef.current = true;
+      trackSolved("crosshatch");
+    }
+  }, [state.solved]);
 
   // Record the solve (stats; streak only if it's today) exactly once,
   // then keep crediting words found AFTER the solve — a 12/14 finish

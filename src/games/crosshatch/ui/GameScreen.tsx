@@ -516,6 +516,7 @@ export function GameScreen({ mode }: Props) {
                   mode.dateKey,
                   solvedElapsedMs,
                 )}
+                gameId="crosshatch"
               />
             )}
           </motion.div>

@@ -346,6 +346,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               {mode.kind !== "practice" && solvedElapsedMs !== null && (
                 <ShareButton
                   text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs, state.hints)}
+                  gameId="doublet"
                 />
               )}
             </motion.div>

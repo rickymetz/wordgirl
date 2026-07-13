@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
@@ -213,6 +214,15 @@ export function useBackwordsGame(mode: GameMode) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, puzzle]);
+
+  // Track analytics solve event (all modes, once per session).
+  const solveTrackedRef = useRef(false);
+  useEffect(() => {
+    if (state.solved && !solveTrackedRef.current && !hydratedSolvedRef.current) {
+      solveTrackedRef.current = true;
+      trackSolved("backwords");
+    }
+  }, [state.solved]);
 
   // Freeze the clock the moment the board completes, and record the
   // solve exactly once. Declared BEFORE the persist effect so the

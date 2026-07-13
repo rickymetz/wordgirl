@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { streakAdvance } from "../../../lib/daily/persistence";
@@ -119,6 +120,15 @@ export function useSerpentineGame(mode: GameMode) {
     if (!persisted || !hydrated.current || abandoned.current) return;
     void saveDailyProgress(buildProgress(state));
   }, [state, buildProgress, persisted]);
+
+  // Track analytics solve event (all modes, once per session).
+  const solveTrackedRef = useRef(false);
+  useEffect(() => {
+    if (state.solved && !solveTrackedRef.current && !hydratedAsSolved.current) {
+      solveTrackedRef.current = true;
+      trackSolved("serpentine");
+    }
+  }, [state.solved]);
 
   // Record solve.
   useEffect(() => {

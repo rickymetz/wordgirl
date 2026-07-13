@@ -112,7 +112,7 @@ export function SolvedOverlay({
         )}
         <div className="mt-6 flex flex-col gap-2">
           {dateKey && elapsedMs !== null && (
-            <ShareButton text={buildShareText(found, total, hints, dateKey, elapsedMs)} />
+            <ShareButton text={buildShareText(found, total, hints, dateKey, elapsedMs)} gameId="crosshatch" />
           )}
           <button
             type="button"
