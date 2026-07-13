@@ -13,10 +13,10 @@ interface Props {
 }
 
 const CHIP_H = 44; // horizontal chip height: border-2 (4px) + h-10 (40px)
-const CHIP_V = 85; // vertical chip height: border-2 (4px) + h-10×2 (80px) + 1px divider
-const V_OVERFLOW = (CHIP_V - CHIP_H) / 2; // 20.5px — negative margin each side when vertical
 const GAP = 8; // gap-2
 const CHIPS_PER_ROW = 3;
+const ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "90deg", 2: "180deg", 3: "-90deg" };
+const COUNTER_ROTATIONS: Record<Orientation, string | undefined> = { 0: undefined, 1: "-90deg", 2: "180deg", 3: "90deg" };
 
 export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove, onDragEnd, draggedId }: Props) {
   const { puzzle, selectedDominoId, currentOrientation } = state;
@@ -73,10 +73,8 @@ function DominoChip({
   onDragEnd?: () => void;
   dimmed?: boolean;
 }) {
-  const isH = orientation === 0 || orientation === 2;
-  const flipped = orientation >= 2;
-  const l0 = flipped ? piece.letters[1] : piece.letters[0];
-  const l1 = flipped ? piece.letters[0] : piece.letters[1];
+  const rot = ROTATIONS[orientation];
+  const counterRot = COUNTER_ROTATIONS[orientation];
 
   const dragging = React.useRef(false);
   const startPt = React.useRef({ x: 0, y: 0 });
@@ -143,10 +141,8 @@ function DominoChip({
         dimmed ? "opacity-30" : "",
       ].join(" ")}
       style={{
-        flexDirection: isH ? "row" : "column",
-        marginBlock: isH ? undefined : -V_OVERFLOW,
-        marginInline: isH ? undefined : V_OVERFLOW,
-        zIndex: selected && !isH ? 1 : undefined,
+        rotate: rot,
+        zIndex: rot && selected ? 1 : undefined,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -155,19 +151,17 @@ function DominoChip({
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-        {l0}
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ rotate: counterRot }}>
+        {piece.letters[0]}
       </div>
       <div
         className={selected ? "bg-accent/30" : "bg-line"}
-        style={
-          isH
-            ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
-            : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
-        }
+        style={{ width: "1px", alignSelf: "stretch", marginBlock: "6px" }}
       />
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-        {l1}
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ rotate: counterRot }}>
+        {piece.letters[1]}
       </div>
     </button>
   );
