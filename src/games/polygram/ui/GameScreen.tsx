@@ -9,6 +9,7 @@ import {
   CornerDownLeft,
   Lightbulb,
   Shapes,
+  SkipForward,
   Sparkles,
   Type,
 } from "lucide-react";
@@ -25,7 +26,7 @@ import {
   loadDailyProgress,
   markCoachSeen,
 } from "../state/persistence";
-import { currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
+import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -405,7 +406,19 @@ export function GameScreen({ mode }: Props) {
             key="controls"
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-2"
           >
+            {canSkipLevel(state) && (
+              <button
+                type="button"
+                className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface active:scale-95 touch-manipulation select-none"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "skipLevel" })}
+              >
+                <SkipForward aria-hidden className="h-4 w-4" />
+                Skip to next level
+              </button>
+            )}
             <Controls
               onDelete={() => {
                 setWordsOpen(false);

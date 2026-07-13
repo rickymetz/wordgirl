@@ -12,6 +12,8 @@ export interface DailyProgress extends DailyBase {
   /** word -> hint-revealed letter positions (older saves stored counts). */
   revealed: Record<string, number[] | number>;
   score: number;
+  /** Level indices the player skipped (gate met via bonus words). */
+  skippedLevels?: number[];
   /** Legacy field name for `solved` — kept for backward compat. */
   completed: boolean;
 }
@@ -131,6 +133,7 @@ export async function resetDailyForReplay(dateKey: string): Promise<void> {
     foundWords: [],
     revealed: {},
     score: 0,
+    skippedLevels: [],
     completed: false,
     solved: false,
     elapsedMs: 0,
