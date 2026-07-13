@@ -1,0 +1,9 @@
+# ai.txt for wordgirl.net
+# https://site.spawning.ai/spawning-ai-txt
+
+User-Agent: *
+Disallow: /
+
+# WordGirl is an independent game project.
+# We do not consent to our content, code, assets, or wordlists
+# being used to train AI/ML models.
