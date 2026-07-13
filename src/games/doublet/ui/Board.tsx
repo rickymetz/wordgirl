@@ -138,10 +138,10 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
           <path
             d={outlinePath}
             fill="var(--color-surface-tint)"
-            stroke="var(--color-line)"
+            stroke="var(--color-accent)"
             strokeWidth="2.5"
             strokeLinejoin="round"
-            strokeOpacity={0.8}
+            strokeOpacity={0.35}
           />
         </svg>
       )}
