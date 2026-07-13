@@ -522,7 +522,8 @@ export function GameScreen({ mode }: Props) {
                     <Key>
                       <span className="text-accent">✦</span> bonus
                     </Key>{" "}
-                    points, but only the everyday ones advance the level.
+                    points. Find enough and you can{" "}
+                    <Key>skip to the next level</Key> — or keep hunting.
                   </>
                 ),
               },
