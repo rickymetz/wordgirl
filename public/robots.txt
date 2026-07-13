@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /games/
+
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/
+Disallow: /wp-login.php
+
+Sitemap: https://wordgirl.net/sitemap.xml
