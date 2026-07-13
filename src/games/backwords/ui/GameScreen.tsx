@@ -243,7 +243,7 @@ export function GameScreen({ mode }: Props) {
         ) : (
           <HomeLink />
         )}
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
           {mode.kind === "practice" && dailySolved === false && (
             <Link
               to="/games/backwords"
@@ -251,6 +251,19 @@ export function GameScreen({ mode }: Props) {
             >
               New daily puzzle
             </Link>
+          )}
+          {!state.solved && (
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => dispatch({ type: "revealHint" })}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{state.hints > 0 ? ` (${state.hints})` : ""}
+            </button>
           )}
           <button
             type="button"
@@ -360,18 +373,6 @@ export function GameScreen({ mode }: Props) {
             className="flex flex-col items-center gap-3"
           >
             <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => dispatch({ type: "revealHint" })}
-                className={[
-                  "relative flex h-9 touch-manipulation items-center gap-1.5 rounded-lg px-3 text-xs font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
-                  state.hints > 0 ? "bg-accent text-surface" : "bg-tile text-ink",
-                ].join(" ")}
-              >
-                <Lightbulb aria-hidden className="h-3.5 w-3.5" />
-                Hint{state.hints > 0 ? ` (${state.hints})` : ""}
-              </button>
               <button
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}

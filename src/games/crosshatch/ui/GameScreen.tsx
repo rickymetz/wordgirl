@@ -7,6 +7,7 @@ import {
   CircleCheck,
   CircleHelp,
   CornerDownLeft,
+  Lightbulb,
   ListChecks,
   Lock,
   Repeat2,
@@ -381,7 +382,7 @@ export function GameScreen({ mode }: Props) {
         ) : (
           <HomeLink />
         )}
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
           {mode.kind === "practice" && dailySolved === false && (
             <Link
               to="/games/crosshatch"
@@ -389,6 +390,22 @@ export function GameScreen({ mode }: Props) {
             >
               New daily puzzle
             </Link>
+          )}
+          {!state.solved && (
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setWordsOpen(true);
+                requestHint();
+              }}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{hintCount > 0 ? ` (${hintCount})` : ""}
+            </button>
           )}
           <button
             type="button"
@@ -524,17 +541,6 @@ export function GameScreen({ mode }: Props) {
                 className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
               >
                 Clear grid
-              </button>
-              <button
-                type="button"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setWordsOpen(true);
-                  requestHint();
-                }}
-                className="-my-3 px-3 py-3 text-xs font-semibold text-accent"
-              >
-                Hint
               </button>
             </div>
             <Keyboard

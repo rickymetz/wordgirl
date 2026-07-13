@@ -132,7 +132,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         ) : (
           <HomeLink />
         )}
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
           {mode.kind === "practice" && !state.solved && (
             <Link
               to="/games/serpentine"
@@ -140,6 +140,24 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             >
               New daily puzzle
             </Link>
+          )}
+          {!state.solved && (
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
+              disabled={hintCount >= wordStarts.length}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                const next = Math.min(hintCount + 1, wordStarts.length);
+                setHintCount(next);
+                setHints(next);
+              }}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{hintCount > 0 ? ` (${hintCount})` : ""}
+            </button>
           )}
           <button
             type="button"
@@ -267,24 +285,6 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               >
                 <Undo2 aria-hidden className="h-4 w-4" />
                 Undo
-              </button>
-              <button
-                type="button"
-                disabled={hintCount >= wordStarts.length}
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  const next = Math.min(hintCount + 1, wordStarts.length);
-                  setHintCount(next);
-                  setHints(next);
-                }}
-                className={[
-                  "relative flex h-10 touch-manipulation items-center gap-1.5 rounded-lg px-4 text-sm font-semibold after:absolute after:-inset-1.5 after:content-[''] active:scale-90",
-                  hintCount > 0 ? "bg-accent text-surface" : "bg-tile text-ink",
-                  hintCount >= wordStarts.length ? "opacity-40" : "",
-                ].join(" ")}
-              >
-                <Lightbulb aria-hidden className="h-4 w-4" />
-                Hint{hintCount > 0 ? ` (${hintCount})` : ""}
               </button>
               <button
                 type="button"

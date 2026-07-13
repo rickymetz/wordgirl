@@ -263,7 +263,7 @@ export function GameScreen({ mode }: Props) {
         ) : (
           <HomeLink />
         )}
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
           {mode.kind === "practice" && dailyDone === false && (
             <Link
               to="/games/polygram"
@@ -271,6 +271,22 @@ export function GameScreen({ mode }: Props) {
             >
               New daily puzzle
             </Link>
+          )}
+          {!done && (
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setWordsOpen(true);
+                requestHint();
+              }}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{hintUsed ? ` (${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)})` : ""}
+            </button>
           )}
           <button
             type="button"

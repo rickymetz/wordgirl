@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Lightbulb, RotateCcw } from "lucide-react";
+import { CircleHelp, Lightbulb, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -15,6 +15,8 @@ import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
+import { DoubletCoach } from "./Overlays";
+import { loadCoachSeen, markCoachSeen } from "../state/persistence";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -55,6 +57,17 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     useDoubletGame(mode);
 
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+
+  const [coachOpen, setCoachOpen] = useState(false);
+  useEffect(() => {
+    void loadCoachSeen().then((seen) => {
+      if (!seen) setCoachOpen(true);
+    });
+  }, []);
+  const closeCoach = () => {
+    setCoachOpen(false);
+    void markCoachSeen();
+  };
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
@@ -225,8 +238,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         ) : (
           <HomeLink />
         )}
-        {!state.solved ? (
-          <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2">
+          {!state.solved && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -238,23 +251,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               <Lightbulb className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
-            {placedCount > 0 && (
-              <button
-                className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
-                           text-ink-soft text-xs font-semibold
-                           active:scale-95 touch-manipulation select-none
-                           after:absolute after:inset-x-0 after:-inset-y-2.5"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => dispatch({ type: "clearBoard" })}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Clear
-              </button>
-            )}
-          </span>
-        ) : (
-          <div className="w-6" />
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => setCoachOpen(true)}
+            aria-label="how to play"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+          >
+            <CircleHelp aria-hidden className="h-5 w-5" />
+          </button>
+        </span>
       </header>
 
       {/* Title + difficulty */}
@@ -338,8 +344,23 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             transition={{ duration: 0.2 }}
             className="flex flex-col items-center gap-2"
           >
-            <div className="pb-3 text-center text-sm font-medium text-ink-soft">
-              {placedCount}/{totalDominoes} placed
+            <div className="flex items-center justify-center gap-3 pb-3">
+              <span className="text-sm font-medium text-ink-soft">
+                {placedCount}/{totalDominoes} placed
+              </span>
+              {placedCount > 0 && (
+                <button
+                  className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                             text-ink-soft text-xs font-semibold
+                             active:scale-95 touch-manipulation select-none
+                             after:absolute after:inset-x-0 after:-inset-y-2.5"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => dispatch({ type: "clearBoard" })}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Clear
+                </button>
+              )}
             </div>
             <DominoTray
               state={state}
@@ -361,6 +382,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Confetti burst on solve */}
       {showConfetti && <ConfettiOverlay />}
+
+      {/* Coach */}
+      <DoubletCoach open={coachOpen} onClose={closeCoach} />
 
       {/* Accessibility */}
       <div aria-live="polite" role="status" className="sr-only">
