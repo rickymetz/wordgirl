@@ -14,6 +14,7 @@ import { dominoCells, dominoLetters, cellKey } from "../engine/types";
 import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
+import { GameToast, useToast } from "../../../components/game/GameToast";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { DoubletCoach } from "./Overlays";
 import { loadCoachSeen, markCoachSeen } from "../state/persistence";
@@ -72,6 +73,17 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     setCoachOpen(false);
     void markCoachSeen();
   };
+
+  const { toast, show: showToast } = useToast();
+
+  const prevInvalidRef = useRef(0);
+  useEffect(() => {
+    const n = state.invalidSlots.length;
+    if (n > 0 && prevInvalidRef.current === 0) {
+      showToast("Not quite");
+    }
+    prevInvalidRef.current = n;
+  }, [state.invalidSlots.length, showToast]);
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
@@ -445,7 +457,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       )}
 
       {/* Board — centered in remaining space */}
-      <div className="flex flex-1 flex-col items-center justify-center py-4 [@media(max-height:720px)]:py-2">
+      <div className="relative flex flex-1 flex-col items-center justify-center py-4 [@media(max-height:720px)]:py-2">
         <Board
           state={state}
           onCellTap={handleCellTap}
@@ -458,6 +470,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           previewOrientation={previewOri}
           cursorCell={cursorCell}
         />
+        <GameToast toast={toast} />
       </div>
 
       {/* Bottom area: tray during play, results after solve */}
@@ -540,6 +553,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {/* Accessibility */}
       <div aria-live="polite" role="status" className="sr-only">
         {state.solved && <span>Solved</span>}
+        {toast?.text && <span>{toast.text}</span>}
       </div>
     </div>
   );
