@@ -1,11 +1,5 @@
-import { RANKS, rankFor, solveTarget } from "../engine/scoring";
+import { RANKS, solveTarget } from "../engine/scoring";
 
-/**
- * Word progress with rank checkpoints. The ringed checkpoint marks the
- * ACTUAL solve point — solveTarget gives 10-19-word days a couple
- * words of slack below the nominal 90%, and the ring must agree with
- * where "Daily solved" really fires. The last dot is the perfect sweep.
- */
 export function ProgressBar({
   found,
   total,
@@ -17,16 +11,12 @@ export function ProgressBar({
   const solvePct = total === 0 ? 100 : (solveTarget(total) / total) * 100;
   return (
     <div className="flex items-center gap-3">
-      <span className="w-20 shrink-0 text-sm font-normal text-ink-soft">
-        {rankFor(found, total)}
-      </span>
       <div className="relative flex h-4 flex-1 items-center">
         <div className="absolute inset-x-0 h-1 rounded-full bg-line" />
         <div
           className="absolute left-0 h-1 rounded-full bg-accent transition-[width] duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
-        {/* Rank dots — skipping any that would collide with the ring. */}
         {RANKS.filter(
           (r) => r.pct > 0 && Math.abs(r.pct - solvePct) > 3,
         ).map((r) => (

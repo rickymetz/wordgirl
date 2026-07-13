@@ -1,23 +1,13 @@
-import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { regularPolygonClipPath } from "./polygonPath";
 
-/** The gradient needs several level colors in ONE property, which the
- * per-element [data-level] scoping can't provide — read the same
- * :root --level-N tokens index.css declares (single source of truth). */
 const levelColor = (size: number) => `var(--level-${size})`;
 
-/**
- * Level progress bar: one segment per level in that level's color, with
- * the level's polygon as the checkpoint at its end. Cleared levels are
- * fully revealed; the current level's segment fills with words found.
- */
 export function RankBar({ state }: { state: GameState }) {
   const { puzzle } = state;
   const levels = puzzle.levels;
   const n = levels.length;
 
-  // Overall fill: completed levels plus fraction of the current one.
   const current = levels[state.levelIndex];
   const foundInCurrent = current.words.filter((w) =>
     state.found.includes(w),
@@ -26,18 +16,12 @@ export function RankBar({ state }: { state: GameState }) {
     state.phase === "done" ? 1 : foundInCurrent / current.words.length;
   const pct = Math.min(100, ((state.levelIndex + frac) / n) * 100);
 
-  // Smooth gradient with a stop at each level checkpoint: background at
-  // the far left fading to amethyst at the triangle, then emerald at
-  // the square, ruby, sapphire… along the polygon markers.
   const gradient = `linear-gradient(to right, var(--color-line) 0%, ${levels
     .map((lvl, k) => `${levelColor(lvl.size)} ${((k + 1) / n) * 100}%`)
     .join(", ")})`;
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-20 shrink-0 text-sm font-normal text-ink-soft">
-        {rankFor(state.score, puzzle)}
-      </span>
       <div className="relative flex h-4 flex-1 items-center">
         <div className="absolute inset-x-0 h-1 rounded-full bg-line" />
         {pct > 0 && (
@@ -45,8 +29,6 @@ export function RankBar({ state }: { state: GameState }) {
             className="absolute left-0 h-1 overflow-hidden rounded-full transition-[width] duration-700 ease-out"
             style={{ width: `${pct}%` }}
           >
-            {/* Full-bar gradient clipped by the fill width, so segment
-                colors stay aligned with their levels. */}
             <div
               className="h-full"
               style={{ width: `${10000 / pct}%`, backgroundImage: gradient }}
@@ -54,8 +36,6 @@ export function RankBar({ state }: { state: GameState }) {
           </div>
         )}
         {levels.map((lvl, k) => (
-          // Each level's polygon marks the end of its segment, lighting
-          // up in its color once the level is cleared.
           <span
             key={lvl.size}
             data-level={lvl.size}
