@@ -47,7 +47,7 @@ export function BottomSheet({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 32, stiffness: 400 }}
-        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface-raised px-6 pt-3 shadow-xl outline-none md:max-w-xl md:rounded-3xl md:border md:mb-8"
+        className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface-raised px-6 pt-3 shadow-xl outline-none md:max-w-2xl md:rounded-3xl md:border md:mb-8"
         // Fixed to the real viewport bottom, outside #root's safe-area
         // padding — the sheet carries its own.
         style={{ paddingBottom: "max(1.75rem, env(safe-area-inset-bottom))" }}
