@@ -145,6 +145,7 @@ function DominoChip({
       style={{
         flexDirection: isH ? "row" : "column",
         marginBlock: isH ? undefined : -V_OVERFLOW,
+        marginInline: isH ? undefined : V_OVERFLOW,
         zIndex: selected && !isH ? 1 : undefined,
       }}
       onPointerDown={handlePointerDown}
