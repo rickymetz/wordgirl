@@ -88,7 +88,7 @@ export function hintTarget(state: GameState): string | undefined {
 export function canSkipLevel(state: GameState): boolean {
   if (state.phase !== "playing") return false;
   const level = currentLevel(state);
-  const coreFound = level.words.filter((w) => state.found.includes(w)).length;
+  const coreFound = levelWordsFound(state, state.levelIndex).length;
   if (coreFound >= level.words.length) return false;
   const bonusFound = level.bonusWords.filter((w) =>
     state.found.includes(w),
