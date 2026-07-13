@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { trackSolved } from "../../../lib/analytics";
+import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
@@ -196,6 +196,7 @@ export function useBackwordsGame(mode: GameMode) {
             return;
           }
           void recordDailyStarted();
+          trackStarted("backwords");
           sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".

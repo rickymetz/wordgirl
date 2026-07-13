@@ -20,6 +20,10 @@ export function trackPractice(gameId: string) {
   track(`${gameId}:practice`);
 }
 
+export function trackStarted(gameId: string) {
+  track(`${gameId}:started`);
+}
+
 export function trackArchivePlay(gameId: string) {
   track(`${gameId}:archive`);
 }

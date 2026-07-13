@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
-import { trackSolved } from "../../../lib/analytics";
+import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { streakAdvance } from "../../../lib/daily/persistence";
@@ -86,6 +86,7 @@ export function useSerpentineGame(mode: GameMode) {
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
         } else {
           void recordStarted();
+          trackStarted("serpentine");
         }
       }
     });

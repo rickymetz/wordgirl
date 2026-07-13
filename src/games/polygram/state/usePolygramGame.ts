@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { trackSolved } from "../../../lib/analytics";
+import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
@@ -172,6 +172,7 @@ export function usePolygramGame(mode: GameMode) {
             return;
           }
           void recordDailyStarted();
+          trackStarted("polygram");
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
           hydratedRef.current = true;

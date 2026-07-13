@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { trackSolved } from "../../../lib/analytics";
+import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -160,6 +160,7 @@ export function useCrosshatchGame(mode: GameMode) {
             return;
           }
           void recordDailyStarted();
+          trackStarted("crosshatch");
           sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
