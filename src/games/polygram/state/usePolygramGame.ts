@@ -119,6 +119,7 @@ export function usePolygramGame(mode: GameMode) {
       foundWords: s.found,
       revealed: s.revealed,
       score: s.score,
+      skippedLevels: s.skippedLevels,
       completed: s.phase === "done",
       solved: s.phase === "done",
       elapsedMs: clock.currentElapsedMs(),
@@ -148,7 +149,13 @@ export function usePolygramGame(mode: GameMode) {
             revealed,
             saved.score,
           );
-          dispatch({ type: "hydrate", found, revealed, score });
+          dispatch({
+            type: "hydrate",
+            found,
+            revealed,
+            score,
+            skippedLevels: saved.skippedLevels ?? [],
+          });
         } else {
           // A save from an older dictionary is a historical record: the
           // day restarts fresh but was already counted as played (and
@@ -201,7 +208,7 @@ export function usePolygramGame(mode: GameMode) {
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase]);
+  }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase, state.skippedLevels]);
 
   // Record completion (stats; streak only if it's today) exactly once.
   const completedRef = useRef(false);

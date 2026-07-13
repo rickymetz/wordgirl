@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Puzzle } from "../engine/types";
 import {
+  canSkipLevel,
   gameReducer,
   hintTarget,
   initialState,
@@ -158,6 +159,7 @@ describe("gameReducer", () => {
       found: ["bad", "dab"],
       revealed: {},
       score: 9,
+      skippedLevels: [],
     });
     expect(s.levelIndex).toBe(1);
     expect(s.phase).toBe("playing");
@@ -167,7 +169,61 @@ describe("gameReducer", () => {
       found: ["bad", "dab", "abba"],
       revealed: {},
       score: 17,
+      skippedLevels: [],
     });
     expect(done.phase).toBe("done");
+  });
+
+  it("canSkipLevel is true when gate met via bonus words", () => {
+    const s = play(
+      initialState(puzzle),
+      ...type("bad"),
+      { type: "submit" },
+      ...type("abb"),
+      { type: "submit" },
+    );
+    expect(s.found).toEqual(["bad", "abb"]);
+    expect(s.phase).toBe("playing");
+    expect(canSkipLevel(s)).toBe(true);
+  });
+
+  it("canSkipLevel is false when all core words found", () => {
+    const s = play(
+      initialState(puzzle),
+      ...type("bad"),
+      { type: "submit" },
+      ...type("dab"),
+      { type: "submit" },
+    );
+    expect(s.phase).toBe("levelClear");
+    expect(canSkipLevel(s)).toBe(false);
+  });
+
+  it("skipLevel advances and records skipped level", () => {
+    let s = play(
+      initialState(puzzle),
+      ...type("bad"),
+      { type: "submit" },
+      ...type("abb"),
+      { type: "submit" },
+    );
+    s = gameReducer(s, { type: "skipLevel" });
+    expect(s.levelIndex).toBe(1);
+    expect(s.phase).toBe("playing");
+    expect(s.skippedLevels).toEqual([0]);
+    expect(s.score).toBe(3 + 3 + 3); // bad + abb + level bonus
+  });
+
+  it("hydrate respects skipped levels", () => {
+    const s = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: ["bad", "abb"],
+      revealed: {},
+      score: 9,
+      skippedLevels: [0],
+    });
+    expect(s.levelIndex).toBe(1);
+    expect(s.phase).toBe("playing");
+    expect(s.skippedLevels).toEqual([0]);
   });
 });

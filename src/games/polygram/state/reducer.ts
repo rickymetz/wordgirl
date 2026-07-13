@@ -25,6 +25,8 @@ export interface GameState {
   current: string;
   phase: Phase;
   lastResult: SubmitResult | null;
+  /** Level indices the player skipped (gate met via bonus words). */
+  skippedLevels: number[];
 }
 
 export type GameAction =
@@ -34,11 +36,13 @@ export type GameAction =
   | { type: "submit" }
   | { type: "revealHint"; letterIndex: number; word?: string }
   | { type: "advanceLevel" }
+  | { type: "skipLevel" }
   | {
       type: "hydrate";
       found: string[];
       revealed: Record<string, number[]>;
       score: number;
+      skippedLevels: number[];
     };
 
 export function initialState(puzzle: Puzzle): GameState {
@@ -51,6 +55,7 @@ export function initialState(puzzle: Puzzle): GameState {
     current: "",
     phase: "playing",
     lastResult: null,
+    skippedLevels: [],
   };
 }
 
@@ -74,6 +79,21 @@ export function unsolvedWords(state: GameState): string[] {
  */
 export function hintTarget(state: GameState): string | undefined {
   return unsolvedWords(state)[0];
+}
+
+/**
+ * True when the total words found for the current level (core + bonus)
+ * meets the gate (core word count) but some core words remain unfound.
+ */
+export function canSkipLevel(state: GameState): boolean {
+  if (state.phase !== "playing") return false;
+  const level = currentLevel(state);
+  const coreFound = levelWordsFound(state, state.levelIndex).length;
+  if (coreFound >= level.words.length) return false;
+  const bonusFound = level.bonusWords.filter((w) =>
+    state.found.includes(w),
+  ).length;
+  return coreFound + bonusFound >= level.words.length;
 }
 
 /**
@@ -213,13 +233,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "skipLevel": {
+      if (!canSkipLevel(state)) return state;
+      const level = currentLevel(state);
+      const isLast = state.levelIndex === state.puzzle.levels.length - 1;
+      return {
+        ...state,
+        score: state.score + levelBonus(level.size),
+        levelIndex: state.levelIndex + 1,
+        skippedLevels: [...state.skippedLevels, state.levelIndex],
+        phase: isLast ? "done" : "playing",
+        current: "",
+      };
+    }
+
     case "hydrate": {
-      // Rebuild derived position (levelIndex/phase) from the saved facts.
       let levelIndex = 0;
       let phase: Phase = "playing";
+      const skipped = new Set(action.skippedLevels);
       for (let i = 0; i < state.puzzle.levels.length; i++) {
         const level = state.puzzle.levels[i];
-        const cleared = level.words.every((w) => action.found.includes(w));
+        const cleared =
+          level.words.every((w) => action.found.includes(w)) ||
+          skipped.has(i);
         if (cleared) {
           if (i === state.puzzle.levels.length - 1) {
             levelIndex = i;
@@ -237,6 +273,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         found: action.found,
         revealed: action.revealed,
         score: action.score,
+        skippedLevels: action.skippedLevels,
         levelIndex,
         phase,
         current: "",
