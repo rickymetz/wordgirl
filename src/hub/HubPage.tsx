@@ -10,7 +10,7 @@ import { GameCard } from "./GameCard";
 export function HubPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
-    <div className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-xl">
+    <div className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl">
       <header className="relative pt-12 pb-8">
         {/* Display font sets the brand apart from the UI text. */}
         <h1 className="text-center font-game text-2xl md:text-3xl">WordGirl</h1>
