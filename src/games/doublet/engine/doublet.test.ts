@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { dailySeed, generateDoublet } from "./generator";
-import { TWO_LETTER_WORDS } from "./twoLetterWords";
 import {
   cellKey,
   dominoCells,
@@ -63,10 +62,7 @@ describe("generateDoublet", () => {
           const word = slot.cells
             .map((c) => grid.get(cellKey(c.row, c.col)))
             .join("");
-          const ok =
-            word.length === 2
-              ? TWO_LETTER_WORDS.has(word.toUpperCase())
-              : dict.has(word.toLowerCase());
+          const ok = dict.has(word.toLowerCase());
           expect(ok, `${difficulty} ${key}: "${word}"`).toBe(true);
         }
       }

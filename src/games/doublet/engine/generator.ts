@@ -1,7 +1,6 @@
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { seededRandom, shuffle } from "../../../lib/random";
 import { SHAPES } from "./boards";
-import { TWO_LETTER_WORDS } from "./twoLetterWords";
 import type {
   BoardShape,
   Cell,
@@ -138,7 +137,6 @@ export function findSlots(shape: BoardShape): Slot[] {
 
 function isValidWord(word: string, dict: Dictionary): boolean {
   if (word.length === 1) return true;
-  if (word.length === 2) return TWO_LETTER_WORDS.has(word.toUpperCase());
   return dict.has(word.toLowerCase());
 }
 
@@ -147,35 +145,24 @@ function getWordCandidates(
   dict: Dictionary,
   constraints: Map<number, string>,
 ): string[] {
-  if (len === 2) {
-    const words: string[] = [];
-    for (const w of TWO_LETTER_WORDS) {
+  const sources: (readonly string[])[] = [
+    dict.required.buckets.get(len) ?? [],
+  ];
+  if (len === 2) sources.push(dict.bonus.buckets.get(len) ?? []);
+
+  const candidates: string[] = [];
+  for (const source of sources) {
+    for (const w of source) {
+      const upper = w.toUpperCase();
       let ok = true;
       for (const [pos, letter] of constraints) {
-        if (w[pos] !== letter) {
+        if (upper[pos] !== letter) {
           ok = false;
           break;
         }
       }
-      if (ok) words.push(w);
+      if (ok) candidates.push(upper);
     }
-    return words;
-  }
-
-  const bucket = dict.required.buckets.get(len);
-  if (!bucket) return [];
-
-  const candidates: string[] = [];
-  for (const w of bucket) {
-    const upper = w.toUpperCase();
-    let ok = true;
-    for (const [pos, letter] of constraints) {
-      if (upper[pos] !== letter) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) candidates.push(upper);
   }
   return candidates;
 }

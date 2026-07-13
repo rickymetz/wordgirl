@@ -4,9 +4,8 @@ import type { DoubletPuzzle } from "../engine/types";
 import { gameReducer, initialState, type GameState } from "./reducer";
 
 // A 2x2 board, two horizontal dominoes, both rows two-letter words —
-// small enough to drive the reducer by hand. Slots are 2 letters, so
-// word checks go through TWO_LETTER_WORDS and the dict stays unused.
-const dict = parseDictionary("");
+// small enough to drive the reducer by hand.
+const dict = parseDictionary("at\non");
 const puzzle: DoubletPuzzle = {
   seed: "test",
   dictVersion: 1,
