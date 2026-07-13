@@ -1,4 +1,6 @@
-import { reverse, type Puzzle, type RowDef } from "../engine/types";
+import { reverse, fitsIn, toMultiset, type Puzzle, type RowDef } from "../engine/types";
+import { lexiconItems } from "../engine/lexicon";
+import { solveBank } from "../engine/generator";
 
 export interface CommittedRow {
   /** The letters as placed (a pair orientation or a palindrome half). */
@@ -263,19 +265,32 @@ export function gameReducer(state: GameState, action: Action): GameState {
     }
     case "revealHint": {
       const placedKeys = new Set(state.rows.map((r) => rowKey(r.def)));
-      const seed = state.puzzle.seedRows.find((key) => {
-        const def = state.lexicon.get(key);
-        return def && !placedKeys.has(rowKey(def));
-      });
-      if (!seed) return state;
-      const def = state.lexicon.get(seed)!;
-      // Return staged letters to bank, then charge the hint row.
       const bankWithCurrent = [...state.bank, ...state.current].sort();
+      const bankMs = toMultiset(bankWithCurrent);
+
+      // Try seedRows first — fast path when the player hasn't diverged.
+      let def: RowDef | undefined;
+      for (const key of state.puzzle.seedRows) {
+        const d = state.lexicon.get(key);
+        if (d && !placedKeys.has(rowKey(d)) && fitsIn(toMultiset(d.cost), bankMs)) {
+          def = d;
+          break;
+        }
+      }
+
+      // Fallback: find any row from a valid completion of the current bank.
+      if (!def) {
+        const items = lexiconItems(state.lexicon).filter(
+          (d) => !placedKeys.has(rowKey(d)),
+        );
+        const completions = solveBank(bankMs, items, 1);
+        if (completions.length > 0) def = completions[0][0];
+      }
+
+      if (!def) return state;
       const bank = [...bankWithCurrent];
       for (const ch of def.place) {
-        const at = bank.indexOf(ch);
-        if (at === -1) return state;
-        bank.splice(at, 1);
+        bank.splice(bank.indexOf(ch), 1);
       }
       bank.sort();
       const nonce = (state.lastResult?.nonce ?? 0) + 1;
