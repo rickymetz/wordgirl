@@ -28,8 +28,8 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   if (available.length === 0 && state.solved) return null;
 
-  const rows = Math.ceil(available.length / CHIPS_PER_ROW);
-  const trayMinH = rows * CHIP_H + Math.max(0, rows - 1) * GAP;
+  const totalRows = Math.ceil(puzzle.dominoes.length / CHIPS_PER_ROW);
+  const trayMinH = totalRows * CHIP_H + Math.max(0, totalRows - 1) * GAP + 2 * V_OVERFLOW;
 
   return (
     <div className="w-full px-4">

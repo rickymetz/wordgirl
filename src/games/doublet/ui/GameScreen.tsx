@@ -360,19 +360,20 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               <span className="text-sm font-medium text-ink-soft">
                 {placedCount}/{totalDominoes} placed
               </span>
-              {placedCount > 0 && (
-                <button
-                  className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
-                             text-ink-soft text-xs font-semibold
-                             active:scale-95 touch-manipulation select-none
-                             after:absolute after:inset-x-0 after:-inset-y-2.5"
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => dispatch({ type: "clearBoard" })}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Clear
-                </button>
-              )}
+              <button
+                className={[
+                  "relative flex items-center gap-1 px-2.5 py-1 rounded-full",
+                  "text-ink-soft text-xs font-semibold",
+                  "active:scale-95 touch-manipulation select-none",
+                  "after:absolute after:inset-x-0 after:-inset-y-2.5",
+                  placedCount === 0 ? "invisible" : "",
+                ].join(" ")}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "clearBoard" })}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Clear
+              </button>
             </div>
             <DominoTray
               state={state}
