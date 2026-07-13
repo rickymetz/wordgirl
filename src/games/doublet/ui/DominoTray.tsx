@@ -12,11 +12,9 @@ interface Props {
   draggedId?: number | null;
 }
 
-const CELL = 40; // w-10
-const BORDER = 4; // border-2 × 2
-const DIV = 1;
-const CHIP_W = CELL * 2 + DIV + BORDER; // 85 — horizontal domino width
-const CHIP_H = CELL + BORDER; // 44 — horizontal domino height
+const CHIP_V = 85; // vertical chip height: border-2 (4px) + h-10×2 (80px) + 1px divider
+const GAP = 8; // gap-2
+const CHIPS_PER_ROW = 3;
 
 export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove, onDragEnd, draggedId }: Props) {
   const { puzzle, selectedDominoId, currentOrientation } = state;
@@ -25,27 +23,25 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
 
   if (available.length === 0 && state.solved) return null;
 
+  const rows = Math.ceil(available.length / CHIPS_PER_ROW);
+  const trayMinH = rows * CHIP_V + Math.max(0, rows - 1) * GAP;
+
   return (
     <div className="w-full px-4">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2" style={{ minHeight: trayMinH }}>
         {available.map((d) => (
-          <div
+          <DominoChip
             key={d.id}
-            className="relative flex items-center justify-center"
-            style={{ width: CHIP_W, height: CHIP_H }}
-          >
-            <DominoChip
-              piece={d}
-              selected={d.id === selectedDominoId}
-              orientation={d.id === selectedDominoId ? currentOrientation : 0}
-              onSelect={() => onSelect(d.id)}
-              onRotate={onRotate}
-              onDragStart={onDragStart}
-              onDragMove={onDragMove}
-              onDragEnd={onDragEnd}
-              dimmed={draggedId !== null && draggedId !== undefined && draggedId === d.id}
-            />
-          </div>
+            piece={d}
+            selected={d.id === selectedDominoId}
+            orientation={d.id === selectedDominoId ? currentOrientation : 0}
+            onSelect={() => onSelect(d.id)}
+            onRotate={onRotate}
+            onDragStart={onDragStart}
+            onDragMove={onDragMove}
+            onDragEnd={onDragEnd}
+            dimmed={draggedId !== null && draggedId !== undefined && draggedId === d.id}
+          />
         ))}
       </div>
     </div>
