@@ -4,7 +4,6 @@ import {
   loadDailyProgress,
   loadStats,
   recordDailySolved,
-  recordRankImproved,
   recordWordsProgress,
   saveDailyProgress,
 } from "./persistence";
@@ -22,35 +21,29 @@ afterEach(() => {
 });
 
 describe("stats recording", () => {
-  it("a solve and a same-tick rank upgrade never lose a write", async () => {
-    // The straight-to-perfect race: both fire without awaiting between
-    // them. Serialization must let the upgrade see the solve's write.
-    await Promise.all([
-      recordDailySolved("2026-07-06", 14, "Genius"),
-      recordRankImproved("Weaver"),
-    ]);
+  it("a solve records stats correctly", async () => {
+    await recordDailySolved("2026-07-06", 14);
     const stats = await loadStats();
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06");
-    expect(stats.bestRank).toBe("Weaver");
   });
 
   it("solving just after midnight still counts the session's day", async () => {
     // dateKey froze at mount before midnight; the clock is now past it.
     vi.setSystemTime(new Date(2026, 6, 7, 0, 0, 30));
-    const stats = await recordDailySolved("2026-07-06", 12, "Genius");
+    const stats = await recordDailySolved("2026-07-06", 12);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06");
     // The next evening's solve continues the streak.
     vi.setSystemTime(new Date(2026, 6, 7, 21, 0, 0));
-    const next = await recordDailySolved("2026-07-07", 15, "Genius");
+    const next = await recordDailySolved("2026-07-07", 15);
     expect(next.currentStreak).toBe(2);
   });
 
   it("solving an old archive day counts totals but not the streak", async () => {
-    await recordDailySolved("2026-07-06", 14, "Genius");
-    const stats = await recordDailySolved("2026-07-01", 10, "Great");
+    await recordDailySolved("2026-07-06", 14);
+    const stats = await recordDailySolved("2026-07-01", 10);
     expect(stats.solved).toBe(2);
     expect(stats.totalWords).toBe(24);
     expect(stats.currentStreak).toBe(1);
@@ -58,8 +51,8 @@ describe("stats recording", () => {
   });
 
   it("re-recording the same day is a no-op", async () => {
-    await recordDailySolved("2026-07-06", 14, "Genius");
-    const stats = await recordDailySolved("2026-07-06", 14, "Genius");
+    await recordDailySolved("2026-07-06", 14);
+    const stats = await recordDailySolved("2026-07-06", 14);
     expect(stats.solved).toBe(1);
   });
 
@@ -67,14 +60,14 @@ describe("stats recording", () => {
     // It's 2026-07-07; deliberately playing 07-06 from the archive
     // (allowGrace=false) counts totals but must not move the streak.
     vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
-    const stats = await recordDailySolved("2026-07-06", 10, "Great", false);
+    const stats = await recordDailySolved("2026-07-06", 10, false);
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(0);
     expect(stats.lastSolvedDate).toBeNull();
   });
 
   it("post-solve words credit the lifetime total", async () => {
-    await recordDailySolved("2026-07-06", 9, "Amazing");
+    await recordDailySolved("2026-07-06", 9);
     await recordWordsProgress(2);
     const stats = await loadStats();
     expect(stats.totalWords).toBe(11);

@@ -1,5 +1,3 @@
-import type { Puzzle } from "./types";
-
 /** Base points for a word found with no hints: its length. */
 export function wordPoints(word: string, lettersRevealed = 0): number {
   let points = word.length;
@@ -31,22 +29,3 @@ export function maxScore(
   return total;
 }
 
-export const RANKS = [
-  { title: "Beginner", pct: 0 },
-  { title: "Good", pct: 25 },
-  { title: "Great", pct: 50 },
-  { title: "Amazing", pct: 70 },
-  { title: "Genius", pct: 90 },
-  { title: "Geometer", pct: 100 },
-] as const;
-
-export type RankTitle = (typeof RANKS)[number]["title"];
-
-export function rankFor(score: number, puzzle: Pick<Puzzle, "maxScore">): RankTitle {
-  const pct = puzzle.maxScore === 0 ? 0 : (score / puzzle.maxScore) * 100;
-  let current: RankTitle = RANKS[0].title;
-  for (const rank of RANKS) {
-    if (pct >= rank.pct) current = rank.title;
-  }
-  return current;
-}

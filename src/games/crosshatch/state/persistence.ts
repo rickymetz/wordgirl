@@ -4,7 +4,6 @@ import {
   streakAdvance,
 } from "../../../lib/daily/persistence";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { RANKS, type RankTitle } from "../engine/scoring";
 
 export interface DailyProgress {
   dateKey: string;
@@ -44,7 +43,7 @@ export interface CrosshatchStats {
   currentStreak: number;
   bestStreak: number;
   lastSolvedDate: string | null;
-  bestRank: RankTitle | null;
+  bestRank: string | null;
   totalWords: number;
 }
 
@@ -161,9 +160,6 @@ export const loadStats = base.loadStats;
 /** Call once when a new daily puzzle is first opened. */
 export const recordDailyStarted = base.recordStarted;
 
-const rankIndex = (r: RankTitle | null) =>
-  r === null ? -1 : RANKS.findIndex((x) => x.title === r);
-
 /**
  * Call once when a daily puzzle reaches the solve threshold. Only
  * TODAY's puzzle moves the streak — solving an archived day counts
@@ -174,7 +170,6 @@ const rankIndex = (r: RankTitle | null) =>
 export function recordDailySolved(
   dateKey: string,
   wordsFound: number,
-  rank: RankTitle,
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it to move the streak.
   allowGrace = true,
@@ -184,25 +179,10 @@ export function recordDailySolved(
     return {
       ...stats,
       solved: stats.solved + 1,
-      bestRank:
-        rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
       totalWords: stats.totalWords + wordsFound,
       ...streakAdvance(stats, dateKey, allowGrace),
     };
   });
-}
-
-/**
- * The rank can still improve AFTER the solve is recorded (pushing from
- * Genius to a perfect Crosshatch) — upgrade bestRank without touching
- * the counters.
- */
-export async function recordRankImproved(rank: RankTitle): Promise<void> {
-  await base.updateStats((stats) =>
-    rankIndex(rank) > rankIndex(stats.bestRank)
-      ? { ...stats, bestRank: rank }
-      : stats,
-  );
 }
 
 /** Words found AFTER the solve was recorded still count toward the

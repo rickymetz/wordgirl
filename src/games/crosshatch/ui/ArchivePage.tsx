@@ -2,7 +2,6 @@ import {
   GameArchive,
   type GameArchiveConfig,
 } from "../../../components/GameArchive";
-import { rankFor } from "../engine/scoring";
 import {
   ARCHIVE_EPOCH,
   displayStreak,
@@ -24,7 +23,6 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.solved },
     { label: "Played", value: stats.played },
-    { label: "Best rank", value: stats.bestRank ?? "—" },
     { label: "Words", value: stats.totalWords },
   ],
   isDone: (day) => day.solved,
@@ -48,9 +46,7 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
       };
     }
     return {
-      text: `${rankFor(day.foundWords.length, day.totalWords)} · ${
-        day.foundWords.length
-      }/${day.totalWords}${
+      text: `${day.foundWords.length}/${day.totalWords}${
         Object.keys(day.revealed ?? {}).length > 0 ? " · used hint" : ""
       }`,
       done: true,

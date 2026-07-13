@@ -6,7 +6,6 @@ import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { useModalFocus } from "../../../components/useModalFocus";
-import { rankFor } from "../engine/scoring";
 
 function buildShareText(
   found: number,
@@ -20,7 +19,7 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
     `Crosshatch — ${date}`,
-    `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -96,10 +95,7 @@ export function SolvedOverlay({
               ? "Daily solved"
               : "Puzzle solved"}
         </div>
-        <div className="mt-2 text-4xl font-bold text-accent">
-          {rankFor(found, total)}
-        </div>
-        <div className="mt-1 text-ink-soft">
+        <div className="mt-2 text-ink-soft">
           {found} of {total} words
         </div>
         {elapsedMs !== null && (

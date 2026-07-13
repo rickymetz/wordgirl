@@ -45,7 +45,6 @@ import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
 import { WordsPanel } from "./WordsPanel";
-import { rankFor } from "../engine/scoring";
 
 function buildShareText(
   found: number,
@@ -58,7 +57,7 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
     `Crosshatch — ${date}`,
-    `${rankFor(found, total)} · ${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -498,9 +497,6 @@ export function GameScreen({ mode }: Props) {
           >
             <p className="text-lg font-bold text-ink">
               {state.found.length === total ? "Perfect sweep!" : "Solved"}
-            </p>
-            <p className="text-2xl font-bold text-accent">
-              {rankFor(state.found.length, total)}
             </p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">

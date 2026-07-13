@@ -1,4 +1,6 @@
-import { RANKS, solveTarget } from "../engine/scoring";
+import { solveTarget } from "../engine/scoring";
+
+const CHECKPOINTS = [25, 50, 70, 90, 100];
 
 export function ProgressBar({
   found,
@@ -17,15 +19,15 @@ export function ProgressBar({
           className="absolute left-0 h-1 rounded-full bg-accent transition-[width] duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
-        {RANKS.filter(
-          (r) => r.pct > 0 && Math.abs(r.pct - solvePct) > 3,
-        ).map((r) => (
+        {CHECKPOINTS.filter(
+          (cp) => Math.abs(cp - solvePct) > 3,
+        ).map((cp) => (
           <span
-            key={r.pct}
+            key={cp}
             className={`absolute h-2 w-2 -translate-x-1/2 rounded-full ${
-              pct >= r.pct ? "bg-accent" : "bg-line"
+              pct >= cp ? "bg-accent" : "bg-line"
             }`}
-            style={{ left: `${r.pct}%` }}
+            style={{ left: `${cp}%` }}
           />
         ))}
         <span

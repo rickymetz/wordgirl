@@ -26,7 +26,6 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
-import { rankFor } from "../engine/scoring";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -51,7 +50,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   return [
     `Polygram — ${date}`,
-    `${rankFor(state.score, state.puzzle)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${state.score} pts · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -384,9 +383,6 @@ export function GameScreen({ mode }: Props) {
             className="flex flex-col items-center gap-3 pb-2"
           >
             <p className="text-lg font-bold text-ink">Solved</p>
-            <p className="text-2xl font-bold text-accent">
-              {rankFor(state.score, state.puzzle)}
-            </p>
             {doneElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(doneElapsedMs)}

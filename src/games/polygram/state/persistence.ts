@@ -6,7 +6,6 @@ import {
   type StreakStats,
 } from "../../../lib/daily/persistence";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { RANKS, type RankTitle } from "../engine/scoring";
 
 export interface DailyProgress extends DailyBase {
   foundWords: string[];
@@ -22,7 +21,7 @@ export interface PolygramStats extends StreakStats {
   completed: number;
   /** Legacy alias for StreakStats.lastSolvedDate. */
   lastCompletedDate: string | null;
-  bestRank: RankTitle | null;
+  bestRank: string | null;
   totalScore: number;
 }
 
@@ -142,15 +141,11 @@ export async function resetDailyForReplay(dateKey: string): Promise<void> {
 export function recordDailyCompleted(
   dateKey: string,
   score: number,
-  rank: RankTitle,
   allowGrace = true,
 ): Promise<PolygramStats> {
   return daily.updateStats((raw) => {
     const stats = normalizeStatFields(raw);
     if (stats.lastCompletedDate === dateKey) return stats;
-
-    const rankIndex = (r: RankTitle | null) =>
-      r === null ? -1 : RANKS.findIndex((x) => x.title === r);
 
     const streak = streakAdvance(stats, dateKey, allowGrace);
 
@@ -158,8 +153,6 @@ export function recordDailyCompleted(
       ...stats,
       solved: stats.solved + 1,
       completed: stats.solved + 1,
-      bestRank:
-        rankIndex(rank) > rankIndex(stats.bestRank) ? rank : stats.bestRank,
       totalScore: stats.totalScore + score,
       ...streak,
       lastCompletedDate: streak.lastSolvedDate ?? stats.lastCompletedDate,
