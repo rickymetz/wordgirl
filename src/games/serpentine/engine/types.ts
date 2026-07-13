@@ -11,6 +11,7 @@ export interface Cell {
 export interface PuzzleDef {
   id: string;
   title: string;
+  author: string;
   difficulty: Difficulty;
   rows: number;
   cols: number;

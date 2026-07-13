@@ -21,6 +21,7 @@ const puzzle: PuzzleDef = {
   path,
   text: "TEST",
   title: "Test Puzzle",
+  author: "Test Author",
   difficulty: "haiku",
 };
 

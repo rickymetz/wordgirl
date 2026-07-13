@@ -231,8 +231,10 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Puzzle title + typed-out letters */}
       <div className="px-1 pt-10 pb-5">
-        <div className="pb-1 text-center text-sm font-medium text-accent italic">
-          {puzzle.title}
+        <div className="pb-1 text-center text-sm font-medium text-accent">
+          <span className="italic">&ldquo;{puzzle.title}&rdquo;</span>
+          <br />
+          <span className="text-xs text-ink-soft">by <em>{puzzle.author}</em></span>
         </div>
         <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintCount > 0 ? hintIndices : undefined} />
       </div>

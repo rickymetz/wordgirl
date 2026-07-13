@@ -237,7 +237,6 @@ function expand(
   difficulty: Difficulty,
   rand: () => number,
 ): PuzzleDef {
-  const displayTitle = `${title} — ${author}`;
   const letters = text.replace(/[^A-Z]/g, "");
   const [rows, cols] = bestGrid(letters.length);
   const blocked = pickBlocked(rows, cols, letters.length, rand);
@@ -248,7 +247,7 @@ function expand(
   for (let i = 0; i < path.length; i++) {
     grid[path[i].row][path[i].col] = letters[i];
   }
-  return { id, title: displayTitle, difficulty, rows, cols, grid, text, path, blocked };
+  return { id, title, author, difficulty, rows, cols, grid, text, path, blocked };
 }
 
 // --- Themed poetry pools ---
