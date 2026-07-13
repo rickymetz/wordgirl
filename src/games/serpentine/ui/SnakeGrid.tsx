@@ -30,8 +30,8 @@ export function SnakeGrid({
   hintCells,
   onTapCell,
 }: Props) {
-  const { rem } = useViewport();
-  const cellPx = 44 * (rem / 16);
+  const { vw, rem } = useViewport();
+  const cellPx = (vw >= 768 ? 56 : 44) * (rem / 16);
   const gridRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);

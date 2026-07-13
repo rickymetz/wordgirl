@@ -56,7 +56,8 @@ export function MirrorBoard({
   // mr-2) is all rem-based, so the budget scales with Text size like
   // the height budget below — at Huge everything is 25% wider.
   const s = rem / 16;
-  const halfW = (Math.min(vw, 448 * s) - 40 * s) / 2 - 12 * s;
+  const maxContainerW = vw >= 768 ? 576 * s : 448 * s;
+  const halfW = (Math.min(vw, maxContainerW) - 40 * s) / 2 - 12 * s;
   const RAIL = 36 * s; // take-back ×: 24px + 8px margin + slack
   const fit = (budget: number, n: number) =>
     Math.floor((budget - (n - 1) * 3) / n);

@@ -30,7 +30,7 @@ export function ModalDialog({
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className={`w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl outline-none ${className}`}
+        className={`w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-6 shadow-xl outline-none md:max-w-md ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

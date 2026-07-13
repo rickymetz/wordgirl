@@ -72,7 +72,7 @@ export function DoneOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="done-dialog-title"
-        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none"
+        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none md:max-w-md"
         initial={{ scale: 0.8, y: 30 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}

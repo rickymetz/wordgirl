@@ -31,8 +31,9 @@ export function GridBoard({
 }) {
   const { puzzle } = state;
   const { vw, vh, rem } = useViewport();
+  const maxBoardW = vw >= 768 ? 460 : 340;
   const wCell =
-    (Math.min(340, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
+    (Math.min(maxBoardW, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
   const hCell =
     (vh - CHROME_H * (rem / 16) - (puzzle.rows - 1) * GAP) / puzzle.rows;
   const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));

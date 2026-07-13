@@ -118,7 +118,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   return (
     <div
       data-level="serpentine"
-      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 [@media(max-height:720px)]:pb-3"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 md:max-w-xl [@media(max-height:720px)]:pb-3"
     >
       {/* Header */}
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">

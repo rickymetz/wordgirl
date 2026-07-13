@@ -231,7 +231,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 [@media(max-height:720px)]:pb-3"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 md:max-w-xl [@media(max-height:720px)]:pb-3"
       data-level="doublet"
     >
       {/* Header */}

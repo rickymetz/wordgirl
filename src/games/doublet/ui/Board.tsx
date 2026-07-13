@@ -34,8 +34,9 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
   const { puzzle, grid, invalidSlots } = state;
   const { vw, vh, rem } = useViewport();
 
+  const maxBoardW = vw >= 768 ? 480 : 360;
   const wCell =
-    (Math.min(360, vw - 32) - (puzzle.board.cols - 1) * GAP) / puzzle.board.cols;
+    (Math.min(maxBoardW, vw - 32) - (puzzle.board.cols - 1) * GAP) / puzzle.board.cols;
   const hCell =
     (vh - CHROME_H * (rem / 16) - (puzzle.board.rows - 1) * GAP) /
     puzzle.board.rows;

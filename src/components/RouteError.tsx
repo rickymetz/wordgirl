@@ -33,7 +33,7 @@ export function RouteError() {
   }, []);
 
   return (
-    <div className="mx-auto flex w-full max-w-md grow flex-col items-center justify-center gap-4 px-5 text-center">
+    <div className="mx-auto flex w-full max-w-md grow flex-col items-center justify-center gap-4 px-5 text-center md:max-w-xl">
       <h1 className="text-xl font-bold">Something went sideways</h1>
       <p className="text-sm text-ink-soft">
         {isStaleChunkError(error)
