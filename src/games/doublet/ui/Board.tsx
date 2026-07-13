@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation }: Props) {
-  const { puzzle, grid, invalidSlots } = state;
+  const { puzzle, grid } = state;
   const { vw, vh, rem } = useViewport();
 
   const wCell =
@@ -45,16 +45,6 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     () => new Set(puzzle.board.cells.map((c) => cellKey(c.row, c.col))),
     [puzzle.board.cells],
   );
-
-  const invalidCells = useMemo(() => {
-    const s = new Set<string>();
-    for (const si of invalidSlots) {
-      for (const c of puzzle.slots[si].cells) {
-        s.add(cellKey(c.row, c.col));
-      }
-    }
-    return s;
-  }, [invalidSlots, puzzle.slots]);
 
   const previewCells = useMemo(() => {
     if (previewOrientation == null) return null;
@@ -82,12 +72,6 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     return { byId, byCell };
   }, [state.placed, puzzle.dominoes]);
   const placedPairs = dominoIndex.byId;
-
-  function isDominoInvalid(dId: number): boolean {
-    const pair = placedPairs.get(dId);
-    if (!pair) return false;
-    return pair.cells.some((c) => invalidCells.has(cellKey(c.row, c.col)));
-  }
 
   function dominoBridge(dId: number): "H" | "V" | null {
     const pair = placedPairs.get(dId);
@@ -174,7 +158,6 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
 
         const bridge = pd ? dominoBridge(pd.dominoId) : null;
         const pairIdx = pd ? isDominoPairCell(pd.dominoId, row, col) : -1;
-        const domInvalid = pd ? isDominoInvalid(pd.dominoId) : false;
 
         let borderRadius = "0.5rem";
         if (bridge === "H" && pairIdx === 0) borderRadius = "0.5rem 0 0 0.5rem";
@@ -187,9 +170,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
 
         const bColor = state.solved
           ? "var(--color-accent)"
-          : domInvalid
-            ? "var(--color-warn)"
-            : "var(--color-line)";
+          : "var(--color-line)";
         const full = `${BW}px solid ${bColor}`;
 
         let borderStyle: React.CSSProperties = {};
@@ -210,9 +191,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         const textClass = pd
           ? state.solved
             ? "text-accent"
-            : domInvalid
-              ? "text-warn"
-              : "text-ink"
+            : "text-ink"
           : "text-ink-soft";
 
         const isPreview = previewCells && previewCells.keys.has(k);
