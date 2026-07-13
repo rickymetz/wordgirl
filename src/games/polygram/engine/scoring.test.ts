@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { levelBonus, maxScore, rankFor, wordPoints } from "./scoring";
-import type { Puzzle } from "./types";
+import { levelBonus, maxScore, wordPoints } from "./scoring";
 
 describe("wordPoints", () => {
   it("scores a word by its length", () => {
@@ -27,15 +26,3 @@ describe("maxScore", () => {
   });
 });
 
-describe("rankFor", () => {
-  const puzzle = { maxScore: 100 } as Puzzle;
-  it("maps score percentage to rank titles", () => {
-    expect(rankFor(0, puzzle)).toBe("Beginner");
-    expect(rankFor(24, puzzle)).toBe("Beginner");
-    expect(rankFor(25, puzzle)).toBe("Good");
-    expect(rankFor(50, puzzle)).toBe("Great");
-    expect(rankFor(70, puzzle)).toBe("Amazing");
-    expect(rankFor(90, puzzle)).toBe("Genius");
-    expect(rankFor(100, puzzle)).toBe("Geometer");
-  });
-});

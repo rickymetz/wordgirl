@@ -3,13 +3,12 @@ import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch } from "../engine/generator";
-import { isSolved, rankFor, uniqueWords } from "../engine/scoring";
+import { isSolved, uniqueWords } from "../engine/scoring";
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
   recordDailyStarted,
-  recordRankImproved,
   recordWordsProgress,
   saveDailyProgress,
 } from "./persistence";
@@ -227,7 +226,6 @@ export function useCrosshatchGame(mode: GameMode) {
       void recordDailySolved(
         dateKey,
         state.found.length,
-        rankFor(state.found.length, total),
         mode.kind === "daily",
       );
       return;
@@ -239,9 +237,6 @@ export function useCrosshatchGame(mode: GameMode) {
       const delta = state.found.length - creditedRef.current;
       creditedRef.current = state.found.length;
       void recordWordsProgress(delta);
-    }
-    if (total > 0) {
-      void recordRankImproved(rankFor(state.found.length, total));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.solved, state.found, totalWords]);

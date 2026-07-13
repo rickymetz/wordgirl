@@ -26,7 +26,6 @@ import {
   markCoachSeen,
 } from "../state/persistence";
 import { currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
-import { rankFor } from "../engine/scoring";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -51,7 +50,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   return [
     `Polygram — ${date}`,
-    `${rankFor(state.score, state.puzzle)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${state.score} pts · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -263,7 +262,7 @@ export function GameScreen({ mode }: Props) {
         ) : (
           <HomeLink />
         )}
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-2">
           {mode.kind === "practice" && dailyDone === false && (
             <Link
               to="/games/polygram"
@@ -271,6 +270,22 @@ export function GameScreen({ mode }: Props) {
             >
               New daily puzzle
             </Link>
+          )}
+          {!done && (
+            <button
+              className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
+                         text-ink-soft text-xs font-semibold
+                         active:scale-95 touch-manipulation select-none
+                         after:absolute after:inset-x-0 after:-inset-y-2.5"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setWordsOpen(true);
+                requestHint();
+              }}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Hint{hintUsed ? ` (${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)})` : ""}
+            </button>
           )}
           <button
             type="button"
@@ -368,9 +383,6 @@ export function GameScreen({ mode }: Props) {
             className="flex flex-col items-center gap-3 pb-2"
           >
             <p className="text-lg font-bold text-ink">Solved</p>
-            <p className="text-2xl font-bold text-accent">
-              {rankFor(state.score, state.puzzle)}
-            </p>
             {doneElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(doneElapsedMs)}

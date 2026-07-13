@@ -6,7 +6,6 @@ import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { useModalFocus } from "../../../components/useModalFocus";
-import { rankFor } from "../engine/scoring";
 import type { GameState } from "../state/reducer";
 import { POLYGON_NAMES } from "./polygonPath";
 
@@ -24,8 +23,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   return [
     `Polygram — ${date}`,
-    // Rank only — raw points aren't part of the in-game language.
-    `${rankFor(state.score, state.puzzle)} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${state.score} pts · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -58,7 +56,6 @@ export function DoneOverlay({
   const dialogRef = useModalFocus<HTMLDivElement>(done && open);
 
   if (!done || !open) return null;
-  const rank = rankFor(state.score, state.puzzle);
   const hintUsed = Object.keys(state.revealed).length > 0;
 
   return (
@@ -95,7 +92,6 @@ export function DoneOverlay({
         >
           {mode === "daily" ? "Daily complete" : "Puzzle complete"}
         </div>
-        <div className="mt-2 text-4xl font-bold text-accent">{rank}</div>
         <div className="mt-1 text-ink-soft">
           {state.score} of {state.puzzle.maxScore} points ·{" "}
           {POLYGON_NAMES[state.puzzle.maxLevel]} reached

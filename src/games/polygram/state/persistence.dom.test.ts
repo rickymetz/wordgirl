@@ -34,43 +34,41 @@ afterEach(() => {
 
 describe("stats recording", () => {
   it("increments solved/completed and accumulates totalScore", async () => {
-    const stats = await recordDailyCompleted("2026-07-12", 42, "Good");
+    const stats = await recordDailyCompleted("2026-07-12", 42);
     expect(stats.solved).toBe(1);
     expect(stats.completed).toBe(1);
     expect(stats.totalScore).toBe(42);
-    expect(stats.bestRank).toBe("Good");
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-12");
     expect(stats.lastCompletedDate).toBe("2026-07-12");
   });
 
-  it("tracks bestRank across completions", async () => {
-    await recordDailyCompleted("2026-07-11", 10, "Good");
+  it("accumulates totalScore across completions", async () => {
+    await recordDailyCompleted("2026-07-11", 10);
     vi.setSystemTime(new Date(2026, 6, 12, 12, 0, 0));
-    const stats = await recordDailyCompleted("2026-07-12", 50, "Genius");
-    expect(stats.bestRank).toBe("Genius");
+    const stats = await recordDailyCompleted("2026-07-12", 50);
     expect(stats.totalScore).toBe(60);
   });
 
   it("does not double-count the same dateKey", async () => {
-    await recordDailyCompleted("2026-07-12", 42, "Good");
-    const stats = await recordDailyCompleted("2026-07-12", 99, "Genius");
+    await recordDailyCompleted("2026-07-12", 42);
+    const stats = await recordDailyCompleted("2026-07-12", 99);
     expect(stats.solved).toBe(1);
     expect(stats.totalScore).toBe(42);
   });
 
   it("archive plays (allowGrace=false) don't advance streak", async () => {
     vi.setSystemTime(new Date(2026, 6, 13, 12, 0, 0));
-    const stats = await recordDailyCompleted("2026-07-12", 20, "Good", false);
+    const stats = await recordDailyCompleted("2026-07-12", 20, false);
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(0);
     expect(stats.lastSolvedDate).toBeNull();
   });
 
   it("grace-day streak continues just after midnight", async () => {
-    await recordDailyCompleted("2026-07-12", 10, "Good");
+    await recordDailyCompleted("2026-07-12", 10);
     vi.setSystemTime(new Date(2026, 6, 13, 0, 0, 30));
-    const stats = await recordDailyCompleted("2026-07-13", 10, "Good");
+    const stats = await recordDailyCompleted("2026-07-13", 10);
     expect(stats.currentStreak).toBe(2);
   });
 });
@@ -165,7 +163,7 @@ describe("archive roll-up", () => {
 
 describe("streak display", () => {
   it("shows grace day then lapses", async () => {
-    await recordDailyCompleted("2026-07-12", 10, "Good");
+    await recordDailyCompleted("2026-07-12", 10);
     const stats = await loadStats();
     expect(displayStreak(stats, "2026-07-13")).toBe(1); // grace
     expect(displayStreak(stats, "2026-07-15")).toBe(0); // lapsed

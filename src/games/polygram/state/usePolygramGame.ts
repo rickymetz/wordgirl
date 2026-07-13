@@ -2,7 +2,7 @@ import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
-import { levelBonus, rankFor } from "../engine/scoring";
+import { levelBonus } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
 import {
   loadDailyProgress,
@@ -218,7 +218,6 @@ export function usePolygramGame(mode: GameMode) {
     void recordDailyCompleted(
       dateKey,
       state.score,
-      rankFor(state.score, puzzle),
       mode.kind === "daily",
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
