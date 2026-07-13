@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { trackPractice } from "../../../lib/analytics";
 import { randomSeed } from "../../../lib/random";
 import { practiceSeed } from "../engine/practice";
 import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
 export default function PracticePage() {
+  useEffect(() => { trackPractice("serpentine"); }, []);
   const [difficulty, setDifficulty] = useState<Difficulty>("haiku");
   const [seed, setSeed] = useState(() => practiceSeed(randomSeed(), difficulty));
   return (

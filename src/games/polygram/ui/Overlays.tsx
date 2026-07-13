@@ -110,7 +110,7 @@ export function DoneOverlay({
         )}
         <div className="mt-6 flex flex-col gap-2">
           {dateKey && elapsedMs !== null && (
-            <ShareButton text={buildShareText(state, dateKey, elapsedMs)} />
+            <ShareButton text={buildShareText(state, dateKey, elapsedMs)} gameId="polygram" />
           )}
           <button
             type="button"

@@ -398,7 +398,7 @@ export function GameScreen({ mode }: Props) {
               </span>
             )}
             {mode.kind !== "practice" && mode.dateKey && doneElapsedMs !== null && (
-              <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} />
+              <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} gameId="polygram" />
             )}
           </motion.div>
         ) : !done ? (

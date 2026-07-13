@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { trackArchivePlay } from "../../../lib/analytics";
 import { localDateKey } from "../../../lib/date";
 import type { Difficulty } from "../engine/types";
 import { ARCHIVE_EPOCH } from "../state/persistence";
 import { GameScreen } from "./GameScreen";
 
 export default function ArchivePlayPage() {
+  useEffect(() => { trackArchivePlay("doublet"); }, []);
   const { dateKey } = useParams();
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const valid =

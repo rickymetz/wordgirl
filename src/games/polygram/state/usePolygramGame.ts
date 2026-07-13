@@ -1,4 +1,5 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
@@ -209,6 +210,15 @@ export function usePolygramGame(mode: GameMode) {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase, state.skippedLevels]);
+
+  // Track analytics solve event (all modes, once per session).
+  const solveTrackedRef = useRef(false);
+  useEffect(() => {
+    if (state.phase === "done" && !solveTrackedRef.current && !hydratedAsSolvedRef.current) {
+      solveTrackedRef.current = true;
+      trackSolved("polygram");
+    }
+  }, [state.phase]);
 
   // Record completion (stats; streak only if it's today) exactly once.
   const completedRef = useRef(false);

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { trackArchivePlay } from "../../../lib/analytics";
 import { localDateKey } from "../../../lib/date";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
 import { getDailyPuzzle } from "../engine/dailySeed";
@@ -7,6 +8,7 @@ import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
 export default function ArchivePlayPage() {
+  useEffect(() => { trackArchivePlay("serpentine"); }, []);
   const { dateKey } = useParams();
   const [runId, setRunId] = useState(0);
   const [difficulty, setDifficulty] = useState<Difficulty>("haiku");

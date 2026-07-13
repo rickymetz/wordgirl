@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
+import { trackArchivePlay } from "../../../lib/analytics";
 import { localDateKey } from "../../../lib/date";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
 import { GameScreen } from "./GameScreen";
 
 /** Plays a past daily puzzle: /games/crosshatch/archive/:dateKey */
 export default function ArchivePlayPage() {
+  useEffect(() => { trackArchivePlay("crosshatch"); }, []);
   const { dateKey } = useParams();
   const [runId, setRunId] = useState(0);
   const valid =
