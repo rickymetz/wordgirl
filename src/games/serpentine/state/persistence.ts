@@ -13,6 +13,7 @@ export interface DayProgress extends DailyBase {
   puzzleId: string;
   cells: Cell[];
   hints?: number;
+  solvedHour?: number | null;
 }
 
 export interface ArchivedDay {
@@ -106,7 +107,7 @@ export async function loadAllDailyProgress(): Promise<
         : 0,
       foundWords: solvedSaves.map((s) => s.puzzleId),
       solvedHour: solvedSaves.length > 0
-        ? ((solvedSaves[0] as unknown as Record<string, unknown>).solvedHour as number) ?? null
+        ? solvedSaves[0].solvedHour ?? null
         : null,
       hints: solvedSaves.length > 0 && saves.every((s) => s.hints !== undefined)
         ? saves.reduce((a, s) => a + (s.hints ?? 0), 0)

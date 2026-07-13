@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -54,6 +54,7 @@ export function DoneOverlay({
   const done = state.phase === "done";
   const [confirmReplay, setConfirmReplay] = useState(false);
   const dialogRef = useModalFocus<HTMLDivElement>(done && open);
+  const reducedMotion = useReducedMotion();
 
   if (!done || !open) return null;
   const hintUsed = Object.keys(state.revealed).length > 0;
@@ -75,7 +76,7 @@ export function DoneOverlay({
         className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none md:max-w-md"
         initial={{ scale: 0.8, y: 30 }}
         animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
         <button

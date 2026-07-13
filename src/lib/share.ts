@@ -13,8 +13,13 @@ export const SHARE_URL = "wordgirl.net";
  * error), otherwise copy to the clipboard and flash `copied` for a
  * moment. Most cards want components/ShareButton, which wraps this.
  */
-export function useShare(text: string): { share: () => void; copied: boolean } {
+export function useShare(text: string): {
+  share: () => void;
+  copied: boolean;
+  failed: boolean;
+} {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -33,9 +38,11 @@ export function useShare(text: string): { share: () => void; copied: boolean } {
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Clipboard unavailable — nothing useful to do.
+      setFailed(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setFailed(false), 2000);
     }
   }, [text]);
 
-  return { share, copied };
+  return { share, copied, failed };
 }

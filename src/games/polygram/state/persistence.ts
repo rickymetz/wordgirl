@@ -94,10 +94,7 @@ export async function loadStats(): Promise<PolygramStats> {
   return normalizeStatFields(await daily.loadStats());
 }
 
-export function recordDailyStarted(): Promise<void> {
-  daily.recordStarted().then(() => {});
-  return Promise.resolve();
-}
+export const recordDailyStarted = daily.recordStarted;
 
 export async function saveDailyProgress(
   progress: DailyProgress,

@@ -44,7 +44,9 @@ export function BottomSheet({
         initial: { y: "100%" },
         animate: { y: 0 },
         exit: { y: "100%" },
-        transition: { type: "spring" as const, damping: 32, stiffness: 400 },
+        transition: reducedMotion
+          ? { duration: 0 }
+          : { type: "spring" as const, damping: 32, stiffness: 400 },
       };
 
   return (

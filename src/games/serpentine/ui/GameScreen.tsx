@@ -9,13 +9,13 @@ import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { GameToast, useToast } from "../../../components/game/GameToast";
-import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
+import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import {
   useSerpentineGame,
   type GameMode,
 } from "../state/useSerpentineGame";
-import { loadCoachSeen, markCoachSeen } from "../state/persistence";
+import { loadCoachSeen, loadDailyProgress, markCoachSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
@@ -104,6 +104,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     void markCoachSeen();
   };
 
+  // Practice: offer a jump to the daily only while it's still unsolved.
+  const [dailySolved, setDailySolved] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (mode.kind !== "practice") return;
+    const today = localDateKey();
+    void loadDailyProgress(mode.difficulty, today).then((saved) =>
+      setDailySolved(saved?.solved ?? false),
+    );
+  }, [mode.kind, mode.difficulty]);
+
   // Show toast on solve.
   useEffect(() => {
     if (state.solved) show("Solved!", 2000);
@@ -133,7 +143,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <HomeLink />
         )}
         <span className="flex items-center gap-2">
-          {mode.kind === "practice" && !state.solved && (
+          {mode.kind === "practice" && dailySolved === false && (
             <Link
               to="/games/serpentine"
               className="text-sm font-semibold text-accent"
@@ -155,7 +165,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                 setHints(next);
               }}
             >
-              <Lightbulb className="h-3.5 w-3.5" />
+              <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{hintCount > 0 ? ` (${hintCount})` : ""}
             </button>
           )}
@@ -239,6 +249,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           blocked={puzzle.blocked}
           hintCells={hintCount > 0 ? hintCellKeys : undefined}
           onTapCell={onTapCell}
+          onUndo={() => dispatch({ type: "undo" })}
+          onClear={() => dispatch({ type: "clearSnake" })}
         />
         <GameToast toast={toast} />
       </div>
