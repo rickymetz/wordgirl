@@ -28,14 +28,16 @@ interface Props {
   hoverCell?: Cell | null;
   resolvedAnchor?: Cell | null;
   previewOrientation?: Orientation | null;
+  cursorCell?: Cell | null;
 }
 
-export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation }: Props) {
+export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation, cursorCell }: Props) {
   const { puzzle, grid } = state;
   const { vw, vh, rem } = useViewport();
 
+  const maxBoardW = vw >= 768 ? 480 : 360;
   const wCell =
-    (Math.min(360, vw - 32) - (puzzle.board.cols - 1) * GAP) / puzzle.board.cols;
+    (Math.min(maxBoardW, vw - 32) - (puzzle.board.cols - 1) * GAP) / puzzle.board.cols;
   const hCell =
     (vh - CHROME_H * (rem / 16) - (puzzle.board.rows - 1) * GAP) /
     puzzle.board.rows;
@@ -196,6 +198,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
 
         const isPreview = previewCells && previewCells.keys.has(k);
         const isHover = !isPreview && hoverCell && hoverCell.row === row && hoverCell.col === col;
+        const isCursor = cursorCell && cursorCell.row === row && cursorCell.col === col;
 
         let cellBg = "bg-surface";
         if (isPreview && !pd) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
@@ -280,6 +283,13 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
             >
               {letter || ""}
             </button>
+
+            {isCursor && (
+              <div
+                className="absolute inset-0 pointer-events-none rounded-lg ring-2 ring-accent ring-offset-1"
+                aria-hidden
+              />
+            )}
 
             {hasBridgeRight && (
               <div

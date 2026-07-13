@@ -250,7 +250,7 @@ export function GameScreen({ mode }: Props) {
   return (
     <div
       data-level={level.size}
-      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-8 [@media(max-height:720px)]:pb-4"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 md:max-w-2xl [@media(max-height:720px)]:pb-3"
     >
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
@@ -284,7 +284,7 @@ export function GameScreen({ mode }: Props) {
                 requestHint();
               }}
             >
-              <Lightbulb className="h-3.5 w-3.5" />
+              <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{hintUsed ? ` (${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)})` : ""}
             </button>
           )}
@@ -292,7 +292,7 @@ export function GameScreen({ mode }: Props) {
             type="button"
             onClick={() => setCoachOpen(true)}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+            className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >
             <CircleHelp aria-hidden className="h-5 w-5" />
           </button>

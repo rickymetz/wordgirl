@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Lightbulb, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -18,6 +18,7 @@ import { GameToast, useToast } from "../../../components/game/GameToast";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { DoubletCoach } from "./Overlays";
 import { loadCoachSeen, markCoachSeen } from "../state/persistence";
+import { useStorageBroken } from "../../../lib/useStorageBroken";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -57,7 +58,10 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { state, dispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved } =
     useDoubletGame(mode);
 
+  const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+
+  const [cursorCell, setCursorCell] = useState<Cell | null>(null);
 
   const [coachOpen, setCoachOpen] = useState(false);
   useEffect(() => {
@@ -101,6 +105,130 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   boardCellSet.current = new Set(
     puzzle.board.cells.map((c) => cellKey(c.row, c.col)),
   );
+
+  // Sorted board cells for keyboard cursor navigation
+  const sortedBoardCells = useMemo(
+    () =>
+      [...puzzle.board.cells].sort((a, b) =>
+        a.row !== b.row ? a.row - b.row : a.col - b.col,
+      ),
+    [puzzle.board.cells],
+  );
+
+  // Unplaced domino ids for Tab cycling
+  const unplacedIds = useMemo(() => {
+    const placedSet = new Set(state.placed.map((p) => p.dominoId));
+    return puzzle.dominoes.filter((d) => !placedSet.has(d.id)).map((d) => d.id);
+  }, [puzzle.dominoes, state.placed]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (state.solved) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      // Don't intercept if a dialog/sheet is open
+      const target = e.target as HTMLElement;
+      if (target.closest("dialog, [role='dialog']")) return;
+
+      switch (e.key) {
+        case "Tab": {
+          e.preventDefault();
+          if (unplacedIds.length === 0) return;
+          const currentIdx = state.selectedDominoId !== null
+            ? unplacedIds.indexOf(state.selectedDominoId)
+            : -1;
+          let nextIdx: number;
+          if (e.shiftKey) {
+            nextIdx = currentIdx <= 0 ? unplacedIds.length - 1 : currentIdx - 1;
+          } else {
+            nextIdx = currentIdx < 0 || currentIdx >= unplacedIds.length - 1 ? 0 : currentIdx + 1;
+          }
+          dispatch({ type: "selectDomino", dominoId: unplacedIds[nextIdx] });
+          break;
+        }
+
+        case "r":
+        case "R": {
+          if (state.selectedDominoId !== null) {
+            dispatch({ type: "rotateDomino" });
+          }
+          break;
+        }
+
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight": {
+          e.preventDefault();
+          setCursorCell((prev) => {
+            if (!prev) return sortedBoardCells[0] ?? null;
+
+            let nextRow = prev.row;
+            let nextCol = prev.col;
+            if (e.key === "ArrowUp") nextRow -= 1;
+            if (e.key === "ArrowDown") nextRow += 1;
+            if (e.key === "ArrowLeft") nextCol -= 1;
+            if (e.key === "ArrowRight") nextCol += 1;
+
+            const targetKey = cellKey(nextRow, nextCol);
+            if (boardCellSet.current.has(targetKey)) {
+              return { row: nextRow, col: nextCol };
+            }
+            // Stay on current cell if target is out of bounds
+            return prev;
+          });
+          break;
+        }
+
+        case "Enter":
+        case " ": {
+          e.preventDefault();
+          setCursorCell((cur) => {
+            if (!cur || state.selectedDominoId === null) return cur;
+            const anchor = findValidAnchor(cur, state.currentOrientation);
+            if (anchor) {
+              dispatch({ type: "placeDomino", cell: anchor, dict });
+            }
+            return cur;
+          });
+          break;
+        }
+
+        case "Backspace":
+        case "Delete": {
+          setCursorCell((cur) => {
+            if (!cur) return cur;
+            const k = cellKey(cur.row, cur.col);
+            // Find placed domino at cursor
+            const pd = state.placed.find((p) => {
+              const piece = puzzle.dominoes.find((d) => d.id === p.dominoId);
+              if (!piece) return false;
+              const [c1, c2] = dominoCells(p.anchor, p.orientation);
+              return cellKey(c1.row, c1.col) === k || cellKey(c2.row, c2.col) === k;
+            });
+            if (pd) {
+              dispatch({ type: "removeDomino", dominoId: pd.dominoId });
+            }
+            return cur;
+          });
+          break;
+        }
+
+        case "Escape": {
+          if (state.selectedDominoId !== null) {
+            // Toggle deselect by dispatching the same id
+            dispatch({ type: "selectDomino", dominoId: state.selectedDominoId });
+          }
+          setCursorCell(null);
+          break;
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.solved, state.selectedDominoId, state.currentOrientation, state.placed, unplacedIds, sortedBoardCells, dict, dispatch, puzzle.dominoes]);
 
   const handleCellTap = (cell: Cell) => {
     if (state.solved) return;
@@ -243,7 +371,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   return (
     <div
-      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 [@media(max-height:720px)]:pb-3"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 md:max-w-2xl [@media(max-height:720px)]:pb-3"
       data-level="doublet"
     >
       {/* Header */}
@@ -268,7 +396,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => dispatch({ type: "revealHint", dict })}
             >
-              <Lightbulb className="h-3.5 w-3.5" />
+              <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
@@ -301,10 +429,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       </div>
 
       {/* Difficulty tabs */}
-      <div className="flex gap-1 pb-3">
+      <div className="flex gap-1 pb-3" role="group" aria-label="Difficulty">
         {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
           <button
             key={d}
+            aria-pressed={d === difficulty}
             className={[
               "relative px-4 py-1.5 rounded-full text-sm font-semibold",
               "touch-manipulation select-none transition-colors",
@@ -321,6 +450,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         ))}
       </div>
 
+      {storageBroken && (
+        <p className="pb-2 text-xs font-semibold text-warn" role="alert">
+          Progress can't be saved on this device.
+        </p>
+      )}
+
       {/* Board — centered in remaining space */}
       <div className="relative flex flex-1 flex-col items-center justify-center py-4 [@media(max-height:720px)]:py-2">
         <Board
@@ -333,6 +468,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           hoverCell={hoverCell}
           resolvedAnchor={resolvedAnchor}
           previewOrientation={previewOri}
+          cursorCell={cursorCell}
         />
         <GameToast toast={toast} />
       </div>
@@ -431,7 +567,7 @@ function DragGhost({
   piece: { id: number; letters: [string, string] };
 }) {
   const isH = drag.orientation === 0 || drag.orientation === 2;
-  const [l0, l1] = dominoLetters(piece as any, drag.orientation);
+  const [l0, l1] = dominoLetters(piece, drag.orientation);
 
   return (
     <div

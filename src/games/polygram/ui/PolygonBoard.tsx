@@ -25,9 +25,10 @@ export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
   const { vw, vh, rem } = useViewport();
   // Fit narrow phones AND short/large-text viewports instead of
   // clipping a hard-coded square.
+  const maxBoard = vw >= 768 ? 460 : 340;
   const BOARD = Math.max(
     240,
-    Math.min(340, vw - 40, vh - CHROME_H * (rem / 16)),
+    Math.min(maxBoard, vw - 40, vh - CHROME_H * (rem / 16)),
   );
   const sides = state.puzzle.levels[state.levelIndex].size;
   const letters = state.puzzle.letters.slice(0, sides);

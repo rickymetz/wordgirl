@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -53,6 +53,7 @@ export function SolvedOverlay({
 }) {
   const [confirmReplay, setConfirmReplay] = useState(false);
   const dialogRef = useModalFocus<HTMLDivElement>(open);
+  const reducedMotion = useReducedMotion();
 
   if (!open) return null;
   const perfect = found === total;
@@ -71,10 +72,10 @@ export function SolvedOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="solved-dialog-title"
-        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none"
+        className="relative w-full max-w-sm rounded-3xl border border-line bg-surface-raised p-8 text-center shadow-xl outline-none md:max-w-md"
         initial={{ scale: 0.8, y: 30 }}
         animate={{ scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 20 }}
         onClick={(e) => e.stopPropagation()}
       >
         <button

@@ -10,7 +10,8 @@ import {
 } from "../state/reducer";
 
 const GAP = 6;
-const MAX_CELL = 60;
+const MAX_CELL_PHONE = 60;
+const MAX_CELL_TABLET = 72;
 const MIN_CELL = 34;
 /** Rough height of everything that isn't the grid (header, bars,
  * chips, keyboard) at the default text size — the grid must fit in
@@ -31,11 +32,14 @@ export function GridBoard({
 }) {
   const { puzzle } = state;
   const { vw, vh, rem } = useViewport();
+  const isTablet = vw >= 768;
+  const maxBoardW = isTablet ? 460 : 340;
+  const maxCell = isTablet ? MAX_CELL_TABLET : MAX_CELL_PHONE;
   const wCell =
-    (Math.min(340, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
+    (Math.min(maxBoardW, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
   const hCell =
     (vh - CHROME_H * (rem / 16) - (puzzle.rows - 1) * GAP) / puzzle.rows;
-  const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));
+  const cell = Math.max(MIN_CELL, Math.min(maxCell, wCell, hCell));
 
   const active = cursorSlot(state);
   const activeKeys = new Set(
@@ -79,7 +83,7 @@ export function GridBoard({
         const given = puzzle.givens[key];
         const letter = letterAt(state, row, col);
         const isCursor =
-          state.cursor?.row === row && state.cursor?.col === col;
+          !state.solved && state.cursor?.row === row && state.cursor?.col === col;
         const inActiveSlot = activeKeys.has(key);
         return (
           <button

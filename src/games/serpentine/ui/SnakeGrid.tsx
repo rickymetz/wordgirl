@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useViewport } from "../../../lib/useViewport";
 import { type Cell, cellKey, cellsEqual } from "../engine/types";
 
@@ -12,6 +12,8 @@ interface Props {
   blocked: Set<string>;
   hintCells?: Set<string>;
   onTapCell: (row: number, col: number) => void;
+  onUndo?: () => void;
+  onClear?: () => void;
 }
 
 const NODE_R = 0.38;
@@ -29,12 +31,58 @@ export function SnakeGrid({
   blocked,
   hintCells,
   onTapCell,
+  onUndo,
+  onClear,
 }: Props) {
-  const { rem } = useViewport();
-  const cellPx = 44 * (rem / 16);
+  const { vw, rem } = useViewport();
+  const cellPx = (vw >= 768 ? 56 : 44) * (rem / 16);
   const gridRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
+  const [cursorRow, setCursorRow] = useState(0);
+  const [cursorCol, setCursorCol] = useState(0);
+  const [cursorVisible, setCursorVisible] = useState(false);
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key) {
+        case "ArrowUp":
+        case "ArrowDown":
+        case "ArrowLeft":
+        case "ArrowRight": {
+          e.preventDefault();
+          setCursorVisible(true);
+          const dr = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+          const dc = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+          setCursorRow((r) => Math.max(0, Math.min(rows - 1, r + dr)));
+          setCursorCol((c) => Math.max(0, Math.min(cols - 1, c + dc)));
+          break;
+        }
+        case "Enter":
+        case " ": {
+          e.preventDefault();
+          if (!solved) {
+            setCursorVisible(true);
+            onTapCell(cursorRow, cursorCol);
+          }
+          break;
+        }
+        case "Backspace": {
+          e.preventDefault();
+          if (!solved) onUndo?.();
+          break;
+        }
+        case "Escape": {
+          e.preventDefault();
+          if (!solved) onClear?.();
+          break;
+        }
+      }
+    },
+    [rows, cols, cursorRow, cursorCol, solved, onTapCell, onUndo, onClear],
+  );
 
   const cellFromPoint = useCallback(
     (x: number, y: number): Cell | null => {
@@ -99,17 +147,24 @@ export function SnakeGrid({
   return (
     <div
       ref={gridRef}
-      role="group"
+      tabIndex={0}
+      role="grid"
       aria-label="Puzzle grid"
-      className="relative mx-auto w-full select-none touch-manipulation"
+      className="relative mx-auto w-full select-none touch-manipulation outline-none"
       style={{
         maxWidth: `min(100%, ${cols * cellPx}px)`,
         aspectRatio: `${cols} / ${rows}`,
       }}
-      onPointerDown={onPointerDown}
+      onPointerDown={(e) => {
+        setCursorVisible(false);
+        onPointerDown(e);
+      }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onKeyDown={onKeyDown}
+      onFocus={() => setCursorVisible(true)}
+      onBlur={() => setCursorVisible(false)}
     >
       {/* SVG overlay: gradient snake with circles + pipes */}
       <svg
@@ -164,10 +219,15 @@ export function SnakeGrid({
             const isBlocked = blocked.has(k);
             const isClaimed = claimed.has(k);
             const isHint = !isBlocked && !isClaimed && !!hintCells?.has(k);
+            const isCursor = cursorVisible && r === cursorRow && c === cursorCol && !isBlocked;
             return (
               <div
                 key={k}
-                className={`relative flex items-center justify-center rounded-full font-game text-base ${isBlocked ? "" : "text-ink"}`}
+                className={[
+                  "relative flex items-center justify-center rounded-full font-game text-base",
+                  isBlocked ? "" : "text-ink",
+                  isCursor ? "ring-2 ring-accent ring-offset-1" : "",
+                ].join(" ")}
                 style={
                   isBlocked
                     ? { visibility: "hidden" }

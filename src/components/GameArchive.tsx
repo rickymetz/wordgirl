@@ -80,7 +80,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
   return (
     <div
       data-level={config.accent}
-      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12"
+      className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
       <header className="flex items-center justify-between pt-6 pb-2">
         <HomeLink />

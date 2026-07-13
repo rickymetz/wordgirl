@@ -10,27 +10,41 @@ import { useSyncExternalStore } from "react";
  *   all the rem-based chrome around a board, so px height budgets must
  *   scale with it or big-text users lose the controls below the fold.
  */
+
+let cached = "0x0x16";
+
+function measure(): string {
+  const root = document.getElementById("root");
+  const style = root && getComputedStyle(root);
+  const insets = style
+    ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+    : 0;
+  const rem =
+    parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  cached = `${window.innerWidth}x${window.innerHeight - insets}x${rem}`;
+  return cached;
+}
+
+function subscribe(onChange: () => void): () => void {
+  const handler = () => {
+    measure();
+    onChange();
+  };
+  window.addEventListener("resize", handler);
+  window.addEventListener("orientationchange", handler);
+  measure();
+  return () => {
+    window.removeEventListener("resize", handler);
+    window.removeEventListener("orientationchange", handler);
+  };
+}
+
+function getSnapshot(): string {
+  return cached;
+}
+
 export function useViewport(): { vw: number; vh: number; rem: number } {
-  const snapshot = useSyncExternalStore(
-    (onChange) => {
-      window.addEventListener("resize", onChange);
-      window.addEventListener("orientationchange", onChange);
-      return () => {
-        window.removeEventListener("resize", onChange);
-        window.removeEventListener("orientationchange", onChange);
-      };
-    },
-    () => {
-      const root = document.getElementById("root");
-      const style = root && getComputedStyle(root);
-      const insets = style
-        ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
-        : 0;
-      const rem =
-        parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      return `${window.innerWidth}x${window.innerHeight - insets}x${rem}`;
-    },
-  );
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot);
   const [vw, vh, rem] = snapshot.split("x").map(Number);
   return { vw, vh, rem };
 }
