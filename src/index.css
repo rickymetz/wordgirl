@@ -112,6 +112,7 @@
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
+  @media (min-width: 768px) { font-size: 18px; }
 }
 /* Manual override from Settings (applied by src/lib/settings.ts). */
 html[data-theme="light"] { color-scheme: light; }
