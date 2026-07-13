@@ -12,7 +12,9 @@ interface Props {
   draggedId?: number | null;
 }
 
+const CHIP_H = 44; // horizontal chip height: border-2 (4px) + h-10 (40px)
 const CHIP_V = 85; // vertical chip height: border-2 (4px) + h-10×2 (80px) + 1px divider
+const V_OVERFLOW = (CHIP_V - CHIP_H) / 2; // 20.5px — negative margin each side when vertical
 const GAP = 8; // gap-2
 const CHIPS_PER_ROW = 3;
 
@@ -24,7 +26,7 @@ export function DominoTray({ state, onSelect, onRotate, onDragStart, onDragMove,
   if (available.length === 0 && state.solved) return null;
 
   const rows = Math.ceil(available.length / CHIPS_PER_ROW);
-  const trayMinH = rows * CHIP_V + Math.max(0, rows - 1) * GAP;
+  const trayMinH = rows * CHIP_H + Math.max(0, rows - 1) * GAP;
 
   return (
     <div className="w-full px-4">
@@ -130,8 +132,21 @@ function DominoChip({
 
   return (
     <button
-      className="group flex items-center justify-center touch-manipulation select-none"
-      style={{ height: CHIP_V }}
+      className={[
+        "relative flex items-center justify-center touch-manipulation select-none",
+        "rounded-lg border-2 bg-surface",
+        "transition-shadow duration-100",
+        "active:scale-95",
+        selected
+          ? "border-accent shadow-md shadow-accent/20"
+          : "border-line shadow-sm",
+        dimmed ? "opacity-30" : "",
+      ].join(" ")}
+      style={{
+        flexDirection: isH ? "row" : "column",
+        marginBlock: isH ? undefined : -V_OVERFLOW,
+        zIndex: selected && !isH ? 1 : undefined,
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -139,33 +154,19 @@ function DominoChip({
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+        {l0}
+      </div>
       <div
-        className={[
-          "flex items-center justify-center",
-          "rounded-lg border-2 bg-surface",
-          "transition-shadow duration-100",
-          "group-active:scale-95",
-          selected
-            ? "border-accent shadow-md shadow-accent/20"
-            : "border-line shadow-sm",
-          dimmed ? "opacity-30" : "",
-        ].join(" ")}
-        style={{ flexDirection: isH ? "row" : "column" }}
-      >
-        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-          {l0}
-        </div>
-        <div
-          className={selected ? "bg-accent/30" : "bg-line"}
-          style={
-            isH
-              ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
-              : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
-          }
-        />
-        <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
-          {l1}
-        </div>
+        className={selected ? "bg-accent/30" : "bg-line"}
+        style={
+          isH
+            ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
+            : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
+        }
+      />
+      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+        {l1}
       </div>
     </button>
   );
