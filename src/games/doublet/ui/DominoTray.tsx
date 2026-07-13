@@ -126,14 +126,14 @@ function DominoChip({
       className={[
         "flex items-center justify-center touch-manipulation select-none",
         "rounded-lg border-2 bg-surface",
-        "transition-shadow duration-100",
+        "transition-transform duration-150",
         "active:scale-95",
         selected
           ? "border-accent shadow-md shadow-accent/20"
           : "border-line shadow-sm",
         dimmed ? "opacity-30" : "",
       ].join(" ")}
-      style={{ flexDirection: isH ? "row" : "column" }}
+      style={{ transform: isH ? undefined : "rotate(90deg)" }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -141,18 +141,20 @@ function DominoChip({
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+      <div
+        className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ transform: isH ? undefined : "rotate(-90deg)" }}
+      >
         {l0}
       </div>
       <div
         className={selected ? "bg-accent/30" : "bg-line"}
-        style={
-          isH
-            ? { width: "1px", alignSelf: "stretch", marginBlock: "6px" }
-            : { height: "1px", alignSelf: "stretch", marginInline: "6px" }
-        }
+        style={{ width: "1px", alignSelf: "stretch", marginBlock: "6px" }}
       />
-      <div className="flex items-center justify-center font-game text-base w-10 h-10 text-ink">
+      <div
+        className="flex items-center justify-center font-game text-base w-10 h-10 text-ink"
+        style={{ transform: isH ? undefined : "rotate(-90deg)" }}
+      >
         {l1}
       </div>
     </button>
