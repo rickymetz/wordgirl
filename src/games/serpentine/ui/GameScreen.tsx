@@ -56,12 +56,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   const [coachOpen, setCoachOpen] = useState(false);
-  const [hintCount, setHintCount] = useState(0);
+  const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());
+  const hintCount = hintedSet.size;
 
-  // Sync hint count from hydration.
-  useEffect(() => {
-    if (hydratedHints > 0) setHintCount(hydratedHints);
-  }, [hydratedHints]);
   const { toast, show } = useToast();
 
   const wordStarts = useMemo(() => {
@@ -83,31 +80,33 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     return starts;
   }, [puzzle]);
 
+  // Sync hinted set from hydration.
+  useEffect(() => {
+    if (hydratedHints > 0) {
+      const set = new Set<number>();
+      for (let i = 0; i < hydratedHints && i < wordStarts.length; i++) {
+        set.add(wordStarts[i].index);
+      }
+      setHintedSet(set);
+    }
+  }, [hydratedHints, wordStarts]);
+
   const { hintIndices, hintCellKeys } = useMemo(() => {
-    const indices = new Set<number>();
     const keys = new Set<string>();
+    for (const idx of hintedSet) {
+      keys.add(cellKey(puzzle.path[idx]));
+    }
+    return { hintIndices: hintedSet, hintCellKeys: keys };
+  }, [hintedSet, puzzle]);
+
+  const canHint = useMemo(() => {
+    if (state.solved) return false;
     const progress = state.cells.length;
-    let remaining = hintCount;
-
-    // Phase 1: word-starts past current progress
-    for (const ws of wordStarts) {
-      if (remaining <= 0) break;
-      if (ws.index < progress) continue;
-      indices.add(ws.index);
-      keys.add(ws.key);
-      remaining--;
+    for (let i = progress; i < puzzle.path.length; i++) {
+      if (!hintedSet.has(i)) return true;
     }
-
-    // Phase 2: fallback to next unrevealed letters in path order
-    for (let i = progress; remaining > 0 && i < puzzle.path.length; i++) {
-      if (indices.has(i)) continue;
-      indices.add(i);
-      keys.add(cellKey(puzzle.path[i]));
-      remaining--;
-    }
-
-    return { hintIndices: indices, hintCellKeys: keys };
-  }, [wordStarts, hintCount, state.cells.length, puzzle]);
+    return false;
+  }, [state.solved, state.cells.length, puzzle.path.length, hintedSet]);
 
   // First-run coach.
   useEffect(() => {
@@ -173,12 +172,22 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                          text-ink-soft text-xs font-semibold
                          active:scale-95 touch-manipulation select-none
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
-              disabled={hintCount >= puzzle.path.length - state.cells.length}
+              disabled={!canHint}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
-                const next = Math.min(hintCount + 1, wordStarts.length);
-                setHintCount(next);
-                setHints(next);
+                const progress = state.cells.length;
+                const nextWs = wordStarts.find(ws => ws.index >= progress && !hintedSet.has(ws.index));
+                let idx = nextWs?.index;
+                if (idx == null) {
+                  for (let i = progress; i < puzzle.path.length; i++) {
+                    if (!hintedSet.has(i)) { idx = i; break; }
+                  }
+                }
+                if (idx == null) return;
+                const next = new Set(hintedSet);
+                next.add(idx);
+                setHintedSet(next);
+                setHints(next.size);
               }}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
