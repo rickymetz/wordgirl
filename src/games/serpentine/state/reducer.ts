@@ -110,7 +110,7 @@ function handleHydrate(
   state: GameState,
   action: { cells: Cell[]; solved: boolean },
 ): GameState {
-  const solved = action.solved && checkSolved(action.cells, state.puzzle);
+  const solved = checkSolved(action.cells, state.puzzle);
   return {
     ...state,
     cells: action.cells,
