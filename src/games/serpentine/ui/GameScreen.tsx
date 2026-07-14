@@ -56,13 +56,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
   const [coachOpen, setCoachOpen] = useState(false);
-  const [hintCount, setHintCount] = useState(0);
-  const [activeHint, setActiveHint] = useState<number | null>(null);
-
-  // Sync hint count from hydration.
-  useEffect(() => {
-    if (hydratedHints > 0) setHintCount(hydratedHints);
-  }, [hydratedHints]);
+  const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());
+  const hintCount = hintedSet.size;
 
   const { toast, show } = useToast();
 
@@ -85,15 +80,32 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     return starts;
   }, [puzzle]);
 
-  const { hintIndices, hintCellKeys } = useMemo(() => {
-    if (activeHint === null || activeHint < state.cells.length) {
-      return { hintIndices: undefined, hintCellKeys: undefined };
+  // Sync hinted set from hydration.
+  useEffect(() => {
+    if (hydratedHints > 0) {
+      const set = new Set<number>();
+      for (let i = 0; i < hydratedHints && i < wordStarts.length; i++) {
+        set.add(wordStarts[i]);
+      }
+      setHintedSet(set);
     }
-    return {
-      hintIndices: new Set([activeHint]),
-      hintCellKeys: new Set([cellKey(puzzle.path[activeHint])]),
-    };
-  }, [activeHint, state.cells.length, puzzle]);
+  }, [hydratedHints, wordStarts]);
+
+  const { hintIndices, hintCellKeys } = useMemo(() => {
+    if (hintedSet.size === 0) return { hintIndices: undefined, hintCellKeys: undefined };
+    const keys = new Set<string>();
+    for (const idx of hintedSet) {
+      keys.add(cellKey(puzzle.path[idx]));
+    }
+    return { hintIndices: hintedSet, hintCellKeys: keys };
+  }, [hintedSet, puzzle]);
+
+  const canHint = useMemo(() => {
+    for (let i = state.cells.length; i < puzzle.path.length; i++) {
+      if (!hintedSet.has(i)) return true;
+    }
+    return false;
+  }, [state.cells.length, puzzle.path.length, hintedSet]);
 
   // First-run coach.
   useEffect(() => {
@@ -159,19 +171,21 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                          text-ink-soft text-xs font-semibold
                          active:scale-95 touch-manipulation select-none
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
-              disabled={state.cells.length >= puzzle.path.length}
+              disabled={!canHint}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
                 const progress = state.cells.length;
-                let idx = wordStarts.find(i => i >= progress);
+                let idx = wordStarts.find(i => i >= progress && !hintedSet.has(i));
                 if (idx == null) {
-                  if (progress < puzzle.path.length) idx = progress;
+                  for (let i = progress; i < puzzle.path.length; i++) {
+                    if (!hintedSet.has(i)) { idx = i; break; }
+                  }
                 }
-                if (idx == null || idx === activeHint) return;
-                setActiveHint(idx);
-                const next = hintCount + 1;
-                setHintCount(next);
-                setHints(next);
+                if (idx == null) return;
+                const next = new Set(hintedSet);
+                next.add(idx);
+                setHintedSet(next);
+                setHints(next.size);
               }}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
