@@ -86,12 +86,28 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
   const { hintIndices, hintCellKeys } = useMemo(() => {
     const indices = new Set<number>();
     const keys = new Set<string>();
-    for (let i = 0; i < hintCount && i < wordStarts.length; i++) {
-      indices.add(wordStarts[i].index);
-      keys.add(wordStarts[i].key);
+    const progress = state.cells.length;
+    let remaining = hintCount;
+
+    // Phase 1: word-starts past current progress
+    for (const ws of wordStarts) {
+      if (remaining <= 0) break;
+      if (ws.index < progress) continue;
+      indices.add(ws.index);
+      keys.add(ws.key);
+      remaining--;
     }
+
+    // Phase 2: fallback to next unrevealed letters in path order
+    for (let i = progress; remaining > 0 && i < puzzle.path.length; i++) {
+      if (indices.has(i)) continue;
+      indices.add(i);
+      keys.add(cellKey(puzzle.path[i]));
+      remaining--;
+    }
+
     return { hintIndices: indices, hintCellKeys: keys };
-  }, [wordStarts, hintCount]);
+  }, [wordStarts, hintCount, state.cells.length, puzzle]);
 
   // First-run coach.
   useEffect(() => {
@@ -157,7 +173,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                          text-ink-soft text-xs font-semibold
                          active:scale-95 touch-manipulation select-none
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
-              disabled={hintCount >= wordStarts.length}
+              disabled={hintCount >= puzzle.path.length - state.cells.length}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
                 const next = Math.min(hintCount + 1, wordStarts.length);
