@@ -15,7 +15,7 @@ const puzzle: PuzzleDef = {
   cols: 2,
   grid: [
     ["T", "E"],
-    ["S", "T"],
+    ["T", "S"],
   ],
   blocked: new Set(),
   path,

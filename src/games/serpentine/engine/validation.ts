@@ -8,18 +8,18 @@ export function isContiguousPath(path: Cell[]): boolean {
   return true;
 }
 
-function pathMatchesSolution(path: Cell[], solution: Cell[]): boolean {
-  if (path.length !== solution.length) return false;
+function pathSpellsText(path: Cell[], puzzle: PuzzleDef): boolean {
+  const expected = puzzle.text.replace(/[^A-Z]/g, "");
+  if (path.length !== expected.length) return false;
   for (let i = 0; i < path.length; i++) {
-    if (path[i].row !== solution[i].row || path[i].col !== solution[i].col)
-      return false;
+    if (puzzle.grid[path[i].row][path[i].col] !== expected[i]) return false;
   }
   return true;
 }
 
 /**
- * Check if the puzzle is fully solved: player path matches
- * the solution path and all grid cells are covered.
+ * Check if the puzzle is fully solved: player path is contiguous,
+ * covers all live cells, and spells the expected text.
  */
 export function checkSolved(
   path: Cell[],
@@ -27,7 +27,7 @@ export function checkSolved(
 ): boolean {
   if (path.length === 0) return false;
   if (!isContiguousPath(path)) return false;
-  return pathMatchesSolution(path, puzzle.path);
+  return pathSpellsText(path, puzzle);
 }
 
 /** Validate a puzzle definition (for tests): path is contiguous,
