@@ -85,20 +85,15 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     return starts;
   }, [puzzle]);
 
-  // Clear the active hint when the user traces past it.
-  useEffect(() => {
-    if (activeHint !== null && state.cells.length > activeHint) {
-      setActiveHint(null);
-    }
-  }, [state.cells.length, activeHint]);
-
   const { hintIndices, hintCellKeys } = useMemo(() => {
-    if (activeHint === null) return { hintIndices: undefined, hintCellKeys: undefined };
+    if (activeHint === null || activeHint < state.cells.length) {
+      return { hintIndices: undefined, hintCellKeys: undefined };
+    }
     return {
       hintIndices: new Set([activeHint]),
       hintCellKeys: new Set([cellKey(puzzle.path[activeHint])]),
     };
-  }, [activeHint, puzzle]);
+  }, [activeHint, state.cells.length, puzzle]);
 
   // First-run coach.
   useEffect(() => {
