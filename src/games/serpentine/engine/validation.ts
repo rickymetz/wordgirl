@@ -27,6 +27,8 @@ export function checkSolved(
 ): boolean {
   if (path.length === 0) return false;
   if (!isContiguousPath(path)) return false;
+  const unique = new Set(path.map(cellKey));
+  if (unique.size !== path.length) return false;
   return pathSpellsText(path, puzzle);
 }
 
