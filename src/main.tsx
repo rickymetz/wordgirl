@@ -9,11 +9,6 @@ import "./index.css";
 // Theme override + text size must land before first paint.
 applySettings(loadSettings());
 
-// Ask the browser not to evict our storage — streak history lives here.
-if (navigator.storage?.persist) {
-  void navigator.storage.persist().catch(() => {});
-}
-
 // Proper SW lifecycle: check for a new build hourly and whenever the
 // app returns to the foreground, so updates land on the next launch
 // instead of two launches later.
