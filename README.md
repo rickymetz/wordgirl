@@ -7,6 +7,10 @@ PWA — install it on a phone and play anywhere.
 
 ### Polygram
 
+<p align="center">
+  <img src="public/teasers/polygram.png" alt="Polygram screenshot" width="300" />
+</p>
+
 Inspired by NYT Spelling Bee, with escalating polygon levels:
 
 - Start with **3 letters in triangles** flocking around a central triangle.
@@ -26,6 +30,10 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
   plus unlimited **practice** puzzles.
 
 ### Crosshatch
+
+<p align="center">
+  <img src="public/teasers/crosshatch.png" alt="Crosshatch screenshot" width="300" />
+</p>
 
 A small crossword frame with many right answers:
 
@@ -49,6 +57,10 @@ A small crossword frame with many right answers:
 
 ### Backwords
 
+<p align="center">
+  <img src="public/teasers/backwords.png" alt="Backwords screenshot" width="300" />
+</p>
+
 A race against a hidden clock, played into a mirror:
 
 - Each day deals a **bank of 8–12 letters** and one rule: lay words
@@ -63,6 +75,43 @@ A race against a hidden clock, played into a mirror:
 - The **timer runs silently** and is revealed at the end — the share
   line is your word count and time. No hints.
 - Rows a real mirror would render (LIT reflects as TIL) earn a **✦**.
+- Daily + practice + a replayable archive, same as the others.
+
+### Doublet
+
+<p align="center">
+  <img src="public/teasers/doublet.png" alt="Doublet screenshot" width="300" />
+</p>
+
+A domino-placement word puzzle:
+
+- Each day deals a set of **letter dominoes** (two-letter tiles) and a
+  small crossword-style board.
+- **Place every domino** onto the board so that each row and column of
+  letters spells a **valid word**.
+- **Tap** a domino to select it, then tap a cell to place it — or
+  **drag** dominoes directly. Tap a placed domino to pick it back up.
+- **Rotate** dominoes to change orientation before placing them.
+- Three difficulty tiers: **Easy**, **Medium**, **Hard**.
+- Daily + practice + a replayable archive, same as the others.
+
+### Serpentine
+
+<p align="center">
+  <img src="public/teasers/serpentine.png" alt="Serpentine screenshot" width="300" />
+</p>
+
+A path-tracing puzzle that uncovers hidden poetry:
+
+- A grid of letters hides a **single continuous path** — trace it by
+  moving through adjacent cells (horizontally, vertically, or
+  **diagonally**).
+- The path must **cover every letter** in the grid.
+- The letters along the path spell a **hidden phrase** — the puzzle
+  title is your only clue.
+- **Tap** a cell to extend the path, or **drag** through cells. Tap a
+  placed cell to undo back to it.
+- Two modes: **Haiku** and **Poem**.
 - Daily + practice + a replayable archive, same as the others.
 
 ## Development
