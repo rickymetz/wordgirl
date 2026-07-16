@@ -26,24 +26,32 @@ function lazyPage(Page: React.ComponentType) {
   );
 }
 
-const gameRoutes: RouteObject[] = games.flatMap((game) => [
-  { path: `/games/${game.id}`, element: lazyPage(game.Page) },
-  ...(game.extraRoutes ?? []).map((route) => ({
-    path: `/games/${game.id}/${route.path}`,
-    element: lazyPage(route.Page),
-  })),
-]);
+function GameLayout() {
+  return (
+    <>
+      <Outlet />
+      <StoragePrompt />
+    </>
+  );
+}
+
+const gameRoutes: RouteObject[] = games.map((game) => ({
+  path: `/games/${game.id}`,
+  element: <GameLayout />,
+  children: [
+    { index: true, element: lazyPage(game.Page) },
+    ...(game.extraRoutes ?? []).map((route) => ({
+      path: route.path,
+      element: lazyPage(route.Page),
+    })),
+  ],
+}));
 
 export const router = createBrowserRouter([
   {
     // Root layout route: catches lazy-chunk load failures after a new
     // deploy (auto-reloads once) and rendering errors anywhere below.
-    element: (
-      <>
-        <Outlet />
-        <StoragePrompt />
-      </>
-    ),
+    element: <Outlet />,
     errorElement: <RouteError />,
     children: [
       { path: "/", element: <HubPage /> },
