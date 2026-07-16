@@ -10,9 +10,18 @@ export function StoragePrompt() {
     if (!navigator.storage?.persist) return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
 
+    let cancelled = false;
+
     void navigator.storage.persisted().then((already) => {
-      if (!already) setVisible(true);
+      if (already || cancelled) return;
+      waitForNoDialog(() => {
+        if (!cancelled) setVisible(true);
+      });
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const dismiss = useCallback(() => {
@@ -63,4 +72,18 @@ export function StoragePrompt() {
       </div>
     </ModalDialog>
   );
+}
+
+function waitForNoDialog(cb: () => void) {
+  if (!document.querySelector("[aria-modal]")) {
+    cb();
+    return;
+  }
+  const observer = new MutationObserver(() => {
+    if (!document.querySelector("[aria-modal]")) {
+      observer.disconnect();
+      cb();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
