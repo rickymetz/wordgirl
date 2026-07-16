@@ -3,6 +3,10 @@ import { ModalDialog } from "./ModalDialog";
 
 const DISMISSED_KEY = "wg:storage-prompt-dismissed";
 
+function firefoxLike() {
+  return /Firefox\//.test(navigator.userAgent);
+}
+
 export function StoragePrompt() {
   const [visible, setVisible] = useState(false);
 
@@ -14,6 +18,13 @@ export function StoragePrompt() {
 
     void navigator.storage.persisted().then((already) => {
       if (already || cancelled) return;
+
+      if (!firefoxLike()) {
+        // Chrome/Edge auto-grant; Safari is a no-op. Just request silently.
+        void navigator.storage.persist().catch(() => {});
+        return;
+      }
+
       waitForNoDialog(() => {
         if (!cancelled) setVisible(true);
       });
