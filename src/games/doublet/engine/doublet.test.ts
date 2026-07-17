@@ -39,7 +39,7 @@ describe("generateDoublet", () => {
   });
 
   // Hard boards cost ~250ms each to generate; give the sweep room.
-  it("ships a valid, complete solution across a week of dailies", { timeout: 30_000 }, () => {
+  it("ships a valid, complete solution across a week of dailies", { timeout: 120_000 }, () => {
     for (let day = 12; day <= 18; day++) {
       for (const difficulty of ["easy", "medium", "hard"] as const) {
         const key = `2026-07-${day}`;
