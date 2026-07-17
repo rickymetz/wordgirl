@@ -26,8 +26,10 @@
  * is now in the dictionary. Required tier is still frequency-gated;
  * all remaining ENABLE words are bonus. Replaces the v11 suffix-
  * expansion approach with complete Scrabble/crossword coverage.
+ * v13: promote doze, ooze, skied, misdeed, missive from bonus to
+ * required tier — common words players expect to be accepted.
  */
-export const DICT_VERSION = 12;
+export const DICT_VERSION = 13;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;
