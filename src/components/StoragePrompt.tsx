@@ -15,23 +15,25 @@ export function StoragePrompt() {
     if (localStorage.getItem(DISMISSED_KEY)) return;
 
     let cancelled = false;
+    let observer: MutationObserver | undefined;
 
     void navigator.storage.persisted().then((already) => {
       if (already || cancelled) return;
 
       if (!firefoxLike()) {
-        // Chrome/Edge auto-grant; Safari is a no-op. Just request silently.
+        localStorage.setItem(DISMISSED_KEY, "1");
         void navigator.storage.persist().catch(() => {});
         return;
       }
 
-      waitForNoDialog(() => {
+      observer = waitForNoDialog(() => {
         if (!cancelled) setVisible(true);
       });
     });
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
     };
   }, []);
 
@@ -85,10 +87,10 @@ export function StoragePrompt() {
   );
 }
 
-function waitForNoDialog(cb: () => void) {
+function waitForNoDialog(cb: () => void): MutationObserver | undefined {
   if (!document.querySelector("[aria-modal]")) {
     cb();
-    return;
+    return undefined;
   }
   const observer = new MutationObserver(() => {
     if (!document.querySelector("[aria-modal]")) {
@@ -97,4 +99,5 @@ function waitForNoDialog(cb: () => void) {
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
+  return observer;
 }
