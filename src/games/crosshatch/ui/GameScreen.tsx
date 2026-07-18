@@ -345,7 +345,7 @@ export function GameScreen({ mode }: Props) {
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`
-          : !dict.required.buckets.get(r.word.length)?.includes(r.word)
+          : !dict.all.buckets.get(r.word.length)?.includes(r.word)
             ? `${r.word.toUpperCase()} is too rare for today's list`
             : `${r.word.toUpperCase()} doesn't work with the crossing lines`
         : "Not a valid grid",

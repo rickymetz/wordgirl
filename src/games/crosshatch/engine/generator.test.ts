@@ -125,8 +125,6 @@ describe("generateCrosshatch", () => {
       }
     }
     // Generation happens on-device at load — the sweep must stay quick.
-    // Bonus-tier words widen the candidate pool (~50% more wall-clock);
-    // 60s is generous for CI while still catching regressions.
-    expect(Date.now() - start).toBeLessThan(60_000);
-  }, 90_000);
+    expect(Date.now() - start).toBeLessThan(30_000);
+  }, 60_000);
 });

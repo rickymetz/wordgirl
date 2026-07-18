@@ -70,7 +70,6 @@ function makeTier(): {
 
 export function parseDictionary(raw: string): Dictionary {
   const tiers = { required: makeTier(), bonus: makeTier() };
-  const merged = makeTier();
   const allWords = new Set<string>();
   for (const line of raw.split("\n")) {
     let word = line.trim();
@@ -79,7 +78,6 @@ export function parseDictionary(raw: string): Dictionary {
     if (tier === "bonus") word = word.slice(1);
     const len = word.length;
     if (len < MIN_WORD_LEN || len > MAX_WORD_LEN) continue;
-    const mask = letterMask(word);
     const t = tiers[tier];
     let bucket = t.buckets.get(len);
     let maskList = t.masks.get(len);
@@ -90,25 +88,31 @@ export function parseDictionary(raw: string): Dictionary {
       t.masks.set(len, maskList);
     }
     bucket.push(word);
-    maskList!.push(mask);
-    let mBucket = merged.buckets.get(len);
-    let mMasks = merged.masks.get(len);
-    if (!mBucket) {
-      mBucket = [];
-      mMasks = [];
-      merged.buckets.set(len, mBucket);
-      merged.masks.set(len, mMasks);
-    }
-    mBucket.push(word);
-    mMasks!.push(mask);
+    maskList!.push(letterMask(word));
     allWords.add(word);
   }
+  const merged = mergeTiers(tiers.required, tiers.bonus);
   return {
     required: tiers.required,
     bonus: tiers.bonus,
     all: merged,
     has: (word) => allWords.has(word),
   };
+}
+
+function mergeTiers(a: TierIndex, b: TierIndex): TierIndex {
+  const buckets = new Map<number, readonly string[]>();
+  const masks = new Map<number, readonly number[]>();
+  const lengths = new Set([...a.buckets.keys(), ...b.buckets.keys()]);
+  for (const len of lengths) {
+    const ab = a.buckets.get(len) ?? [];
+    const bb = b.buckets.get(len) ?? [];
+    const am = a.masks.get(len) ?? [];
+    const bm = b.masks.get(len) ?? [];
+    buckets.set(len, [...ab, ...bb]);
+    masks.set(len, [...am, ...bm]);
+  }
+  return { buckets, masks };
 }
 
 /**

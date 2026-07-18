@@ -57,10 +57,11 @@ export function generateCrosshatch(
   seed: string,
 ): CrosshatchPuzzle {
   const rand = seededRandom(`crosshatch:v1:${seed}`);
+  const index = buildLetterIndex(dict);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const shape = SHAPES[Math.floor(rand() * SHAPES.length)];
-    const solution = solveRandomFill(shape, dict, rand);
+    const solution = solveRandomFill(shape, dict, rand, index);
     if (!solution) continue;
 
     // Letters of the seed solution laid on the grid.
@@ -100,7 +101,7 @@ export function generateCrosshatch(
     // Tighten with extra givens until the distinct-word count AND the
     // per-line share fit.
     for (let extra = 0; extra <= MAX_EXTRA_GIVENS; extra++) {
-      const combos = enumerateCombos(shape, dict, givens, ENUM_CAP);
+      const combos = enumerateCombos(shape, dict, givens, ENUM_CAP, index);
       const wordCount = new Set(combos.flat()).size;
       const slotVariety = shape.slots.map(
         (_, i) => new Set(combos.map((c) => c[i])).size,
@@ -175,19 +176,69 @@ function fixedSlotCount(shape: Shape, combos: Combo[]): number {
   return fixed;
 }
 
+/**
+ * Position-indexed word lookup: for each (length, position, letter),
+ * the set of words with that letter at that position. Lets candidatesFor
+ * intersect small sets instead of scanning the full bucket.
+ */
+type LetterIndex = ReadonlyMap<number, ReadonlyMap<number, ReadonlyMap<string, readonly string[]>>>;
+
+function buildLetterIndex(dict: Dictionary): LetterIndex {
+  const idx = new Map<number, Map<number, Map<string, string[]>>>();
+  for (const [len, bucket] of dict.all.buckets) {
+    const byPos = new Map<number, Map<string, string[]>>();
+    for (let pos = 0; pos < len; pos++) {
+      byPos.set(pos, new Map());
+    }
+    for (const word of bucket) {
+      for (let pos = 0; pos < len; pos++) {
+        const ch = word[pos];
+        const posMap = byPos.get(pos)!;
+        let list = posMap.get(ch);
+        if (!list) {
+          list = [];
+          posMap.set(ch, list);
+        }
+        list.push(word);
+      }
+    }
+    idx.set(len, byPos);
+  }
+  return idx;
+}
+
 /** Words that fit the slot against the current grid letters. */
 function candidatesFor(
   slot: Slot,
   dict: Dictionary,
   grid: ReadonlyMap<string, string>,
+  index: LetterIndex,
 ): string[] {
   const cells = slotCells(slot);
-  const bucket = dict.all.buckets.get(slot.len) ?? [];
+  const byPos = index.get(slot.len);
+  if (!byPos) return [];
+
+  let smallest: readonly string[] | undefined;
+  const constraints: Array<{ pos: number; letter: string }> = [];
+  for (let i = 0; i < cells.length; i++) {
+    const fixed = grid.get(cellKey(cells[i].row, cells[i].col));
+    if (fixed !== undefined) {
+      constraints.push({ pos: i, letter: fixed });
+      const matches = byPos.get(i)?.get(fixed) ?? [];
+      if (!smallest || matches.length < smallest.length) {
+        smallest = matches;
+      }
+    }
+  }
+
+  if (constraints.length === 0) {
+    return [...(dict.all.buckets.get(slot.len) ?? [])];
+  }
+
   const out: string[] = [];
-  outer: for (const word of bucket) {
-    for (let i = 0; i < cells.length; i++) {
-      const fixed = grid.get(cellKey(cells[i].row, cells[i].col));
-      if (fixed !== undefined && fixed !== word[i]) continue outer;
+  outer: for (const word of smallest!) {
+    for (const { pos, letter } of constraints) {
+      if (word[pos] !== letter) continue outer;
     }
     out.push(word);
   }
@@ -203,7 +254,9 @@ export function enumerateCombos(
   dict: Dictionary,
   givens: ReadonlyMap<string, string>,
   cap = Infinity,
+  index?: LetterIndex,
 ): Combo[] {
+  const idx = index ?? buildLetterIndex(dict);
   const grid = new Map(givens);
   const assigned = new Array<string | null>(shape.slots.length).fill(null);
   const used = new Set<string>();
@@ -215,7 +268,7 @@ export function enumerateCombos(
     let bestCands: string[] | null = null;
     for (let i = 0; i < shape.slots.length; i++) {
       if (assigned[i] !== null) continue;
-      const cands = candidatesFor(shape.slots[i], dict, grid);
+      const cands = candidatesFor(shape.slots[i], dict, grid, idx);
       if (bestCands === null || cands.length < bestCands.length) {
         best = i;
         bestCands = cands;
@@ -256,6 +309,7 @@ function solveRandomFill(
   shape: Shape,
   dict: Dictionary,
   rand: () => number,
+  index: LetterIndex,
 ): Combo | null {
   const grid = new Map<string, string>();
   const assigned = new Array<string | null>(shape.slots.length).fill(null);
@@ -266,7 +320,7 @@ function solveRandomFill(
     let bestCands: string[] | null = null;
     for (let i = 0; i < shape.slots.length; i++) {
       if (assigned[i] !== null) continue;
-      const cands = candidatesFor(shape.slots[i], dict, grid);
+      const cands = candidatesFor(shape.slots[i], dict, grid, index);
       if (bestCands === null || cands.length < bestCands.length) {
         best = i;
         bestCands = cands;
