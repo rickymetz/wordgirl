@@ -15,6 +15,7 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 
 const MAX_ATTEMPTS = 200;
 const MAX_FILL_ATTEMPTS = 80;
+const MAX_SOLVE_NODES = 500_000;
 
 export function dailySeed(dateKey: string, difficulty: Difficulty): string {
   return `daily:${difficulty}:${dateKey}`;
@@ -343,6 +344,7 @@ function countSolutions(
   const used = new Set<number>();
   const covered = new Set<string>();
   const seenGrids = new Set<string>();
+  let nodes = 0;
 
   const cells = [...shape.cells].sort(
     (a, b) => a.row * 100 + a.col - (b.row * 100 + b.col),
@@ -398,6 +400,7 @@ function countSolutions(
   }
 
   function solve(): boolean {
+    if (++nodes > MAX_SOLVE_NODES) return true;
     const target = firstUncovered();
     if (!target) {
       if (checkCompletedSlots()) {
@@ -448,6 +451,7 @@ function countSolutions(
   }
 
   solve();
+  if (nodes > MAX_SOLVE_NODES) return cap;
   return seenGrids.size;
 }
 
