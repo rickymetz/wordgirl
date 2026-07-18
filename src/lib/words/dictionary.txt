@@ -10628,7 +10628,7 @@ councilman
 +lows
 +null
 +spaz
-+ooze
+ooze
 +lull
 +omer
 +tush
@@ -10730,7 +10730,7 @@ councilman
 +repo
 +garb
 +lino
-+doze
+doze
 +wily
 +spew
 +arid
@@ -18447,7 +18447,7 @@ councilman
 +skeps
 +skews
 +skids
-+skied
+skied
 +skier
 +skiey
 +skiff
@@ -45573,7 +45573,7 @@ councilman
 +miscuts
 +misdate
 +misdeal
-+misdeed
+misdeed
 +misdeem
 +misdial
 +misdoer
@@ -45634,7 +45634,7 @@ councilman
 +missets
 +misshod
 +missies
-+missive
+missive
 +missort
 +missout
 +misstep

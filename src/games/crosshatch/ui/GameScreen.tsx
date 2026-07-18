@@ -339,15 +339,10 @@ export function GameScreen({ mode }: Props) {
       nothingNew: "You\u2019ve already found all these words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
-      // Three honest flavors of rejection: gibberish, a real word
-      // that's too rare for the day's common-words list, and a common
-      // word whose crossings can't be completed.
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`
-          : !dict.required.buckets.get(r.word.length)?.includes(r.word)
-            ? `${r.word.toUpperCase()} is too rare for today's list`
-            : `${r.word.toUpperCase()} doesn't work with the crossing lines`
+          : `${r.word.toUpperCase()} doesn't work with the crossing lines`
         : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });

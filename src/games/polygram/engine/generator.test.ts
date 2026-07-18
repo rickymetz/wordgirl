@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { letterMask, parseDictionary } from "../../../lib/words/dictionary";
 import {
-  BONUS_CAP,
   LEVEL_CAPS,
   MAX_TOTAL_WORDS,
   MIN_MAX_LEVEL,
@@ -54,7 +53,6 @@ describe("generatePuzzle", () => {
         expect(level.words.length).toBeLessThanOrEqual(
           LEVEL_CAPS[level.size],
         );
-        expect(level.bonusWords.length).toBeLessThanOrEqual(BONUS_CAP);
         total += level.words.length;
 
         // Every word: exact length, spellable from the first `size` letters.

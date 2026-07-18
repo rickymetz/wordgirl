@@ -26,8 +26,12 @@
  * is now in the dictionary. Required tier is still frequency-gated;
  * all remaining ENABLE words are bonus. Replaces the v11 suffix-
  * expansion approach with complete Scrabble/crossword coverage.
+ * v13: promote doze, ooze, skied, misdeed, missive from bonus to
+ * required tier — common words players expect to be accepted.
+ * v14: crosshatch accepts bonus-tier words; polygram removes the
+ * per-level bonus cap — all spellable bonus words are now offered.
  */
-export const DICT_VERSION = 12;
+export const DICT_VERSION = 14;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;
@@ -44,6 +48,8 @@ interface TierIndex {
 export interface Dictionary {
   required: TierIndex;
   bonus: TierIndex;
+  /** Required + bonus merged into one index (for games that accept both). */
+  all: TierIndex;
   has(word: string): boolean;
 }
 
@@ -64,7 +70,7 @@ function makeTier(): {
 
 export function parseDictionary(raw: string): Dictionary {
   const tiers = { required: makeTier(), bonus: makeTier() };
-  const all = new Set<string>();
+  const allWords = new Set<string>();
   for (const line of raw.split("\n")) {
     let word = line.trim();
     if (!word) continue;
@@ -83,13 +89,30 @@ export function parseDictionary(raw: string): Dictionary {
     }
     bucket.push(word);
     maskList!.push(letterMask(word));
-    all.add(word);
+    allWords.add(word);
   }
+  const merged = mergeTiers(tiers.required, tiers.bonus);
   return {
     required: tiers.required,
     bonus: tiers.bonus,
-    has: (word) => all.has(word),
+    all: merged,
+    has: (word) => allWords.has(word),
   };
+}
+
+function mergeTiers(a: TierIndex, b: TierIndex): TierIndex {
+  const buckets = new Map<number, readonly string[]>();
+  const masks = new Map<number, readonly number[]>();
+  const lengths = new Set([...a.buckets.keys(), ...b.buckets.keys()]);
+  for (const len of lengths) {
+    const ab = a.buckets.get(len) ?? [];
+    const bb = b.buckets.get(len) ?? [];
+    const am = a.masks.get(len) ?? [];
+    const bm = b.masks.get(len) ?? [];
+    buckets.set(len, [...ab, ...bb]);
+    masks.set(len, [...am, ...bm]);
+  }
+  return { buckets, masks };
 }
 
 /**
