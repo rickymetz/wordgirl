@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import type { Cell, PuzzleDef } from "../engine/types";
 
 interface Props {
@@ -45,38 +45,36 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
       <span className={`flex flex-wrap justify-center gap-x-2 font-game ${size} font-normal uppercase`}>
         {words.map(([start, end]) => (
           <span key={start} className="inline-flex whitespace-nowrap">
-            <AnimatePresence mode="popLayout">
-              {Array.from({ length: end - start }, (_, j) => {
-                const i = start + j;
-                const letter =
-                  i < cells.length
-                    ? puzzle.grid[cells[i].row][cells[i].col]
-                    : null;
-                const isHint = !letter && hintIndices?.has(i);
-                const hintLetter = isHint
-                  ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
+            {Array.from({ length: end - start }, (_, j) => {
+              const i = start + j;
+              const letter =
+                i < cells.length
+                  ? puzzle.grid[cells[i].row][cells[i].col]
                   : null;
-                return letter ? (
-                  <motion.span
-                    key={`${i}-${letter}`}
-                    className="inline-block text-accent"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 26 }}
-                  >
-                    {letter}
-                  </motion.span>
-                ) : hintLetter ? (
-                  <span key={`hint-${i}`} className="inline-block text-accent/50">
-                    {hintLetter}
-                  </span>
-                ) : (
-                  <span key={`blank-${i}`} className="inline-block text-ink-soft/70">
-                    ?
-                  </span>
-                );
-              })}
-            </AnimatePresence>
+              const isHint = !letter && hintIndices?.has(i);
+              const hintLetter = isHint
+                ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
+                : null;
+              return letter ? (
+                <motion.span
+                  key={`${i}-${letter}`}
+                  className="inline-block text-accent"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 26 }}
+                >
+                  {letter}
+                </motion.span>
+              ) : hintLetter ? (
+                <span key={`${i}-hint`} className="inline-block text-accent/50">
+                  {hintLetter}
+                </span>
+              ) : (
+                <span key={`${i}-blank`} className="inline-block text-ink-soft/70">
+                  ?
+                </span>
+              );
+            })}
           </span>
         ))}
       </span>
