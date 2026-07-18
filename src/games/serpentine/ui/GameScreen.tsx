@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
@@ -57,6 +57,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());
+  const hintedRef = useRef(hintedSet);
   const hintCount = hintedSet.size;
 
   const { toast, show } = useToast();
@@ -87,6 +88,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       for (let i = 0; i < hydratedHints && i < wordStarts.length; i++) {
         set.add(wordStarts[i]);
       }
+      hintedRef.current = set;
       setHintedSet(set);
     }
   }, [hydratedHints, wordStarts]);
@@ -174,16 +176,18 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               disabled={!canHint}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                const current = hintedRef.current;
                 const progress = state.cells.length;
-                let idx = wordStarts.find(i => i >= progress && !hintedSet.has(i));
+                let idx = wordStarts.find(i => i >= progress && !current.has(i));
                 if (idx == null) {
                   for (let i = progress; i < puzzle.path.length; i++) {
-                    if (!hintedSet.has(i)) { idx = i; break; }
+                    if (!current.has(i)) { idx = i; break; }
                   }
                 }
                 if (idx == null) return;
-                const next = new Set(hintedSet);
+                const next = new Set(current);
                 next.add(idx);
+                hintedRef.current = next;
                 setHintedSet(next);
                 setHints(next.size);
               }}
