@@ -24,8 +24,6 @@ export const LEVEL_CAPS: Record<number, number> = {
 export const MIN_MAX_LEVEL = 5;
 /** Total-word ceiling across all levels (required tier). */
 export const MAX_TOTAL_WORDS = 35;
-/** Bonus words offered per level (deterministic: commonest first). */
-export const BONUS_CAP = 10;
 
 /**
  * Required-word floor per level. Single-word high levels ("find exactly
@@ -76,11 +74,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     levels.push({
       size: 3,
       words: triangleWords,
-      // Buckets are frequency-ordered, so the cap keeps the COMMONEST
-      // bonus words; sorted after for the word-list display.
-      bonusWords: enumerateWords(dict, letters, 3, "bonus")
-        .slice(0, BONUS_CAP)
-        .sort(),
+      bonusWords: enumerateWords(dict, letters, 3, "bonus").sort(),
     });
 
     // Grow one letter at a time; stop at the first size with no viable letter.
@@ -105,9 +99,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
           levels.push({
             size,
             words,
-            bonusWords: enumerateWords(dict, extended, size, "bonus")
-              .slice(0, BONUS_CAP)
-              .sort(),
+            bonusWords: enumerateWords(dict, extended, size, "bonus").sort(),
           });
           found = true;
           break;

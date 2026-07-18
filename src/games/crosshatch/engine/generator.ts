@@ -182,7 +182,7 @@ function candidatesFor(
   grid: ReadonlyMap<string, string>,
 ): string[] {
   const cells = slotCells(slot);
-  const bucket = dict.required.buckets.get(slot.len) ?? [];
+  const bucket = dict.all.buckets.get(slot.len) ?? [];
   const out: string[] = [];
   outer: for (const word of bucket) {
     for (let i = 0; i < cells.length; i++) {

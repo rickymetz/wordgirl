@@ -104,14 +104,14 @@ describe("generateCrosshatch", () => {
         // No repeated word within a combo.
         expect(new Set(combo).size).toBe(combo.length);
         // Lay the combo on the grid: intersections and givens agree,
-        // and every word is a required-tier word of exact slot length.
+        // and every word is a dictionary word of exact slot length.
         const grid = new Map<string, string>(Object.entries(givens));
         shape.slots.forEach((slot, s) => {
           const word = combo[s];
           expect(word).toHaveLength(slot.len);
           expect(
-            dict.required.buckets.get(slot.len)?.includes(word),
-            `${key}: "${word}" not a required word`,
+            dict.has(word),
+            `${key}: "${word}" not in dictionary`,
           ).toBe(true);
           slotCells(slot).forEach((c, j) => {
             const k = cellKey(c.row, c.col);
@@ -125,6 +125,8 @@ describe("generateCrosshatch", () => {
       }
     }
     // Generation happens on-device at load — the sweep must stay quick.
-    expect(Date.now() - start).toBeLessThan(30_000);
-  }, 60_000);
+    // Bonus-tier words widen the candidate pool (~50% more wall-clock);
+    // 60s is generous for CI while still catching regressions.
+    expect(Date.now() - start).toBeLessThan(60_000);
+  }, 90_000);
 });

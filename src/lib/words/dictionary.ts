@@ -28,8 +28,10 @@
  * expansion approach with complete Scrabble/crossword coverage.
  * v13: promote doze, ooze, skied, misdeed, missive from bonus to
  * required tier — common words players expect to be accepted.
+ * v14: crosshatch accepts bonus-tier words; polygram removes the
+ * per-level bonus cap — all spellable bonus words are now offered.
  */
-export const DICT_VERSION = 13;
+export const DICT_VERSION = 14;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;
@@ -46,6 +48,8 @@ interface TierIndex {
 export interface Dictionary {
   required: TierIndex;
   bonus: TierIndex;
+  /** Required + bonus merged into one index (for games that accept both). */
+  all: TierIndex;
   has(word: string): boolean;
 }
 
@@ -66,7 +70,8 @@ function makeTier(): {
 
 export function parseDictionary(raw: string): Dictionary {
   const tiers = { required: makeTier(), bonus: makeTier() };
-  const all = new Set<string>();
+  const merged = makeTier();
+  const allWords = new Set<string>();
   for (const line of raw.split("\n")) {
     let word = line.trim();
     if (!word) continue;
@@ -74,6 +79,7 @@ export function parseDictionary(raw: string): Dictionary {
     if (tier === "bonus") word = word.slice(1);
     const len = word.length;
     if (len < MIN_WORD_LEN || len > MAX_WORD_LEN) continue;
+    const mask = letterMask(word);
     const t = tiers[tier];
     let bucket = t.buckets.get(len);
     let maskList = t.masks.get(len);
@@ -84,13 +90,24 @@ export function parseDictionary(raw: string): Dictionary {
       t.masks.set(len, maskList);
     }
     bucket.push(word);
-    maskList!.push(letterMask(word));
-    all.add(word);
+    maskList!.push(mask);
+    let mBucket = merged.buckets.get(len);
+    let mMasks = merged.masks.get(len);
+    if (!mBucket) {
+      mBucket = [];
+      mMasks = [];
+      merged.buckets.set(len, mBucket);
+      merged.masks.set(len, mMasks);
+    }
+    mBucket.push(word);
+    mMasks!.push(mask);
+    allWords.add(word);
   }
   return {
     required: tiers.required,
     bonus: tiers.bonus,
-    has: (word) => all.has(word),
+    all: merged,
+    has: (word) => allWords.has(word),
   };
 }
 
