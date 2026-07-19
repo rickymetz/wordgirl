@@ -1,0 +1,80 @@
+---
+title: Serpentine
+description: One continuous line — hidden poetry laid along a Hamiltonian path, generated with Warnsdorff's heuristic on king-move grids.
+---
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/serpentine.png';
+
+<Image src={teaser} alt="Serpentine — a snaking path traced through a letter grid" width={480} />
+
+**One continuous line.** Serpentine hides a line of poetry in a grid of
+letters. Trace one continuous path — moving to any of the 8 surrounding
+cells, visiting every cell exactly once — and the path spells the line.
+
+## How to play
+
+- Start anywhere the text starts and drag through adjacent cells
+  (diagonals count). Every live cell must be visited exactly once.
+- Two daily modes: **Haiku** (a short translated haiku) and **Poem** (a
+  longer English line). Both modes share the day's theme.
+- Any valid retracing counts — if the letters happen to permit a different
+  path that spells the same text, it's accepted
+  (`src/games/serpentine/engine/validation.ts` checks contiguity, no
+  revisits, and the spelled text — not the generator's own path).
+
+### The poetry
+
+Lines come from seven themed pools — water, creatures, sky, seasons, time,
+beauty, wind — all public domain: 76 haiku (Bashō, Issa, Buson, …) and 414
+English poem lines (Dickinson, Byron, Keats, Blake, Shakespeare, …). The
+daily seed indexes into the haiku list, which fixes the theme; a second
+seeded pick chooses the theme's English partner line.
+
+## Under the hood
+
+Laying text along a path that visits every cell exactly once is the
+**Hamiltonian path problem** — NP-complete in general. Serpentine makes it
+reliably fast with three ideas (`src/games/serpentine/engine/puzzles.ts`).
+
+### 1. Shape the board first
+
+- **`bestGrid(n)`**: for a text of $n$ letters, scan every grid up to 8×10
+  and minimize $10\cdot\textit{waste} + |\textit{rows}-\textit{cols}|$ —
+  fewest unused cells first, squarest second.
+- **`pickBlocked`**: remove the leftover cells, preferring **corners, then
+  edges, then interior**, so holes hug the boundary. A removal set is
+  accepted only if the remaining cells stay **8-connected** (BFS check) —
+  a disconnected board can't have a Hamiltonian path at all. 50 attempts,
+  else the grid stays rectangular.
+
+### 2. Warnsdorff's heuristic
+
+`hamiltonianPath` generalizes **Warnsdorff's rule** (from the knight's-tour
+problem) to king moves: start at a random live cell and repeatedly step to
+the unvisited neighbor with the **fewest onward unvisited neighbors**,
+breaking ties randomly. The intuition: visit the cells most at risk of
+becoming unreachable first.
+
+There is no backtracking — a dead end just triggers a restart with a new
+random start, up to 200 attempts. The random tie-break is what makes
+restarts diverge. On dense king-move graphs of ≤ 80 cells this succeeds with
+high probability almost immediately.
+
+### 3. A constructive fallback
+
+If all 200 attempts fail, a **boustrophedon** path (row by row, alternating
+direction, skipping blocked cells) is used instead — validated for
+adjacency, and guaranteed to work on the near-rectangular boards the blocker
+produces. Generation can therefore never hang.
+
+The poem's letters are then written along the path into the grid, and the
+puzzle ships.
+
+### Versioning
+
+Serpentine is the one game with no dictionary, so it doesn't carry
+`DICT_VERSION`; it versions its derivation through the seed instead —
+`serpentine:v2:daily:<difficulty>:<dateKey>` (`SEED_VERSION = 2` in
+`engine/dailySeed.ts`). Every pool entry's connectivity is regression-tested
+in `puzzles-connectivity.test.ts`.

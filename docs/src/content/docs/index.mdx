@@ -1,0 +1,69 @@
+---
+title: WordGirl
+description: Five daily word games — the rules, the math, and the code behind them.
+template: splash
+hero:
+  tagline: Five daily word games. This site explains how to play them — and the algorithms that build a fresh puzzle for everyone, every day, with no server.
+  actions:
+    - text: Meet the games
+      link: /games/polygram/
+      icon: right-arrow
+    - text: Play at wordgirl.net
+      link: https://wordgirl.net
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## The games
+
+<CardGrid stagger>
+  <Card title="Polygram" icon="star">
+    Spell your way from triangle to decagon. Each polygon level asks for every
+    word of its size — find them all and a new letter joins.
+    [How it works →](/games/polygram/)
+  </Card>
+  <Card title="Crosshatch" icon="puzzle">
+    Every way the words fit. A small crossword frame with given letters — the
+    goal isn't one solution, it's *all* of them.
+    [How it works →](/games/crosshatch/)
+  </Card>
+  <Card title="Backwords" icon="random">
+    Every word, a reflection. Place letters against a mirror; the reflection
+    spells the rest. [How it works →](/games/backwords/)
+  </Card>
+  <Card title="Doublet" icon="setting">
+    Place the tiles. Spell the words. Letter dominoes onto a shaped board, with
+    exactly one valid arrangement. [How it works →](/games/doublet/)
+  </Card>
+  <Card title="Serpentine" icon="pencil">
+    One continuous line. Trace a path through every cell to reveal a hidden
+    line of poetry. [How it works →](/games/serpentine/)
+  </Card>
+  <Card title="Daily puzzles, no server" icon="seti:clock">
+    Every generator is a pure function of the date. How seeded determinism,
+    quality gates and version stamps keep everyone's puzzle identical —
+    offline. [How it works →](/games/daily-puzzles/)
+  </Card>
+</CardGrid>
+
+## For developers
+
+<CardGrid>
+  <Card title="Architecture" icon="open-book">
+    One Vite app, five games, a registry, and pure-TypeScript engines.
+    [Start with the overview →](/architecture/overview/)
+  </Card>
+  <Card title="Game Kit" icon="seti:react">
+    The shared components, hooks and utilities every game is built from.
+    [Browse the kit →](/kit/components/)
+  </Card>
+  <Card title="Design system" icon="seti:css">
+    `light-dark()` tokens, per-game accents, and the house chart style.
+    [Read the rules →](/design/colors/)
+  </Card>
+  <Card title="Add a game" icon="rocket">
+    The 14-step checklist, narrated. [Follow the guide →](/guides/adding-a-game/)
+  </Card>
+</CardGrid>

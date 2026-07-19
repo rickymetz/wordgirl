@@ -1,0 +1,82 @@
+---
+title: Polygram
+description: Spell your way from triangle to decagon — and the greedy growth algorithm that builds each day's polygon.
+---
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/polygram.png';
+
+<Image src={teaser} alt="Polygram — a hexagon of letter tiles" width={480} />
+
+**Spell your way from triangle to decagon.** Polygram starts you with three
+letters arranged as a triangle. Find every 3-letter word those letters can
+spell (letters may be reused) and a fourth letter joins — the triangle becomes
+a square. Clear the square and it becomes a pentagon, and so on. A great day
+runs all the way to the 10-sided decagon.
+
+## How to play
+
+- The polygon's vertices are your letters. At a size-*n* level, every answer
+  is exactly *n* letters long and uses only those letters — repeats allowed.
+- Clear **all required words** at a level to advance. Bonus words (rarer
+  dictionary entries) count toward your score but aren't needed to advance.
+- Stuck? Reveal a hint letter — but each revealed letter **halves that word's
+  points** (it always stays worth at least 1).
+- Scoring: an un-hinted word is worth its length; clearing a level adds a
+  bonus equal to the level size. The maximum score assumes every required
+  *and* bonus word found with no hints — so 100% measures exhaustive
+  sweeping, not just advancement.
+
+## Under the hood
+
+The daily puzzle is built by **greedy incremental growth with rejection
+sampling** (`src/games/polygram/engine/generator.ts`).
+
+1. **Seed.** Pick a random 3-letter word from the dictionary and take its
+   distinct letters. If it has repeats, pad from a frequency-weighted pool
+   (`"eeeeaaaarrriii…"`) so common letters fill the gaps.
+2. **Check the triangle.** Enumerate every 3-letter word spellable from the
+   seed letters. The level must have 1–8 words, and every seed letter must
+   appear in at least one of them.
+3. **Grow.** For each size from 4 up to 10, shuffle the unused letters and
+   try them one at a time. A candidate letter is accepted if the extended
+   letter set yields a word count inside the level's band *and* the new
+   letter actually appears in at least one word at that level — every join
+   has to matter.
+4. **Accept or retry.** A finished attempt is kept only if it reaches at
+   least the pentagon (`MIN_MAX_LEVEL = 5`) and has at most 35 required
+   words total. Otherwise the generator throws the attempt away and starts
+   over — up to 300 times.
+
+The per-level word caps taper as the polygon grows, because "find ALL the
+words" is the advancement gate and long levels would become a slog:
+
+| Level size | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|-----------|---|---|---|---|---|---|---|----|
+| Max words | 8 | 10 | 10 | 8 | 6 | 5 | 4 | 3 |
+
+From the heptagon (7) up, levels also need at least **two** words — a
+single-word nonagon ("find exactly ECOSYSTEM from nine blanks") gives no
+partial traction.
+
+### Why enumeration is fast
+
+Every dictionary word carries a precomputed 26-bit **letter bitmask**. Testing
+whether a word is spellable from the puzzle's letter pool is a single AND:
+
+$$
+\text{spellable} \iff (\textit{wordMask} \;\&\; \lnot\,\textit{poolMask}) = 0
+$$
+
+so enumerating a level is one linear scan over the length bucket with a
+constant-time test per word (`src/lib/words/dictionary.ts`).
+
+### Hint scoring
+
+Revealed letters halve a word's value repeatedly, flooring at 1:
+
+$$
+\text{points}(w, h) = \max\!\left(1,\; \left\lfloor \frac{|w|}{2^{h}} \right\rfloor\right)
+$$
+
+where $|w|$ is the word's length and $h$ the number of hint letters revealed.
