@@ -475,12 +475,16 @@ function generateFallback(
 ): DoubletPuzzle {
   const shape = SHAPES[difficulty][0];
   const slots = findSlots(shape);
+  const fallbackDeadline = Date.now() + MAX_GENERATION_MS * 4;
+  let bestUnverified: { dominoes: DominoPiece[]; tiling: [Cell, Cell][] } | null = null;
 
   for (let i = 0; i < 500; i++) {
+    if (Date.now() > fallbackDeadline) break;
+
     const fill = fillGrid(shape, slots, dict, rand);
     if (!fill) continue;
 
-    const tiling = findTiling(shape, rand);
+    const tiling = findTiling(shape, rand, fallbackDeadline);
     if (!tiling) continue;
 
     const dominoes: DominoPiece[] = tiling.map(([c1, c2], idx) => ({
@@ -491,7 +495,8 @@ function generateFallback(
       ],
     }));
 
-    if (countSolutions(shape, slots, dominoes, dict, 2) !== 1) continue;
+    if (!bestUnverified) bestUnverified = { dominoes, tiling };
+    if (countSolutions(shape, slots, dominoes, dict, 2, fallbackDeadline) !== 1) continue;
 
     const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
       dominoId: i,
@@ -519,6 +524,44 @@ function generateFallback(
       }
     }
 
+    return {
+      seed,
+      dictVersion: DICT_VERSION,
+      difficulty,
+      board: shape,
+      slots,
+      dominoes: shuffled,
+      solution: Array.from(solutionMap.values()),
+    };
+  }
+
+  // Last resort: use a valid but potentially non-unique puzzle rather
+  // than crashing. Prefer uniqueness, but never throw on the main thread.
+  if (bestUnverified) {
+    const { dominoes, tiling } = bestUnverified;
+    const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
+      dominoId: i,
+      anchor: c1,
+      orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
+    }));
+    const shuffled = shuffle(
+      dominoes.map((d) => ({ ...d })),
+      rand,
+    );
+    shuffled.forEach((d, i) => (d.id = i));
+    const solutionMap = new Map<number, PlacedDomino>();
+    for (const sp of solution) {
+      const origLetters = dominoes[sp.dominoId].letters;
+      const newDomino = shuffled.find(
+        (d) =>
+          d.letters[0] === origLetters[0] &&
+          d.letters[1] === origLetters[1] &&
+          !solutionMap.has(d.id),
+      );
+      if (newDomino) {
+        solutionMap.set(newDomino.id, { ...sp, dominoId: newDomino.id });
+      }
+    }
     return {
       seed,
       dictVersion: DICT_VERSION,
