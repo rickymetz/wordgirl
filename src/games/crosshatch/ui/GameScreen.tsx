@@ -42,6 +42,7 @@ import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
 import { Keyboard } from "./Keyboard";
+import { SolvedOverlay } from "./Overlays";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
 import { WordsPanel } from "./WordsPanel";
@@ -82,6 +83,16 @@ export function GameScreen({ mode }: Props) {
 
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+
+  const perfect = state.found.length === total;
+  const [huntingDismissed, setHuntingDismissed] = useState(false);
+  const prevPerfectRef = useRef(perfect);
+  useEffect(() => {
+    if (perfect && !prevPerfectRef.current) {
+      setHuntingDismissed(false);
+    }
+    prevPerfectRef.current = perfect;
+  }, [perfect]);
 
   // One-time first-run coach, reopenable from the header "?".
   const [coachOpen, setCoachOpen] = useState(false);
@@ -385,7 +396,7 @@ export function GameScreen({ mode }: Props) {
               New daily puzzle
             </Link>
           )}
-          {!state.solved && (
+          {!perfect && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -483,16 +494,14 @@ export function GameScreen({ mode }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        {state.solved && showResults ? (
+        {state.solved && showResults && huntingDismissed && perfect ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">
-              {state.found.length === total ? "Perfect sweep!" : "Solved"}
-            </p>
+            <p className="text-lg font-bold text-ink">Perfect sweep!</p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(solvedElapsedMs)}
@@ -515,7 +524,7 @@ export function GameScreen({ mode }: Props) {
               />
             )}
           </motion.div>
-        ) : !state.solved ? (
+        ) : !state.solved || (huntingDismissed && !perfect) ? (
           <motion.div
             key="controls"
             exit={{ opacity: 0 }}
@@ -555,6 +564,17 @@ export function GameScreen({ mode }: Props) {
           </motion.div>
         ) : null}
       </AnimatePresence>
+
+      <SolvedOverlay
+        found={state.found.length}
+        total={total}
+        hints={hintCount}
+        mode={mode.kind}
+        dateKey={mode.kind !== "practice" ? mode.dateKey : undefined}
+        elapsedMs={solvedElapsedMs}
+        open={state.solved && showResults && !huntingDismissed}
+        onClose={() => setHuntingDismissed(true)}
+      />
 
       {showConfetti && <ConfettiOverlay />}
 
