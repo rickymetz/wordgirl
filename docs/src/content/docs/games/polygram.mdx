@@ -30,8 +30,14 @@ The generator makes the puzzle in these steps:
 
 1. The generator selects a random word with three letters from the dictionary. The different letters of this word are the start letters. If the word has fewer than three different letters, the generator adds letters from a list of frequent letters.
 2. The generator finds all the words with three letters that the start letters can make. The triangle level must have between 1 and 8 words. Each start letter must be in one word or more.
-3. The generator tries to add one letter for each level from 4 to 10. A new letter is correct when two conditions are true. The number of words is in the limits for that level. And the new letter is in one word or more.
-4. The generator keeps the puzzle when two conditions are true. The puzzle has five levels or more. And the puzzle has a maximum of 35 necessary words. If not, the generator starts again. The maximum is 300 tries.
+3. The generator tries to add one letter for each level from 4 to 10. A new letter is correct only when:
+   - The number of words is in the limits for that level.
+   - The new letter is in one word or more.
+4. The generator keeps the puzzle only when:
+   - The puzzle has five levels or more.
+   - The puzzle has a maximum of 35 necessary words.
+
+   If the puzzle is not correct, the generator starts again. The maximum is 300 tries.
 
 The word limits for each level are in this table:
 
@@ -39,7 +45,7 @@ The word limits for each level are in this table:
 |-----------|---|---|---|---|---|---|---|----|
 | Maximum words | 8 | 10 | 10 | 8 | 6 | 5 | 4 | 3 |
 
-Levels 7 to 10 must have a minimum of two words. One word is not sufficient for these levels. The player gets no progress before the full word.
+Levels 7 to 10 must have a minimum of two words. One word is not sufficient for these levels. With only one word, the player sees no progress until the full word is found.
 
 ## Why the word search is fast
 

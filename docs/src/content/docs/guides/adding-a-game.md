@@ -94,4 +94,17 @@ Use `scripts/validate_palette.js` after you add the accent.
 
 ## Before the merge
 
-The list in `CLAUDE.md` is the review gate. It contains the start sequence rules, the clock keys, the old save rule, the SVG settings, the board size rule, the pointer rules, the share rule, the replay confirmation, the separators, the emoji rule, and the three test files.
+The review gate is this list. It is also in `CLAUDE.md`. Make sure that each item is correct:
+
+- The load function sets `hydrated.current` in the async callback.
+- The clock `resetKey` contains all the applicable keys. Examples are the difficulty and the date key.
+- `updateStats` operates only after `saveDailyProgress` is complete.
+- The old save rule prevents a double count of played days.
+- Each SVG overlay has `preserveAspectRatio="xMidYMid meet"`.
+- The board sizes multiply by `rem / 16` through `useViewport`.
+- The pointer handlers on game surfaces use `e.preventDefault()`.
+- `ShareButton` shows only when a `dateKey` is present. Practice mode has no share.
+- A replay shows a confirmation dialog.
+- The archive separators use `·`, not `.`.
+- The UI has no emoji. Emoji are only in share texts.
+- The three test files exist.

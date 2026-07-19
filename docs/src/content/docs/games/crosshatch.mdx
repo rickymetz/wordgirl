@@ -34,8 +34,13 @@ The generator makes the puzzle in these steps:
 
 1. The generator selects a shape. Then it fills the shape with words. It fills the slot with the fewest possible words first. It examines a maximum of 40 words for each slot.
 2. The generator puts one given letter in each slot. A given letter must not complete a slot.
-3. The generator finds all the sets of words that agree with the given letters. The maximum is 200 sets. More than 200 sets shows that the frame is too open.
-4. The generator adds more given letters until the puzzle is correct. A correct puzzle has 10 to 22 different words. A maximum of one slot can have only one word. No slot can have more than 8 words. If the puzzle is not correct after 6 more letters, the generator starts again. The maximum is 300 tries.
+3. The generator finds all the sets of words that agree with the given letters. The maximum is 200 sets. A count of more than 200 sets shows that the frame is too open.
+4. The generator adds more given letters until the puzzle is correct. A correct puzzle obeys these limits:
+   - The puzzle has 10 to 22 different words.
+   - A maximum of one slot has only one word.
+   - No slot has more than 8 words.
+
+   If the puzzle is not correct after 6 more letters, the generator starts again. The maximum is 300 tries.
 
 ## Why the answer check is fast
 

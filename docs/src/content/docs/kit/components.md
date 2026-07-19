@@ -43,11 +43,23 @@ The option `mini` gives the small size for hub cards. The function `tileClasses(
 
 ### GameStatus
 
-`GameStatus` is the state block on a hub card. It shows the date and the state line. An example is "Solved, 3-day streak". A game gives two load functions. This is approximately 15 lines for each game. The block loads again at midnight and when the application comes to the front.
+`GameStatus` is the state block on a hub card. It shows the date and the state line. An example is "Solved, 3-day streak". A game gives two load functions. One function gives the state text. One function gives the streak. This is approximately 15 lines for each game. The block loads again at midnight and when the application comes to the front.
 
 ### GameArchive
 
-`GameArchive` makes the full archive page from a configuration. Do not make an archive page by hand. The configuration contains the game id, the accent, the epoch, two load functions, six stat tiles, and two state functions. The component controls all the layout and the colors. The configuration is approximately 30 lines. Refer to `ui/ArchivePage.tsx` in each game.
+`GameArchive` makes the full archive page from a configuration. Do not make an archive page by hand. The `GameArchiveConfig` has these fields:
+
+- `gameId` — the game id.
+- `accent` — the accent key. This is the same as `accentLevel`.
+- `epoch` — the first date of the game.
+- `loadAllDays()` — gives all the saved days.
+- `loadStats()` — gives the statistics.
+- `hasPlayed(stats)` — true when the player has data.
+- `statTiles(stats)` — gives the six stat tiles.
+- `isDone(day)` — true when a day is complete.
+- `rowStatus(dateKey, day)` — gives the text and the state for one row.
+
+The component controls all the layout and the colors. The configuration is approximately 30 lines. Refer to `ui/ArchivePage.tsx` in each game.
 
 ### GameTrends
 
