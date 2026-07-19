@@ -1,14 +1,159 @@
-/* WordGirl accent — the hub purple (#7c3aed light / #a78bfa dark). */
+/*
+ * WordGirl docs theme — tokens copied verbatim from the app's
+ * src/index.css so the docs read as the same product. Starlight sets
+ * color-scheme per theme on :root, so light-dark() resolves correctly.
+ */
+@import "@fontsource/rubik-mono-one";
+
 :root {
-  --sl-color-accent-low: #ede9fe;
-  --sl-color-accent: #7c3aed;
-  --sl-color-accent-high: #5b21b6;
+  /* — WordGirl tokens (src/index.css) — */
+  --wg-surface: light-dark(#ffffff, #121116);
+  --wg-surface-raised: light-dark(#ffffff, #211f26);
+  --wg-ink: light-dark(#26242b, #eceaf0);
+  --wg-ink-soft: light-dark(#6f6b78, #98939f);
+  --wg-line: light-dark(#e3e0d9, #322f38);
+  --wg-tile: light-dark(#e4e0d8, #2c2a33);
+  --wg-accent: light-dark(#7c3aed, #a78bfa);
+
+  --wg-surface-tint: light-dark(
+    color-mix(in oklab, var(--wg-accent) 6%, var(--wg-surface-raised)),
+    color-mix(in oklab, var(--wg-accent) 13%, var(--wg-surface-raised))
+  );
+
+  --wg-font-display: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+  --wg-font-game: "Rubik Mono One", ui-monospace, monospace;
+
+  /* — map onto Starlight — */
+  --sl-color-bg: var(--wg-surface);
+  --sl-color-bg-nav: var(--wg-surface);
+  --sl-color-bg-sidebar: var(--wg-surface);
+  --sl-color-bg-inline-code: var(--wg-tile);
+  --sl-color-hairline: var(--wg-line);
+  --sl-color-hairline-light: var(--wg-line);
+  --sl-color-hairline-shade: var(--wg-line);
+
+  --sl-color-white: var(--wg-ink);
+  --sl-color-text: var(--wg-ink);
+  --sl-color-gray-1: color-mix(in oklab, var(--wg-ink) 88%, var(--wg-surface));
+  --sl-color-gray-2: color-mix(in oklab, var(--wg-ink) 76%, var(--wg-surface));
+  --sl-color-gray-3: var(--wg-ink-soft);
+  --sl-color-gray-4: color-mix(in oklab, var(--wg-ink-soft) 70%, var(--wg-surface));
+  --sl-color-gray-5: color-mix(in oklab, var(--wg-ink) 12%, var(--wg-surface));
+  --sl-color-gray-6: color-mix(in oklab, var(--wg-ink) 6%, var(--wg-surface));
+  --sl-color-gray-7: color-mix(in oklab, var(--wg-ink) 3%, var(--wg-surface));
+  --sl-color-black: var(--wg-surface);
+
+  --sl-color-accent: var(--wg-accent);
+  --sl-color-accent-low: light-dark(
+    color-mix(in oklab, var(--wg-accent) 12%, var(--wg-surface)),
+    color-mix(in oklab, var(--wg-accent) 22%, var(--wg-surface))
+  );
+  --sl-color-accent-high: light-dark(
+    color-mix(in oklab, var(--wg-accent) 75%, var(--wg-ink)),
+    color-mix(in oklab, var(--wg-accent) 65%, #ffffff)
+  );
+  --sl-color-text-accent: var(--wg-accent);
+
+  --sl-font: var(--wg-font-display);
+  --sl-text-code: 0.875rem;
 }
 
-:root[data-theme="dark"] {
-  --sl-color-accent-low: #2e1065;
-  --sl-color-accent: #a78bfa;
-  --sl-color-accent-high: #ddd6fe;
+/*
+ * Per-game accents: each game page carries an inline <style> overriding
+ * --wg-accent with its data-level value from the app's src/index.css,
+ * recoloring links, title, sidebar pill, and cards — the same way the
+ * game screens recolor themselves.
+ */
+
+/* — Type: game font for the wordmark and page titles — */
+.site-title span,
+.site-title .site-title-text {
+  font-family: var(--wg-font-game);
+  font-size: var(--sl-text-lg);
+  letter-spacing: -0.02em;
+}
+
+h1#_top,
+.hero h1 {
+  font-family: var(--wg-font-game);
+  font-weight: 400;
+  line-height: 1.15;
+  font-size: clamp(1.5rem, 1rem + 3vw, 2.75rem);
+  color: var(--wg-accent);
+}
+
+.sl-markdown-content h2 {
+  font-family: var(--wg-font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* — Cards: WordGirl tinted panels with tile radius — */
+.card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--wg-line);
+  background: var(--wg-surface-tint);
+}
+.card .title {
+  font-family: var(--wg-font-display);
+  font-weight: 700;
+}
+.card .icon {
+  color: var(--wg-accent);
+  border: none;
+  background: transparent;
+}
+
+/* — Hero actions: the app's pill buttons — */
+.hero .actions a {
+  border-radius: 999px;
+}
+.hero .actions a.primary {
+  background: var(--wg-accent);
+  border-color: var(--wg-accent);
+  color: light-dark(#ffffff, #1a1524);
+  font-weight: 600;
+}
+
+/* — Sidebar: rounded current-page pill, like game chips — */
+.sidebar-content a {
+  border-radius: 999px;
+}
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover {
+  background: var(--wg-accent);
+  color: light-dark(#ffffff, #1a1524);
+  font-weight: 600;
+}
+
+/* — Search button + panels pick up the surface language — */
+button[data-open-modal] {
+  border-radius: 999px;
+  background: var(--wg-tile);
+  border-color: transparent;
+}
+dialog[aria-label] {
+  border-radius: 1.25rem;
+  border-color: var(--wg-line);
+}
+
+/* — Content polish — */
+.sl-markdown-content img {
+  border-radius: 1.25rem;
+  border: 1px solid var(--wg-line);
+}
+.sl-markdown-content code:not(pre code) {
+  border-radius: 0.4rem;
+}
+.sl-markdown-content pre {
+  border-radius: 1rem;
+  border-color: var(--wg-line) !important;
+}
+.sl-markdown-content table code {
+  white-space: nowrap;
+}
+.sl-markdown-content th {
+  font-family: var(--wg-font-display);
 }
 
 /* Keep display math from overflowing on phones. */
