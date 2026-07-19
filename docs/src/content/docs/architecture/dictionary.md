@@ -27,3 +27,23 @@ The function `loadDictionary()` is in `src/lib/words/loader.ts`. It gets `dictio
 `DICT_VERSION` connects the saved days to their puzzles. The number is 15 at this time. Refer to [How daily puzzles work](/docs/games/daily-puzzles/) and [Data storage and streaks](/docs/architecture/persistence/).
 
 This is the rule: increase the number for each change to the puzzle calculation. Examples are a word list change, a generator change, and a seed change. If you do not increase the number, the saves do not agree with the puzzles. This defect is not easy to see.
+
+### The version history
+
+The rule is not abstract — the source file records every bump and its reason. The history doubles as the engineering diary of the games:
+
+| Version | Change |
+|---------|--------|
+| v2 | Two tiers: common REQUIRED words gate advancement; rarer BONUS words score extra. |
+| v3 | Puzzle staples (ode, …) enter the required tier whatever their frequency; mild words leave the blocklist. |
+| v4 | The Crosshatch generator never fully locks a line. Generator behavior counts as derivation, not only word lists. |
+| v5 | Crosshatch progress counts distinct words, not full frames. The band and the save shape changed with it. |
+| v6 | Buckets keep frequency order; Polygram sorts its own display lists. |
+| v7 | Subtitle name-junk blocked; everyday concrete words added; a cap on one Crosshatch line's share of a day. |
+| v8 | Mirror-word staples (dab) enter the required tier, so pairs like bad and dab play in Backwords. |
+| v9 | Junk reversals and name-palindromes (tae, nam, deb, …) blocked — Backwords must not teach non-words. |
+| v10 | Backwords palindrome prefix aliases: shadowed even palindromes (poop, peep) join the pool. |
+| v11 | Full Scrabble coverage: every valid word of 3 to 10 letters is now present; the rest become bonus words. |
+| v13 | doze, ooze, skied, misdeed, missive move to the required tier — players expect them. |
+| v14 | Crosshatch accepts bonus words; Polygram removes its per-level bonus cap. |
+| v15 | The 20-cell hard Doublet boards leave — their uniqueness verification froze mobile browsers. |

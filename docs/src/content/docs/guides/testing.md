@@ -46,3 +46,12 @@ The usual checks are:
 ## The color check
 
 Each new or changed color goes through `scripts/validate_palette.js`. The script calculates the contrast and the color vision safety. Do not examine colors with your eyes only.
+
+## Work on these documentation pages
+
+The documentation is its own small project in `docs/`:
+
+1. Do `cd docs`, then `npm ci`, then `npm run dev` for a local server.
+2. `npm run build` makes the static site. The site builds with the base path `/docs`.
+3. A push to `main` that touches `docs/**` starts the workflow `.github/workflows/docs.yml`. It publishes the build to GitHub Pages.
+4. `netlify.toml` proxies `wordgirl.net/docs/*` to that Pages deployment. Thus the docs live on the main domain with no DNS setup. The direct Pages address looks unstyled — that is expected, because the styles use the `/docs` base path.

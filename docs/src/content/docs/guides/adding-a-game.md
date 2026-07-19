@@ -28,7 +28,7 @@ Make the folder `src/games/<id>/`. Give it the subfolders `engine/`, `state/`, a
 
 ## Step 2: Add the game to the registry
 
-Add a `GameDefinition` item to `src/games/registry.ts`. The item contains the id, the name, the tagline, the `accentLevel` key, the page component, and the extra routes. The router finds the game automatically. Refer to the [architecture overview](/docs/architecture/overview/).
+Add a `GameDefinition` item to `src/games/registry.ts`. The item contains the id, the name, the tagline, `themeColor`, the `accentLevel` key, the page component, and the extra routes. The hub pieces from steps 7 to 9 also connect here: the trends page through `secondaryActions`, the status line through `Status`, and the preview art through `Preview`. The router finds the game automatically. Refer to the [architecture overview](/docs/architecture/overview/) for the full field list.
 
 ## Step 3: Add the accent color token
 
@@ -38,11 +38,11 @@ Add a `GameDefinition` item to `src/games/registry.ts`. The item contains the id
 
 ## Step 4: Connect the storage functions
 
-Use `createDailyPersistence`. The rules are on the [storage page](/docs/architecture/persistence/). Copy the start sequence from an available game. Obey these rules:
+Use `createDailyPersistence`. The rules are on the [storage page](/docs/architecture/persistence/). Copy the start sequence from an available game. A note on names: each game wraps the kit functions in its own `persistence.ts` with names such as `saveDailyProgress` and `loadStaleDailyProgress`, and its state hook adds `abandonSession()`. These wrappers live in the game folder, not in `src/lib/daily/`. Obey these rules:
 
 - Set `hydrated.current` in the async load function, not outside it.
 - If the save for today is old, copy `statsRecorded` from it. Do not use `recordStarted()`. If you do not obey this rule, the played count increases two times.
-- Use `updateStats` only after `saveDailyProgress` is complete.
+- Use `updateStats` only after the day save is complete.
 - The daily puzzle comes from the local date. The date does not change while the game is open.
 - The midnight margin applies only in daily mode. Set `allowGrace` to false for archive sessions.
 
@@ -56,7 +56,7 @@ Use the `GameArchive` component with a `GameArchiveConfig`. Do not make the page
 
 ## Step 7: Make the trends page
 
-Use `GameTrends` with a `solvedHour` metric. Put the page at the route `stats`. Add a "Stats" action to the game. Refer to [Charts](/docs/design/charts/).
+Use `GameTrends` with a `solvedHour` metric. Put the page at the route `stats`. Add a "Stats" item to the registry entry's `secondaryActions`. Refer to [Charts](/docs/design/charts/).
 
 ## Step 8: Make the hub card
 

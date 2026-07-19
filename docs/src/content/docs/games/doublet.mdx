@@ -10,17 +10,17 @@ import teaser from '../../../assets/doublet.png';
 
 <Image src={teaser} alt="Doublet — letter dominoes on a shaped board" width={480} />
 
-Doublet is a domino game. The game gives you dominoes with two letters. You put the dominoes on a board. Each line of two letters or more must make a word. Only one arrangement of the dominoes is correct.
+Doublet is a domino game. The game gives you dominoes with two letters. You put the dominoes on a board. Each line of two letters or more must make a word. Only one arrangement of the dominoes is correct. The small board you solve with your coffee is, formally, three famous search problems in one.
 
 ## How to play
 
-1. Move a domino to the board.
+1. Move a domino to the board. While you hold it, the target cells show a green tint for a possible position and a warning tint for an impossible position.
 2. Turn the domino if it is necessary. Each domino has four possible positions.
 3. Continue until all the lines make correct words.
 
-The game has three difficulty levels. Easy boards have 6 to 8 cells. Medium boards have 10 to 12 cells. Hard boards have 16 cells. Each board has an even number of cells. This condition is necessary for a full set of dominoes.
+You select the difficulty with the tabs at the top. Easy boards have 6 to 8 cells. Medium boards have 10 to 12 cells. Hard boards have 16 cells.
 
-Your rank increases at 25, 50, 75, and 100 percent of the dominoes. The ranks are Placed, Arranged, Fitted, and Solved.
+Your rank increases at 25, 50, 75, and 100 percent of the dominoes on the board. The ranks are Placed, Arranged, Fitted, and Solved.
 
 ## How the game makes a puzzle
 
@@ -49,15 +49,19 @@ The generator then tries the first board shape again with four times more time. 
 
 ## The mathematics
 
-### Three hard problems in one puzzle
+### Three search problems in one puzzle
 
-Each Doublet puzzle composes three problems that are hard in the general case:
+Each Doublet puzzle composes three search problems:
 
-1. **Crossword fill** is a constraint satisfaction problem. It is NP-hard in general.
-2. **The domino cut** is a perfect matching in the grid graph of the board. The cells are the nodes. Two adjacent cells make an edge. A perfect matching pairs all the nodes. An even number of cells is a necessary condition. Thus each board has an even count.
-3. **The uniqueness proof** examines all the possible placements. This count grows exponentially with the number of dominoes.
+1. **Crossword fill** is a constraint satisfaction problem. It is NP-hard in the general case.
+2. **The domino cut** is a perfect matching in the grid graph of the board. The cells are the nodes. Two adjacent cells make an edge. A perfect matching pairs all the nodes. This is the easy one of the three: perfect matching has a polynomial time algorithm in general graphs (Edmonds, 1965). The generator still uses a simple backtracking search, because the boards are tiny.
+3. **The uniqueness proof** examines all the possible placements. This count grows exponentially with the number of dominoes, and no shortcut is known.
 
 Small boards make all three problems fast. The largest board has 16 cells and 8 dominoes.
+
+### The checkerboard argument
+
+An even cell count is necessary for a domino cut, but it is not sufficient. Here is the sharper test. Color the cells like a chessboard. Every domino covers exactly one dark cell and one light cell. Thus a board with unequal color counts has no domino cut at all, whatever the cell count. This is the classic mutilated chessboard argument. A board shape that fails this test fails the tiling step on every try, and the generator moves to a new attempt.
 
 ### Symmetry elimination
 

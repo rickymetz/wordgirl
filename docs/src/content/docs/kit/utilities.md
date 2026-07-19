@@ -7,10 +7,10 @@ All these functions are in `src/lib/`. The storage functions have [their own pag
 
 ## Dates (`date.ts`, `useToday.ts`)
 
-The date key has the format `YYYY-MM-DD` in the local time zone. It identifies the daily puzzle. The date key does not change while the game is open.
+The date key has the format `YYYY-MM-DD` in the local time zone. It identifies the daily puzzle. Each game hook freezes its date key when the game opens — the key itself is live, the game session is not.
 
 - `localDateKey(date?)` gives the key for today.
-- `previousDateKey(key)` gives the key for the day before. It calculates from noon. Thus a clock change cannot cause an incorrect day.
+- `previousDateKey(key)` gives the key for the day before. It builds the date at noon, not midnight: `new Date(y, m - 1, d - 1, 12)`. The reason is daylight saving time. On a clock-change day, midnight arithmetic can land one hour into the neighbor day and skip or repeat a date. Noon is hours away from both edges, so the walk is safe.
 - `dateKeyRange(from, to)`, `formatDateKey`, `formatShareDate`, and `formatDuration` are format functions.
 - `useToday()` gives the live date key. It examines the date each minute. It also examines the date when the application comes to the front. Thus the hub changes at midnight.
 
@@ -26,7 +26,7 @@ The order of the random calls is frozen. Refer to [How daily puzzles work](/docs
 
 `useViewport()` gives `{ vw, vh, rem }` for board sizes:
 
-- `vh` is the window height minus the safe area. This is the available space.
+- `vh` is the window height minus the safe area. This is the available space. The subtraction is not decoration: in installed PWA mode the safe-area padding is real and large, approximately 93 pixels.
 - `rem` is the root font size. This is the text size setting. Multiply each pixel constant by `rem / 16`. Thus the boards change with the text size.
 
 ## Shares (`share.ts`)

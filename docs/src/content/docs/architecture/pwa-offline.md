@@ -23,7 +23,7 @@ The file `vite.config.ts` configures the vite-plugin-pwa module. The mode is `au
 
 ## Cache headers
 
-The file `netlify.toml` sets the cache times. The files in `/assets/` have names with a hash. Their cache time is one year. The files `index.html` and `sw.js` have no cache. Thus the worker sees each new deployment quickly.
+The file `netlify.toml` sets the cache times. The files in `/assets/` have names with a hash. Their cache time is one year. The files `index.html` and `sw.js` use `no-cache`: the browser can keep them, but it must revalidate them on each request. Thus the worker sees each new deployment quickly.
 
 ## Storage protection
 
