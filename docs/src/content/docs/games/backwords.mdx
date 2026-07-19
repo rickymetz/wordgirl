@@ -1,6 +1,6 @@
 ---
 title: Backwords
-description: Every word, a reflection — mirror pairs, palindromes, and the multiset-partition solver behind each day's letter bank.
+description: Put letters against a mirror. The mirror shows the remaining letters. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#a21caf, #e879f9); }`}</style>
@@ -10,74 +10,33 @@ import teaser from '../../../assets/backwords.png';
 
 <Image src={teaser} alt="Backwords — letter tiles placed against a mirror" width={480} />
 
-**Every word, a reflection.** Backwords gives you a bank of letters and a
-mirror. Place letters on the left; the mirror spells the rest. Empty the whole
-bank into valid rows and the day is done.
+Backwords is a mirror game. The game gives you a set of letters. You put letters on the left side of a mirror. The mirror shows the other letters. The day is complete when you use all the letters.
 
 ## How to play
 
-There are two kinds of row:
+There are two types of row:
 
-- **Pair** — a word whose reversal is *also* a word (like STOP / POTS). Place
-  one of them; its reflection appears on the other side. A pair consumes the
-  full word's letters, and either orientation is a valid placement.
-- **Palindrome** — a word that reads the same both ways (like LEVEL). You
-  place only the first half, $\lceil n/2 \rceil$ letters; the mirror
-  completes it. Odd-length palindromes put their middle letter *on* the
-  mirror line — a straddle row.
+- **Pair.** A pair is a word that makes a different word in the opposite direction. An example is STOP and POTS. Put one word on the board. The mirror shows the other word. A pair uses all the letters of the word. The two directions are correct.
+- **Palindrome.** A palindrome is a word that is the same in the two directions. An example is LEVEL. Put only the first half of the letters. The mirror completes the word. If the word has an odd number of letters, the center letter goes on the mirror line.
 
-Every day's bank decomposes in **more than one way**, and the ways differ in
-row count — so there's a real choice between a greedy decomposition and an
-efficient one.
+Each day, the set of letters has more than one correct solution. The solutions have different numbers of rows. Thus you have a real choice of strategy.
 
-The ✦ flourish marks a **glyph-true** row: one built only from letters whose
-uppercase shapes survive a real vertical mirror — A H I M O T U V W X Y — so
-a physical mirror would render exactly the reflection you see.
+Some rows have a star symbol. These rows use only letters that are symmetrical in a mirror. These letters are A, H, I, M, O, T, U, V, W, X, and Y. A real mirror shows these rows correctly.
 
-## Under the hood
+## How the game makes a puzzle
 
-### The lexicon
+The game first makes a word list from the usual dictionary words:
 
-`src/games/backwords/engine/lexicon.ts` scans the common dictionary tier
-once and builds a map from *placement string* to row definition:
+- The list contains each word that makes a different correct word in the opposite direction.
+- The list contains each palindrome. Short palindromes come first.
 
-- **Pairs**: every word whose reversal is a different valid word, entered
-  under both orientations.
-- **Palindromes**: entered by their placed half, shortest first, with
-  **prefix aliases** so typing past one palindrome's half can reach a longer
-  one (typing past POP's half "po" reaches POO and POOP).
+Each row has a cost. The cost is the set of letters that the row uses. The generator and the game use the same word list. Thus each puzzle has a solution with the same rules that you play with.
 
-Each row carries a `cost` — the sorted multiset of letters it consumes. The
-generator and the play-time validator share this lexicon, so any accepted
-puzzle is guaranteed solvable under exactly the player's rules.
+The generator makes the puzzle in these steps:
 
-### The solver: exact multiset partition
+1. The generator selects one pair with four letters or more. Thus each day has one large row.
+2. The generator adds random rows until the letter set has 8 to 12 letters.
+3. The generator finds all the solutions for the letter set. The maximum is 40 solutions. The search subtracts the cost of each row from the letter set. A solution is correct when the letter set becomes empty.
+4. The generator keeps the puzzle when two conditions are true. There are two solutions or more. And the solutions have two different row counts or more. The generator prefers three solutions or more. The maximum is 400 tries.
 
-Emptying the bank is an **unordered exact-cover problem over letter
-multisets**: pick a set of rows whose combined letter costs equal the bank
-exactly. That problem is NP-hard in general, but banks are small enough that
-exhaustive enumeration is instant.
-
-`solveBank` does a DFS over the lexicon in index order — recursing only
-forward from the current index, which makes solutions unordered and
-repetition-free by construction — subtracting each row's cost from the bank's
-letter counts and succeeding when the bank empties. With banks of at most 12
-letters and rows costing at least 2, recursion depth is bounded around 6.
-Enumeration caps at 40 solutions.
-
-### Generation
-
-Up to 400 attempts (`src/games/backwords/engine/generator.ts`):
-
-1. Seed with one pair costing **4+ letters**, so every day has a meaty row.
-2. Pad with random distinct lexicon items until the bank holds **8–12
-   letters**. (The band was tightened from 12–16 in v2: it cut staple
-   repetition sharply — the most common item appeared in 37% of days'
-   solution spaces instead of 52% — while keeping generation robust.)
-3. Solve the bank completely. Accept only if there are **at least 2 full
-   decompositions with at least 2 distinct row counts**; prefer days with 3+
-   solutions, keeping the first 2-solution candidate as a fallback.
-
-The shipped puzzle is just the bank plus metadata (`solutionCount`,
-`rowCounts`) — play-time validation is a lexicon lookup and multiset
-arithmetic.
+The puzzle contains only the letter set and some data about the solutions. When you play, the game examines your rows with the word list and simple letter counts. The code is in `src/games/backwords/engine/lexicon.ts` and `generator.ts`.

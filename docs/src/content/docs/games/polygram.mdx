@@ -1,6 +1,6 @@
 ---
 title: Polygram
-description: Spell your way from triangle to decagon — and the greedy growth algorithm that builds each day's polygon.
+description: Make words from the letters of a polygon. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#b91c1c, #f87171); }`}</style>
@@ -10,75 +10,43 @@ import teaser from '../../../assets/polygram.png';
 
 <Image src={teaser} alt="Polygram — a hexagon of letter tiles" width={480} />
 
-**Spell your way from triangle to decagon.** Polygram starts you with three
-letters arranged as a triangle. Find every 3-letter word those letters can
-spell (letters may be reused) and a fourth letter joins — the triangle becomes
-a square. Clear the square and it becomes a pentagon, and so on. A great day
-runs all the way to the 10-sided decagon.
+Polygram is a word game. You start with a triangle of three letters. You make words from these letters. When you find all the words, a new letter is added. The triangle becomes a square. The largest shape is a decagon with ten letters.
 
 ## How to play
 
-- The polygon's vertices are your letters. At a size-*n* level, every answer
-  is exactly *n* letters long and uses only those letters — repeats allowed.
-- Clear **all required words** at a level to advance. Bonus words (rarer
-  dictionary entries) count toward your score but aren't needed to advance.
-- Stuck? Reveal a hint letter — but each revealed letter **halves that word's
-  points** (it always stays worth at least 1).
-- Scoring: an un-hinted word is worth its length; clearing a level adds a
-  bonus equal to the level size. The maximum score assumes every required
-  *and* bonus word found with no hints — so 100% measures exhaustive
-  sweeping, not just advancement.
+1. Look at the letters on the polygon.
+2. Make a word that has the same number of letters as the polygon. You can use each letter more than one time.
+3. Find all the necessary words to go to the next level.
 
-## Under the hood
+Bonus words are unusual words. They increase your score. They are not necessary for the next level.
 
-The daily puzzle is built by **greedy incremental growth with rejection
-sampling** (`src/games/polygram/engine/generator.ts`).
+If you cannot find a word, you can show a hint letter. Each hint letter divides the points for that word by two. The minimum is one point.
 
-1. **Seed.** Pick a random 3-letter word from the dictionary and take its
-   distinct letters. If it has repeats, pad from a frequency-weighted pool
-   (`"eeeeaaaarrriii…"`) so common letters fill the gaps.
-2. **Check the triangle.** Enumerate every 3-letter word spellable from the
-   seed letters. The level must have 1–8 words, and every seed letter must
-   appear in at least one of them.
-3. **Grow.** For each size from 4 up to 10, shuffle the unused letters and
-   try them one at a time. A candidate letter is accepted if the extended
-   letter set yields a word count inside the level's band *and* the new
-   letter actually appears in at least one word at that level — every join
-   has to matter.
-4. **Accept or retry.** A finished attempt is kept only if it reaches at
-   least the pentagon (`MIN_MAX_LEVEL = 5`) and has at most 35 required
-   words total. Otherwise the generator throws the attempt away and starts
-   over — up to 300 times.
+Your score for a word is the number of its letters. Each level that you complete gives bonus points. The bonus is the number of letters in the level. The maximum score includes all necessary words and all bonus words without hints.
 
-The per-level word caps taper as the polygon grows, because "find ALL the
-words" is the advancement gate and long levels would become a slog:
+## How the game makes a puzzle
+
+The generator makes the puzzle in these steps:
+
+1. The generator selects a random word with three letters from the dictionary. The different letters of this word are the start letters. If the word has fewer than three different letters, the generator adds letters from a list of frequent letters.
+2. The generator finds all the words with three letters that the start letters can make. The triangle level must have between 1 and 8 words. Each start letter must be in one word or more.
+3. The generator tries to add one letter for each level from 4 to 10. A new letter is correct when two conditions are true. The number of words is in the limits for that level. And the new letter is in one word or more.
+4. The generator keeps the puzzle when two conditions are true. The puzzle has five levels or more. And the puzzle has a maximum of 35 necessary words. If not, the generator starts again. The maximum is 300 tries.
+
+The word limits for each level are in this table:
 
 | Level size | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |-----------|---|---|---|---|---|---|---|----|
-| Max words | 8 | 10 | 10 | 8 | 6 | 5 | 4 | 3 |
+| Maximum words | 8 | 10 | 10 | 8 | 6 | 5 | 4 | 3 |
 
-From the heptagon (7) up, levels also need at least **two** words — a
-single-word nonagon ("find exactly ECOSYSTEM from nine blanks") gives no
-partial traction.
+Levels 7 to 10 must have a minimum of two words. One word is not sufficient for these levels. The player gets no progress before the full word.
 
-### Why enumeration is fast
+## Why the word search is fast
 
-Every dictionary word carries a precomputed 26-bit **letter bitmask**. Testing
-whether a word is spellable from the puzzle's letter pool is a single AND:
+Each word in the dictionary has a mask of 26 bits. Each bit shows one letter of the alphabet. The game compares the mask of a word with the mask of the puzzle letters. This comparison is one AND operation:
 
-$$
-\text{spellable} \iff (\textit{wordMask} \;\&\; \lnot\,\textit{poolMask}) = 0
-$$
+```
+possible = (wordMask AND (NOT poolMask)) == 0
+```
 
-so enumerating a level is one linear scan over the length bucket with a
-constant-time test per word (`src/lib/words/dictionary.ts`).
-
-### Hint scoring
-
-Revealed letters halve a word's value repeatedly, flooring at 1:
-
-$$
-\text{points}(w, h) = \max\!\left(1,\; \left\lfloor \frac{|w|}{2^{h}} \right\rfloor\right)
-$$
-
-where $|w|$ is the word's length and $h$ the number of hint letters revealed.
+Thus the game can examine each word very quickly. The code is in `src/games/polygram/engine/generator.ts` and `src/lib/words/dictionary.ts`.

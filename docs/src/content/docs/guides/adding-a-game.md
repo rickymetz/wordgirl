@@ -1,71 +1,58 @@
 ---
-title: Adding a new game
-description: The 14-step checklist, narrated — from engine to hub card using the shared kit.
+title: How to add a new game
+description: The 14 steps from the engine to the hub card.
 ---
 
-Every game follows the same recipe. The kit does most of the work; a new
-game is mostly an engine, a reducer, and ~30-line configs for the shared
-pages.
+Each game follows the same procedure. The kit does most of the work. A new game is an engine, a reducer, and short configurations for the shared pages.
 
-## 1–2. Folder and registry
+## Steps 1 and 2: The folder and the registry
 
-Create `src/games/<id>/` with `engine/`, `state/`, `ui/` subdirectories, and
-add a `GameDefinition` entry to `src/games/registry.ts` — id, name, tagline,
-`accentLevel`, lazy `Page`, `extraRoutes`. The router picks it up
-automatically ([registry pattern](/docs/architecture/overview/)).
+1. Make the folder `src/games/<id>/` with the subfolders `engine/`, `state/`, and `ui/`.
+2. Add a `GameDefinition` item to `src/games/registry.ts`. The router finds the game automatically. Refer to the [architecture overview](/docs/architecture/overview/).
 
-## 3. Accent color
+## Step 3: The accent color
 
-Add a `[data-level="<id>"]` token block in `src/index.css` and scope every
-game surface with `data-level={accentLevel}`. Light-mode accent ~700-weight;
-see the [contrast rules](/docs/design/colors/).
+1. Add a `[data-level="<id>"]` token block in `src/index.css`.
+2. Set `data-level={accentLevel}` on each game surface.
+3. Make sure that the light mode accent is a dark tone. Refer to the [contrast rules](/docs/design/colors/).
 
-## 4–5. Persistence and clock
+## Steps 4 and 5: Storage and clock
 
-Wire `createDailyPersistence` — including the `loadStaleDailyProgress`
-fallback on hydration — and `useDailyClock` (never an inline timer). The
-patterns, guards, and streak rules are on the
-[persistence page](/docs/architecture/persistence/). Copy the hydration shape
-from an existing game hook; the subtle rules:
+Use `createDailyPersistence` and `useDailyClock`. Do not write your own timer. The rules are on the [storage page](/docs/architecture/persistence/). Copy the start sequence from an available game. Obey these rules:
 
-- Set `hydrated.current` *inside* the async hydration callback.
-- If today's save is stale, copy `statsRecorded` from it and skip
-  `recordStarted()` — otherwise played-days double-count.
-- Chain `updateStats` after `saveDailyProgress` completes.
-- Freeze the clock at the finish; `abandonSession()` before replay resets.
-- Daily puzzles derive from the local date, frozen per mount; the midnight
-  grace day applies only in daily mode (`allowGrace=false` for archive).
+- Set `hydrated.current` in the async load function, not outside it.
+- If the save for today is old, copy `statsRecorded` from it. Do not use `recordStarted()`. If you do not obey this rule, the played count increases two times.
+- Use `updateStats` only after `saveDailyProgress` is complete.
+- Stop the clock at the finish. Use `abandonSession()` before a replay reset.
+- The daily puzzle comes from the local date. The date does not change while the game is open. The midnight margin applies only in daily mode. Set `allowGrace` to false for archive sessions.
 
-## 6–9. The shared pages
+## Steps 6 to 9: The shared pages
 
-- **Archive**: render `GameArchive` with a `GameArchiveConfig` — never
-  hand-roll the page. ~30 lines; see any game's `ui/ArchivePage.tsx`.
-- **Trends**: `GameTrends` with a `solvedHour` metric, routed at `stats`.
-- **Hub card**: `GameStatus` with `loadState`/`loadStreak` loaders.
-- **Bento preview**: compose from `Tile mini` — see `BackwordsPreview` for
-  the idiom.
+- Archive: use the `GameArchive` component with a configuration. Do not make the page by hand. The configuration is approximately 30 lines.
+- Stats: use `GameTrends` with a `solvedHour` metric. Put the page at the route `stats`.
+- Hub card: use `GameStatus` with two load functions.
+- Hub art: make a small preview from `Tile` with the `mini` option. Refer to `BackwordsPreview`.
 
-## 10–12. Coach, share, replay
+## Steps 10 to 12: Instructions, share, and replay
 
-- How-to-play via `CoachSheet` with your `CoachRule[]`.
-- Share string ends with `SHARE_URL`; render via `ShareButton`, gated on
-  `dateKey` so practice mode never shares.
-- Replay gets a `ModalDialog` confirmation.
+- Show the instructions with `CoachSheet` and a list of `CoachRule` items.
+- End the share text with `SHARE_URL`. Use `ShareButton`. Do not permit shares in practice mode.
+- Show a `ModalDialog` confirmation before a replay.
 
-## 13. Tests
+## Step 13: Tests
 
-Three files minimum: `engine/*.test.ts` (pure logic, Node),
-`state/reducer.test.ts`, and `state/persistence.dom.test.ts` (jsdom). See
-[Testing & verification](/docs/guides/testing/).
+Make a minimum of three test files:
 
-## 14. Palette validation
+1. `engine/*.test.ts` for the pure logic. These tests operate in Node.
+2. `state/reducer.test.ts` for the state machine.
+3. `state/persistence.dom.test.ts` for the storage rules.
 
-Run `scripts/validate_palette.js` after adding the accent.
+Refer to [Tests and checks](/docs/guides/testing/).
 
-## Before merging
+## Step 14: The color check
 
-The pre-merge checklist in `CLAUDE.md` is the review gate — hydration
-ordering, clock `resetKey` coverage, stale-save fallback, SVG
-`preserveAspectRatio`, `rem/16` board scaling, pointer `preventDefault`,
-share gating, replay confirmation, `·` separators, no emoji in chrome, all
-three test files.
+Use `scripts/validate_palette.js` after you add the accent.
+
+## Before the merge
+
+The list in `CLAUDE.md` is the review gate. It contains the start sequence rules, the clock keys, the old save rule, the SVG settings, the board size rule, the pointer rules, the share rule, the replay confirmation, the separators, the emoji rule, and the three test files.

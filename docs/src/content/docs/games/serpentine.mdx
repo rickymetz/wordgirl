@@ -1,6 +1,6 @@
 ---
 title: Serpentine
-description: One continuous line — hidden poetry laid along a Hamiltonian path, generated with Warnsdorff's heuristic on king-move grids.
+description: Draw one continuous line through a grid to show a hidden poem. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#4d7c0f, #a3e635); }`}</style>
@@ -10,73 +10,35 @@ import teaser from '../../../assets/serpentine.png';
 
 <Image src={teaser} alt="Serpentine — a snaking path traced through a letter grid" width={480} />
 
-**One continuous line.** Serpentine hides a line of poetry in a grid of
-letters. Trace one continuous path — moving to any of the 8 surrounding
-cells, visiting every cell exactly once — and the path spells the line.
+Serpentine is a path game. A line of poetry is hidden in a grid of letters. You draw one continuous path through the grid. The path must go through each cell one time. The path shows the poem.
 
 ## How to play
 
-- Start anywhere the text starts and drag through adjacent cells
-  (diagonals count). Every live cell must be visited exactly once.
-- Two daily modes: **Haiku** (a short translated haiku) and **Poem** (a
-  longer English line). Both modes share the day's theme.
-- Any valid retracing counts — if the letters happen to permit a different
-  path that spells the same text, it's accepted
-  (`src/games/serpentine/engine/validation.ts` checks contiguity, no
-  revisits, and the spelled text — not the generator's own path).
+1. Start at the first letter of the text.
+2. Move to an adjacent cell. The eight cells around a cell are adjacent. Diagonal movement is permitted.
+3. Go through each cell one time.
 
-### The poetry
+The game has two modes each day. Haiku mode has a short Japanese poem in translation. Poem mode has a longer line from an English poem. The two modes have the same theme each day.
 
-Lines come from seven themed pools — water, creatures, sky, seasons, time,
-beauty, wind — all public domain: 76 haiku (Bashō, Issa, Buson, …) and 414
-English poem lines (Dickinson, Byron, Keats, Blake, Shakespeare, …). The
-daily seed indexes into the haiku list, which fixes the theme; a second
-seeded pick chooses the theme's English partner line.
+The game accepts each correct path. A correct path is continuous. It goes through each cell one time. And it shows the correct text. The check is in `src/games/serpentine/engine/validation.ts`.
 
-## Under the hood
+## The poems
 
-Laying text along a path that visits every cell exactly once is the
-**Hamiltonian path problem** — NP-complete in general. Serpentine makes it
-reliably fast with three ideas (`src/games/serpentine/engine/puzzles.ts`).
+The poems come from seven theme groups. The themes are water, creatures, sky, seasons, time, beauty, and wind. All the poems are in the public domain. There are 76 haiku from poets such as Basho, Issa, and Buson. There are 414 English lines from poets such as Dickinson, Byron, Keats, Blake, and Shakespeare.
 
-### 1. Shape the board first
+## How the game makes a puzzle
 
-- **`bestGrid(n)`**: for a text of $n$ letters, scan every grid up to 8×10
-  and minimize $10\cdot\textit{waste} + |\textit{rows}-\textit{cols}|$ —
-  fewest unused cells first, squarest second.
-- **`pickBlocked`**: remove the leftover cells, preferring **corners, then
-  edges, then interior**, so holes hug the boundary. A removal set is
-  accepted only if the remaining cells stay **8-connected** (BFS check) —
-  a disconnected board can't have a Hamiltonian path at all. 50 attempts,
-  else the grid stays rectangular.
+The generator makes the puzzle in these steps. The code is in `src/games/serpentine/engine/puzzles.ts`.
 
-### 2. Warnsdorff's heuristic
+1. The generator removes all the characters that are not letters. It counts the letters.
+2. The generator selects the best grid. It examines each grid to a maximum of 8 rows and 10 columns. The best grid has the fewest empty cells. When two grids are equal, the more square grid is better.
+3. The generator closes the empty cells. It closes corner cells first, then edge cells, then center cells. The open cells must stay connected. The generator examines the connection with a breadth-first search. The maximum is 50 tries.
+4. The generator makes the path. It starts at a random open cell. It always moves to the adjacent cell that has the fewest free adjacent cells. This method is the Warnsdorff rule. If the path stops before the last cell, the generator starts a new path. The maximum is 200 tries.
+5. If no path is found, the generator uses a simple alternative. This path goes through the rows in alternate directions. This path is always possible on these grids.
+6. The generator writes the letters of the poem along the path.
 
-`hamiltonianPath` generalizes **Warnsdorff's rule** (from the knight's-tour
-problem) to king moves: start at a random live cell and repeatedly step to
-the unvisited neighbor with the **fewest onward unvisited neighbors**,
-breaking ties randomly. The intuition: visit the cells most at risk of
-becoming unreachable first.
+A path through all the cells is a Hamiltonian path. This problem is difficult in general. But the Warnsdorff rule is almost always successful on these small grids. The diagonal movement makes many connections between cells. Thus a path is almost always possible.
 
-There is no backtracking — a dead end just triggers a restart with a new
-random start, up to 200 attempts. The random tie-break is what makes
-restarts diverge. On dense king-move graphs of ≤ 80 cells this succeeds with
-high probability almost immediately.
+## Versions
 
-### 3. A constructive fallback
-
-If all 200 attempts fail, a **boustrophedon** path (row by row, alternating
-direction, skipping blocked cells) is used instead — validated for
-adjacency, and guaranteed to work on the near-rectangular boards the blocker
-produces. Generation can therefore never hang.
-
-The poem's letters are then written along the path into the grid, and the
-puzzle ships.
-
-### Versioning
-
-Serpentine is the one game with no dictionary, so it doesn't carry
-`DICT_VERSION`; it versions its derivation through the seed instead —
-`serpentine:v2:daily:<difficulty>:<dateKey>` (`SEED_VERSION = 2` in
-`engine/dailySeed.ts`). Every pool entry's connectivity is regression-tested
-in `puzzles-connectivity.test.ts`.
+Serpentine does not use the dictionary. Thus it does not use the dictionary version number. The seed text contains the version number. An example is `serpentine:v2:daily:haiku:2026-07-19`. Tests make sure that the letters of each poem stay connected on the grid.

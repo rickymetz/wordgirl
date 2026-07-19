@@ -1,63 +1,48 @@
 ---
-title: Testing & verification
-description: The vitest projects, per-game test conventions, and the house verification procedure.
+title: Tests and checks
+description: The test projects, the file rules, and the check procedure.
 ---
 
-## Test projects
+## The test projects
 
-Vitest is configured with two projects in `vite.config.ts`:
+The file `vite.config.ts` configures Vitest with two projects:
 
-| Project | Pattern | Environment |
-|---------|---------|-------------|
-| `unit` | `src/**/*.test.ts` (excluding `*.dom.test.ts`) | Node |
+| Project | Files | Environment |
+|---------|-------|-------------|
+| `unit` | `src/**/*.test.ts`, without `*.dom.test.ts` | Node |
 | `dom` | `src/**/*.dom.test.ts` | jsdom |
 
-Engines are pure TypeScript, so their tests run in plain Node — fast and
-deterministic. DOM tests cover what actually needs a browser-ish
-environment: localStorage round-trips, persistence guards, reducer state
-machines. There are deliberately no React component tests; testing focuses
-on engines and state.
+The engines are pure TypeScript. Their tests operate in Node. These tests are fast. The DOM tests examine the parts that need a browser environment. Examples are localStorage, the storage rules, and the reducers. There are no React component tests. The tests examine the engines and the state.
 
-## Per-game conventions
+## The file rules for each game
 
-Every game ships three test files minimum:
+Each game has a minimum of three test files:
 
-- `engine/*.test.ts` — generation, validation, scoring. Generator tests
-  sweep many seeds and assert the quality gates hold (word-count bands,
-  solution counts, connectivity).
-- `state/reducer.test.ts` — the state machine.
-- `state/persistence.dom.test.ts` — save/load guards, stale-save handling,
-  streaks.
+1. `engine/*.test.ts` examines the generator, the checks, and the scores. The generator tests use many seeds. They make sure that the quality limits hold.
+2. `state/reducer.test.ts` examines the state machine.
+3. `state/persistence.dom.test.ts` examines the save rules, the old save rule, and the streaks.
 
-Kit tests live beside their modules: `lib/date.test.ts`,
-`lib/random.test.ts`, `lib/storage/storage.dom.test.ts`,
-`lib/words/dictionary.test.ts`.
+The kit tests are adjacent to their modules. Examples are `lib/date.test.ts`, `lib/random.test.ts`, and `lib/words/dictionary.test.ts`.
 
 ## The gate
 
-**`npx vitest run` and `npm run build` must pass before any commit.** CI
-(`.github/workflows/ci.yml`) runs exactly that on Node 22 for pushes and
-PRs.
+`npx vitest run` and `npm run build` must be successful before each commit. The CI does the same steps on Node 22. Refer to `.github/workflows/ci.yml`.
 
-## UI verification
+## The UI checks
 
-For UI changes, drive the real production build, not the dev server:
+For UI changes, examine the real production build. Do not examine only the development server.
 
-1. `npm run build && npm run preview` (port 4173).
-2. Automate with playwright-core scripts (import from
-   `node_modules/playwright-core/index.mjs`, Chromium at a preinstalled
-   executable path).
+1. Do `npm run build` and then `npm run preview`. The port is 4173.
+2. Control the browser with playwright-core scripts. Import from `node_modules/playwright-core/index.mjs`. Use the installed Chromium.
 
-House checks:
+The usual checks are:
 
-- **No-scroll** at default text size, Huge text, and simulated notch
-  insets.
-- Accessibility focus paths (dialogs, `data-autofocus`, focus restore).
-- Settings, and the service-worker update flow.
-- A smoke run per game.
-- **Screenshots in both themes at 390×844** for anything visual.
+- No page scroll. Examine the default text size, the largest text size, and a screen with a notch.
+- The focus paths for accessibility. Examine the dialogs, `data-autofocus`, and the focus return.
+- The settings and the service worker update sequence.
+- One short play in each game.
+- Screen captures in the light theme and the dark theme at 390 by 844 pixels.
 
-## Palette validation
+## The color check
 
-Any new or changed color runs through `scripts/validate_palette.js` —
-contrast and color-vision checks are computed, never eyeballed.
+Each new or changed color goes through `scripts/validate_palette.js`. The script calculates the contrast and the color vision safety. Do not examine colors with your eyes only.

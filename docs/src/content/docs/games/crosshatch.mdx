@@ -1,6 +1,6 @@
 ---
 title: Crosshatch
-description: Every way the words fit — a crossword frame where the goal is every valid filling, built as a constraint-satisfaction problem.
+description: Find all the words that agree with a crossword frame. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#0c7d84, #3ddbd9); }`}</style>
@@ -10,69 +10,33 @@ import teaser from '../../../assets/crosshatch.png';
 
 <Image src={teaser} alt="Crosshatch — a small crossword frame with given letters" width={480} />
 
-**Every way the words fit.** Crosshatch shows a small crossword frame with a
-few letters already placed. Unlike a normal crossword, there isn't one answer:
-many different word combinations fit the frame, and your goal is to discover
-**every word** that appears in *any* valid filling.
+Crosshatch is a crossword game. The game shows a small crossword frame. Some letters are given. Many different sets of words agree with the frame. Your goal is to find all the words that are possible.
 
 ## How to play
 
-- Fill the frame so that every line spells a dictionary word consistent with
-  the given letters, then submit. A valid grid **banks every new word in
-  it** — the unit of progress is the distinct word, not the full grid, so you
-  never re-submit near-identical grids just to sweep a cross-product.
-- Words can't repeat within one grid (crossword convention).
-- The day counts as **solved at 90%** of the distinct words — with always at
-  least two words of slack. Finding 100% is the flex above it, so one elusive
-  word never breaks a streak.
+1. Put letters in the frame. Each line must make a word from the dictionary.
+2. Make sure that the words agree with the given letters.
+3. Send the completed frame. The game keeps each new word from the frame.
 
-The exact target (`src/games/crosshatch/engine/scoring.ts`):
+A word cannot occur two times in one frame. Progress counts words, not frames. Thus you do not send almost equal frames again and again.
 
-$$
-\text{target}(n) = \max\!\Big(1,\; \min\big(\lceil 0.9\,n \rceil,\; n-2\big)\Big)
-$$
+The day is complete when you find 90 percent of the words. There is always a margin of two words or more. Thus one difficult word cannot stop your streak. The formula for the target is:
 
-The $n-2$ clamp exists because a plain ceiling made "90%" mean "all but one"
-on every 10–19-word day.
+```
+target = max(1, min(ceil(0.9 * total), total - 2))
+```
 
-## Under the hood
+## How the game makes a puzzle
 
-Crossword filling is NP-hard in general. Crosshatch keeps it fast with tiny
-hand-designed frames and classic CSP machinery
-(`src/games/crosshatch/engine/generator.ts`).
+The game has eight frame shapes: h, ring, comb, rake, stairs, cross, lattice, and zipper. Each shape has 3 to 5 word slots. Each slot has 3 to 5 letters. All the shapes are in a grid of 5 by 5 cells. The list of shapes is frozen. The daily number points into this list.
 
-### The shape library
+The generator makes the puzzle in these steps:
 
-Eight hand-designed skeletons — *h, ring, comb, rake, stairs, cross, lattice,
-zipper* — each with 3–5 interlocking slots of 3–5 letters inside a 5×5 grid
-(kept small for tappability on phones). The array's order and contents are
-frozen: daily seeds index into it, so any edit would silently reshuffle
-history.
+1. The generator selects a shape. Then it fills the shape with words. It fills the slot with the fewest possible words first. It examines a maximum of 40 words for each slot.
+2. The generator puts one given letter in each slot. A given letter must not complete a slot.
+3. The generator finds all the sets of words that agree with the given letters. The maximum is 200 sets. More than 200 sets shows that the frame is too open.
+4. The generator adds more given letters until the puzzle is correct. A correct puzzle has 10 to 22 different words. A maximum of one slot can have only one word. No slot can have more than 8 words. If the puzzle is not correct after 6 more letters, the generator starts again. The maximum is 300 tries.
 
-### Generation: seed a solution, then tighten
+## Why the answer check is fast
 
-1. **Random fill.** Find one complete valid filling by backtracking with the
-   **most-constrained-variable (MRV)** heuristic — always fill the slot with
-   the fewest candidates next — sampling only 40 shuffled candidates per slot
-   to keep runtime flat. Candidate lookup uses a memoized positional index,
-   `(length, position, letter) → words`: intersect constraints by scanning the
-   *smallest* matching list and filter-checking the rest.
-2. **Minimal givens.** Place one given letter per slot (a shared cell can
-   cover two slots), guarded so no given ever completes a line outright.
-3. **Enumerate everything.** An exhaustive DFS (`enumerateCombos`) lists
-   *every* filling consistent with the givens, MRV-ordered, no word reused
-   across slots, capped at `ENUM_CAP = 200` — past that the grid is too loose
-   to be a puzzle.
-4. **Tighten.** While the enumeration hits the cap, the distinct-word count
-   exceeds 22, or any single slot admits more than 8 words, add another given
-   — preferentially inside the "fattest" slot — up to 6 extras. Accept when
-   the day lands at **10–22 distinct words** with at most one fully-locked
-   slot. Over-tightened attempts are discarded; the generator retries up to
-   300 times.
-
-### Why play-time validation is free
-
-The full combo list ships inside the puzzle object (it's regenerated from the
-seed, never persisted). Checking a submitted grid is just a lookup against
-the enumerated solution space — the expensive search all happened once, at
-generation time.
+The puzzle object contains the full list of word sets. The game makes this list one time. When you send a frame, the game compares it with the list. This comparison is fast. The game does not do a search when you play. The code is in `src/games/crosshatch/engine/generator.ts` and `shapes.ts`.

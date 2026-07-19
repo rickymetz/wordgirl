@@ -1,82 +1,55 @@
 ---
-title: Persistence & streaks
-description: Namespaced storage, the shared daily-persistence recipe, save guards, streak math, and the active-time clock.
+title: Data storage and streaks
+description: All the games save data with the same shared functions.
 ---
 
-All five games persist through one shared recipe. If you're adding a game,
-you use these pieces — never hand-rolled localStorage.
+All five games save data with one shared set of functions. A new game must use these functions. Do not write localStorage code in a game.
 
-## Namespaced storage
+## Storage with a namespace
 
-`createGameStore(gameId)` (`src/lib/storage/createGameStore.ts`) wraps a
-`StorageAdapter` (async `get`/`set`/`remove`/`keys`) and namespaces every
-key as:
+The function `createGameStore(gameId)` is in `src/lib/storage/createGameStore.ts`. It gives a store with the functions `get`, `set`, `remove`, and `keys`. Each key gets this prefix:
 
 ```
 wg:v1:local:<gameId>:<key>
 ```
 
-The `local` segment is `PROFILE_ID` — the seam where a future signed-in
-profile would slot in for cloud sync. The default adapter is JSON over
-localStorage; corrupt reads return `null`, and failed writes dispatch a
-`wg:storage-error` event that `useStorageBroken()` surfaces in the UI.
+The part `local` is the profile id. A future account function can replace it. The store writes JSON to localStorage. A read of unserviceable data gives `null`. A failed write sends the event `wg:storage-error`. The hook `useStorageBroken()` receives this event.
 
-## The daily persistence recipe
+## The daily storage functions
 
-`createDailyPersistence({ gameId, emptyStats, validDay, … })`
-(`src/lib/daily/persistence.ts`) returns everything a daily game needs:
-`loadDay`, `loadStaleDay`, `saveDay`, `loadStats`, `updateStats`,
-`recordStarted`, `loadCoachSeen`, `markCoachSeen`.
+The function `createDailyPersistence()` is in `src/lib/daily/persistence.ts`. It gives all the functions for a daily game: `loadDay`, `loadStaleDay`, `saveDay`, `loadStats`, `updateStats`, `recordStarted`, `loadCoachSeen`, and `markCoachSeen`.
 
-Day saves live at `daily:<dateKey>` and extend `DailyBase`:
+The day data extends `DailyBase`:
 
 ```ts
 { dateKey, dictVersion, solved, elapsedMs, statsRecorded? }
 ```
 
-### Save guards (`saveDay`)
+### Protection rules for saveDay
 
-- A save stamped with a **newer `dictVersion` is never clobbered** by an
-  older one (two tabs on different deploys).
-- A **solved save is final** — nothing overwrites it.
-- Games can veto unsolved writes via `allowUnsolvedWrite` (the multi-tab
-  guard).
+- A save with a newer dictionary version stays. An older save cannot replace it. This condition occurs with two open tabs on different versions.
+- A solved save is final. No save can replace it.
+- A game can refuse saves of days that are not solved. This option is the multi-tab protection.
 
-### Stale saves
+### Old saves
 
-`loadDay` hides saves whose `dictVersion` doesn't match the current
-dictionary — the puzzle they belong to no longer exists. `loadStaleDay`
-returns exactly those. The hydration rule every game follows: if `loadDay`
-is null but a stale save exists, the day was **already counted** — copy its
-`statsRecorded` and skip `recordStarted()`, or the played count
-double-increments.
+The function `loadDay` does not show saves with a different dictionary version. The puzzle for such a save is not available now. The function `loadStaleDay` shows only these old saves. Each game applies this rule at the start: if `loadDay` gives null and an old save exists, the day already counted. Copy `statsRecorded` from the old save. Do not use `recordStarted()`. If you do not obey this rule, the played count increases two times.
 
-### Stats
+### Statistics
 
-Stats extend `StreakStats`
-(`played, solved, currentStreak, bestStreak, lastSolvedDate`), are merged
-over defaults on load (new fields ship safely), and `updateStats` is
-serialized behind an internal promise lock — always chain it *after*
-`saveDay` completes.
+The statistics extend `StreakStats`: played, solved, currentStreak, bestStreak, and lastSolvedDate. A load mixes the data with the default values. Thus new fields are safe. The function `updateStats` uses a lock. Always use `updateStats` after `saveDay` is complete.
 
-## Streak math
+## Streak rules
 
-- `countsAsToday(dateKey, allowGrace)` — a solve counts for the streak if
-  it's today, or yesterday **within the midnight grace window** — but grace
-  applies only to daily sessions (`allowGrace=false` for archive replays).
-- `streakAdvance(stats, dateKey, allowGrace)` computes the streak delta for
-  a solve.
-- `displayStreak(stats, today?)` — anything that *shows* a streak calls
-  this; it zeroes a lapsed streak instead of showing a stale count.
+- The function `countsAsToday(dateKey, allowGrace)` examines a solve for the streak. A solve counts on the same day. A solve for yesterday counts in the short time after midnight. This margin applies only to daily sessions. Set `allowGrace` to false for archive sessions.
+- The function `streakAdvance()` calculates the streak change for a solve.
+- The function `displayStreak()` gives the streak for the screen. It gives zero for a streak that stopped. Always use this function to show a streak.
 
-## The active-time clock
+## The clock
 
-`useDailyClock({ flush, resetKey })` (`src/lib/daily/useDailyClock.ts`)
-measures **active time only**:
+The hook `useDailyClock()` is in `src/lib/daily/useDailyClock.ts`. It measures only active time:
 
-- Banks elapsed time on `visibilitychange`; backgrounded time doesn't count.
-- Flushes saves on hide, `pagehide`, and unmount, so closing the tab
-  mid-puzzle loses nothing.
-- `freeze()` stops the clock at the solve (idempotent); hydrating an
-  already-solved day keeps the saved time verbatim.
-- `resetKey` re-arms everything when the dateKey or difficulty changes.
+- The clock stops when the application goes to the background.
+- The clock writes the saves when the page hides, closes, or unmounts. Thus you do not lose progress.
+- The function `freeze()` stops the clock at the solve. A day that is already solved keeps its saved time.
+- The option `resetKey` prepares the clock again when the date or the difficulty changes.
