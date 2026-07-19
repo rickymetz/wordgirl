@@ -16,15 +16,11 @@ Crosshatch is a crossword game. The game shows a small crossword frame. Some let
 
 1. Put letters in the frame. Each line must make a word from the dictionary.
 2. Make sure that the words agree with the given letters.
-3. Send the completed frame. The game keeps each new word from the frame.
+3. Submit the completed frame. The game keeps each new word from the frame.
 
-A word cannot occur two times in one frame. Progress counts words, not frames. Thus you do not send almost equal frames again and again.
+A word cannot occur two times in one frame. Progress counts words, not frames. One good frame can bank several words at one time, so you never have to re-enter almost equal frames.
 
-The day is complete when you find 90 percent of the words. There is always a margin of two words or more. Thus one difficult word cannot stop your streak. The formula for the target is:
-
-```
-target = max(1, min(ceil(0.9 * total), total - 2))
-```
+The day is complete when you find 90 percent of the words, with a margin of two words or more. Thus one difficult word cannot stop your streak. The exact formula is in [The mathematics](#the-mathematics) below.
 
 ## How the game makes a puzzle
 
@@ -53,11 +49,11 @@ Crosshatch is a constraint satisfaction problem (CSP):
 - One constraint applies at each shared cell: the two words must have the same letter there.
 - One global constraint applies: a word cannot occur two times in one frame.
 
-Crossword fill is NP-hard in the general case. The search space for one frame is large. A frame with four slots and 1,000 possible words for each slot has $1000^4 = 10^{12}$ combinations. Two properties keep the problem small here. The frames are small and frozen. The search fills the most constrained slot first (the MRV heuristic). This order finds conflicts early and cuts the search tree.
+Crossword fill is NP-hard in the general case. The search space for one frame is large. A frame with four slots and 1,000 possible words for each slot has $1000^4 = 10^{12}$ combinations — one trillion. The game examines your frame instantly because it did the hard thinking before you woke up. Two properties keep the generation fast. The frames are small and frozen. The search fills the most constrained slot first (the MRV heuristic). This order finds conflicts early and cuts the search tree.
 
 ### The solution space
 
-The generator counts the full solution space with an exhaustive search. The count of word sets must stay below 200. This limit is a bound on the entropy of the frame. A frame with too many solutions gives the player no information from the given letters. The given letters reduce the space step by step. Each added letter divides the possible sets.
+The generator counts the full solution space with an exhaustive search. The count of word sets must stay below 200. This limit bounds the number of solutions, and thus the information in the frame: at most $\log_2 200 \approx 7.6$ bits separate the given letters from a full answer. A frame with too many solutions gives the player no traction. The given letters shrink the space step by step. Each added letter removes the word sets that disagree with it.
 
 ### The target formula
 

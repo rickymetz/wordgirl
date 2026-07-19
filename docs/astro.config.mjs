@@ -37,14 +37,15 @@ export default defineConfig({
             { label: "Doublet", slug: "games/doublet" },
             { label: "Serpentine", slug: "games/serpentine" },
             { label: "How daily puzzles work", slug: "games/daily-puzzles" },
+            { label: "Streaks, modes, and the app", slug: "games/player-guide" },
           ],
         },
         {
           label: "Architecture",
           items: [
             { label: "Overview", slug: "architecture/overview" },
-            { label: "PWA & offline", slug: "architecture/pwa-offline" },
-            { label: "Persistence & streaks", slug: "architecture/persistence" },
+            { label: "PWA and offline", slug: "architecture/pwa-offline" },
+            { label: "Data storage and streaks", slug: "architecture/persistence" },
             { label: "The dictionary", slug: "architecture/dictionary" },
           ],
         },
@@ -52,22 +53,22 @@ export default defineConfig({
           label: "Game Kit",
           items: [
             { label: "Components", slug: "kit/components" },
-            { label: "Hooks & utilities", slug: "kit/utilities" },
+            { label: "Hooks and utilities", slug: "kit/utilities" },
           ],
         },
         {
           label: "Design System",
           items: [
-            { label: "Color & theming", slug: "design/colors" },
-            { label: "Layout, motion & type", slug: "design/layout-motion" },
+            { label: "Color and themes", slug: "design/colors" },
+            { label: "Layout, motion, and text", slug: "design/layout-motion" },
             { label: "Charts", slug: "design/charts" },
           ],
         },
         {
           label: "Guides",
           items: [
-            { label: "Adding a new game", slug: "guides/adding-a-game" },
-            { label: "Testing & verification", slug: "guides/testing" },
+            { label: "How to add a new game", slug: "guides/adding-a-game" },
+            { label: "Tests and checks", slug: "guides/testing" },
           ],
         },
       ],

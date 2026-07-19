@@ -16,9 +16,19 @@ WordGirl is one application. It uses React 19, TypeScript, and Vite. Each game i
 
 ## The registry
 
-The file `src/games/registry.ts` is the list of games. Each item is a `GameDefinition`. It contains the id, the name, the tagline, the accent key, the page component, and the extra routes. The extra routes are practice, archive, stats, and archive replay. The router makes the routes from this list. To add a game to the router, you add one item to the registry.
+The file `src/games/registry.ts` is the list of games. Each item is a `GameDefinition` (`src/games/types.ts`) with these fields:
 
-Each game is one separate code chunk. The hub does not load game code. The game code loads when you open the game. After a new deployment, an old chunk address can be incorrect. The `RouteError` component finds this condition. It loads the page again one time.
+- `id`, `name`, `tagline` — identity; the id is also the storage namespace and the route segment.
+- `themeColor` — the hub card accent.
+- `accentLevel` — the `data-level` palette key.
+- `Preview` — the small art component on the hub card.
+- `Status` — optional; the date and play-state line on the hub card.
+- `Page` and `extraRoutes` — the lazy page components. The extra routes are practice, archive, stats, and archive replay.
+- `secondaryActions` — optional small hub tiles, for example the "Stats" entry.
+
+The router makes the routes from this list. To add a game to the router, you add one item to the registry.
+
+Each game is one separate code chunk. The hub does not load game code. The game code loads when you open the game. After a new deployment, an old chunk address can point at a file that no longer exists. The `RouteError` component finds this exact race — a cached page requests a chunk the new deployment replaced — and loads the page again. A sessionStorage flag limits this to one reload, so a truly broken build cannot cause a reload loop.
 
 ## One game folder
 

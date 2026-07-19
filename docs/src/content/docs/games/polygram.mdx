@@ -18,7 +18,7 @@ Polygram is a word game. You start with a triangle of three letters. You make wo
 2. Make a word that has the same number of letters as the polygon. You can use each letter more than one time.
 3. Find all the necessary words to go to the next level.
 
-Bonus words are unusual words. They increase your score. They are not necessary for the next level.
+Bonus words are unusual words from the rarer dictionary tier. They increase your score. They are not required for the next level, but they help in one more way: when your core finds plus bonus finds reach the level's word count, the game offers a skip to the next level.
 
 If you cannot find a word, you can show a hint letter. Each hint letter divides the points for that word by two. The minimum is one point.
 
@@ -71,6 +71,8 @@ Here $|w|$ is the number of letters in the word. $h$ is the number of hint lette
 
 ### The search method
 
-The generator is a greedy hill climber. It adds one letter at each step. It never removes a letter. A bad letter sequence fails the quality limits. Then the full puzzle is rejected, and a new random start begins. This method is rejection sampling. It is simple and fast because each single test is cheap.
+The generator is a greedy hill climber. It adds one letter at each step. It never removes a letter. A bad letter sequence fails the quality limits. Then the full puzzle is rejected, and a new random start begins. This method is rejection sampling. One honest note: the accepted puzzles are not uniformly distributed — they inherit the bias of the greedy growth. That is acceptable. The game needs the same puzzle on each device, not a uniform one.
 
-The level limits also have a mathematical purpose. The number of possible words grows with the number of letters. The limits keep each level small. Thus the task "find all the words" stays possible for a person, not only for a computer.
+### A counting argument
+
+Why do the level caps exist? Count the candidates. A level of size $n$ builds words from $k$ puzzle letters, with repeats permitted. There are $k^n$ possible strings. For the decagon, $k = n = 10$, so there are $10^{10}$ strings — ten billion. The dictionary bucket for length 10 holds only a few thousand words, and only the words whose masks fit the puzzle survive. The caps table on this page is the designer's answer to this growth: as $n$ rises, the permitted word count falls, from 8 words at the triangle to 3 at the decagon. The computer can sweep ten billion strings. You cannot. The caps keep the game on your side of that line.

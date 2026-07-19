@@ -12,25 +12,25 @@ import teaser from '../../../assets/serpentine.png';
 
 Serpentine is a path game. A line of poetry is hidden in a grid of letters. You draw one continuous path through the grid. The path must go through each cell one time. The path shows the poem.
 
+## The hidden poems
+
+Almost 500 poems are hidden in this game. The poems come from seven theme groups: water, creatures, sky, seasons, time, beauty, and wind. All the poems are in the public domain. There are 76 haiku from poets such as Basho, Issa, and Buson. There are 414 English lines from poets such as Dickinson, Byron, Keats, Blake, and Shakespeare. The haiku and the poem of one day always share a theme. This is intentional — the two modes rhyme with each other.
+
 ## How to play
 
-1. Start at the first letter of the text.
-2. Move to an adjacent cell. The eight cells around a cell are adjacent. Diagonal movement is permitted.
-3. Go through each cell one time.
+The game shows the title of the poem and its poet. The text itself shows as `?` marks. Each letter appears when your path reaches it.
 
-The game has two modes each day. Haiku mode has a short Japanese poem in translation. Poem mode has a longer line from an English poem. The two modes have the same theme each day.
+1. Put your finger on a cell and drag through adjacent cells. The eight cells around a cell are adjacent. Diagonal movement is permitted.
+2. Go through each cell one time.
+3. Use Undo to remove the last steps. Use Clear to start again. Use Hint when you cannot find the next step.
+
+The game has two modes each day. Haiku mode has a short Japanese poem in translation. Poem mode has a longer line from an English poem.
 
 The game accepts each correct path. A correct path obeys three rules:
 
 - The path is continuous.
 - The path goes through each cell one time.
 - The path shows the correct text.
-
-The check is in `src/games/serpentine/engine/validation.ts`.
-
-## The poems
-
-The poems come from seven theme groups. The themes are water, creatures, sky, seasons, time, beauty, and wind. All the poems are in the public domain. There are 76 haiku from poets such as Basho, Issa, and Buson. There are 414 English lines from poets such as Dickinson, Byron, Keats, Blake, and Shakespeare.
 
 ## How the game makes a puzzle
 
@@ -45,27 +45,31 @@ The generator makes the puzzle in these steps. The code is in `src/games/serpent
 
 ## The mathematics
 
+The rule that draws your path was invented in 1823 to help a chess knight tour the board. The same trick threads a haiku through your grid. The check is in `src/games/serpentine/engine/validation.ts`; the generator is in `puzzles.ts`.
+
 ### The path is a Hamiltonian path
 
-A path through all the cells, one time each, is a Hamiltonian path. The decision problem "does this graph have a Hamiltonian path?" is NP-complete. A general algorithm with a time guarantee is not known.
+A path through all the cells, one time each, is a Hamiltonian path. The decision problem "does this graph have a Hamiltonian path?" is NP-complete. This is true even on grid graphs (Itai, Papadimitriou, and Szymanski, 1982). An algorithm with a polynomial time guarantee is not known.
+
+But there is a tension here. On a full rectangular grid with king moves, a Hamiltonian path always exists. The proof is one line: go through the rows in alternate directions. Thus all the possible difficulty of this puzzle family lives in the blocked cells. The generator knows this. It blocks corner cells and edge cells first, so the easy structure survives.
 
 ### Why the grid makes it easy
 
-The grid is a king graph. The name comes from the chess king. Each cell connects to the eight cells around it. An interior cell has degree 8. This graph is much denser than a grid with only four directions. On dense graphs of this size, a maximum of 80 cells, a random search finds a Hamiltonian path with high probability.
+The grid is a king graph. The name comes from the chess king. Each cell connects to the eight cells around it. An interior cell has degree 8. This graph is much denser than a grid with only four directions. On graphs this dense and this small, a maximum of 80 cells, the guided search below almost always finds a path in a few walks. The limit of 200 walks is a safety margin, not an expectation.
 
 ### The Warnsdorff rule
 
-The path search is a greedy walk with one rule. From the current cell $v$, go to the free adjacent cell $u$ with the fewest free adjacent cells:
+The path search is a greedy walk with one rule. Let $F$ be the set of cells that the path has not visited. Let $N(v)$ be the king neighbors of the cell $v$. From the current cell $v$, the walk moves to:
 
 $$
-u = \arg\min_{u \in N(v),\ u \text{ free}} \big|\, N(u) \cap \text{free} \,\big|
+u^{*} = \arg\min_{u \,\in\, N(v) \cap F} \big|\, N(u) \cap F \,\big|
 $$
 
-The idea: go to the cells that are almost isolated first. A cell with few free connections becomes unreachable easily. The rule comes from the knight's tour problem (Warnsdorff, 1823). The search has no backtracking. A dead end starts a new walk from a new random cell. The random tie decision makes each new walk different.
+In words: go to the neighbor with the fewest free neighbors. The idea: visit the almost isolated cells first, because they become unreachable easily. The rule comes from the knight's tour problem (Warnsdorff, 1823). The search has no backtracking. A dead end starts a new walk from a new random cell. The random tie decision makes each new walk different.
 
-### The guaranteed alternative
+### The alternative path
 
-If 200 walks fail, the generator makes a boustrophedon path. The path goes through row 1 to the right, row 2 to the left, and so on. Each step in this path is a king move. Thus the path is correct by construction on these boards. The generator cannot fail.
+If 200 walks fail, the generator makes a boustrophedon path. The path goes through row 1 to the right, row 2 to the left, and so on. Each step is a king move when every blocked cell touches the start or the end of its row. The corner-first blocking procedure aims for exactly this condition. The generator does not assume it. It examines each step of the alternative path, and it stops with an error if a blocked cell in the middle of a row breaks the chain. Tests over the full poem list make sure that this error cannot occur for a shipped poem.
 
 ### The grid selection
 

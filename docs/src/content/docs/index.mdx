@@ -3,7 +3,7 @@ title: WordGirl
 description: Five word games with a new puzzle each day. These pages tell you how to play them and how they operate.
 template: splash
 hero:
-  tagline: Five word games with a new puzzle each day. These pages tell you how to play the games. They also tell you how your device makes each puzzle without a server.
+  tagline: How five daily word games work — the rules, the hidden poems, a 200-year-old chess trick, and why no server ever sees your puzzle.
   actions:
     - text: See the games
       link: /docs/games/polygram/
@@ -22,31 +22,36 @@ import HubCard from '../../components/HubCard.astro';
 <div class="wg-card-grid">
   <HubCard game="polygram" title="Polygram" href="/docs/games/polygram/"
     accent="light-dark(#b91c1c, #f87171)">
-    Make words from the letters of a polygon. When you find all the words, the
-    polygon becomes larger.
+    Make words from the letters of a polygon. Why does the decagon ask for
+    only three words, when ten letters can make ten billion strings?
   </HubCard>
   <HubCard game="crosshatch" title="Crosshatch" href="/docs/games/crosshatch/"
     accent="light-dark(#0c7d84, #3ddbd9)">
-    A small crossword frame with given letters. Find all the words that agree
-    with the frame.
+    A small crossword frame, many correct answers. How does the game know
+    every one of them before you start?
   </HubCard>
   <HubCard game="backwords" title="Backwords" href="/docs/games/backwords/"
     accent="light-dark(#a21caf, #e879f9)">
-    Put letters against a mirror. The mirror shows the remaining letters.
+    Put letters against a mirror. Why is there always more than one way to
+    empty the bank — and which rows survive a real mirror?
   </HubCard>
   <HubCard game="doublet" title="Doublet" href="/docs/games/doublet/"
     accent="light-dark(#92400e, #fbbf24)">
-    Put letter dominoes on a board. Each line must make a word. Only one
-    arrangement is correct.
+    Letter dominoes on a small board. How does the game prove that exactly
+    one arrangement works?
   </HubCard>
   <HubCard game="serpentine" title="Serpentine" href="/docs/games/serpentine/"
     accent="light-dark(#4d7c0f, #a3e635)">
-    Draw one continuous line through each cell of a grid. The line shows a
-    hidden poem.
+    One continuous line through the grid shows a hidden poem. The trick that
+    draws it was invented for a chess knight in 1823.
   </HubCard>
   <HubCard title="Daily puzzles" href="/docs/games/daily-puzzles/">
-    Each device makes the same puzzle each day. A seed, quality limits, and
-    version numbers do this. No server is necessary.
+    Nobody sends you the puzzle. At midnight, your device and every other
+    device invent the same one — from nothing but the date.
+  </HubCard>
+  <HubCard title="Streaks & modes" href="/docs/games/player-guide/">
+    How streaks count, the after-midnight margin, the archive and practice
+    modes, and how to install the app and play offline.
   </HubCard>
 </div>
 
