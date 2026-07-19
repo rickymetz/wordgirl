@@ -41,8 +41,8 @@ the memo so retry works.
 
 `DICT_VERSION` (currently **15**) is the compatibility stamp between saved
 days and the puzzles they belong to — see
-[How daily puzzles work](/games/daily-puzzles/) for the player-facing story
-and [Persistence](/architecture/persistence/) for the save guards.
+[How daily puzzles work](/docs/games/daily-puzzles/) for the player-facing story
+and [Persistence](/docs/architecture/persistence/) for the save guards.
 
 The discipline, per the changelog comment in `dictionary.ts`: bump it for
 **any change to puzzle derivation** — wordlist edits, generator logic,

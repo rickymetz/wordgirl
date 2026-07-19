@@ -4,8 +4,8 @@ description: The src/lib toolbox — dates, randomness, viewport, sharing, setti
 ---
 
 Everything here lives in `src/lib/`. Storage and daily persistence have
-[their own page](/architecture/persistence/); the dictionary has
-[one too](/architecture/dictionary/).
+[their own page](/docs/architecture/persistence/); the dictionary has
+[one too](/docs/architecture/dictionary/).
 
 ## Dates (`date.ts`, `useToday.ts`)
 
@@ -29,7 +29,7 @@ session's dateKey is frozen per mount.
 - `randomSeed()` — crypto-random seed for practice mode.
 
 Consumption order is part of the contract — see
-[How daily puzzles work](/games/daily-puzzles/).
+[How daily puzzles work](/docs/games/daily-puzzles/).
 
 ## Viewport (`useViewport.ts`)
 
@@ -65,7 +65,7 @@ already-solved day skips straight to results. Pair with `ConfettiOverlay`.
   `trackPractice`, `trackStarted`, `trackArchivePlay`, each emitting
   `<gameId>:<event>`.
 - `swUpdate.ts` — `checkForUpdates()` for the Settings row; see
-  [PWA & offline](/architecture/pwa-offline/).
+  [PWA & offline](/docs/architecture/pwa-offline/).
 - `useStorageBroken()` — flips true on the `wg:storage-error` event.
 
 ## Reference implementations

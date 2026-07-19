@@ -4,7 +4,7 @@ description: Service worker, precache, and the update flow that keeps the app fr
 ---
 
 WordGirl is installable and fully playable offline — puzzles are generated
-on-device ([no server](/games/daily-puzzles/)), so offline support is mostly
+on-device ([no server](/docs/games/daily-puzzles/)), so offline support is mostly
 about caching the app shell and the dictionary.
 
 ## Service worker
@@ -15,7 +15,9 @@ Configured in `vite.config.ts` via **vite-plugin-pwa** with
 - Workbox precaches `js`, `css`, `html`, `txt`, `svg`, `png`, `woff2` —
   the `.txt` glob is load-bearing: it precaches `dictionary.txt`, so word
   validation works offline.
-- `navigateFallback: /index.html` for SPA routing.
+- `navigateFallback: /index.html` for SPA routing, with `/docs` on the
+  denylist — this documentation site is proxied at wordgirl.net/docs via
+  `netlify.toml`, and must not be swallowed by the app shell.
 - Manifest: standalone display, surface-white theme color, 192/512/maskable
   icons.
 
@@ -50,5 +52,5 @@ Firefox shows a real prompt, so there it's wrapped in an explanatory dialog
 ## iOS notes
 
 iOS installs via Share → Add to Home Screen. The app avoids page scrolling
-entirely (see [Layout rules](/design/layout-motion/)) partly because of
+entirely (see [Layout rules](/docs/design/layout-motion/)) partly because of
 iOS rubber-banding; `#root` handles safe-area insets as inside padding.

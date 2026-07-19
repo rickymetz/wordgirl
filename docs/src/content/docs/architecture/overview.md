@@ -43,7 +43,7 @@ src/games/<id>/
 ```
 
 The engine/state/ui split is strict. Engines are deterministic functions of
-`(dictionary, seed)` — see [How daily puzzles work](/games/daily-puzzles/) —
+`(dictionary, seed)` — see [How daily puzzles work](/docs/games/daily-puzzles/) —
 which is what makes them unit-testable in plain Node and safe to run
 identically on every device.
 
@@ -59,9 +59,9 @@ identically on every device.
 ## Where the shared code lives
 
 - `src/components/` (+ `src/components/game/`) — the [Game Kit
-  components](/kit/components/)
-- `src/lib/` — [hooks and utilities](/kit/utilities/): storage,
-  [daily persistence](/architecture/persistence/), the
-  [dictionary](/architecture/dictionary/), date/random/share/viewport
+  components](/docs/kit/components/)
+- `src/lib/` — [hooks and utilities](/docs/kit/utilities/): storage,
+  [daily persistence](/docs/architecture/persistence/), the
+  [dictionary](/docs/architecture/dictionary/), date/random/share/viewport
   helpers
 - `src/hub/` — the hub page and its game cards

@@ -12,20 +12,20 @@ pages.
 Create `src/games/<id>/` with `engine/`, `state/`, `ui/` subdirectories, and
 add a `GameDefinition` entry to `src/games/registry.ts` — id, name, tagline,
 `accentLevel`, lazy `Page`, `extraRoutes`. The router picks it up
-automatically ([registry pattern](/architecture/overview/)).
+automatically ([registry pattern](/docs/architecture/overview/)).
 
 ## 3. Accent color
 
 Add a `[data-level="<id>"]` token block in `src/index.css` and scope every
 game surface with `data-level={accentLevel}`. Light-mode accent ~700-weight;
-see the [contrast rules](/design/colors/).
+see the [contrast rules](/docs/design/colors/).
 
 ## 4–5. Persistence and clock
 
 Wire `createDailyPersistence` — including the `loadStaleDailyProgress`
 fallback on hydration — and `useDailyClock` (never an inline timer). The
 patterns, guards, and streak rules are on the
-[persistence page](/architecture/persistence/). Copy the hydration shape
+[persistence page](/docs/architecture/persistence/). Copy the hydration shape
 from an existing game hook; the subtle rules:
 
 - Set `hydrated.current` *inside* the async hydration callback.
@@ -56,7 +56,7 @@ from an existing game hook; the subtle rules:
 
 Three files minimum: `engine/*.test.ts` (pure logic, Node),
 `state/reducer.test.ts`, and `state/persistence.dom.test.ts` (jsdom). See
-[Testing & verification](/guides/testing/).
+[Testing & verification](/docs/guides/testing/).
 
 ## 14. Palette validation
 

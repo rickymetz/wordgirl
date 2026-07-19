@@ -5,7 +5,8 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
 export default defineConfig({
-  site: "https://docs.wordgirl.net",
+  site: "https://wordgirl.net",
+  base: "/docs",
   markdown: {
     remarkPlugins: [remarkMath],
     rehypePlugins: [rehypeKatex],

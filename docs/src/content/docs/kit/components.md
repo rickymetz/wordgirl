@@ -52,7 +52,7 @@ yourself for narration.
 - **`HomeLink`** — hub link with expanded hit area.
 - **`ConfettiOverlay`** — one-shot canvas burst on solve; skipped under
   `prefers-reduced-motion`. Sequenced by `useSolveTransition` (see
-  [utilities](/kit/utilities/)).
+  [utilities](/docs/kit/utilities/)).
 - **`StoragePrompt`** — durable-storage request, auto-rendered by the game
   layout.
 
@@ -91,4 +91,4 @@ sparklines in the game's accent over a 30-day window, tap-a-day for values,
 plus an optional solve-hour histogram. Metrics are
 `{ key, label, value(day) → number | null }` — return `null` for days
 before a metric shipped, which chart as **gaps, never fake zeros**. See
-[Charts](/design/charts/) for the style rules it embodies.
+[Charts](/docs/design/charts/) for the style rules it embodies.

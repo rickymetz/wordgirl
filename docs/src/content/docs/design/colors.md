@@ -50,7 +50,7 @@ practice, stats) is scoped with its own `data-level`.
 - Run `scripts/validate_palette.js` after adding or changing any accent —
   never eyeball contrast or color-vision safety.
 - The four game accents **fail as a categorical set** (validated) — which
-  is why cross-game color-coding is banned; see [Charts](/design/charts/).
+  is why cross-game color-coding is banned; see [Charts](/docs/design/charts/).
 
 ## Tinted panels
 

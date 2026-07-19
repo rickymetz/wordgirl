@@ -24,6 +24,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,txt,svg,png,woff2}"],
         navigateFallback: "/index.html",
+        // The docs site is proxied at /docs (netlify.toml) — without
+        // this the SW would serve the app shell for docs navigations.
+        navigateFallbackDenylist: [/^\/docs/],
       },
       manifest: {
         name: "WordGirl",
