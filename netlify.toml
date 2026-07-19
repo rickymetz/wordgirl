@@ -100,10 +100,12 @@
 # site lives at wordgirl.net/docs with no DNS or extra host. Custom
 # headers below do NOT apply to proxied responses, which is deliberate:
 # the docs need inline styles/scripts the app CSP forbids.
+# No /docs -> /docs/ self-redirect: Netlify's slash normalization
+# turns that into an infinite loop. Proxy both forms directly.
 [[redirects]]
   from = "/docs"
-  to = "/docs/"
-  status = 301
+  to = "https://rickymetz.github.io/wordgirl/"
+  status = 200
 
 [[redirects]]
   from = "/docs/*"
