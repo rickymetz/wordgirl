@@ -15,38 +15,42 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import HubCard from '../../components/HubCard.astro';
 
 ## The games
 
-<CardGrid stagger>
-  <Card title="Polygram" icon="star">
+<div class="wg-card-grid">
+  <HubCard game="polygram" title="Polygram" href="/games/polygram/"
+    accent="light-dark(#b91c1c, #f87171)">
     Spell your way from triangle to decagon. Each polygon level asks for every
     word of its size — find them all and a new letter joins.
-    [How it works →](/games/polygram/)
-  </Card>
-  <Card title="Crosshatch" icon="puzzle">
+  </HubCard>
+  <HubCard game="crosshatch" title="Crosshatch" href="/games/crosshatch/"
+    accent="light-dark(#0c7d84, #3ddbd9)">
     Every way the words fit. A small crossword frame with given letters — the
-    goal isn't one solution, it's *all* of them.
-    [How it works →](/games/crosshatch/)
-  </Card>
-  <Card title="Backwords" icon="random">
+    goal isn't one solution, it's all of them.
+  </HubCard>
+  <HubCard game="backwords" title="Backwords" href="/games/backwords/"
+    accent="light-dark(#a21caf, #e879f9)">
     Every word, a reflection. Place letters against a mirror; the reflection
-    spells the rest. [How it works →](/games/backwords/)
-  </Card>
-  <Card title="Doublet" icon="setting">
+    spells the rest.
+  </HubCard>
+  <HubCard game="doublet" title="Doublet" href="/games/doublet/"
+    accent="light-dark(#92400e, #fbbf24)">
     Place the tiles. Spell the words. Letter dominoes onto a shaped board, with
-    exactly one valid arrangement. [How it works →](/games/doublet/)
-  </Card>
-  <Card title="Serpentine" icon="pencil">
+    exactly one valid arrangement.
+  </HubCard>
+  <HubCard game="serpentine" title="Serpentine" href="/games/serpentine/"
+    accent="light-dark(#4d7c0f, #a3e635)">
     One continuous line. Trace a path through every cell to reveal a hidden
-    line of poetry. [How it works →](/games/serpentine/)
-  </Card>
-  <Card title="Daily puzzles, no server" icon="seti:clock">
-    Every generator is a pure function of the date. How seeded determinism,
+    line of poetry.
+  </HubCard>
+  <HubCard title="Daily puzzles" href="/games/daily-puzzles/">
+    Every generator is a pure function of the date. Seeded determinism,
     quality gates and version stamps keep everyone's puzzle identical —
-    offline. [How it works →](/games/daily-puzzles/)
-  </Card>
-</CardGrid>
+    offline, with no server.
+  </HubCard>
+</div>
 
 ## For developers
 

@@ -23,6 +23,9 @@ export default defineConfig({
         },
       ],
       customCss: ["./src/styles/custom.css", "katex/dist/katex.min.css"],
+      components: {
+        PageTitle: "./src/components/PageTitle.astro",
+      },
       sidebar: [
         {
           label: "The Games",

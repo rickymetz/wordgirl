@@ -104,6 +104,14 @@ h1#_top,
   background: transparent;
 }
 
+/* — Hub-card grid on the home page — */
+.wg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.875rem;
+  margin-top: 1rem;
+}
+
 /* — Hero actions: the app's pill buttons — */
 .hero .actions a {
   border-radius: 999px;

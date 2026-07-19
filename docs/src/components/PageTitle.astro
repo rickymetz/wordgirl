@@ -1,0 +1,22 @@
+---
+// Starlight PageTitle override: game pages get their real title glyph,
+// exactly like the in-game header.
+import GameGlyph from "./GameGlyph.astro";
+
+const { id, entry } = Astro.locals.starlightRoute;
+const match = id.match(/^games\/(polygram|crosshatch|backwords|doublet|serpentine)/);
+const game = match?.[1] as
+  | "polygram" | "crosshatch" | "backwords" | "doublet" | "serpentine"
+  | undefined;
+---
+
+<h1 id="_top">{game && <span class="wg-title-glyph"><GameGlyph game={game} size={30} /></span>}{entry.data.title}</h1>
+
+<style>
+  .wg-title-glyph {
+    display: inline-block;
+    vertical-align: -0.12em;
+    margin-inline-end: 0.35rem;
+    color: var(--wg-accent);
+  }
+</style>
