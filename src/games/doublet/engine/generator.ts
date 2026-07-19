@@ -45,7 +45,7 @@ export function generateDoublet(
     const fill = fillGrid(shape, slots, dict, rand);
     if (!fill) continue;
 
-    const tiling = findTiling(shape, rand);
+    const tiling = findTiling(shape, rand, deadline);
     if (!tiling) continue;
 
     const dominoes: DominoPiece[] = tiling.map(([c1, c2], i) => ({
@@ -267,13 +267,17 @@ function fillGrid(
   return null;
 }
 
+const MAX_TILING_NODES = 50_000;
+
 function findTiling(
   shape: BoardShape,
   rand: () => number,
+  deadline?: number,
 ): [Cell, Cell][] | null {
   const cellSet = new Set(shape.cells.map((c) => cellKey(c.row, c.col)));
   const remaining = new Set(cellSet);
   const tiling: [Cell, Cell][] = [];
+  let nodes = 0;
 
   const cells = [...shape.cells].sort(
     (a, b) => a.row * 100 + a.col - (b.row * 100 + b.col),
@@ -296,6 +300,8 @@ function findTiling(
   }
 
   function backtrack(): boolean {
+    if (++nodes > MAX_TILING_NODES) return false;
+    if (deadline && (nodes & 0xff) === 0 && Date.now() > deadline) return false;
     if (remaining.size === 0) return true;
 
     let first: Cell | null = null;
@@ -484,6 +490,8 @@ function generateFallback(
         fill.get(cellKey(c2.row, c2.col))!,
       ],
     }));
+
+    if (countSolutions(shape, slots, dominoes, dict, 2) !== 1) continue;
 
     const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
       dominoId: i,

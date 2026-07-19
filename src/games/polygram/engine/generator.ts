@@ -74,7 +74,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     levels.push({
       size: 3,
       words: triangleWords,
-      bonusWords: enumerateWords(dict, letters, 3, "bonus").sort(),
+      bonusWords: enumerateWords(dict, letters, 3, "bonus"),
     });
 
     // Grow one letter at a time; stop at the first size with no viable letter.
@@ -99,7 +99,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
           levels.push({
             size,
             words,
-            bonusWords: enumerateWords(dict, extended, size, "bonus").sort(),
+            bonusWords: enumerateWords(dict, extended, size, "bonus"),
           });
           found = true;
           break;
@@ -111,6 +111,8 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
     const totalWords = levels.reduce((n, l) => n + l.words.length, 0);
     const maxLevel = levels[levels.length - 1].size;
     if (maxLevel < MIN_MAX_LEVEL || totalWords > MAX_TOTAL_WORDS) continue;
+
+    for (const level of levels) level.bonusWords.sort();
 
     return {
       seed,
