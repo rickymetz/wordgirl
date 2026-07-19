@@ -42,12 +42,13 @@ const EASY_SHAPES: BoardShape[] = [
     [0, 0, 1],
     [0, 0, 1],
   ]),
-  // T-bar (6 cells)
+  // Staircase (6 cells). Replaced the old T-bar, whose checkerboard
+  // color classes were 4/2 — no domino tiling exists for it, so every
+  // attempt that drew it failed findTiling and burned a retry.
   parseGrid("e5", [
-    [1, 1, 1],
-    [0, 1, 0],
-    [0, 1, 0],
-    [0, 1, 0],
+    [1, 1, 0],
+    [0, 1, 1],
+    [0, 1, 1],
   ]),
 ];
 
