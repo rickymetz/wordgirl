@@ -47,12 +47,30 @@ The word limits for each level are in this table:
 
 Levels 7 to 10 must have a minimum of two words. One word is not sufficient for these levels. With only one word, the player sees no progress until the full word is found.
 
-## Why the word search is fast
+## The mathematics
 
-Each word in the dictionary has a mask of 26 bits. Each bit shows one letter of the alphabet. The game compares the mask of a word with the mask of the puzzle letters. This comparison is one AND operation:
+### The bitmask test
 
-```
-possible = (wordMask AND (NOT poolMask)) == 0
-```
+Each word in the dictionary has a mask of 26 bits. Each bit shows one letter of the alphabet. A word is possible when its mask is a subset of the puzzle mask. The test is one AND operation:
 
-Thus the game can examine each word very quickly. The code is in `src/games/polygram/engine/generator.ts` and `src/lib/words/dictionary.ts`.
+$$
+(m_w \;\land\; \lnot\, m_p) = 0
+$$
+
+Here $m_w$ is the mask of the word. $m_p$ is the mask of the puzzle letters. Thus the test for one word takes constant time. The search for a full level is one scan of one length group. The code is in `src/lib/words/dictionary.ts`.
+
+### The hint formula
+
+Each hint letter divides the points for a word by two. The result cannot go below one point:
+
+$$
+\text{points}(w, h) = \max\!\left(1,\; \left\lfloor \frac{|w|}{2^{h}} \right\rfloor \right)
+$$
+
+Here $|w|$ is the number of letters in the word. $h$ is the number of hint letters.
+
+### The search method
+
+The generator is a greedy hill climber. It adds one letter at each step. It never removes a letter. A bad letter sequence fails the quality limits. Then the full puzzle is rejected, and a new random start begins. This method is rejection sampling. It is simple and fast because each single test is cheap.
+
+The level limits also have a mathematical purpose. The number of possible words grows with the number of letters. The limits keep each level small. Thus the task "find all the words" stays possible for a person, not only for a computer.

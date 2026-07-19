@@ -46,3 +46,29 @@ Two solutions are the same when the letters on the board are the same. The gener
 ### If the generator is not successful
 
 The generator then tries the first board shape again with four times more time. If this try is also not successful, the generator gives the best available puzzle. This puzzle possibly has more than one solution. Thus the game does not stop.
+
+## The mathematics
+
+### Three hard problems in one puzzle
+
+Each Doublet puzzle composes three problems that are hard in the general case:
+
+1. **Crossword fill** is a constraint satisfaction problem. It is NP-hard in general.
+2. **The domino cut** is a perfect matching in the grid graph of the board. The cells are the nodes. Two adjacent cells make an edge. A perfect matching pairs all the nodes. An even number of cells is a necessary condition. Thus each board has an even count.
+3. **The uniqueness proof** examines all the possible placements. This count grows exponentially with the number of dominoes.
+
+Small boards make all three problems fast. The largest board has 16 cells and 8 dominoes.
+
+### Symmetry elimination
+
+The matching search always extends the first free cell. This rule is important. Without it, the search examines the same matching in many different orders. With it, each matching occurs in exactly one branch. The uniqueness search uses the same rule for the dominoes.
+
+### What "one solution" means
+
+Two dominoes with the same two letters can change positions. The board then looks the same. These placements are not different solutions. Thus the generator compares the final letter grids, not the domino positions:
+
+$$
+\text{solutions} = \big|\{\, G(p) : p \text{ is a correct placement} \,\}\big|
+$$
+
+Here $G(p)$ is the letter grid of the placement $p$. The generator accepts the puzzle only when this count is exactly one.
