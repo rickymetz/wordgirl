@@ -32,8 +32,11 @@
  * per-level bonus cap — all spellable bonus words are now offered.
  * v15: remove 20-cell hard boards (h2, h4) from doublet — their
  * solution-count verification froze mobile browsers.
+ * v16: reshape doublet's e5 easy board (T-bar -> staircase) — the
+ * T-bar's checkerboard color classes were 4/2, so it had no domino
+ * tiling and every attempt that selected it failed.
  */
-export const DICT_VERSION = 15;
+export const DICT_VERSION = 16;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;

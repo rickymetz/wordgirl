@@ -43,7 +43,7 @@ Two games have a guaranteed alternative for a bad seed: Doublet ships its best u
 
 ## Version numbers
 
-Four games use the dictionary. These games write `DICT_VERSION` into each puzzle and each saved day. The number is 15 at this time (`src/lib/words/dictionary.ts`). The number increases when the puzzle calculation changes. Examples are a word list change, a generator change, or a score change. An old saved day does not agree with a new puzzle. The version number finds this condition. The [dictionary page](/docs/architecture/dictionary/) shows the full version history — thirteen recorded changes, each with its reason. Serpentine has no dictionary. Its version number is in the seed text.
+Four games use the dictionary. These games write `DICT_VERSION` into each puzzle and each saved day. The number is 16 at this time (`src/lib/words/dictionary.ts`). The number increases when the puzzle calculation changes. Examples are a word list change, a generator change, or a score change. An old saved day does not agree with a new puzzle. The version number finds this condition. The [dictionary page](/docs/architecture/dictionary/) shows the full version history — fourteen recorded changes, each with its reason. Serpentine has no dictionary. Its version number is in the seed text.
 
 ## The solution is in the puzzle
 
