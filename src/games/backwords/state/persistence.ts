@@ -6,6 +6,7 @@ import {
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
+import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 
 export interface DailyProgress extends DailyBase {
@@ -63,9 +64,21 @@ const base = createDailyPersistence<DailyProgress, BackwordsStats>({
       (progress.sessions ?? 0) >= (stored.sessions ?? 0)),
 });
 
-export const loadDailyProgress = (dateKey: string) => base.loadDay(dateKey);
-export const loadStaleDailyProgress = (dateKey: string) =>
-  base.loadStaleDay(dateKey);
+/** Deterministic fingerprint of a Backwords puzzle — the rows array
+ * IS the puzzle identity, so an unrelated DICT_VERSION bump won't
+ * invalidate saved progress when the actual puzzle hasn't changed. */
+export function backwordsPuzzleKey(rows: string[]): string {
+  return makePuzzleKey(rows);
+}
+
+export const loadDailyProgress = (
+  dateKey: string,
+  currentPuzzleKey?: string,
+) => base.loadDay(dateKey, currentPuzzleKey);
+export const loadStaleDailyProgress = (
+  dateKey: string,
+  currentPuzzleKey?: string,
+) => base.loadStaleDay(dateKey, currentPuzzleKey);
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const recordDailyStarted = base.recordStarted;
 export { displayStreak };

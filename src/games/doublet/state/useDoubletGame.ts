@@ -6,6 +6,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateDoublet } from "../engine/generator";
 import type { Difficulty } from "../engine/types";
 import {
+  doubletPuzzleKey,
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
@@ -28,6 +29,7 @@ export function useDoubletGame(mode: GameMode) {
 
   const dict = use(loadDictionary());
   const puzzle = useMemo(() => generateDoublet(dict, seed), [dict, seed]);
+  const pKey = useMemo(() => doubletPuzzleKey(puzzle), [puzzle]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   const hydratedRef = useRef(false);
@@ -64,6 +66,7 @@ export function useDoubletGame(mode: GameMode) {
 
     void saveDailyProgress({
       dateKey,
+      puzzleKey: pKey,
       difficulty: mode.difficulty,
       dictVersion: DICT_VERSION,
       placed: s.placed,
@@ -90,7 +93,7 @@ export function useDoubletGame(mode: GameMode) {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadDailyProgress(dateKey, mode.difficulty);
+        const saved = await loadDailyProgress(dateKey, mode.difficulty, pKey);
         if (cancelled) return;
         if (saved) {
           alreadySolvedRef.current = saved.solved;
@@ -120,7 +123,7 @@ export function useDoubletGame(mode: GameMode) {
             hints: saved.hints,
           });
         } else {
-          const stale = await loadStaleDailyProgress(dateKey, mode.difficulty);
+          const stale = await loadStaleDailyProgress(dateKey, mode.difficulty, pKey);
           if (cancelled) return;
           if (stale) {
             staleRecordRef.current = true;

@@ -19,6 +19,11 @@ export interface DailyBase {
   elapsedMs: number;
   /** Set when this save's solve already counted toward stats. */
   statsRecorded?: boolean;
+  /** Deterministic fingerprint of the puzzle for this date — when
+   * present on BOTH a saved and current puzzle, used instead of
+   * dictVersion to detect staleness (so an unrelated game's version
+   * bump doesn't wipe progress). */
+  puzzleKey?: string;
 }
 
 /** Every stats blob carries these; games extend (bestTimeMs, rank…). */
@@ -69,17 +74,37 @@ export function createDailyPersistence<
     return validShape(await store.get<Day>(`daily:${subKey}`));
   }
 
+  /** Is the saved puzzle still the same one we'd generate today?
+   * When both sides carry a puzzleKey, compare those (immune to
+   * unrelated DICT_VERSION bumps); fall back to dictVersion for
+   * legacy saves without a key. */
+  function puzzleMatches(
+    saved: Day,
+    currentPuzzleKey: string | undefined,
+  ): boolean {
+    if (currentPuzzleKey && saved.puzzleKey) {
+      return saved.puzzleKey === currentPuzzleKey;
+    }
+    return saved.dictVersion === DICT_VERSION;
+  }
+
   /** The current-dictionary save, or null (stale saves stay hidden). */
-  async function loadDay(subKey: string): Promise<Day | null> {
+  async function loadDay(
+    subKey: string,
+    currentPuzzleKey?: string,
+  ): Promise<Day | null> {
     const saved = await readDay(subKey);
-    if (saved && saved.dictVersion !== DICT_VERSION) return null;
+    if (saved && !puzzleMatches(saved, currentPuzzleKey)) return null;
     return saved;
   }
 
   /** A save from an OLDER dictionary, kept as a historical record. */
-  async function loadStaleDay(subKey: string): Promise<Day | null> {
+  async function loadStaleDay(
+    subKey: string,
+    currentPuzzleKey?: string,
+  ): Promise<Day | null> {
     const saved = await readDay(subKey);
-    if (saved && saved.dictVersion !== DICT_VERSION) return saved;
+    if (saved && !puzzleMatches(saved, currentPuzzleKey)) return saved;
     return null;
   }
 

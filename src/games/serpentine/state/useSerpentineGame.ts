@@ -11,6 +11,7 @@ import {
   loadDailyProgress,
   loadStaleDailyProgress,
   saveDailyProgress,
+  serpentinePuzzleKey,
   recordStarted,
   updateStats,
   type DayProgress,
@@ -34,6 +35,8 @@ export function useSerpentineGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode.kind, mode.kind === "practice" ? mode.seed : dateKey, difficulty],
   );
+
+  const pKey = useMemo(() => serpentinePuzzleKey(puzzle), [puzzle]);
 
   const [state, dispatch] = useReducer(
     gameReducer,
@@ -63,7 +66,7 @@ export function useSerpentineGame(mode: GameMode) {
   useEffect(() => {
     if (hydrated.current) return;
     let cancelled = false;
-    void loadDailyProgress(difficulty, dateKey).then(async (saved) => {
+    void loadDailyProgress(difficulty, dateKey, pKey).then(async (saved) => {
       if (cancelled) return;
       hydrated.current = true;
       if (saved && saved.puzzleId === puzzle.id) {
@@ -80,7 +83,7 @@ export function useSerpentineGame(mode: GameMode) {
           solved: saved.solved,
         });
       } else if (persisted) {
-        const stale = await loadStaleDailyProgress(difficulty, dateKey);
+        const stale = await loadStaleDailyProgress(difficulty, dateKey, pKey);
         if (cancelled) return;
         if (stale) {
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
@@ -91,7 +94,7 @@ export function useSerpentineGame(mode: GameMode) {
       }
     });
     return () => { cancelled = true; };
-  }, [difficulty, dateKey, puzzle.id, clock, persisted]);
+  }, [difficulty, dateKey, puzzle.id, pKey, clock, persisted]);
 
   // Build the progress blob from current state.
   const buildProgress = useCallback(
@@ -99,6 +102,7 @@ export function useSerpentineGame(mode: GameMode) {
       dateKey,
       difficulty,
       puzzleId: puzzle.id,
+      puzzleKey: pKey,
       dictVersion: DICT_VERSION,
       solved: s.solved,
       elapsedMs: s.solved
@@ -108,7 +112,7 @@ export function useSerpentineGame(mode: GameMode) {
       statsRecorded: statsRecorded.current,
       hints: hintsRef.current,
     }),
-    [dateKey, difficulty, puzzle.id, clock],
+    [dateKey, difficulty, puzzle.id, pKey, clock],
   );
 
   persistRef.current = () => {

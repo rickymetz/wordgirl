@@ -6,6 +6,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch } from "../engine/generator";
 import { isSolved, uniqueWords } from "../engine/scoring";
 import {
+  crosshatchPuzzleKey,
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
@@ -30,6 +31,7 @@ export function useCrosshatchGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
   const puzzle = useMemo(() => generateCrosshatch(dict, seed), [dict, seed]);
+  const pKey = useMemo(() => crosshatchPuzzleKey(puzzle), [puzzle]);
   const totalWords = useMemo(
     () => uniqueWords(puzzle.combos).length,
     [puzzle],
@@ -79,6 +81,7 @@ export function useCrosshatchGame(mode: GameMode) {
     void saveDailyProgress({
       dateKey,
       dictVersion: DICT_VERSION,
+      puzzleKey: pKey,
       foundWords: s.found,
       grid: s.grid,
       revealed: s.revealed,
@@ -111,7 +114,7 @@ export function useCrosshatchGame(mode: GameMode) {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadDailyProgress(dateKey);
+        const saved = await loadDailyProgress(dateKey, pKey);
         if (cancelled) return;
         if (saved) {
           alreadySolvedRef.current = saved.solved;
@@ -148,7 +151,7 @@ export function useCrosshatchGame(mode: GameMode) {
           // A save from an older dictionary is a historical record: the
           // day restarts fresh but was already counted as played — don't
           // re-count, and leave the record in place until play begins.
-          const stale = await loadStaleDailyProgress(dateKey);
+          const stale = await loadStaleDailyProgress(dateKey, pKey);
           if (cancelled) return;
           if (stale) {
             staleRecordRef.current = true;

@@ -8,6 +8,7 @@ import type { Puzzle } from "../engine/types";
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
+  polygramPuzzleKey,
   recordDailyCompleted,
   recordDailyStarted,
   saveDailyProgress,
@@ -77,6 +78,7 @@ export function usePolygramGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
   const puzzle = useMemo(() => generatePuzzle(dict, seed), [dict, seed]);
+  const pKey = useMemo(() => polygramPuzzleKey(puzzle), [puzzle]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 
   // hydratedRef flips only AFTER hydration completes — saving before
@@ -117,6 +119,7 @@ export function usePolygramGame(mode: GameMode) {
     void saveDailyProgress({
       dateKey,
       dictVersion: DICT_VERSION,
+      puzzleKey: pKey,
       foundWords: s.found,
       revealed: s.revealed,
       score: s.score,
@@ -136,7 +139,7 @@ export function usePolygramGame(mode: GameMode) {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadDailyProgress(dateKey);
+        const saved = await loadDailyProgress(dateKey, pKey);
         if (cancelled) return;
         if (saved) {
           statsRecordedRef.current =
@@ -162,7 +165,7 @@ export function usePolygramGame(mode: GameMode) {
           // day restarts fresh but was already counted as played (and
           // possibly completed) — don't re-count, and leave the record
           // in place for the archive until play actually begins.
-          const stale = await loadStaleDailyProgress(dateKey);
+          const stale = await loadStaleDailyProgress(dateKey, pKey);
           if (cancelled) return;
           if (stale) {
             staleRecordRef.current = true;

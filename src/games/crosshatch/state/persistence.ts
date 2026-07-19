@@ -3,11 +3,16 @@ import {
   displayStreak,
   streakAdvance,
 } from "../../../lib/daily/persistence";
+import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
+import type { CrosshatchPuzzle } from "../engine/types";
 
 export interface DailyProgress {
   dateKey: string;
   dictVersion: number;
+  /** Deterministic fingerprint of the puzzle — survives unrelated
+   * DICT_VERSION bumps. Legacy saves lack this field. */
+  puzzleKey?: string;
   /** Distinct words banked so far, in the order they were found. */
   foundWords: string[];
   /** Player-typed letters still on the grid, cell key -> letter. */
@@ -80,6 +85,9 @@ const base = createDailyPersistence<DailyProgress, CrosshatchStats>({
 });
 const store = base.store;
 
+export function crosshatchPuzzleKey(puzzle: CrosshatchPuzzle): string {
+  return makePuzzleKey([puzzle.givens, puzzle.combos]);
+}
 
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-06";
@@ -89,25 +97,24 @@ function validShape(saved: DailyProgress | null): DailyProgress | null {
 }
 
 /**
- * The playable save for a date, or null. Saves written against an older
- * dictionary can't be resumed (their words may not exist in the current
- * puzzle) — use loadStaleDailyProgress to read their historical result.
+ * The playable save for a date, or null. Saves whose puzzle no longer
+ * matches can't be resumed — use loadStaleDailyProgress for historical
+ * records. Pass `currentPuzzleKey` so an unrelated DICT_VERSION bump
+ * doesn't discard progress when the crosshatch puzzle is unchanged.
  */
-export async function loadDailyProgress(
+export function loadDailyProgress(
   dateKey: string,
+  currentPuzzleKey?: string,
 ): Promise<DailyProgress | null> {
-  const saved = validShape(await store.get<DailyProgress>(`daily:${dateKey}`));
-  if (saved && saved.dictVersion !== DICT_VERSION) return null;
-  return saved;
+  return base.loadDay(dateKey, currentPuzzleKey);
 }
 
-/** A save from an OLDER dictionary version, kept as a historical record. */
-export async function loadStaleDailyProgress(
+/** A save from an older/different puzzle, kept as a historical record. */
+export function loadStaleDailyProgress(
   dateKey: string,
+  currentPuzzleKey?: string,
 ): Promise<DailyProgress | null> {
-  const saved = validShape(await store.get<DailyProgress>(`daily:${dateKey}`));
-  if (saved && saved.dictVersion !== DICT_VERSION) return saved;
-  return null;
+  return base.loadStaleDay(dateKey, currentPuzzleKey);
 }
 
 export interface ArchivedDay extends DailyProgress {
