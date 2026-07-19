@@ -30,8 +30,10 @@
  * required tier — common words players expect to be accepted.
  * v14: crosshatch accepts bonus-tier words; polygram removes the
  * per-level bonus cap — all spellable bonus words are now offered.
+ * v15: remove 20-cell hard boards (h2, h4) from doublet — their
+ * solution-count verification froze mobile browsers.
  */
-export const DICT_VERSION = 14;
+export const DICT_VERSION = 15;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;
