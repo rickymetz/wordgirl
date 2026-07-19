@@ -490,9 +490,7 @@ export function GameScreen({ mode }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">
-              {state.found.length === total ? "Perfect sweep!" : "Solved"}
-            </p>
+            <p className="text-lg font-bold text-ink">Solved</p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(solvedElapsedMs)}
@@ -667,7 +665,7 @@ export function GameScreen({ mode }: Props) {
                 title: "Solve the day",
                 body: (
                   <>
-                    Find <Key>most of the day's words</Key> to solve it.{" "}
+                    Find <Key>every word</Key> to solve the day.{" "}
                     <Key>Your words</Key> lists them as ?-blanks — tap one,
                     then Hint, to reveal a letter.
                   </>

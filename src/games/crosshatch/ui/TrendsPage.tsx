@@ -4,7 +4,6 @@ import {
   type GameTrendsConfig,
 } from "../../../components/GameTrends";
 import { formatDuration } from "../../../lib/date";
-import { solveTarget } from "../engine/scoring";
 import {
   ARCHIVE_EPOCH,
   loadAllDailyProgress,
@@ -37,14 +36,6 @@ const config: GameTrendsConfig<ArchivedDay> = {
       label: "Hint letters",
       value: (d) => (d.solved ? hintLetters(d) : null),
       lowerIsBetter: true,
-    },
-    {
-      key: "extra",
-      label: "Words past the solve",
-      value: (d) =>
-        d.solved && d.totalWords
-          ? Math.max(0, d.foundWords.length - solveTarget(d.totalWords))
-          : null,
     },
     solvedCounter<ArchivedDay>(
       "invalids",

@@ -136,12 +136,12 @@ describe("submit", () => {
     expect(s.lastResult?.word).toBe("bax");
   });
 
-  it("marks solved at the slack-adjusted threshold and keeps it sticky", () => {
-    // 4 unique words -> solveTarget = min(ceil(3.6), 4-2) = 2: the
-    // first full grid (2 new words) solves; more words keep banking.
+  it("marks solved only when all words are found and keeps it sticky", () => {
     let s = fillBadDab(initialState(puzzle));
     s = gameReducer(s, { type: "submit" });
-    expect(s.solved).toBe(true);
+    // 2 of 4 words found — not solved yet.
+    expect(s.found).toHaveLength(2);
+    expect(s.solved).toBe(false);
     s = play(
       s,
       { type: "focusCell", row: 1, col: 1 },
@@ -247,10 +247,18 @@ describe("submit", () => {
     expect(s.found).toHaveLength(1);
     expect(letterAt(s, 1, 1)).toBe("a");
     expect(s.solved).toBe(false);
-    // Hydration recomputes the threshold: two of four words solves.
-    const solved = gameReducer(initialState(puzzle), {
+    // Hydration recomputes: all four words needed to solve.
+    const partial = gameReducer(initialState(puzzle), {
       type: "hydrate",
       found: ["bad", "dab"],
+      grid: {},
+      revealed: {},
+      solved: false,
+    });
+    expect(partial.solved).toBe(false);
+    const solved = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: ["bad", "bud", "dab", "dud"],
       grid: {},
       revealed: {},
       solved: false,

@@ -17,7 +17,7 @@ export interface DailyProgress {
   /** The day's distinct-word total, stored so the archive can rank
    * without regenerating the puzzle. */
   totalWords?: number;
-  /** Reached the solve threshold (SOLVE_PCT of all combos). */
+  /** All words found. */
   solved: boolean;
   /** Wall-clock play time across sessions, frozen at the solve moment. */
   elapsedMs: number;
