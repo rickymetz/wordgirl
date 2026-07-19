@@ -83,7 +83,7 @@ export function GridBoard({
         const given = puzzle.givens[key];
         const letter = letterAt(state, row, col);
         const isCursor =
-          state.cursor?.row === row && state.cursor?.col === col;
+          !state.solved && state.cursor?.row === row && state.cursor?.col === col;
         const inActiveSlot = activeKeys.has(key);
         return (
           <button
