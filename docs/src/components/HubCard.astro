@@ -7,7 +7,7 @@ interface Props {
   game?: "polygram" | "crosshatch" | "backwords" | "doublet" | "serpentine";
   title: string;
   href: string;
-  /** light-dark() accent pair; omit to keep the hub purple. */
+  /** light-dark() accent pair; omit for the neutral hub accent. */
   accent?: string;
 }
 const { game, title, href, accent } = Astro.props;

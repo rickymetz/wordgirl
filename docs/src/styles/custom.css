@@ -13,7 +13,9 @@
   --wg-ink-soft: light-dark(#6f6b78, #98939f);
   --wg-line: light-dark(#e3e0d9, #322f38);
   --wg-tile: light-dark(#e4e0d8, #2c2a33);
-  --wg-accent: light-dark(#7c3aed, #a78bfa);
+  /* Neutral root accent — the hub UI is black and white; only game
+     pages override this with their data-level accent. */
+  --wg-accent: light-dark(#171717, #e5e5e5);
 
   --wg-surface-tint: light-dark(
     color-mix(in oklab, var(--wg-accent) 6%, var(--wg-surface-raised)),

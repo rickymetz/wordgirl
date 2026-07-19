@@ -39,9 +39,9 @@ swaps `--color-accent` in that scope, and the `[data-level]` rule
 Numeric keys 3–10 are the Polygram level hues (pride-flag order, red → sky);
 named keys are `crosshatch` (teal), `backwords` (fuchsia, plus a glass
 gradient), `doublet` (amber), `serpentine` (lime), and `neutral`
-(black/white). The root purple accent belongs to the **hub and settings
-only** — every game surface (game screen, archive, practice, stats) is
-scoped with its own `data-level`.
+(black/white). The root accent is **neutral black/white** — the hub and
+settings are monochrome — and every game surface (game screen, archive,
+practice, stats) is scoped with its own `data-level`.
 
 ## Contrast rules
 

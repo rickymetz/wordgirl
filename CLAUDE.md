@@ -85,7 +85,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   (a Polygram level number or the game's own key, e.g. `"crosshatch"`).
   Scope every game surface — game screen, archive, practice — with
   `data-level={accentLevel}` so `bg-accent`/`text-accent` resolve to
-  the game's color. The root purple belongs to the hub/settings only.
+  the game's color. The root accent is neutral black/white — the hub
+  and settings are monochrome; no surface wears a purple accent.
 - Light-mode accents are ~700-weight shades: accent text on surface
   AND surface text on accent must clear WCAG AA (4.5:1).
 - Tinted panels use `bg-surface-tint` (6% accent light / 13% dark).

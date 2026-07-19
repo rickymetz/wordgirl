@@ -16,7 +16,8 @@ Configured in `vite.config.ts` via **vite-plugin-pwa** with
   the `.txt` glob is load-bearing: it precaches `dictionary.txt`, so word
   validation works offline.
 - `navigateFallback: /index.html` for SPA routing.
-- Manifest: standalone display, theme `#6d28d9`, 192/512/maskable icons.
+- Manifest: standalone display, surface-white theme color, 192/512/maskable
+  icons.
 
 ## The update flow
 
