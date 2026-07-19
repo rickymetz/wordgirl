@@ -20,7 +20,13 @@ Serpentine is a path game. A line of poetry is hidden in a grid of letters. You 
 
 The game has two modes each day. Haiku mode has a short Japanese poem in translation. Poem mode has a longer line from an English poem. The two modes have the same theme each day.
 
-The game accepts each correct path. A correct path is continuous. It goes through each cell one time. And it shows the correct text. The check is in `src/games/serpentine/engine/validation.ts`.
+The game accepts each correct path. A correct path obeys three rules:
+
+- The path is continuous.
+- The path goes through each cell one time.
+- The path shows the correct text.
+
+The check is in `src/games/serpentine/engine/validation.ts`.
 
 ## The poems
 

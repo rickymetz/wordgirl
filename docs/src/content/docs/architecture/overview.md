@@ -30,7 +30,7 @@ src/games/<id>/
   ui/         components
 ```
 
-The division is strict. An engine is a function of the dictionary and the seed. Refer to [How daily puzzles work](/docs/games/daily-puzzles/). Thus the tests can operate in Node. And each device makes the same puzzle.
+The division is strict. An engine is a function of the dictionary and the seed. Refer to [How daily puzzles work](/docs/games/daily-puzzles/). Thus the tests can operate in Node, and each device makes the same puzzle.
 
 ## The start sequence
 

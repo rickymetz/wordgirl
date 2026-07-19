@@ -37,6 +37,10 @@ The generator makes the puzzle in these steps:
 1. The generator selects one pair with four letters or more. Thus each day has one large row.
 2. The generator adds random rows until the letter set has 8 to 12 letters.
 3. The generator finds all the solutions for the letter set. The maximum is 40 solutions. The search subtracts the cost of each row from the letter set. A solution is correct when the letter set becomes empty.
-4. The generator keeps the puzzle when two conditions are true. There are two solutions or more. And the solutions have two different row counts or more. The generator prefers three solutions or more. The maximum is 400 tries.
+4. The generator keeps the puzzle only when:
+   - There are two solutions or more.
+   - The solutions have two different row counts or more.
+
+   The generator prefers three solutions or more. The maximum is 400 tries.
 
 The puzzle contains only the letter set and some data about the solutions. When you play, the game examines your rows with the word list and simple letter counts. The code is in `src/games/backwords/engine/lexicon.ts` and `generator.ts`.
