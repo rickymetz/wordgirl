@@ -98,14 +98,6 @@ const HARD_SHAPES: BoardShape[] = [
     [0, 1, 1, 1, 1],
     [1, 1, 0, 1, 0],
   ]),
-  // Winding path (20 cells)
-  parseGrid("h2", [
-    [1, 1, 1, 1, 1],
-    [1, 1, 1, 0, 1],
-    [1, 1, 1, 1, 0],
-    [1, 1, 0, 1, 1],
-    [0, 1, 1, 0, 1],
-  ]),
   // E-shape (16 cells)
   parseGrid("h3", [
     [1, 1, 1, 1, 1],
@@ -113,15 +105,6 @@ const HARD_SHAPES: BoardShape[] = [
     [1, 1, 1, 1, 0],
     [1, 0, 0, 0, 0],
     [1, 1, 1, 1, 1],
-  ]),
-  // Plus (20 cells)
-  parseGrid("h4", [
-    [0, 0, 1, 1, 0, 0],
-    [0, 0, 1, 1, 0, 0],
-    [1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1],
-    [0, 0, 1, 1, 0, 0],
-    [0, 0, 1, 1, 0, 0],
   ]),
   // Widening cascade (16 cells)
   parseGrid("h5", [

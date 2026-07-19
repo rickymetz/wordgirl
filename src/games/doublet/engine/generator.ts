@@ -16,6 +16,7 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 const MAX_ATTEMPTS = 200;
 const MAX_FILL_ATTEMPTS = 80;
 const MAX_SOLVE_NODES = 500_000;
+const MAX_GENERATION_MS = 500;
 
 export function dailySeed(dateKey: string, difficulty: Difficulty): string {
   return `daily:${difficulty}:${dateKey}`;
@@ -33,7 +34,10 @@ export function generateDoublet(
   const rand = seededRandom("doublet:v1:" + seed);
   const shapes = SHAPES[difficulty];
 
+  const deadline = Date.now() + MAX_GENERATION_MS;
+
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (Date.now() > deadline) break;
     const shapeIdx = Math.floor(rand() * shapes.length);
     const shape = shapes[shapeIdx];
     const slots = findSlots(shape);
@@ -41,7 +45,7 @@ export function generateDoublet(
     const fill = fillGrid(shape, slots, dict, rand);
     if (!fill) continue;
 
-    const tiling = findTiling(shape, rand);
+    const tiling = findTiling(shape, rand, deadline);
     if (!tiling) continue;
 
     const dominoes: DominoPiece[] = tiling.map(([c1, c2], i) => ({
@@ -58,7 +62,7 @@ export function generateDoublet(
       orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
     }));
 
-    const solutionCount = countSolutions(shape, slots, dominoes, dict, 2);
+    const solutionCount = countSolutions(shape, slots, dominoes, dict, 2, deadline);
     if (solutionCount !== 1) continue;
 
     const shuffledDominoes = shuffle(
@@ -263,13 +267,17 @@ function fillGrid(
   return null;
 }
 
+const MAX_TILING_NODES = 50_000;
+
 function findTiling(
   shape: BoardShape,
   rand: () => number,
+  deadline?: number,
 ): [Cell, Cell][] | null {
   const cellSet = new Set(shape.cells.map((c) => cellKey(c.row, c.col)));
   const remaining = new Set(cellSet);
   const tiling: [Cell, Cell][] = [];
+  let nodes = 0;
 
   const cells = [...shape.cells].sort(
     (a, b) => a.row * 100 + a.col - (b.row * 100 + b.col),
@@ -292,6 +300,8 @@ function findTiling(
   }
 
   function backtrack(): boolean {
+    if (++nodes > MAX_TILING_NODES) return false;
+    if (deadline && (nodes & 0xff) === 0 && Date.now() > deadline) return false;
     if (remaining.size === 0) return true;
 
     let first: Cell | null = null;
@@ -338,6 +348,7 @@ function countSolutions(
   dominoes: DominoPiece[],
   dict: Dictionary,
   cap: number,
+  deadline?: number,
 ): number {
   const cellSet = new Set(shape.cells.map((c) => cellKey(c.row, c.col)));
   const grid = new Map<string, string>();
@@ -401,6 +412,7 @@ function countSolutions(
 
   function solve(): boolean {
     if (++nodes > MAX_SOLVE_NODES) return true;
+    if (deadline && (nodes & 0xff) === 0 && Date.now() > deadline) return true;
     const target = firstUncovered();
     if (!target) {
       if (checkCompletedSlots()) {
@@ -451,7 +463,7 @@ function countSolutions(
   }
 
   solve();
-  if (nodes > MAX_SOLVE_NODES) return cap;
+  if (nodes > MAX_SOLVE_NODES || (deadline && Date.now() > deadline)) return cap;
   return seenGrids.size;
 }
 
@@ -463,12 +475,16 @@ function generateFallback(
 ): DoubletPuzzle {
   const shape = SHAPES[difficulty][0];
   const slots = findSlots(shape);
+  const fallbackDeadline = Date.now() + MAX_GENERATION_MS * 4;
+  let bestUnverified: { dominoes: DominoPiece[]; tiling: [Cell, Cell][] } | null = null;
 
   for (let i = 0; i < 500; i++) {
+    if (Date.now() > fallbackDeadline) break;
+
     const fill = fillGrid(shape, slots, dict, rand);
     if (!fill) continue;
 
-    const tiling = findTiling(shape, rand);
+    const tiling = findTiling(shape, rand, fallbackDeadline);
     if (!tiling) continue;
 
     const dominoes: DominoPiece[] = tiling.map(([c1, c2], idx) => ({
@@ -478,6 +494,9 @@ function generateFallback(
         fill.get(cellKey(c2.row, c2.col))!,
       ],
     }));
+
+    if (!bestUnverified) bestUnverified = { dominoes, tiling };
+    if (countSolutions(shape, slots, dominoes, dict, 2, fallbackDeadline) !== 1) continue;
 
     const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
       dominoId: i,
@@ -505,6 +524,44 @@ function generateFallback(
       }
     }
 
+    return {
+      seed,
+      dictVersion: DICT_VERSION,
+      difficulty,
+      board: shape,
+      slots,
+      dominoes: shuffled,
+      solution: Array.from(solutionMap.values()),
+    };
+  }
+
+  // Last resort: use a valid but potentially non-unique puzzle rather
+  // than crashing. Prefer uniqueness, but never throw on the main thread.
+  if (bestUnverified) {
+    const { dominoes, tiling } = bestUnverified;
+    const solution: PlacedDomino[] = tiling.map(([c1, c2], i) => ({
+      dominoId: i,
+      anchor: c1,
+      orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
+    }));
+    const shuffled = shuffle(
+      dominoes.map((d) => ({ ...d })),
+      rand,
+    );
+    shuffled.forEach((d, i) => (d.id = i));
+    const solutionMap = new Map<number, PlacedDomino>();
+    for (const sp of solution) {
+      const origLetters = dominoes[sp.dominoId].letters;
+      const newDomino = shuffled.find(
+        (d) =>
+          d.letters[0] === origLetters[0] &&
+          d.letters[1] === origLetters[1] &&
+          !solutionMap.has(d.id),
+      );
+      if (newDomino) {
+        solutionMap.set(newDomino.id, { ...sp, dominoId: newDomino.id });
+      }
+    }
     return {
       seed,
       dictVersion: DICT_VERSION,

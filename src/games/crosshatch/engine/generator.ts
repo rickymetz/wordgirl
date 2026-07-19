@@ -183,7 +183,12 @@ function fixedSlotCount(shape: Shape, combos: Combo[]): number {
  */
 type LetterIndex = ReadonlyMap<number, ReadonlyMap<number, ReadonlyMap<string, readonly string[]>>>;
 
+const indexCache = new WeakMap<Dictionary, LetterIndex>();
+
 function buildLetterIndex(dict: Dictionary): LetterIndex {
+  const cached = indexCache.get(dict);
+  if (cached) return cached;
+
   const idx = new Map<number, Map<number, Map<string, string[]>>>();
   for (const [len, bucket] of dict.all.buckets) {
     const byPos = new Map<number, Map<string, string[]>>();
@@ -204,6 +209,7 @@ function buildLetterIndex(dict: Dictionary): LetterIndex {
     }
     idx.set(len, byPos);
   }
+  indexCache.set(dict, idx);
   return idx;
 }
 
