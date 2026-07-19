@@ -1,0 +1,73 @@
+---
+title: WordGirl
+description: Five daily word games — the rules, the math, and the code behind them.
+template: splash
+hero:
+  tagline: Five daily word games. This site explains how to play them — and the algorithms that build a fresh puzzle for everyone, every day, with no server.
+  actions:
+    - text: Meet the games
+      link: /games/polygram/
+      icon: right-arrow
+    - text: Play at wordgirl.net
+      link: https://wordgirl.net
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import HubCard from '../../components/HubCard.astro';
+
+## The games
+
+<div class="wg-card-grid">
+  <HubCard game="polygram" title="Polygram" href="/docs/games/polygram/"
+    accent="light-dark(#b91c1c, #f87171)">
+    Spell your way from triangle to decagon. Each polygon level asks for every
+    word of its size — find them all and a new letter joins.
+  </HubCard>
+  <HubCard game="crosshatch" title="Crosshatch" href="/docs/games/crosshatch/"
+    accent="light-dark(#0c7d84, #3ddbd9)">
+    Every way the words fit. A small crossword frame with given letters — the
+    goal isn't one solution, it's all of them.
+  </HubCard>
+  <HubCard game="backwords" title="Backwords" href="/docs/games/backwords/"
+    accent="light-dark(#a21caf, #e879f9)">
+    Every word, a reflection. Place letters against a mirror; the reflection
+    spells the rest.
+  </HubCard>
+  <HubCard game="doublet" title="Doublet" href="/docs/games/doublet/"
+    accent="light-dark(#92400e, #fbbf24)">
+    Place the tiles. Spell the words. Letter dominoes onto a shaped board, with
+    exactly one valid arrangement.
+  </HubCard>
+  <HubCard game="serpentine" title="Serpentine" href="/docs/games/serpentine/"
+    accent="light-dark(#4d7c0f, #a3e635)">
+    One continuous line. Trace a path through every cell to reveal a hidden
+    line of poetry.
+  </HubCard>
+  <HubCard title="Daily puzzles" href="/docs/games/daily-puzzles/">
+    Every generator is a pure function of the date. Seeded determinism,
+    quality gates and version stamps keep everyone's puzzle identical —
+    offline, with no server.
+  </HubCard>
+</div>
+
+## For developers
+
+<CardGrid>
+  <Card title="Architecture" icon="open-book">
+    One Vite app, five games, a registry, and pure-TypeScript engines.
+    [Start with the overview →](/docs/architecture/overview/)
+  </Card>
+  <Card title="Game Kit" icon="seti:react">
+    The shared components, hooks and utilities every game is built from.
+    [Browse the kit →](/docs/kit/components/)
+  </Card>
+  <Card title="Design system" icon="seti:css">
+    `light-dark()` tokens, per-game accents, and the house chart style.
+    [Read the rules →](/docs/design/colors/)
+  </Card>
+  <Card title="Add a game" icon="rocket">
+    The 14-step checklist, narrated. [Follow the guide →](/docs/guides/adding-a-game/)
+  </Card>
+</CardGrid>

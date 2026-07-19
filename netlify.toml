@@ -96,7 +96,21 @@
   to = "/404.html"
   status = 404
 
-# SPA catch-all — must come AFTER the bot blockers
+# Docs — proxied from the GitHub Pages deploy (base "/docs"), so the
+# site lives at wordgirl.net/docs with no DNS or extra host. Custom
+# headers below do NOT apply to proxied responses, which is deliberate:
+# the docs need inline styles/scripts the app CSP forbids.
+[[redirects]]
+  from = "/docs"
+  to = "/docs/"
+  status = 301
+
+[[redirects]]
+  from = "/docs/*"
+  to = "https://rickymetz.github.io/wordgirl/:splat"
+  status = 200
+
+# SPA catch-all — must come AFTER the bot blockers and the docs proxy
 [[redirects]]
   from = "/*"
   to = "/index.html"

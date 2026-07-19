@@ -1,0 +1,70 @@
+---
+// A hub-style game card: tinted panel, the game's real title glyph,
+// and the game's own accent — like the cards on wordgirl.net.
+import GameGlyph from "./GameGlyph.astro";
+
+interface Props {
+  game?: "polygram" | "crosshatch" | "backwords" | "doublet" | "serpentine";
+  title: string;
+  href: string;
+  /** light-dark() accent pair; omit for the neutral hub accent. */
+  accent?: string;
+}
+const { game, title, href, accent } = Astro.props;
+---
+
+<a class="wg-card" href={href} style={accent ? `--wg-accent: ${accent}` : undefined}>
+  {/* Glyph trails the title — house rule ("Serpentine ⟆"). */}
+  <span class="wg-card-head">
+    <span class="wg-card-title">{title}</span>
+    {game && <GameGlyph game={game} size={22} />}
+  </span>
+  <span class="wg-card-body"><slot /></span>
+</a>
+
+<style>
+  .wg-card {
+    /* Re-derive the tint from this card's accent (custom properties
+       resolve where defined, so the :root tint wouldn't recolor). */
+    --wg-surface-tint: light-dark(
+      color-mix(in oklab, var(--wg-accent) 6%, var(--wg-surface-raised)),
+      color-mix(in oklab, var(--wg-accent) 13%, var(--wg-surface-raised))
+    );
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.125rem 1.125rem;
+    border: 1px solid var(--wg-line);
+    border-radius: 1.25rem;
+    background: var(--wg-surface-tint);
+    text-decoration: none;
+    color: var(--sl-color-text);
+  }
+  .wg-card:hover {
+    border-color: color-mix(in oklab, var(--wg-accent) 45%, var(--wg-line));
+  }
+  /* Matches the app hub card (text-2xl font-bold tracking-tight, ink)
+     with the title glyph at the in-game 0.83em ratio. */
+  .wg-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.42em;
+    font-size: 1.35rem;
+    color: var(--wg-accent);
+  }
+  .wg-card-head :global(svg) {
+    width: 0.83em;
+    height: 0.83em;
+  }
+  .wg-card-title {
+    font-family: var(--wg-font-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--wg-ink);
+  }
+  .wg-card-body {
+    font-size: var(--sl-text-sm);
+    line-height: 1.55;
+    color: var(--sl-color-gray-2);
+  }
+</style>

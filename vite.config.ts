@@ -24,6 +24,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,txt,svg,png,woff2}"],
         navigateFallback: "/index.html",
+        // The docs site is proxied at /docs (netlify.toml) — without
+        // this the SW would serve the app shell for docs navigations.
+        navigateFallbackDenylist: [/^\/docs/],
       },
       manifest: {
         name: "WordGirl",
@@ -32,7 +35,7 @@ export default defineConfig({
         start_url: "/",
         display: "standalone",
         background_color: "#ffffff",
-        theme_color: "#6d28d9",
+        theme_color: "#ffffff",
         icons: [
           { src: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
           { src: "/icons/pwa-512.png", sizes: "512x512", type: "image/png" },

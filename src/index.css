@@ -20,8 +20,14 @@
   --color-line: light-dark(#e3e0d9, #322f38);
   /* Neutral petal-tile fill — stays grey while the accent changes. */
   --color-tile: light-dark(#e4e0d8, #2c2a33);
-  --color-accent: light-dark(#7c3aed, #a78bfa);
-  --color-accent-soft: light-dark(#ede9fe, #2e2447);
+  /* Neutral root accent: hub chrome and anything outside a game's
+     data-level scope is black-and-white. */
+  --color-accent: light-dark(#171717, #e5e5e5);
+  --color-accent-soft: color-mix(
+    in oklab,
+    var(--color-accent) 27%,
+    var(--color-surface)
+  );
   /* Hub bento tiles: a slight accent wash in light mode; stronger in
      dark, where it keeps the clusters from reading as one grey slab. */
   --color-surface-tint: light-dark(
@@ -45,7 +51,8 @@
     var(--color-surface)
   );
   /* Re-mix with the level accent — custom properties resolve var()
-     where they're DECLARED, so the root definition keeps root purple. */
+     where they're DECLARED, so the root definition keeps the neutral
+     root accent. */
   --color-surface-tint: light-dark(
     color-mix(in oklab, var(--color-accent) 6%, var(--color-surface-raised)),
     color-mix(in oklab, var(--color-accent) 13%, var(--color-surface-raised))

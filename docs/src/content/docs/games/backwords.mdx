@@ -1,0 +1,83 @@
+---
+title: Backwords
+description: Every word, a reflection — mirror pairs, palindromes, and the multiset-partition solver behind each day's letter bank.
+---
+
+<style>{`:root { --wg-accent: light-dark(#a21caf, #e879f9); }`}</style>
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/backwords.png';
+
+<Image src={teaser} alt="Backwords — letter tiles placed against a mirror" width={480} />
+
+**Every word, a reflection.** Backwords gives you a bank of letters and a
+mirror. Place letters on the left; the mirror spells the rest. Empty the whole
+bank into valid rows and the day is done.
+
+## How to play
+
+There are two kinds of row:
+
+- **Pair** — a word whose reversal is *also* a word (like STOP / POTS). Place
+  one of them; its reflection appears on the other side. A pair consumes the
+  full word's letters, and either orientation is a valid placement.
+- **Palindrome** — a word that reads the same both ways (like LEVEL). You
+  place only the first half, $\lceil n/2 \rceil$ letters; the mirror
+  completes it. Odd-length palindromes put their middle letter *on* the
+  mirror line — a straddle row.
+
+Every day's bank decomposes in **more than one way**, and the ways differ in
+row count — so there's a real choice between a greedy decomposition and an
+efficient one.
+
+The ✦ flourish marks a **glyph-true** row: one built only from letters whose
+uppercase shapes survive a real vertical mirror — A H I M O T U V W X Y — so
+a physical mirror would render exactly the reflection you see.
+
+## Under the hood
+
+### The lexicon
+
+`src/games/backwords/engine/lexicon.ts` scans the common dictionary tier
+once and builds a map from *placement string* to row definition:
+
+- **Pairs**: every word whose reversal is a different valid word, entered
+  under both orientations.
+- **Palindromes**: entered by their placed half, shortest first, with
+  **prefix aliases** so typing past one palindrome's half can reach a longer
+  one (typing past POP's half "po" reaches POO and POOP).
+
+Each row carries a `cost` — the sorted multiset of letters it consumes. The
+generator and the play-time validator share this lexicon, so any accepted
+puzzle is guaranteed solvable under exactly the player's rules.
+
+### The solver: exact multiset partition
+
+Emptying the bank is an **unordered exact-cover problem over letter
+multisets**: pick a set of rows whose combined letter costs equal the bank
+exactly. That problem is NP-hard in general, but banks are small enough that
+exhaustive enumeration is instant.
+
+`solveBank` does a DFS over the lexicon in index order — recursing only
+forward from the current index, which makes solutions unordered and
+repetition-free by construction — subtracting each row's cost from the bank's
+letter counts and succeeding when the bank empties. With banks of at most 12
+letters and rows costing at least 2, recursion depth is bounded around 6.
+Enumeration caps at 40 solutions.
+
+### Generation
+
+Up to 400 attempts (`src/games/backwords/engine/generator.ts`):
+
+1. Seed with one pair costing **4+ letters**, so every day has a meaty row.
+2. Pad with random distinct lexicon items until the bank holds **8–12
+   letters**. (The band was tightened from 12–16 in v2: it cut staple
+   repetition sharply — the most common item appeared in 37% of days'
+   solution spaces instead of 52% — while keeping generation robust.)
+3. Solve the bank completely. Accept only if there are **at least 2 full
+   decompositions with at least 2 distinct row counts**; prefer days with 3+
+   solutions, keeping the first 2-solution candidate as a fallback.
+
+The shipped puzzle is just the bank plus metadata (`solutionCount`,
+`rowCounts`) — play-time validation is a lexicon lookup and multiset
+arithmetic.

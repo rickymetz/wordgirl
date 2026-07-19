@@ -1,0 +1,84 @@
+---
+title: Doublet
+description: Place the tiles, spell the words — a three-phase generator stacking crossword fill, domino tiling, and a solution-uniqueness proof.
+---
+
+<style>{`:root { --wg-accent: light-dark(#92400e, #fbbf24); }`}</style>
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/doublet.png';
+
+<Image src={teaser} alt="Doublet — letter dominoes on a shaped board" width={480} />
+
+**Place the tiles. Spell the words.** Doublet hands you a set of two-letter
+dominoes and a shaped board. Place every domino so that each across and down
+run of two or more cells spells a dictionary word. There is exactly **one**
+way to do it.
+
+## How to play
+
+- Drag dominoes onto the board; rotate and flip them freely (each piece has
+  four orientations).
+- Every maximal row and column run of 2+ cells must end up a valid word.
+- Three difficulties change the board: **Easy** (6–8 cells), **Medium**
+  (10–12), **Hard** (16). Boards are hand-drawn polyominoes — always with an
+  even cell count, a necessary condition for a perfect domino tiling.
+- Progress ranks trigger at 25 / 50 / 75 / 100% of dominoes placed:
+  *Placed → Arranged → Fitted → Solved*.
+
+## Under the hood
+
+Doublet's generator (`src/games/doublet/engine/generator.ts`) composes three
+independently hard problems per attempt, under a **500 ms wall-clock
+deadline** and up to 200 attempts.
+
+### Phase 1 — Fill the board with words (CSP)
+
+`findSlots` extracts every maximal run of 2+ cells in both directions — these
+are the word constraints. Backtracking then assigns whole words to slots:
+
+- Static **most-constrained-first** ordering: slots with the most crossings
+  first, shorter before longer.
+- 40 shuffled candidates per slot, with **forward checking** — after each
+  placement, every unassigned crossing slot must still have at least one
+  valid candidate, or the placement is undone.
+- Global node budget of `MAX_FILL_ATTEMPTS × slots × 10`.
+
+### Phase 2 — Cut the board into dominoes (perfect matching)
+
+`findTiling` finds a random **perfect matching** of the board's grid graph:
+repeatedly take the first uncovered cell in row-major order and try pairing
+it with a shuffled orthogonal neighbor, backtracking on failure. Always
+matching the *first* uncovered cell is the classic domino-tiling trick that
+eliminates symmetric orderings. Capped at 50,000 nodes, with the deadline
+checked every 256 nodes.
+
+### Phase 3 — Prove the solution is unique
+
+This is what makes the puzzle satisfying — and the subtle part.
+`countSolutions` re-solves the puzzle exactly as a player would: place the
+remaining dominoes (both orientations, both flips) on the first uncovered
+cell, pruning with two checks after every placement:
+
+- every **partially-filled** slot must still extend to some dictionary word;
+- every **completed** slot must *be* a dictionary word.
+
+Solutions are deduplicated by the **final letter grid**, not the domino
+arrangement — two identical-letter dominoes swapping places is the same
+solution. The attempt is accepted only when exactly one letter grid exists
+(the count is capped at 2 for early exit). The search has a 500,000-node
+budget; if it blows the budget or the deadline, the count conservatively
+returns the cap — i.e. "not proven unique" — and the attempt is rejected.
+
+Finally the dominoes are shuffled and re-labeled, and the stored solution is
+remapped onto the shuffled pieces by letter matching.
+
+### The fallback ladder
+
+Generation must never hang or crash the main thread on a bad seed:
+
+1. Main loop: 200 attempts within 500 ms.
+2. `generateFallback`: retry on the tier's first board shape with a 4×
+   deadline.
+3. Last resort: ship the best *unverified* fill — possibly non-unique, but
+   playable.

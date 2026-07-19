@@ -1,0 +1,78 @@
+---
+title: Crosshatch
+description: Every way the words fit — a crossword frame where the goal is every valid filling, built as a constraint-satisfaction problem.
+---
+
+<style>{`:root { --wg-accent: light-dark(#0c7d84, #3ddbd9); }`}</style>
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/crosshatch.png';
+
+<Image src={teaser} alt="Crosshatch — a small crossword frame with given letters" width={480} />
+
+**Every way the words fit.** Crosshatch shows a small crossword frame with a
+few letters already placed. Unlike a normal crossword, there isn't one answer:
+many different word combinations fit the frame, and your goal is to discover
+**every word** that appears in *any* valid filling.
+
+## How to play
+
+- Fill the frame so that every line spells a dictionary word consistent with
+  the given letters, then submit. A valid grid **banks every new word in
+  it** — the unit of progress is the distinct word, not the full grid, so you
+  never re-submit near-identical grids just to sweep a cross-product.
+- Words can't repeat within one grid (crossword convention).
+- The day counts as **solved at 90%** of the distinct words — with always at
+  least two words of slack. Finding 100% is the flex above it, so one elusive
+  word never breaks a streak.
+
+The exact target (`src/games/crosshatch/engine/scoring.ts`):
+
+$$
+\text{target}(n) = \max\!\Big(1,\; \min\big(\lceil 0.9\,n \rceil,\; n-2\big)\Big)
+$$
+
+The $n-2$ clamp exists because a plain ceiling made "90%" mean "all but one"
+on every 10–19-word day.
+
+## Under the hood
+
+Crossword filling is NP-hard in general. Crosshatch keeps it fast with tiny
+hand-designed frames and classic CSP machinery
+(`src/games/crosshatch/engine/generator.ts`).
+
+### The shape library
+
+Eight hand-designed skeletons — *h, ring, comb, rake, stairs, cross, lattice,
+zipper* — each with 3–5 interlocking slots of 3–5 letters inside a 5×5 grid
+(kept small for tappability on phones). The array's order and contents are
+frozen: daily seeds index into it, so any edit would silently reshuffle
+history.
+
+### Generation: seed a solution, then tighten
+
+1. **Random fill.** Find one complete valid filling by backtracking with the
+   **most-constrained-variable (MRV)** heuristic — always fill the slot with
+   the fewest candidates next — sampling only 40 shuffled candidates per slot
+   to keep runtime flat. Candidate lookup uses a memoized positional index,
+   `(length, position, letter) → words`: intersect constraints by scanning the
+   *smallest* matching list and filter-checking the rest.
+2. **Minimal givens.** Place one given letter per slot (a shared cell can
+   cover two slots), guarded so no given ever completes a line outright.
+3. **Enumerate everything.** An exhaustive DFS (`enumerateCombos`) lists
+   *every* filling consistent with the givens, MRV-ordered, no word reused
+   across slots, capped at `ENUM_CAP = 200` — past that the grid is too loose
+   to be a puzzle.
+4. **Tighten.** While the enumeration hits the cap, the distinct-word count
+   exceeds 22, or any single slot admits more than 8 words, add another given
+   — preferentially inside the "fattest" slot — up to 6 extras. Accept when
+   the day lands at **10–22 distinct words** with at most one fully-locked
+   slot. Over-tightened attempts are discarded; the generator retries up to
+   300 times.
+
+### Why play-time validation is free
+
+The full combo list ships inside the puzzle object (it's regenerated from the
+seed, never persisted). Checking a submitted grid is just a lookup against
+the enumerated solution space — the expensive search all happened once, at
+generation time.
