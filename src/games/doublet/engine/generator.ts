@@ -16,6 +16,7 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 const MAX_ATTEMPTS = 200;
 const MAX_FILL_ATTEMPTS = 80;
 const MAX_SOLVE_NODES = 500_000;
+const MAX_GENERATION_MS = 500;
 
 export function dailySeed(dateKey: string, difficulty: Difficulty): string {
   return `daily:${difficulty}:${dateKey}`;
@@ -33,7 +34,10 @@ export function generateDoublet(
   const rand = seededRandom("doublet:v1:" + seed);
   const shapes = SHAPES[difficulty];
 
+  const deadline = Date.now() + MAX_GENERATION_MS;
+
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (Date.now() > deadline) break;
     const shapeIdx = Math.floor(rand() * shapes.length);
     const shape = shapes[shapeIdx];
     const slots = findSlots(shape);
@@ -58,7 +62,7 @@ export function generateDoublet(
       orientation: (c1.row === c2.row ? 0 : 1) as 0 | 1,
     }));
 
-    const solutionCount = countSolutions(shape, slots, dominoes, dict, 2);
+    const solutionCount = countSolutions(shape, slots, dominoes, dict, 2, deadline);
     if (solutionCount !== 1) continue;
 
     const shuffledDominoes = shuffle(
@@ -338,6 +342,7 @@ function countSolutions(
   dominoes: DominoPiece[],
   dict: Dictionary,
   cap: number,
+  deadline?: number,
 ): number {
   const cellSet = new Set(shape.cells.map((c) => cellKey(c.row, c.col)));
   const grid = new Map<string, string>();
@@ -401,6 +406,7 @@ function countSolutions(
 
   function solve(): boolean {
     if (++nodes > MAX_SOLVE_NODES) return true;
+    if (deadline && (nodes & 0xff) === 0 && Date.now() > deadline) return true;
     const target = firstUncovered();
     if (!target) {
       if (checkCompletedSlots()) {
@@ -451,7 +457,7 @@ function countSolutions(
   }
 
   solve();
-  if (nodes > MAX_SOLVE_NODES) return cap;
+  if (nodes > MAX_SOLVE_NODES || (deadline && Date.now() > deadline)) return cap;
   return seenGrids.size;
 }
 
