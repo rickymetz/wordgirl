@@ -112,6 +112,9 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   "Grow the flock").
 - lucide-react icons only in UI chrome — emoji are allowed ONLY inside
   share strings. Share strings end with `SHARE_URL` (`src/lib/share.ts`).
+- A game's title glyph comes AFTER the title, never before
+  ("Serpentine ⟆", not "⟆ Serpentine") — in game headers and anywhere
+  else the pairing appears (docs, marketing).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in.

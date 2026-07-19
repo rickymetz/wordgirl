@@ -14,9 +14,10 @@ const { game, title, href, accent } = Astro.props;
 ---
 
 <a class="wg-card" href={href} style={accent ? `--wg-accent: ${accent}` : undefined}>
+  {/* Glyph trails the title — house rule ("Serpentine ⟆"). */}
   <span class="wg-card-head">
-    {game && <GameGlyph game={game} size={22} />}
     <span class="wg-card-title">{title}</span>
+    {game && <GameGlyph game={game} size={22} />}
   </span>
   <span class="wg-card-body"><slot /></span>
 </a>

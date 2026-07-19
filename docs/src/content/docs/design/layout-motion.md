@@ -59,4 +59,7 @@ Three layers of reduced-motion respect:
   headlines are plain ("Clear the level", not "Grow the flock").
 - **lucide-react icons only** in UI chrome. Emoji are allowed in share
   strings only.
+- A game's title glyph comes **after** the title, never before
+  ("Serpentine ⟆", not "⟆ Serpentine") — in game headers and anywhere
+  else the pairing appears (docs, marketing).
 - Archive separators use `·`, not `.`.

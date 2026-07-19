@@ -10,13 +10,14 @@ const game = match?.[1] as
   | undefined;
 ---
 
-<h1 id="_top">{game && <span class="wg-title-glyph"><GameGlyph game={game} size={30} /></span>}{entry.data.title}</h1>
+{/* Glyph trails the title, matching the in-game headers ("Serpentine ⟆"). */}
+<h1 id="_top">{entry.data.title}{game && <span class="wg-title-glyph"><GameGlyph game={game} size={30} /></span>}</h1>
 
 <style>
   .wg-title-glyph {
     display: inline-block;
     vertical-align: -0.12em;
-    margin-inline-end: 0.35rem;
+    margin-inline-start: 0.35rem;
     color: var(--wg-accent);
   }
 </style>
