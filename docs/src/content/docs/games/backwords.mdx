@@ -44,3 +44,28 @@ The generator makes the puzzle in these steps:
    The generator prefers three solutions or more. The maximum is 400 tries.
 
 The puzzle contains only the letter set and some data about the solutions. When you play, the game examines your rows with the word list and simple letter counts. The code is in `src/games/backwords/engine/lexicon.ts` and `generator.ts`.
+
+## The mathematics
+
+### The puzzle is a multiset partition
+
+The bank is a multiset of letters. A multiset is a set in which an item can occur more than one time. Each row has a cost $c_i$, also a multiset. A solution is a set of rows whose costs sum to the bank exactly:
+
+$$
+\sum_{i \in S} c_i = B
+$$
+
+Here $B$ is the bank and $S$ is the set of selected rows. No letter can remain. No letter can be missing. This problem is a form of exact cover. Exact cover is NP-hard in the general case.
+
+### Why the search stays fast
+
+Two limits make the search small:
+
+- The bank has a maximum of 12 letters.
+- Each row costs a minimum of 2 letters.
+
+Thus a solution has a maximum of 6 rows, and the recursion depth has the same limit. The search also goes through the row list in one fixed order. A branch can only select rows after its current position. Thus each solution set is counted one time, without permutations.
+
+### The mirror letters
+
+The star rows use only the letters A, H, I, M, O, T, U, V, W, X, and Y. These letters are their own mirror image. In mathematical terms, they are the fixed points of a vertical reflection. For these rows, the drawn reflection and a real optical reflection agree.

@@ -43,7 +43,39 @@ The generator makes the puzzle in these steps. The code is in `src/games/serpent
 5. If no path is found, the generator uses a simple alternative. This path goes through the rows in alternate directions. This path is always possible on these grids.
 6. The generator writes the letters of the poem along the path.
 
-A path through all the cells is a Hamiltonian path. This problem is difficult in general. But the Warnsdorff rule is almost always successful on these small grids. The diagonal movement makes many connections between cells. Thus a path is almost always possible.
+## The mathematics
+
+### The path is a Hamiltonian path
+
+A path through all the cells, one time each, is a Hamiltonian path. The decision problem "does this graph have a Hamiltonian path?" is NP-complete. A general algorithm with a time guarantee is not known.
+
+### Why the grid makes it easy
+
+The grid is a king graph. The name comes from the chess king. Each cell connects to the eight cells around it. An interior cell has degree 8. This graph is much denser than a grid with only four directions. On dense graphs of this size, a maximum of 80 cells, a random search finds a Hamiltonian path with high probability.
+
+### The Warnsdorff rule
+
+The path search is a greedy walk with one rule. From the current cell $v$, go to the free adjacent cell $u$ with the fewest free adjacent cells:
+
+$$
+u = \arg\min_{u \in N(v),\ u \text{ free}} \big|\, N(u) \cap \text{free} \,\big|
+$$
+
+The idea: go to the cells that are almost isolated first. A cell with few free connections becomes unreachable easily. The rule comes from the knight's tour problem (Warnsdorff, 1823). The search has no backtracking. A dead end starts a new walk from a new random cell. The random tie decision makes each new walk different.
+
+### The guaranteed alternative
+
+If 200 walks fail, the generator makes a boustrophedon path. The path goes through row 1 to the right, row 2 to the left, and so on. Each step in this path is a king move. Thus the path is correct by construction on these boards. The generator cannot fail.
+
+### The grid selection
+
+For a text with $n$ letters, the generator minimizes this score over all grids to 8 by 10:
+
+$$
+\text{score}(r, c) = 10\,(rc - n) + |r - c|
+$$
+
+The first term counts the empty cells. The second term measures the difference from a square. The factor 10 makes empty cells much more important than shape.
 
 ## Versions
 
