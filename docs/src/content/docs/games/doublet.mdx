@@ -1,6 +1,6 @@
 ---
 title: Doublet
-description: Place the tiles, spell the words — a three-phase generator stacking crossword fill, domino tiling, and a solution-uniqueness proof.
+description: Put letter dominoes on a board. Each line must make a word. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#92400e, #fbbf24); }`}</style>
@@ -10,75 +10,39 @@ import teaser from '../../../assets/doublet.png';
 
 <Image src={teaser} alt="Doublet — letter dominoes on a shaped board" width={480} />
 
-**Place the tiles. Spell the words.** Doublet hands you a set of two-letter
-dominoes and a shaped board. Place every domino so that each across and down
-run of two or more cells spells a dictionary word. There is exactly **one**
-way to do it.
+Doublet is a domino game. The game gives you dominoes with two letters. You put the dominoes on a board. Each line of two letters or more must make a word. Only one arrangement of the dominoes is correct.
 
 ## How to play
 
-- Drag dominoes onto the board; rotate and flip them freely (each piece has
-  four orientations).
-- Every maximal row and column run of 2+ cells must end up a valid word.
-- Three difficulties change the board: **Easy** (6–8 cells), **Medium**
-  (10–12), **Hard** (16). Boards are hand-drawn polyominoes — always with an
-  even cell count, a necessary condition for a perfect domino tiling.
-- Progress ranks trigger at 25 / 50 / 75 / 100% of dominoes placed:
-  *Placed → Arranged → Fitted → Solved*.
+1. Move a domino to the board.
+2. Turn the domino if it is necessary. Each domino has four possible positions.
+3. Continue until all the lines make correct words.
 
-## Under the hood
+The game has three difficulty levels. Easy boards have 6 to 8 cells. Medium boards have 10 to 12 cells. Hard boards have 16 cells. Each board has an even number of cells. This condition is necessary for a full set of dominoes.
 
-Doublet's generator (`src/games/doublet/engine/generator.ts`) composes three
-independently hard problems per attempt, under a **500 ms wall-clock
-deadline** and up to 200 attempts.
+Your rank increases at 25, 50, 75, and 100 percent of the dominoes. The ranks are Placed, Arranged, Fitted, and Solved.
 
-### Phase 1 — Fill the board with words (CSP)
+## How the game makes a puzzle
 
-`findSlots` extracts every maximal run of 2+ cells in both directions — these
-are the word constraints. Backtracking then assigns whole words to slots:
+The generator has a time limit of 500 milliseconds. It has a maximum of 200 tries. Each try has three steps. The code is in `src/games/doublet/engine/generator.ts` and `boards.ts`.
 
-- Static **most-constrained-first** ordering: slots with the most crossings
-  first, shorter before longer.
-- 40 shuffled candidates per slot, with **forward checking** — after each
-  placement, every unassigned crossing slot must still have at least one
-  valid candidate, or the placement is undone.
-- Global node budget of `MAX_FILL_ATTEMPTS × slots × 10`.
+### Step 1: Fill the board with words
 
-### Phase 2 — Cut the board into dominoes (perfect matching)
+The generator finds each line of two cells or more. These lines are the word slots. The generator fills the slots with words. It fills the most difficult slots first. It examines a maximum of 40 words for each slot. After each word, it makes sure that the other slots can still get a word. If a slot cannot get a word, the generator removes the last word.
 
-`findTiling` finds a random **perfect matching** of the board's grid graph:
-repeatedly take the first uncovered cell in row-major order and try pairing
-it with a shuffled orthogonal neighbor, backtracking on failure. Always
-matching the *first* uncovered cell is the classic domino-tiling trick that
-eliminates symmetric orderings. Capped at 50,000 nodes, with the deadline
-checked every 256 nodes.
+### Step 2: Cut the board into dominoes
 
-### Phase 3 — Prove the solution is unique
+The generator connects the cells in pairs. Each pair is one domino. The generator always starts with the first free cell. It connects this cell with a random adjacent cell. If a connection is not possible, the generator goes back one step. The maximum is 50,000 steps.
 
-This is what makes the puzzle satisfying — and the subtle part.
-`countSolutions` re-solves the puzzle exactly as a player would: place the
-remaining dominoes (both orientations, both flips) on the first uncovered
-cell, pruning with two checks after every placement:
+### Step 3: Make sure that only one solution is possible
 
-- every **partially-filled** slot must still extend to some dictionary word;
-- every **completed** slot must *be* a dictionary word.
+The generator then solves the puzzle again as a player. It puts each remaining domino on the first free cell in each possible position. After each domino, it examines the lines:
 
-Solutions are deduplicated by the **final letter grid**, not the domino
-arrangement — two identical-letter dominoes swapping places is the same
-solution. The attempt is accepted only when exactly one letter grid exists
-(the count is capped at 2 for early exit). The search has a 500,000-node
-budget; if it blows the budget or the deadline, the count conservatively
-returns the cap — i.e. "not proven unique" — and the attempt is rejected.
+- Each line that is not complete must have a possible word.
+- Each line that is complete must be a correct word.
 
-Finally the dominoes are shuffled and re-labeled, and the stored solution is
-remapped onto the shuffled pieces by letter matching.
+Two solutions are the same when the letters on the board are the same. The generator keeps the puzzle only when one solution is possible. The maximum is 500,000 steps. If the search does not complete in the limits, the generator removes the puzzle.
 
-### The fallback ladder
+### If the generator is not successful
 
-Generation must never hang or crash the main thread on a bad seed:
-
-1. Main loop: 200 attempts within 500 ms.
-2. `generateFallback`: retry on the tier's first board shape with a 4×
-   deadline.
-3. Last resort: ship the best *unverified* fill — possibly non-unique, but
-   playable.
+The generator then tries the first board shape again with four times more time. If this try is also not successful, the generator gives the best available puzzle. This puzzle possibly has more than one solution. Thus the game does not stop.

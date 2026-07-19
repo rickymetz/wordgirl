@@ -1,16 +1,13 @@
 ---
 title: How daily puzzles work
-description: Seeded determinism, quality gates, and version stamps — how every player gets the same puzzle with no server.
+description: Each device makes the same puzzle each day. This page tells you how.
 ---
 
-WordGirl has no puzzle server. Every player's device generates the day's
-puzzles locally — and everyone gets exactly the same ones. This page explains
-the machinery shared by all five games.
+WordGirl has no puzzle server. Your device makes the puzzles for the day. Each device makes the same puzzles. This page tells you about the parts that all five games use.
 
-## Seeded determinism
+## The seed
 
-Every generator is a **pure function of `(dictionary, seed string)`**. The
-seed is built from the local date, namespaced and versioned per game:
+Each generator is a function of two inputs. The inputs are the dictionary and a seed text. The seed text contains the game name, a version number, and the local date. These are examples:
 
 ```
 polygram:v1:daily:2026-07-19
@@ -18,54 +15,31 @@ backwords:v2:daily:2026-07-19
 serpentine:v2:daily:haiku:2026-07-19
 ```
 
-The PRNG (`src/lib/random.ts`) is an **xmur3** string hash feeding
-**mulberry32** — a small, fast 32-bit generator producing floats in `[0, 1)`
-— plus a deterministic Fisher–Yates `shuffle`. Same seed, same puzzle, on
-any device, offline.
+The seed goes into a random number generator. The generator is xmur3 and mulberry32 (`src/lib/random.ts`). The same seed always gives the same numbers. Thus the same date gives the same puzzle on each device. No connection is necessary.
 
-Two consequences the codebase treats as law:
+Two rules apply to all the games:
 
-- **PRNG consumption order is frozen.** Reordering two `rand()` calls in a
-  generator silently reshuffles every historical puzzle. Any such change
-  must ride a seed-version bump (`v1` → `v2`), which changes every day's
-  puzzle at once, deliberately.
-- **Shared data is frozen too.** Crosshatch's shape library and Serpentine's
-  poetry pools are indexed by seed — appending is safe, reordering is not.
+- The order of the random numbers is frozen. If a code change moves one random call, all the old puzzles change. Such a change must also change the version number in the seed.
+- Shared data lists are frozen. The seed points into the Crosshatch shape list and the Serpentine poem list. You can add items to the end of a list. You cannot change the order of a list.
 
-## Generate-and-test with an authored aesthetic band
+## Make and examine
 
-All five generators follow the same shape: **cheap randomized construction,
-then hard quality gates, retried under explicit caps.**
+All five generators operate in the same pattern. The generator makes a random puzzle quickly. Then it examines the puzzle against quality limits. If the puzzle is not correct, the generator starts again. Each generator has a maximum number of tries.
 
-| Game | Construction | Quality gates | Cap / budget |
+| Game | Method | Quality limits | Maximums |
 |------|--------------|---------------|--------------|
-| Polygram | greedy letter growth | reaches ≥ pentagon, ≤ 35 words, per-level bands | 300 attempts |
-| Crosshatch | MRV backtracking fill + given tightening | 10–22 distinct words, ≤ 1 locked slot, no dominant slot | 300 attempts |
-| Backwords | random bank assembly | ≥ 2 decompositions with ≥ 2 distinct row counts | 400 attempts |
-| Doublet | CSP fill + random perfect matching | provably unique letter grid | 200 attempts, 500 ms deadline, node budgets |
-| Serpentine | Warnsdorff path walk | full coverage (else restart) | 200 attempts + boustrophedon fallback |
+| Polygram | letter growth | 5 levels or more, 35 words maximum, word limits for each level | 300 tries |
+| Crosshatch | slot fill and letter adds | 10 to 22 words, 1 closed slot maximum | 300 tries |
+| Backwords | random letter set | 2 solutions or more, 2 row counts or more | 400 tries |
+| Doublet | word fill and domino cut | only one solution | 200 tries, 500 ms |
+| Serpentine | Warnsdorff path | path through all cells | 200 tries, then a simple path |
 
-Every game also has a graceful floor — a fallback candidate, a relaxed
-retry, or a constructive algorithm — so a pathological seed can never hang
-or crash the main thread. Generation runs on-device within mobile
-performance budgets.
+Each game also has a safe alternative for a bad seed. Thus the game cannot stop or become slow.
 
-## Version stamps
+## Version numbers
 
-The four dictionary games stamp `DICT_VERSION` (currently **15**, defined in
-`src/lib/words/dictionary.ts`) into every generated puzzle and saved day.
-It's bumped whenever *puzzle derivation* changes — a wordlist edit, a
-generator tweak, a scoring rule — not just dictionary content. Persistence
-uses it to recognize stale saves: yesterday's half-finished day generated
-under version 14 won't be replayed against a version-15 puzzle it no longer
-matches. Serpentine, having no dictionary, versions through its seed string
-instead.
+Four games use the dictionary. These games write `DICT_VERSION` into each puzzle and each saved day. The number is 15 at this time (`src/lib/words/dictionary.ts`). The number increases when the puzzle calculation changes. Examples are a word list change, a generator change, or a score change. An old saved day does not agree with a new puzzle. The version number finds this condition. Serpentine has no dictionary. Its version number is in the seed text.
 
-## Ship the solution, validate for free
+## The solution is in the puzzle
 
-A recurring trick: the generator ships the puzzle **already solved or fully
-enumerated** — Crosshatch's complete combo list, Backwords' solution
-metadata, Doublet's placement solution, Serpentine's path. Play-time
-validation is then trivial (set lookups and arithmetic), which is what makes
-instant, offline feedback possible on low-end phones. Solutions are
-regenerated from the seed on load, never persisted.
+Each generator gives the puzzle together with its solution data. Examples are the Crosshatch word sets, the Backwords solution counts, and the Serpentine path. Thus the answer check is fast when you play. The game makes the solution again from the seed. The game does not keep the solution in storage.

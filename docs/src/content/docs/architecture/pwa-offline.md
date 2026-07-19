@@ -1,56 +1,34 @@
 ---
-title: PWA & offline
-description: Service worker, precache, and the update flow that keeps the app fresh without interrupting play.
+title: PWA and offline operation
+description: The service worker keeps the application available without a connection.
 ---
 
-WordGirl is installable and fully playable offline — puzzles are generated
-on-device ([no server](/docs/games/daily-puzzles/)), so offline support is mostly
-about caching the app shell and the dictionary.
+You can install WordGirl. You can play without a connection. The device makes the puzzles. Refer to [How daily puzzles work](/docs/games/daily-puzzles/). Thus offline operation only needs the application files and the dictionary in the cache.
 
-## Service worker
+## The service worker
 
-Configured in `vite.config.ts` via **vite-plugin-pwa** with
-`registerType: "autoUpdate"`:
+The file `vite.config.ts` configures the vite-plugin-pwa module. The mode is `autoUpdate`.
 
-- Workbox precaches `js`, `css`, `html`, `txt`, `svg`, `png`, `woff2` —
-  the `.txt` glob is load-bearing: it precaches `dictionary.txt`, so word
-  validation works offline.
-- `navigateFallback: /index.html` for SPA routing, with `/docs` on the
-  denylist — this documentation site is proxied at wordgirl.net/docs via
-  `netlify.toml`, and must not be swallowed by the app shell.
-- Manifest: standalone display, surface-white theme color, 192/512/maskable
-  icons.
+- Workbox puts these file types in the cache: js, css, html, txt, svg, png, and woff2. The txt type is important. It puts `dictionary.txt` in the cache. Thus the word check operates without a connection.
+- Navigation requests get `/index.html`.
+- The path `/docs` is not included. The documentation is at wordgirl.net/docs through a proxy in `netlify.toml`. The service worker must not catch these requests.
+- The manifest sets the standalone display mode and the icons.
 
-## The update flow
+## Updates
 
-- `src/main.tsx` captures the SW registration and checks for updates hourly
-  and whenever the app returns to the foreground.
-- With `autoUpdate`, a new worker activates and the next navigation gets the
-  new build — there's no blocking "update available" prompt mid-game.
-- Settings has a manual "Check for updates" row backed by
-  `checkForUpdates()` in `src/lib/swUpdate.ts`, which reports
-  `"updating" | "current" | "failed" | "unavailable"`. The button only
-  *triggers a check*; activation is still the autoUpdate machinery.
-- The deploy edge case — a lazy chunk 404ing because the deployed hashes
-  changed under a running session — is handled by `RouteError`, which
-  detects stale-chunk errors and reloads once.
+- The file `src/main.tsx` keeps the service worker registration. It looks for updates each hour. It also looks for updates when the application comes to the front.
+- A new worker becomes active without a question to the user. The next navigation shows the new version.
+- The settings dialog has a manual update row. The function `checkForUpdates()` in `src/lib/swUpdate.ts` does the check. The possible results are "updating", "current", "failed", and "unavailable".
+- After a deployment, an old chunk address can be incorrect. The `RouteError` component loads the page again one time.
 
-## Caching headers
+## Cache headers
 
-`netlify.toml` gives `/assets/*` an immutable 1-year cache (hashed
-filenames) while `index.html` and `sw.js` are `no-cache`, so the worker
-always sees new deploys promptly.
+The file `netlify.toml` sets the cache times. The files in `/assets/` have names with a hash. Their cache time is one year. The files `index.html` and `sw.js` have no cache. Thus the worker sees each new deployment quickly.
 
-## Storage durability
+## Storage protection
 
-`StoragePrompt` (rendered in every game layout) requests
-`navigator.storage.persist()` so the browser won't evict saves under
-storage pressure. It's silent where browsers grant it automatically;
-Firefox shows a real prompt, so there it's wrapped in an explanatory dialog
-(and waits until no other modal is open).
+The `StoragePrompt` component asks the browser for persistent storage. Then the browser does not remove the saved games when storage is low. Most browsers give this permission without a question. Firefox shows a question to the user. Thus the component shows a dialog first on Firefox.
 
-## iOS notes
+## iOS
 
-iOS installs via Share → Add to Home Screen. The app avoids page scrolling
-entirely (see [Layout rules](/docs/design/layout-motion/)) partly because of
-iOS rubber-banding; `#root` handles safe-area insets as inside padding.
+On iOS, use Share and then "Add to Home Screen" to install the application. The application has no page scroll. Refer to [Layout, motion, and text](/docs/design/layout-motion/). The root element contains the safe area as inner padding.

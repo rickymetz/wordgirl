@@ -1,94 +1,54 @@
 ---
-title: Game Kit — components
-description: The shared UI pieces every game is built from — tiles, toasts, sheets, dialogs, and the auto-generated archive and trends pages.
+title: Game kit — components
+description: The shared UI parts that all the games use.
 ---
 
-House rule: **check the kit before building anything.** If you catch
-yourself copying code from a sibling game a second time, extract it into the
-kit instead of pasting.
+This is the rule: look in the kit before you make a new part. If you copy code from an other game a second time, move the code into the kit.
 
-## Board & feedback (`src/components/game/`)
+## Board and feedback (`src/components/game/`)
 
-### `Tile` / `tileClasses` / `TileSocket`
+### Tile, tileClasses, and TileSocket
 
-The letter tile — THE letter tile; there is exactly one. Four tones:
+`Tile` is the letter tile. There is only one letter tile. It has four tones:
 
 | Tone | Use |
 |------|-----|
-| `tile` | resting, warm grey — on plain surfaces only |
-| `surface` | punch-out on tinted panels |
-| `accent` | highlighted |
-| `ghost` | translucent reading/preview |
+| `tile` | at rest, on plain surfaces only |
+| `surface` | on tinted panels |
+| `accent` | with attention |
+| `ghost` | almost transparent |
 
-`mini` gives bento-card sizing (used by hub previews).
-`tileClasses(tone, mini?)` returns the same visuals as a class string for
-motion-wrapped elements (layoutId flights, drag ghosts) that can't nest the
-component. `TileSocket` is the dashed empty home; pass `subdued` on tinted
-panels.
+The option `mini` gives the small size for hub cards. The function `tileClasses(tone, mini?)` gives the same style as a class string. Use it for motion elements that cannot contain the component. `TileSocket` is the empty position with the broken line. Use the option `subdued` on tinted panels.
 
-### `GameToast` + `useToast()`
+### GameToast and useToast
 
-The floating feedback pill over a board ("Not a word"). `useToast()` returns
-`{ toast, show(text, durationMs?) }`; the toast carries a nonce so repeated
-messages re-animate. `GameToast` renders with `AnimatePresence mode="wait"`
-and is `aria-hidden` — mirror `toast?.text` into an `aria-live` region
-yourself for narration.
+`GameToast` is the message above the board. An example is "Not a word". The hook `useToast()` gives `{ toast, show(text, durationMs?) }`. Each message has a nonce. Thus the same message shows again correctly. The component has `aria-hidden`. Put the message text in an `aria-live` area also.
 
-## Dialogs & chrome (`src/components/`)
+## Dialogs (`src/components/`)
 
-- **`BottomSheet`** — bottom sheet on phones, centered modal ≥ 768px.
-  Blurred backdrop, Escape, focus containment, reduced-motion-aware
-  springs, safe-area padding. Mount inside `<AnimatePresence>`.
-- **`CoachSheet`** (+ `Key`) — the how-to-play sheet; each game supplies
-  `CoachRule[]` (`{ Icon, title, body }`). The "Got it" button carries
-  `data-autofocus`.
-- **`ModalDialog`** — centered confirmation card (replay confirmations,
-  etc.). Omit `onClose` to disable backdrop/Escape dismissal.
-- **`useModalFocus(active)`** — focus containment for all of the above:
-  focuses `[data-autofocus]` (the container itself is allowed — results
-  cards do this), traps Tab, restores opener focus on close.
-- **`SettingsDialog`** — theme + text-size radio groups; wrapped in
-  `data-level="neutral"`.
-- **`HomeLink`** — hub link with expanded hit area.
-- **`ConfettiOverlay`** — one-shot canvas burst on solve; skipped under
-  `prefers-reduced-motion`. Sequenced by `useSolveTransition` (see
-  [utilities](/docs/kit/utilities/)).
-- **`StoragePrompt`** — durable-storage request, auto-rendered by the game
-  layout.
+- **BottomSheet.** A sheet from the bottom on telephones. A dialog in the center on larger screens. Put it in `<AnimatePresence>`.
+- **CoachSheet** with **Key**. The instructions sheet. Each game gives a list of `CoachRule` items. Each item has an icon, a title, and a text.
+- **ModalDialog.** A card in the center for confirmations. Without `onClose`, the dialog does not close from the background or the Escape key.
+- **useModalFocus(active).** The focus control for all dialogs. It moves the focus to the element with `data-autofocus`. It keeps the Tab key in the dialog. It moves the focus back when the dialog closes.
+- **SettingsDialog.** The theme and text size controls. It is in `data-level="neutral"`.
+- **HomeLink.** The link to the hub with a large touch area.
+- **ConfettiOverlay.** The confetti animation at the solve. It does not operate when the user prefers less motion.
+- **StoragePrompt.** The persistent storage request. The game layout shows it.
 
-## Results & sharing
+## Results and shares
 
-**`ShareButton`** (`{ text, gameId? }`) — the accent share pill: native
-share sheet where available, clipboard fallback, "Copied!" flash, analytics
-event. Cards render `<ShareButton text={buildShareText(…)} />`; only the
-share *string* is game-local. Strings end with `SHARE_URL` and may use emoji
-— the only place emoji are allowed.
+**ShareButton** has the options `text` and `gameId`. It is the share button in the accent color. It uses the system share sheet when it is available. If not, it copies the text. Only the share text is different in each game. The text ends with `SHARE_URL`. Emoji are permitted only in share texts.
 
-## Hub & archive
+## Hub and archive
 
-### `GameStatus`
+### GameStatus
 
-The hub-card status block: today's date plus a play-state line
-("Solved ✓ · 3-day streak"). Games pass two loaders,
-`loadState(today)` and `loadStreak(today)` — about 15 lines per game.
-Reloads itself on midnight rollover and PWA resume.
+`GameStatus` is the state block on a hub card. It shows the date and the state line. An example is "Solved, 3-day streak". A game gives two load functions. This is approximately 15 lines for each game. The block loads again at midnight and when the application comes to the front.
 
-### `GameArchive`
+### GameArchive
 
-The **entire archive page from a config** — never hand-roll one. A
-`GameArchiveConfig` supplies: `gameId`, `accent` (= the game's
-`accentLevel`), `epoch`, `loadAllDays()`, `loadStats()`,
-`hasPlayed(stats)`, six `statTiles(stats)`, `isDone(day)`, and
-`rowStatus(dateKey, day)`. The component owns all layout and color — stats
-grid, month calendar mosaic, scoreboard rows — and sets
-`data-level={accent}` itself. ~30 lines of config per game; see any game's
-`ui/ArchivePage.tsx`.
+`GameArchive` makes the full archive page from a configuration. Do not make an archive page by hand. The configuration contains the game id, the accent, the epoch, two load functions, six stat tiles, and two state functions. The component controls all the layout and the colors. The configuration is approximately 30 lines. Refer to `ui/ArchivePage.tsx` in each game.
 
-### `GameTrends`
+### GameTrends
 
-The stats-over-time page from a `GameTrendsConfig`: per-metric single-series
-sparklines in the game's accent over a 30-day window, tap-a-day for values,
-plus an optional solve-hour histogram. Metrics are
-`{ key, label, value(day) → number | null }` — return `null` for days
-before a metric shipped, which chart as **gaps, never fake zeros**. See
-[Charts](/docs/design/charts/) for the style rules it embodies.
+`GameTrends` makes the statistics page from a configuration. It shows one small chart for each metric in the accent color. The window is 30 days. A touch on a day shows its value. A metric gives `null` for a day without data. A gap shows in the chart, not a zero. Refer to [Charts](/docs/design/charts/).

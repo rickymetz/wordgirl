@@ -1,51 +1,29 @@
 ---
 title: The dictionary
-description: Two tiers, letter bitmasks, and the DICT_VERSION discipline.
+description: One shared word list with two levels and a version number.
 ---
 
-Four of the five games validate against a single shared dictionary
-(`src/lib/words/`). Serpentine is the exception — it ships poetry, not
-words.
+Four of the five games use one shared dictionary. The code is in `src/lib/words/`. Serpentine uses poems, not words.
 
-## Two tiers
+## Two levels
 
-The source file `dictionary.txt` (built by `scripts/build-dictionary.mjs`)
-holds words of 2–10 letters in two tiers:
+The file `dictionary.txt` contains words with 2 to 10 letters. The script `scripts/build-dictionary.mjs` makes this file. The words are in two levels:
 
-- **required** — common words; what generators build puzzles from and what
-  players are expected to find.
-- **bonus** — rarer words, prefixed `+` in the file; accepted and scored,
-  never required.
+- **Necessary words.** These are usual words. The generators make puzzles from them. The player must find them.
+- **Bonus words.** These are unusual words. They have the prefix `+` in the file. The game accepts them and counts them. The player does not need them.
 
-`parseDictionary(raw)` produces a `Dictionary` with `required`, `bonus`,
-and a combined `all` index, plus a `has(word)` membership test.
+The function `parseDictionary(raw)` makes a `Dictionary` object. The object has the two levels, a combined index, and the function `has(word)`.
 
-## Length buckets and letter bitmasks
+## Word masks
 
-Each tier is bucketed by word length, and every word gets a precomputed
-26-bit **letter mask** (bit *i* set if letter *i* appears). Subset tests —
-"is this word spellable from these letters?" — are a single AND against the
-pool's mask, which is what makes Polygram's per-level enumeration
-(`enumerateWords(dict, letters, size, tier)`) a linear scan with O(1) per
-word.
+The dictionary puts the words in groups by length. Each word has a mask of 26 bits. Each bit shows one letter of the alphabet. The question "can these letters make this word?" becomes one AND operation. Thus the function `enumerateWords()` is fast. Polygram uses it for each level.
 
-## Loading
+## The load
 
-`loadDictionary()` (`src/lib/words/loader.ts`) lazily fetches
-`dictionary.txt` and memoizes a module-singleton promise, suitable for
-React's `use()`. The file is in the service-worker precache (the `.txt`
-glob in `vite.config.ts`), so it's available offline; a failed load clears
-the memo so retry works.
+The function `loadDictionary()` is in `src/lib/words/loader.ts`. It gets `dictionary.txt` one time. It keeps the result for all callers. The service worker has the file in its cache. Thus the dictionary is available without a connection. After a failed load, the function permits a new try.
 
 ## DICT_VERSION
 
-`DICT_VERSION` (currently **15**) is the compatibility stamp between saved
-days and the puzzles they belong to — see
-[How daily puzzles work](/docs/games/daily-puzzles/) for the player-facing story
-and [Persistence](/docs/architecture/persistence/) for the save guards.
+`DICT_VERSION` connects the saved days to their puzzles. The number is 15 at this time. Refer to [How daily puzzles work](/docs/games/daily-puzzles/) and [Data storage and streaks](/docs/architecture/persistence/).
 
-The discipline, per the changelog comment in `dictionary.ts`: bump it for
-**any change to puzzle derivation** — wordlist edits, generator logic,
-seed handling — not just dictionary content. An un-bumped derivation change
-is the worst kind of bug: saves silently mismatch the puzzles they claim to
-describe.
+This is the rule: increase the number for each change to the puzzle calculation. Examples are a word list change, a generator change, and a seed change. If you do not increase the number, the saves do not agree with the puzzles. This defect is not easy to see.

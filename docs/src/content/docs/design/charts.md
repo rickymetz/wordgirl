@@ -1,49 +1,33 @@
 ---
 title: Charts
-description: The Tufte house style — sparklines, range frames, gaps not zeros, and one accent per chart.
+description: The chart style — small lines, direct labels, gaps for missing days, one accent for each chart.
 ---
 
-Every chart in WordGirl follows one style, and `GameTrends`
-(`src/components/GameTrends.tsx`) is its reference implementation — extend
-it rather than hand-rolling.
+Each chart in WordGirl uses one style. The component `GameTrends` (`src/components/GameTrends.tsx`) is the example. Extend it. Do not make a new chart system.
 
-## The house style
+## The style
 
-Tufte: **maximize data-ink.**
+The style shows the data with the minimum of decoration:
 
-- **Sparkline-scale marks** — small single-series lines (168×64 SVG in
-  GameTrends), not full charts with chrome.
-- **A range frame** spanning only the played days is the sole scaffold — no
-  gridlines, no axis rules.
-- **Direct labels on the extremes** instead of axes; a Best/Avg subtitle
-  carries the summary.
-- **Gaps, not zeros, for missing days.** A metric returns `null` for a day
-  it can't speak to — an unplayed day, or a day saved before the metric
-  shipped. A fake zero is a lie about the data.
-- **Values on tap** — tapping a sparkline picks the nearest day and shows
-  its value; there are no hover tooltips to miss on touch.
+- The marks are small. One chart is a small line of 168 by 64 pixels.
+- The only frame is a range frame. It goes only across the played days. There are no grid lines and no axis lines.
+- The labels are on the highest and lowest points. There are no axes. A small line below the title shows the best value and the average value.
+- A day without data shows as a gap. It does not show as a zero. A zero that is not real is incorrect data.
+- A touch on the chart shows the value of the nearest day. There are no hover tooltips.
 
-The solve-hour histogram follows the same rules: accent bars, a baseline,
-four clock ticks, and a single peak/tapped label.
+The solve hour chart follows the same rules. It has accent bars, a base line, four clock marks, and one label.
 
 ## Color
 
-- **One accent hue per chart** — the chart inherits the game's `data-level`
-  accent, full stop.
-- **Cross-game comparison charts are banned.** The four game accents were
-  validated as a categorical palette and fail (contrast and color-vision
-  separability), so games are never charted against each other.
+- Each chart uses one accent color. The chart gets the accent of its game area.
+- Charts that compare games are not permitted. The four game accents are not sufficient as one set. The color tests showed this.
 
-## Process for any new chart
+## Procedure for a new chart
 
-1. Design the form first — what marks, what scaffold, what labels.
-2. Color last, always the in-scope accent.
-3. Run `scripts/validate_palette.js` if any new color is involved — never
-   eyeball color-vision safety or contrast.
+1. Design the form first. Select the marks, the frame, and the labels.
+2. Apply color last. Use the accent of the area.
+3. If you add a new color, use `scripts/validate_palette.js`. Do not examine colors with your eyes only.
 
-## Adding a metric to a game's trends page
+## Procedure for a new metric
 
-Metrics read from the archive day saves. A new metric needs a new save
-field, which accrues **from ship day** — earlier days chart as gaps via
-`null`. Route the page at `stats` with a "Stats" secondary action, and
-include the `solvedHour` metric so the histogram has data.
+A metric reads the saved days from the archive. A new metric needs a new field in the saved day. The field gets data from the day of its release. Older days show as gaps through `null`. Put the page at the route `stats`. Include the `solvedHour` metric. Then the hour chart has data.
