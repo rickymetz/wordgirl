@@ -14,8 +14,10 @@ set -euo pipefail
 # Determine the diff range: pre-push receives lines on stdin with
 # <local-ref> <local-sha> <remote-ref> <remote-sha>. If running
 # standalone (no stdin), diff against origin/main.
-BASE="${PERSISTENCE_CHECK_BASE:-origin/main}"
-if ! [ -t 0 ]; then
+if [ -n "${PERSISTENCE_CHECK_BASE:-}" ]; then
+  BASE="$PERSISTENCE_CHECK_BASE"
+elif ! [ -t 0 ]; then
+  BASE="origin/main"
   while read -r _ local_sha _ remote_sha; do
     if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
       BASE="origin/main"
@@ -23,6 +25,8 @@ if ! [ -t 0 ]; then
       BASE="$remote_sha"
     fi
   done
+else
+  BASE="origin/main"
 fi
 
 # Files whose changes can affect saved user progress.
