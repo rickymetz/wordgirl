@@ -5,8 +5,13 @@ import {
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
+import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { Difficulty, PlacedDomino } from "../engine/types";
+import type {
+  Difficulty,
+  DoubletPuzzle,
+  PlacedDomino,
+} from "../engine/types";
 
 export interface DailyProgress extends DailyBase {
   difficulty: Difficulty;
@@ -44,12 +49,25 @@ const base = createDailyPersistence<DailyProgress, DoubletStats>({
   dayKey: (day) => `${day.difficulty}:${day.dateKey}`,
 });
 
-export const loadDailyProgress = (dateKey: string, difficulty: Difficulty) =>
-  base.loadDay(`${difficulty}:${dateKey}`);
+/** Fingerprint the fields that define a Doublet puzzle's identity. */
+export function doubletPuzzleKey(puzzle: DoubletPuzzle): string {
+  return makePuzzleKey({
+    board: puzzle.board,
+    slots: puzzle.slots,
+    dominoes: puzzle.dominoes,
+  });
+}
+
+export const loadDailyProgress = (
+  dateKey: string,
+  difficulty: Difficulty,
+  currentPuzzleKey?: string,
+) => base.loadDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 export const loadStaleDailyProgress = (
   dateKey: string,
   difficulty: Difficulty,
-) => base.loadStaleDay(`${difficulty}:${dateKey}`);
+  currentPuzzleKey?: string,
+) => base.loadStaleDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 export const saveDailyProgress = base.saveDay;
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const recordDailyStarted = base.recordStarted;
@@ -114,7 +132,7 @@ export async function loadAllDailyProgress(): Promise<
       solvedCount: saves.filter((s) => s.solved).length,
       startedCount: saves.filter((s) => s.solved || s.placed.length > 0)
         .length,
-      stale: saves.some((s) => s.dictVersion !== DICT_VERSION),
+      stale: saves.some((s) => !s.puzzleKey && s.dictVersion !== DICT_VERSION),
       elapsedMs: saves.reduce((a, s) => a + s.elapsedMs, 0),
       moves: null,
       rotations: null,
@@ -139,11 +157,13 @@ export async function loadAllDailyProgress(): Promise<
 export async function resetDailyForReplay(
   dateKey: string,
   difficulty: Difficulty,
+  currentPuzzleKey?: string,
 ) {
   await base.store.set(`daily:${difficulty}:${dateKey}`, {
     dateKey,
     difficulty,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     placed: [],
     solved: false,
     elapsedMs: 0,

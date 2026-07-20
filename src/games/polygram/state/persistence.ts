@@ -5,7 +5,9 @@ import {
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
+import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
+import type { Puzzle } from "../engine/types";
 
 export interface DailyProgress extends DailyBase {
   foundWords: string[];
@@ -82,12 +84,24 @@ const daily = createDailyPersistence<DailyProgress, PolygramStats>({
 
 export const store = daily.store;
 
+export function polygramPuzzleKey(puzzle: Puzzle): string {
+  return makePuzzleKey([
+    puzzle.letters,
+    puzzle.levels.map((l) => [l.size, l.words, l.bonusWords]),
+  ]);
+}
+
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-01";
 
-export const loadDailyProgress = (dateKey: string) => daily.loadDay(dateKey);
-export const loadStaleDailyProgress = (dateKey: string) =>
-  daily.loadStaleDay(dateKey);
+export const loadDailyProgress = (
+  dateKey: string,
+  currentPuzzleKey?: string,
+) => daily.loadDay(dateKey, currentPuzzleKey);
+export const loadStaleDailyProgress = (
+  dateKey: string,
+  currentPuzzleKey?: string,
+) => daily.loadStaleDay(dateKey, currentPuzzleKey);
 export const { loadCoachSeen, markCoachSeen } = daily;
 
 export async function loadStats(): Promise<PolygramStats> {
@@ -116,17 +130,21 @@ export async function loadAllDailyProgress(): Promise<
     if (saved) {
       out[saved.dateKey] = {
         ...saved,
-        stale: saved.dictVersion !== DICT_VERSION,
+        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
       };
     }
   }
   return out;
 }
 
-export async function resetDailyForReplay(dateKey: string): Promise<void> {
+export async function resetDailyForReplay(
+  dateKey: string,
+  currentPuzzleKey?: string,
+): Promise<void> {
   await store.set(`daily:${dateKey}`, {
     dateKey,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     foundWords: [],
     revealed: {},
     score: 0,

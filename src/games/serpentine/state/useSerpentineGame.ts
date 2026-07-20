@@ -11,6 +11,7 @@ import {
   loadDailyProgress,
   loadStaleDailyProgress,
   saveDailyProgress,
+  serpentinePuzzleKey,
   recordStarted,
   updateStats,
   type DayProgress,
@@ -35,6 +36,8 @@ export function useSerpentineGame(mode: GameMode) {
     [mode.kind, mode.kind === "practice" ? mode.seed : dateKey, difficulty],
   );
 
+  const pKey = useMemo(() => serpentinePuzzleKey(puzzle), [puzzle]);
+
   const [state, dispatch] = useReducer(
     gameReducer,
     { puzzle, difficulty },
@@ -55,6 +58,7 @@ export function useSerpentineGame(mode: GameMode) {
   const abandoned = useRef(false);
   const hydratedAsSolved = useRef(false);
   const hintsRef = useRef(0);
+  const staleRecordRef = useRef(false);
 
   // Hydrate from storage — hydrated flips ONLY after the async load
   // completes so the save effect cannot clobber stored progress with
@@ -63,9 +67,8 @@ export function useSerpentineGame(mode: GameMode) {
   useEffect(() => {
     if (hydrated.current) return;
     let cancelled = false;
-    void loadDailyProgress(difficulty, dateKey).then(async (saved) => {
+    void loadDailyProgress(difficulty, dateKey, pKey).then(async (saved) => {
       if (cancelled) return;
-      hydrated.current = true;
       if (saved && saved.puzzleId === puzzle.id) {
         clock.hydrate(saved.elapsedMs, saved.solved);
         statsRecorded.current = !!saved.statsRecorded;
@@ -79,19 +82,24 @@ export function useSerpentineGame(mode: GameMode) {
           cells: saved.cells,
           solved: saved.solved,
         });
+        hydrated.current = true;
       } else if (persisted) {
-        const stale = await loadStaleDailyProgress(difficulty, dateKey);
+        const stale = await loadStaleDailyProgress(difficulty, dateKey, pKey);
         if (cancelled) return;
         if (stale) {
+          staleRecordRef.current = true;
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
         } else {
           void recordStarted();
           trackStarted("serpentine");
         }
+        hydrated.current = true;
+      } else {
+        hydrated.current = true;
       }
     });
     return () => { cancelled = true; };
-  }, [difficulty, dateKey, puzzle.id, clock, persisted]);
+  }, [difficulty, dateKey, puzzle.id, pKey, clock, persisted]);
 
   // Build the progress blob from current state.
   const buildProgress = useCallback(
@@ -99,6 +107,7 @@ export function useSerpentineGame(mode: GameMode) {
       dateKey,
       difficulty,
       puzzleId: puzzle.id,
+      puzzleKey: pKey,
       dictVersion: DICT_VERSION,
       solved: s.solved,
       elapsedMs: s.solved
@@ -108,17 +117,21 @@ export function useSerpentineGame(mode: GameMode) {
       statsRecorded: statsRecorded.current,
       hints: hintsRef.current,
     }),
-    [dateKey, difficulty, puzzle.id, clock],
+    [dateKey, difficulty, puzzle.id, pKey, clock],
   );
 
   persistRef.current = () => {
     if (!persisted || !hydrated.current || abandoned.current) return;
+    if (staleRecordRef.current && stateRef.current.cells.length === 0) return;
+    staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(stateRef.current));
   };
 
   // Save on every state change.
   useEffect(() => {
     if (!persisted || !hydrated.current || abandoned.current) return;
+    if (staleRecordRef.current && state.cells.length === 0) return;
+    staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(state));
   }, [state, buildProgress, persisted]);
 

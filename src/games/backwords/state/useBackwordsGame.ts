@@ -14,6 +14,7 @@ import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
 import { dailySeed, generateBackwords } from "../engine/generator";
 import {
+  backwordsPuzzleKey,
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
@@ -50,6 +51,7 @@ export function useBackwordsGame(mode: GameMode) {
     () => generateBackwords(dict, seed, items),
     [dict, seed, items],
   );
+  const pKey = useMemo(() => backwordsPuzzleKey(puzzle.bank), [puzzle]);
   const [state, rawDispatch] = useReducer(
     gameReducer,
     { puzzle, lexicon, words, isWord: dict.has },
@@ -126,6 +128,7 @@ export function useBackwordsGame(mode: GameMode) {
       {
         dateKey,
         dictVersion: DICT_VERSION,
+        puzzleKey: pKey,
         // rowSaveKey, not place: a palindrome's bare half is ambiguous
         // (a POOP row saved as "po" would reload as POP).
         rows: s.rows.map(rowSaveKey),
@@ -156,7 +159,7 @@ export function useBackwordsGame(mode: GameMode) {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadDailyProgress(dateKey);
+        const saved = await loadDailyProgress(dateKey, pKey);
         if (cancelled) return;
         if (saved) {
           statsRecordedRef.current =
@@ -184,7 +187,7 @@ export function useBackwordsGame(mode: GameMode) {
             hints: saved.hints,
           });
         } else {
-          const stale = await loadStaleDailyProgress(dateKey);
+          const stale = await loadStaleDailyProgress(dateKey, pKey);
           if (cancelled) return;
           if (stale) {
             staleRecordRef.current = true;

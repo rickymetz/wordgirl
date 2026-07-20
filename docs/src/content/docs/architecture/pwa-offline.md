@@ -17,7 +17,7 @@ The file `vite.config.ts` configures the vite-plugin-pwa module. The mode is `au
 ## Updates
 
 - The file `src/main.tsx` keeps the service worker registration. It looks for updates each hour. It also looks for updates when the application comes to the front.
-- A new worker becomes active without a question to the user. The next navigation shows the new version.
+- A new worker becomes active without a question to the user. The next navigation shows the new version. Saved progress survives the update: each game stores a `puzzleKey` fingerprint in its saves, so a deployment that bumps `DICT_VERSION` for one game does not invalidate another game's saves when the actual puzzle has not changed.
 - The settings dialog has a manual update row. The function `checkForUpdates()` in `src/lib/swUpdate.ts` does the check. The possible results are "updating", "current", "failed", and "unavailable".
 - After a deployment, an old chunk address can be incorrect. The `RouteError` component loads the page again one time.
 

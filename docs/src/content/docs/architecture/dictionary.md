@@ -28,6 +28,8 @@ The function `loadDictionary()` is in `src/lib/words/loader.ts`. It gets `dictio
 
 This is the rule: increase the number for each change to the puzzle calculation. Examples are a word list change, a generator change, and a seed change. If you do not increase the number, the saves do not agree with the puzzles. This defect is not easy to see.
 
+Since all five games share one `DICT_VERSION`, a bump for one game formerly invalidated every other game's saves — even when those puzzles had not changed. Each game now computes a `puzzleKey` (a deterministic fingerprint of the puzzle's identity data) and stores it in each save. When both a save and the current puzzle carry a `puzzleKey`, the comparison uses those instead of `DICT_VERSION`. Legacy saves without a `puzzleKey` still fall back to the version number. This means a Doublet-only generator change no longer wipes a Crosshatch player's progress. Refer to [Data storage and streaks](/docs/architecture/persistence/) for the full mechanism.
+
 ### The version history
 
 The rule is not abstract — the source file records every bump and its reason. The history doubles as the engineering diary of the games:

@@ -4,8 +4,9 @@ import {
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
+import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { Cell, Difficulty } from "../engine/types";
+import type { Cell, Difficulty, PuzzleDef } from "../engine/types";
 
 export interface DayProgress extends DailyBase {
   dateKey: string;
@@ -42,6 +43,11 @@ const emptyStats: SerpentineStats = {
   bestTimePoem: null,
 };
 
+/** Deterministic fingerprint of a Serpentine puzzle's identity. */
+export function serpentinePuzzleKey(puzzle: PuzzleDef): string {
+  return makePuzzleKey({ id: puzzle.id, grid: puzzle.grid, text: puzzle.text });
+}
+
 const daily = createDailyPersistence<DayProgress, SerpentineStats>({
   gameId: "serpentine",
   emptyStats,
@@ -68,15 +74,17 @@ export const store = daily.store;
 export function loadDailyProgress(
   difficulty: Difficulty,
   dateKey: string,
+  currentPuzzleKey?: string,
 ): Promise<DayProgress | null> {
-  return daily.loadDay(`${difficulty}:${dateKey}`);
+  return daily.loadDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 }
 
 export function loadStaleDailyProgress(
   difficulty: Difficulty,
   dateKey: string,
+  currentPuzzleKey?: string,
 ): Promise<DayProgress | null> {
-  return daily.loadStaleDay(`${difficulty}:${dateKey}`);
+  return daily.loadStaleDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 }
 
 export function saveDailyProgress(progress: DayProgress): Promise<void> {
@@ -100,7 +108,7 @@ export async function loadAllDailyProgress(): Promise<
     out[dateKey] = {
       dateKey,
       solved: solvedSaves.length > 0,
-      stale: saves.some((s) => (s.dictVersion ?? 0) !== DICT_VERSION),
+      stale: saves.some((s) => !s.puzzleKey && (s.dictVersion ?? 0) !== DICT_VERSION),
       elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
       cellCount: started
         ? Math.max(...saves.map((s) => s.cells.length))
@@ -121,11 +129,13 @@ export async function resetDailyForReplay(
   difficulty: Difficulty,
   dateKey: string,
   puzzleId: string,
+  currentPuzzleKey?: string,
 ) {
   await store.set(`daily:${difficulty}:${dateKey}`, {
     dateKey,
     difficulty,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     cells: [],
     solved: false,
     elapsedMs: 0,

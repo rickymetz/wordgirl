@@ -35,14 +35,16 @@ createDailyPersistence<Day, Stats>({
 `Day` extends `DailyBase` and `Stats` extends `StreakStats`:
 
 ```ts
-DailyBase = { dateKey, dictVersion, solved, elapsedMs, statsRecorded? }
+DailyBase = { dateKey, dictVersion, solved, elapsedMs, statsRecorded?, puzzleKey? }
 StreakStats = { played, solved, currentStreak, bestStreak, lastSolvedDate }
 ```
 
+The field `puzzleKey` is a deterministic fingerprint of the puzzle for a given date. When present on both a saved day and the current puzzle, `puzzleKey` is compared instead of `dictVersion` to detect staleness. This means an unrelated `DICT_VERSION` bump (for example, a Doublet generator change) does not wipe a Crosshatch save whose actual puzzle has not changed. Legacy saves without a `puzzleKey` fall back to the `dictVersion` comparison.
+
 ### The returned functions
 
-- `loadDay(subKey)` — gives the saved day, or null when no save agrees with the current dictionary version.
-- `loadStaleDay(subKey)` — gives only saves with an old dictionary version.
+- `loadDay(subKey, currentPuzzleKey?)` — gives the saved day, or null when the save does not match the current puzzle. When both the save and the caller provide a `puzzleKey`, those are compared; otherwise the function falls back to `dictVersion`.
+- `loadStaleDay(subKey, currentPuzzleKey?)` — gives only saves that do not match the current puzzle (the inverse of `loadDay`).
 - `saveDay(progress, opts?)` — writes a day save, with the guards below.
 - `loadStats()` and `updateStats(fn)` — the statistics blob. Loads merge over `emptyStats`, so new fields ship safely. Updates go through an internal lock, one at a time.
 - `recordStarted(dateKey)` — counts a played day one time.
@@ -52,7 +54,7 @@ StreakStats = { played, solved, currentStreak, bestStreak, lastSolvedDate }
 ### The save guards, and the failures they prevent
 
 - **A save with a newer dictionary version stays.** An older save cannot replace it. Without this guard, two open tabs on different deployments destroy each other's progress.
-- **A solved save is final.** Nothing replaces it. Without this guard, a clock restart or a replay could erase a finished day.
+- **A solved save is final.** Nothing replaces it. This guard applies regardless of dictionary version — a newer-build tab cannot overwrite a solved save with an unsolved one. Without this guard, a clock restart or a replay could erase a finished day.
 - **`allowUnsolvedWrite` can veto unsolved saves.** This is the multi-tab guard for games where a second tab must not write over live progress.
 
 ### Old saves
