@@ -38,7 +38,7 @@ Add a `GameDefinition` item to `src/games/registry.ts`. The item contains the id
 
 ## Step 4: Connect the storage functions
 
-Use `createDailyPersistence`. The rules are on the [storage page](/docs/architecture/persistence/). Copy the start sequence from an available game. A note on names: each game wraps the kit functions in its own `persistence.ts` with names such as `saveDailyProgress` and `loadStaleDailyProgress`, and its state hook adds `abandonSession()`. These wrappers live in the game folder, not in `src/lib/daily/`. Obey these rules:
+Use `createDailyPersistence`. The rules are on the [storage page](/docs/architecture/persistence/). Copy the start sequence from an available game. A note on names: each game wraps the kit functions in its own `persistence.ts` with names such as `saveDailyProgress` and `loadStaleDailyProgress`, and its state hook adds `abandonSession()`. These wrappers live in the game folder, not in `src/lib/daily/`. Each game also defines a `puzzleKey` function (e.g. `crosshatchPuzzleKey`) that fingerprints the puzzle's identity data via `makePuzzleKey` from `src/lib/puzzleKey.ts`. Pass this key to `loadDay`, `loadStaleDay`, and include it in save objects, so an unrelated `DICT_VERSION` bump does not wipe the game's saves. Obey these rules:
 
 - Set `hydrated.current` in the async load function, not outside it.
 - If the save for today is old, copy `statsRecorded` from it. Do not use `recordStarted()`. If you do not obey this rule, the played count increases two times.
@@ -107,4 +107,5 @@ The review gate is this list. It is also in `CLAUDE.md`. Make sure that each ite
 - A replay shows a confirmation dialog.
 - The archive separators use `·`, not `.`.
 - The UI has no emoji. Emoji are only in share texts.
+- The game computes a `puzzleKey` and passes it to `loadDay`/`loadStaleDay` and includes it in saves.
 - The three test files exist.
