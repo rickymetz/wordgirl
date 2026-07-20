@@ -14,6 +14,8 @@ A streak is your count of daily puzzles solved on consecutive days.
 - If a day passes with no solve, your streak shows zero again. Your best streak stays in your statistics.
 - Archive plays never advance a streak. Only the daily puzzle counts.
 
+Some games hold the margin differently in one detail: in Crosshatch, the day is complete at 90 percent of the words — one impossible word cannot stop a streak.
+
 ## The archive
 
 Each game keeps every day you played. Open a game's archive from its hub card:

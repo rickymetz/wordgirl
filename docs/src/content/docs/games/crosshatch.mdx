@@ -20,7 +20,7 @@ Crosshatch is a crossword game. The game shows a small crossword frame. Some let
 
 A word cannot occur two times in one frame. Progress counts words, not frames. One good frame can bank several words at one time, so you never have to re-enter almost equal frames.
 
-The day is complete when you find all the words.
+The day is complete when you find 90 percent of the words, with a margin of two words or more. Thus one difficult word cannot stop your streak. The exact formula is in [The mathematics](#the-mathematics) below.
 
 ## How the game makes a puzzle
 
@@ -54,6 +54,16 @@ Crossword fill is NP-hard in the general case. The search space for one frame is
 ### The solution space
 
 The generator counts the full solution space with an exhaustive search. The count of word sets must stay below 200. This limit bounds the number of solutions, and thus the information in the frame: at most $\log_2 200 \approx 7.6$ bits separate the given letters from a full answer. A frame with too many solutions gives the player no traction. The given letters shrink the space step by step. Each added letter removes the word sets that disagree with it.
+
+### The target formula
+
+The day is complete at 90 percent of the words, with a margin of two words:
+
+$$
+\text{target}(n) = \max\!\Big(1,\; \min\big(\lceil 0.9\,n \rceil,\; n-2\big)\Big)
+$$
+
+The $n-2$ limit is important for small $n$. For each $n$ from 10 to 19, $\lceil 0.9\,n \rceil = n - 1$. Without the limit, "90 percent" is "all but one word" on all these days.
 
 ### Why the answer check is fast
 
