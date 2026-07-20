@@ -54,6 +54,8 @@ done
 dict_version_files=()
 if [ -n "$changed_files" ]; then
   while IFS= read -r f; do
+    # Documentation files can mention DICT_VERSION without affecting saves.
+    [[ "$f" == docs/* ]] && continue
     [ -n "$f" ] && dict_version_files+=("$f")
   done < <(echo "$changed_files" | xargs grep -l 'DICT_VERSION' 2>/dev/null || true)
 fi
