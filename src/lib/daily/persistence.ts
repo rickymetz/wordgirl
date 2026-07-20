@@ -121,8 +121,8 @@ export function createDailyPersistence<
     const key = keyOf(progress);
     const stored = validShape(await store.get<Day>(key));
     if (stored && stored.dictVersion > progress.dictVersion) return;
+    if (stored && stored.solved && !progress.solved) return;
     if (stored && stored.dictVersion === progress.dictVersion) {
-      if (stored.solved && !progress.solved) return;
       if (
         !progress.solved &&
         cfg.allowUnsolvedWrite &&

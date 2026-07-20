@@ -130,17 +130,21 @@ export async function loadAllDailyProgress(): Promise<
     if (saved) {
       out[saved.dateKey] = {
         ...saved,
-        stale: saved.dictVersion !== DICT_VERSION,
+        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
       };
     }
   }
   return out;
 }
 
-export async function resetDailyForReplay(dateKey: string): Promise<void> {
+export async function resetDailyForReplay(
+  dateKey: string,
+  currentPuzzleKey?: string,
+): Promise<void> {
   await store.set(`daily:${dateKey}`, {
     dateKey,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     foundWords: [],
     revealed: {},
     score: 0,

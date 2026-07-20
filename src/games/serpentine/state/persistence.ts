@@ -108,7 +108,7 @@ export async function loadAllDailyProgress(): Promise<
     out[dateKey] = {
       dateKey,
       solved: solvedSaves.length > 0,
-      stale: saves.some((s) => (s.dictVersion ?? 0) !== DICT_VERSION),
+      stale: saves.some((s) => !s.puzzleKey && (s.dictVersion ?? 0) !== DICT_VERSION),
       elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
       cellCount: started
         ? Math.max(...saves.map((s) => s.cells.length))
@@ -129,11 +129,13 @@ export async function resetDailyForReplay(
   difficulty: Difficulty,
   dateKey: string,
   puzzleId: string,
+  currentPuzzleKey?: string,
 ) {
   await store.set(`daily:${difficulty}:${dateKey}`, {
     dateKey,
     difficulty,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     cells: [],
     solved: false,
     elapsedMs: 0,

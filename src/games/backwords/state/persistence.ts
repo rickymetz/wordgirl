@@ -99,7 +99,7 @@ export async function loadAllDailyProgress(): Promise<
       out[saved.dateKey] = {
         ...saved,
         foundWords: saved.rows,
-        stale: saved.dictVersion !== DICT_VERSION,
+        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
       };
     }
   }
@@ -120,10 +120,14 @@ export function saveDailyProgress(
 /** Wipe a solved day for a fresh replay run; stats stay counted.
  * Writes directly — the multi-tab guard must not "protect" the old
  * run from a deliberate reset. */
-export async function resetDailyForReplay(dateKey: string) {
+export async function resetDailyForReplay(
+  dateKey: string,
+  currentPuzzleKey?: string,
+) {
   await base.store.set(`daily:${dateKey}`, {
     dateKey,
     dictVersion: DICT_VERSION,
+    ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     rows: [],
     solved: false,
     elapsedMs: 0,

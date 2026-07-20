@@ -58,6 +58,7 @@ export function useSerpentineGame(mode: GameMode) {
   const abandoned = useRef(false);
   const hydratedAsSolved = useRef(false);
   const hintsRef = useRef(0);
+  const staleRecordRef = useRef(false);
 
   // Hydrate from storage — hydrated flips ONLY after the async load
   // completes so the save effect cannot clobber stored progress with
@@ -68,7 +69,6 @@ export function useSerpentineGame(mode: GameMode) {
     let cancelled = false;
     void loadDailyProgress(difficulty, dateKey, pKey).then(async (saved) => {
       if (cancelled) return;
-      hydrated.current = true;
       if (saved && saved.puzzleId === puzzle.id) {
         clock.hydrate(saved.elapsedMs, saved.solved);
         statsRecorded.current = !!saved.statsRecorded;
@@ -82,15 +82,20 @@ export function useSerpentineGame(mode: GameMode) {
           cells: saved.cells,
           solved: saved.solved,
         });
+        hydrated.current = true;
       } else if (persisted) {
         const stale = await loadStaleDailyProgress(difficulty, dateKey, pKey);
         if (cancelled) return;
         if (stale) {
+          staleRecordRef.current = true;
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
         } else {
           void recordStarted();
           trackStarted("serpentine");
         }
+        hydrated.current = true;
+      } else {
+        hydrated.current = true;
       }
     });
     return () => { cancelled = true; };
@@ -117,12 +122,16 @@ export function useSerpentineGame(mode: GameMode) {
 
   persistRef.current = () => {
     if (!persisted || !hydrated.current || abandoned.current) return;
+    if (staleRecordRef.current && stateRef.current.cells.length === 0) return;
+    staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(stateRef.current));
   };
 
   // Save on every state change.
   useEffect(() => {
     if (!persisted || !hydrated.current || abandoned.current) return;
+    if (staleRecordRef.current && state.cells.length === 0) return;
+    staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(state));
   }, [state, buildProgress, persisted]);
 
