@@ -62,18 +62,38 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   const { toast, show } = useToast();
 
-  // Sync hinted set from hydration: replay hints sequentially from
-  // the path start (matching the depth-first hint order).
+  const wordStarts = useMemo(() => {
+    const starts: number[] = [];
+    let pi = 0;
+    let atWordStart = true;
+    for (const ch of puzzle.text) {
+      if (ch === " ") {
+        atWordStart = true;
+        continue;
+      }
+      if (!/[A-Za-z]/.test(ch)) continue;
+      if (atWordStart) {
+        starts.push(pi);
+        atWordStart = false;
+      }
+      pi++;
+    }
+    return starts;
+  }, [puzzle]);
+
+  // Sync hinted set from hydration: replay hints as word-starts
+  // from the beginning (cells behind progress are covered by the
+  // snake, so the visual overlap is harmless).
   useEffect(() => {
     if (hydratedHints > 0) {
       const set = new Set<number>();
-      for (let i = 0; i < puzzle.path.length && set.size < hydratedHints; i++) {
-        set.add(i);
+      for (let i = 0; i < hydratedHints && i < wordStarts.length; i++) {
+        set.add(wordStarts[i]);
       }
       hintedRef.current = set;
       setHintedSet(set);
     }
-  }, [hydratedHints, puzzle]);
+  }, [hydratedHints, wordStarts]);
 
   const { hintIndices, hintCellKeys } = useMemo(() => {
     if (hintedSet.size === 0) return { hintIndices: undefined, hintCellKeys: undefined };
@@ -160,9 +180,12 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               onClick={() => {
                 const current = hintedRef.current;
                 const progress = state.cells.length;
-                let idx: number | undefined;
-                for (let i = progress; i < puzzle.path.length; i++) {
-                  if (!current.has(i)) { idx = i; break; }
+                // Prefer the next word-start from the player's position.
+                let idx = wordStarts.find(i => i >= progress && !current.has(i));
+                if (idx == null) {
+                  for (let i = progress; i < puzzle.path.length; i++) {
+                    if (!current.has(i)) { idx = i; break; }
+                  }
                 }
                 if (idx == null) return;
                 const next = new Set(current);
