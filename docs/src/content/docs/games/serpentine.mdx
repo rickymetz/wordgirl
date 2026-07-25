@@ -20,6 +20,8 @@ Almost 500 poems are hidden in this game. The poems come from seven theme groups
 
 The game shows the title of the poem and its poet. The text itself shows as `?` marks. Each letter appears when your path reaches it.
 
+The `?` marks keep the word breaks of the poem. A space separates two words. A hyphen joins the parts of a compound word the poet wrote with a hyphen, such as `WELL-BUCKET` or `APPLE-TREE`. A hyphenated word never breaks across two lines. Neither mark uses a cell of the grid — the grid holds only the letters.
+
 1. Put your finger on a cell and drag through adjacent cells. The eight cells around a cell are adjacent. Diagonal movement is permitted.
 2. Go through each cell one time.
 3. Use Undo to remove the last steps. Use Clear to start again. Use Hint when you cannot find the next step.
@@ -36,7 +38,7 @@ The game accepts each correct path. A correct path obeys three rules:
 
 The generator makes the puzzle in these steps. The code is in `src/games/serpentine/engine/puzzles.ts`.
 
-1. The generator removes all the characters that are not letters. It counts the letters.
+1. The generator removes all the characters that are not letters — the spaces and hyphens of the phrase belong to the readout only. It counts the letters.
 2. The generator selects the best grid. It examines each grid to a maximum of 8 rows and 10 columns. The best grid has the fewest empty cells. When two grids are equal, the more square grid is better.
 3. The generator closes the empty cells. It closes corner cells first, then edge cells, then center cells. The open cells must stay connected. The generator examines the connection with a breadth-first search. The maximum is 50 tries.
 4. The generator makes the path. It starts at a random open cell. It always moves to the adjacent cell that has the fewest free adjacent cells. This method is the Warnsdorff rule. If the path stops before the last cell, the generator starts a new path. The maximum is 200 tries.
@@ -83,4 +85,4 @@ The first term counts the empty cells. The second term measures the difference f
 
 ## Versions
 
-Serpentine does not use the dictionary. Thus it does not use the dictionary version number. The seed text contains the version number. An example is `serpentine:v2:daily:haiku:2026-07-19`. Tests make sure that the letters of each poem stay connected on the grid.
+Serpentine does not use the dictionary. Thus it does not use the dictionary version number. The seed text contains the version number. An example is `serpentine:v2:daily:haiku:2026-07-19`. Tests make sure that the letters of each poem stay connected on the grid. A second test reads every word of every poem against the dictionary, because a poem that lost a hyphen would join two words into one that no one can read.

@@ -17,7 +17,11 @@ export interface PuzzleDef {
   cols: number;
   /** grid[row][col] = uppercase letter (empty string for blocked cells). */
   grid: string[][];
-  /** The hidden phrase — spaces mark word boundaries for display. */
+  /**
+   * The hidden phrase. Spaces mark word boundaries and hyphens mark
+   * the poet's compounds (APPLE-TREE); both are display-only — only
+   * the A–Z letters map to grid cells, in order.
+   */
   text: string;
   /** Ordered solution path through the grid. */
   path: Cell[];
