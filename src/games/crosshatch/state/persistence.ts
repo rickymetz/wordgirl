@@ -129,8 +129,15 @@ export function loadStaleDailyProgress(
 }
 
 export interface ArchivedDay extends DailyProgress {
-  /** True when played against an older dictionary (result-only record). */
+  /** True when the save's provenance is unverifiable — a legacy record
+   * with no puzzleKey, written against an older dictionary. Values
+   * derived from it (solve time) aren't safe to chart. */
   stale: boolean;
+  /** True when the date's puzzle has been regenerated since (v17 moved
+   * generation to the required tier). The record itself is accurate —
+   * the words just belong to a puzzle that no longer exists, so the
+   * archive says so and a replay starts fresh. */
+  retired: boolean;
 }
 
 /** Every saved daily, keyed by date — drives the archive listing. */
@@ -143,9 +150,8 @@ export async function loadAllDailyProgress(): Promise<
     if (saved) {
       out[saved.dateKey] = {
         ...saved,
-        stale:
-          saved.dictVersion < GENERATOR_VERSION ||
-          (!saved.puzzleKey && saved.dictVersion !== DICT_VERSION),
+        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
+        retired: saved.dictVersion < GENERATOR_VERSION,
       };
     }
   }
