@@ -21,12 +21,16 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
-      workbox: {
+      // injectManifest, not generateSW: a generated worker's navigation
+      // route rejects when the precache is missing and the network
+      // fails, and an installed iOS app renders that as a blank white
+      // screen. src/sw.ts owns the navigation handler so every
+      // navigation ends in a document.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,txt,svg,png,woff2}"],
-        navigateFallback: "/index.html",
-        // The docs site is proxied at /docs (netlify.toml) — without
-        // this the SW would serve the app shell for docs navigations.
-        navigateFallbackDenylist: [/^\/docs/],
       },
       manifest: {
         name: "WordGirl",
