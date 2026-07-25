@@ -67,6 +67,16 @@ export function HoldButton({
   const start = useCallback(() => {
     // Already counting down (a second finger, a key repeat) — ignore.
     if (disabled || timerRef.current !== null) return;
+    // Snap to empty first. Re-pressing while an abandoned hold is still
+    // retreating would otherwise resume the sweep from wherever the
+    // retreat had reached, showing a bar that is (say) 40% full for a
+    // hold that just started — the timer restarts, so the fill must too.
+    const el = buttonRef.current;
+    if (el) {
+      el.style.transition = "none";
+      el.style.backgroundSize = "0% 100%";
+      void el.offsetWidth; // flush, so the reset is not coalesced away
+    }
     paint(1, holdMs);
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;

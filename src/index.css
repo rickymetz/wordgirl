@@ -39,8 +39,9 @@
   /* HoldButton's progress sweep, laid over whatever fills the button.
      It moves AWAY from the surface color — darker in light mode,
      lighter in dark — so an on-accent label gains contrast as the fill
-     passes under it (validated across all ten accents: worst case
-     7.13:1, up from 4.83:1 unfilled). A surface-colored wash would do
+     passes under it (validated across every accent — eight levels plus
+     the five game keys: worst case 7.13:1, and every accent's label
+     IMPROVES). A surface-colored wash would do
      the opposite and sink the label to ~2.6:1. */
   --color-press-fill: light-dark(rgb(0 0 0 / 0.22), rgb(255 255 255 / 0.3));
 }
@@ -81,9 +82,13 @@
    contribute four "expected" ones).
    Light mode: worst adjacent pair 10.3 ΔE, up from 6.1 — red-700 and
    orange-700 used to sit 6.1 apart and read as one color; red→orange is
-   now 20.3, and no pair anywhere is closer than 10.1. Dark mode's warm end is tighter (worst pair 9.1, up from
-   6.1) because red stays today's coral #f87171 rather than going pale
-   to buy the last 1.8; orange and yellow carry that spread instead.
+   now 20.2, and no pair anywhere is closer than 10.1.
+   Dark mode's warm end is tighter (worst pair 9.1, up from 6.1) because
+   red stays today's coral #f87171 rather than going pale to buy the
+   last 1.8; orange and yellow carry that spread instead.
+   Re-tune with per-mode minima, never one minimum across both: dark's
+   floor is 9.1, so a combined score goes blind to light-mode gains
+   above it (that is how the nonagon pink first landed 9.2 from red).
    Why light-mode red is DEEP: AA against white caps both red and orange
    in one narrow lightness band, so only one of them can be bright. The
    orange is the one that reads wrong when it darkens (it turns brown),
