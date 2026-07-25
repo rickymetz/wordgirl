@@ -20,9 +20,11 @@ Almost 500 poems are hidden in this game. The poems come from seven theme groups
 
 The game shows the title of the poem and its poet. The text itself shows as `?` marks. Each letter appears when your path reaches it.
 
-The `?` marks keep the shape of the poem. A space separates two words. A hyphen joins the parts of a compound word, such as `WELL-BUCKET` or `APPLE-TREE`. An apostrophe shows a missing letter or a possessive, such as `O'ER`, `LIFE'S`, or `DON'T`. A word never breaks across two lines. No mark uses a cell of the grid — the grid holds only the letters. Each mark turns green when your path reaches the letter before it.
+The `?` marks keep the shape of the poem, with all its punctuation. A space separates two words. A hyphen joins the parts of a compound word, such as `WELL-BUCKET`. An apostrophe shows a missing letter or a possessive, such as `O'ER` or `LIFE'S`. Commas, dashes, and end marks stand where the poet put them. A word never breaks across two lines.
 
-The poems came to this game without their punctuation. The commas and the end marks are lost. They are not in the text, so the game cannot show them. The marks you see are the ones the letters themselves prove: a word such as `OER` can only be `O'ER`.
+No mark uses a cell of the grid — the grid holds only the letters. So the marks are always green, even before your path arrives. This also keeps a poem's own question mark apart from the `?` of a letter you have not found yet.
+
+The poems reached this game with their punctuation stripped. It was put back from the source texts, never from memory: `scripts/restore-punctuation.mjs` finds each phrase inside the poem it came from and lifts the marks out of that line. 431 of the 490 phrases are restored this way. The rest are haiku translations that the source texts do not contain.
 
 1. Put your finger on a cell and drag through adjacent cells. The eight cells around a cell are adjacent. Diagonal movement is permitted.
 2. Go through each cell one time.

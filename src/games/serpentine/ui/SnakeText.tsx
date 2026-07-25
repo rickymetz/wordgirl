@@ -31,17 +31,12 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
         {words.map((word) => (
           <span key={word.start} className="inline-flex whitespace-nowrap">
             {word.tokens.map((token, t) => {
-              // A mark is never hidden — it rides the letter before it,
-              // so punctuation lights up as the snake passes under it.
+              // Punctuation is given, not hidden, so it always wears the
+              // accent. That is also what keeps a phrase's own question
+              // mark from reading as one more blank letter.
               if (token.kind === "mark") {
-                const passed = word.tokens
-                  .slice(0, t)
-                  .every((prev) => prev.kind === "mark" || prev.index < cells.length);
                 return (
-                  <span
-                    key={`mark-${t}`}
-                    className={`inline-block ${passed ? "text-accent" : "text-ink-soft/70"}`}
-                  >
+                  <span key={`mark-${t}`} className="inline-block text-accent">
                     {token.char}
                   </span>
                 );

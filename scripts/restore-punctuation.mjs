@@ -21,10 +21,9 @@
  * Prints a coverage report. Without --write it changes nothing, which is
  * the way to review what a source would do before trusting it.
  *
- * NOTE for whoever runs this: a restored `?` collides with the `?` the
- * readout draws for a hidden letter. Before landing a corpus that has
- * one, change SnakeText to draw marks in the accent at all times, rather
- * than letting an unreached mark sit in the blank's grey.
+ * A restored `?` would collide with the `?` the readout draws for a
+ * hidden letter, so SnakeText draws every mark in the accent — keep it
+ * that way if you re-run this against a wider source.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -68,8 +67,13 @@ function cleanSpan(span) {
     .join("")
     .replace(/\s+/g, " ")
     .trim()
-    // A mark stranded by a dropped neighbour ("word ," -> "word,").
-    .replace(/\s+([,.;:!?'])/g, "$1");
+    // Marks bind to the word on their left, so a space-set dash
+    // ("KINSMEN — AFTER") does not become a wordless word the readout
+    // has nothing to anchor — or draw. An apostrophe is exempt when it
+    // opens the next word instead of closing the last one ('TIS).
+    .replace(/\s+([\-—,.;:!?]['\-—,.;:!?]*)/g, "$1")
+    // Nothing can lead the phrase but a letter or its own apostrophe.
+    .replace(/^[\-—,.;:!?]+\s*/, "");
   return out;
 }
 
@@ -114,7 +118,10 @@ if (sourcePaths.length === 0) {
 
 const sources = loadSources(sourcePaths);
 const corpus = readFileSync(CORPUS, "utf8");
-const ENTRY = /(\[\s*"(?:[^"\\]|\\.)*"\s*,\s*"(?:[^"\\]|\\.)*"\s*,\s*")([A-Z '-]+)("\s*\])/g;
+// The phrase is the third string of a PoemEntry. Its class holds every
+// mark the readout draws, so a run over an already-punctuated corpus
+// re-derives the same spans instead of skipping them.
+const ENTRY = /(\[\s*"(?:[^"\\]|\\.)*"\s*,\s*"(?:[^"\\]|\\.)*"\s*,\s*")([A-Z '\-—,.;:!?]+)("\s*\])/g;
 
 const report = { restored: [], unchanged: 0, missing: [], ambiguous: [] };
 
