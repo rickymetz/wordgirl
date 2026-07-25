@@ -81,7 +81,7 @@
    contribute four "expected" ones).
    Light mode: worst adjacent pair 10.3 ΔE, up from 6.1 — red-700 and
    orange-700 used to sit 6.1 apart and read as one color; red→orange is
-   now 20.3. Dark mode's warm end is tighter (worst pair 9.1, up from
+   now 20.3, and no pair anywhere is closer than 10.1. Dark mode's warm end is tighter (worst pair 9.1, up from
    6.1) because red stays today's coral #f87171 rather than going pale
    to buy the last 1.8; orange and yellow carry that spread instead.
    Why light-mode red is DEEP: AA against white caps both red and orange
@@ -98,7 +98,7 @@
   --level-6: light-dark(#15803d, #4ade80);  /* green */
   --level-7: light-dark(#1e40af, #3b82f6);  /* blue */
   --level-8: light-dark(#9333ea, #c084fc);  /* purple */
-  --level-9: light-dark(#9d174d, #f472b6);  /* pink */
+  --level-9: light-dark(#db2777, #f472b6);  /* pink */
   /* Sky, not turquoise: the decagon colors Polygram's completion card,
      which read as Crosshatch's Tiffany teal from across the room. */
   --level-10: light-dark(#075985, #38bdf8); /* sky */
