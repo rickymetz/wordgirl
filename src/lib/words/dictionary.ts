@@ -35,8 +35,13 @@
  * v16: reshape doublet's e5 easy board (T-bar -> staircase) — the
  * T-bar's checkerboard color classes were 4/2, so it had no domino
  * tiling and every attempt that selected it failed.
+ * v17: crosshatch generates from the REQUIRED tier only. It validates
+ * by combo membership, so every enumerated word was compulsory —
+ * bonus-tier ENABLE obscurities were two thirds of a day's list.
+ * Every crosshatch puzzle changes; saved days before v17 are records,
+ * not resumable progress.
  */
-export const DICT_VERSION = 16;
+export const DICT_VERSION = 17;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;

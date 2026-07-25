@@ -11,6 +11,34 @@ import {
   type CrosshatchStats,
 } from "../state/persistence";
 
+/** The archive row's play-state line. Exported for its test. */
+export function rowStatus(day: ArchivedDay): { text: string; done: boolean } {
+  if (!day.solved) {
+    return {
+      text: `In progress · ${day.foundWords.length} words`,
+      done: false,
+    };
+  }
+  // A stale or retired save's result is real history but doesn't map
+  // onto the current puzzle's combos. The save carries the day's word
+  // total, so ranking needs no puzzle regeneration (old saves without
+  // it just show the count).
+  if (day.stale || day.retired || !day.totalWords) {
+    return {
+      text: `Solved · ${day.foundWords.length} words${
+        day.stale || day.retired ? " · older words" : ""
+      }`,
+      done: true,
+    };
+  }
+  return {
+    text: `${day.foundWords.length}/${day.totalWords}${
+      Object.keys(day.revealed ?? {}).length > 0 ? " · used hint" : ""
+    }`,
+    done: true,
+  };
+}
+
 const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
   gameId: "crosshatch",
   accent: "crosshatch",
@@ -26,32 +54,7 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
     { label: "Words", value: stats.totalWords },
   ],
   isDone: (day) => day.solved,
-  rowStatus: (_dateKey, day) => {
-    if (!day.solved) {
-      return {
-        text: `In progress · ${day.foundWords.length} words`,
-        done: false,
-      };
-    }
-    // A stale save was played against an older dictionary: its result
-    // is real history but doesn't map onto the current puzzle's combos.
-    // The save carries the day's word total, so ranking needs no
-    // puzzle regeneration (old saves without it just show the count).
-    if (day.stale || !day.totalWords) {
-      return {
-        text: `Solved · ${day.foundWords.length} words${
-          day.stale ? " · older words" : ""
-        }`,
-        done: true,
-      };
-    }
-    return {
-      text: `${day.foundWords.length}/${day.totalWords}${
-        Object.keys(day.revealed ?? {}).length > 0 ? " · used hint" : ""
-      }`,
-      done: true,
-    };
-  },
+  rowStatus: (_dateKey, day) => rowStatus(day),
 };
 
 /** Past daily puzzles: calendar mosaic + played days, newest first. */

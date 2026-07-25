@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   displayStreak,
+  loadAllDailyProgress,
   loadDailyProgress,
+  loadStaleDailyProgress,
   loadStats,
   recordDailySolved,
   recordWordsProgress,
@@ -114,6 +116,80 @@ describe("stats recording", () => {
     });
     const saved = await loadDailyProgress("2026-07-06");
     expect(saved?.foundWords).toEqual(["out", "tin", "van"]);
+  });
+
+  it("a pre-v17 save is a record, not resumable progress", async () => {
+    // The v17 generator change rewrote every date's puzzle, so the
+    // save's puzzleKey can't match — it must not hydrate the new
+    // puzzle, but it must survive as history (and as the
+    // already-counted marker, so replaying doesn't re-count "played").
+    await saveDailyProgress({
+      dateKey: "2026-07-06",
+      dictVersion: 16,
+      puzzleKey: "old-key",
+      foundWords: ["kagu", "habu"],
+      grid: {},
+      revealed: {},
+      solved: true,
+      elapsedMs: 5000,
+    });
+    expect(await loadDailyProgress("2026-07-06", "new-key")).toBeNull();
+    const record = await loadStaleDailyProgress("2026-07-06", "new-key");
+    expect(record?.foundWords).toEqual(["kagu", "habu"]);
+    expect(record?.solved).toBe(true);
+  });
+
+  it("marks pre-v17 saves retired, but not stale", async () => {
+    // v17 moved crosshatch generation to the required tier, so every
+    // date's puzzle changed. The listing can't compare puzzleKeys
+    // without regenerating 200+ puzzles — the version is the marker.
+    // `retired` must stay distinct from `stale`: the record is still
+    // accurate, so TrendsPage keeps charting its solve time.
+    await saveDailyProgress({
+      dateKey: "2026-07-06",
+      dictVersion: 16,
+      puzzleKey: "abc123",
+      foundWords: ["kagu", "habu"],
+      grid: {},
+      revealed: {},
+      solved: true,
+      elapsedMs: 5000,
+    });
+    await saveDailyProgress({
+      dateKey: "2026-07-07",
+      dictVersion: DICT_VERSION,
+      puzzleKey: "def456",
+      foundWords: ["paw", "raw"],
+      grid: {},
+      revealed: {},
+      solved: true,
+      elapsedMs: 5000,
+    });
+    const days = await loadAllDailyProgress();
+    expect(days["2026-07-06"].retired).toBe(true);
+    expect(days["2026-07-06"].stale).toBe(false); // provenance is fine
+    expect(days["2026-07-06"].foundWords).toEqual(["kagu", "habu"]); // record kept
+    expect(days["2026-07-06"].elapsedMs).toBe(5000); // still chartable
+    expect(days["2026-07-07"].retired).toBe(false);
+    expect(days["2026-07-07"].stale).toBe(false);
+  });
+
+  it("still flags a legacy save with no puzzleKey as stale", async () => {
+    localStorage.setItem(
+      "wg:v1:local:crosshatch:daily:2026-07-06",
+      JSON.stringify({
+        dateKey: "2026-07-06",
+        dictVersion: 12,
+        foundWords: ["out"],
+        grid: {},
+        revealed: {},
+        solved: true,
+        elapsedMs: 5000,
+      }),
+    );
+    const days = await loadAllDailyProgress();
+    expect(days["2026-07-06"].stale).toBe(true);
+    expect(days["2026-07-06"].retired).toBe(true);
   });
 
   it("loadStats merges older blobs over defaults", async () => {

@@ -177,20 +177,33 @@ function fixedSlotCount(shape: Shape, combos: Combo[]): number {
 }
 
 /**
+ * Generation draws from the REQUIRED tier only. Crosshatch validates a
+ * submission by combo membership, never by dictionary lookup, so every
+ * word the generator enumerates is mandatory to solve and hintable —
+ * there is no "accepted but optional" state to put a bonus word in.
+ * Enumerating from `all` therefore made ENABLE obscurities (kagu, habu,
+ * vatu) compulsory: two thirds of a day's list, by measurement.
+ */
+const TIER = "required" as const;
+
+/**
  * Position-indexed word lookup: for each (length, position, letter),
  * the set of words with that letter at that position. Lets candidatesFor
  * intersect small sets instead of scanning the full bucket.
  */
 type LetterIndex = ReadonlyMap<number, ReadonlyMap<number, ReadonlyMap<string, readonly string[]>>>;
 
-const indexCache = new WeakMap<Dictionary, LetterIndex>();
+// Keyed by the TIER INDEX, not the dictionary: an index built from one
+// tier must never be served for another if this ever reads a second one.
+const indexCache = new WeakMap<Dictionary[typeof TIER], LetterIndex>();
 
 function buildLetterIndex(dict: Dictionary): LetterIndex {
-  const cached = indexCache.get(dict);
+  const tier = dict[TIER];
+  const cached = indexCache.get(tier);
   if (cached) return cached;
 
   const idx = new Map<number, Map<number, Map<string, string[]>>>();
-  for (const [len, bucket] of dict.all.buckets) {
+  for (const [len, bucket] of tier.buckets) {
     const byPos = new Map<number, Map<string, string[]>>();
     for (let pos = 0; pos < len; pos++) {
       byPos.set(pos, new Map());
@@ -209,7 +222,7 @@ function buildLetterIndex(dict: Dictionary): LetterIndex {
     }
     idx.set(len, byPos);
   }
-  indexCache.set(dict, idx);
+  indexCache.set(tier, idx);
   return idx;
 }
 
@@ -238,7 +251,7 @@ function candidatesFor(
   }
 
   if (constraints.length === 0) {
-    return [...(dict.all.buckets.get(slot.len) ?? [])];
+    return [...(dict[TIER].buckets.get(slot.len) ?? [])];
   }
 
   const out: string[] = [];
@@ -253,7 +266,8 @@ function candidatesFor(
 
 /**
  * Depth-first enumeration over slots, most-constrained first. Combos
- * never repeat a word across slots (crossword convention).
+ * never repeat a word across slots (crossword convention). Fills come
+ * from the required tier only — see TIER.
  */
 export function enumerateCombos(
   shape: Shape,
