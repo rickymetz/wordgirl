@@ -1,9 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  BACKUP_AFTER_MS,
+  OFFLINE_AFTER_MS,
   offlineShellResponse,
   respondWithShell,
   type ShellSources,
 } from "./appShell";
+
+/**
+ * Stands in for the real timer so a stalled network costs the suite
+ * nothing. Records what it was asked to wait for and resolves on the
+ * next tick, which is enough to lose every race against a promise that
+ * has not settled.
+ */
+function fakeWait() {
+  const asked: number[] = [];
+  const wait = (ms: number) => {
+    asked.push(ms);
+    return new Promise((done) => setTimeout(done, 0));
+  };
+  return Object.assign(wait, { asked });
+}
+
+/** A fetch that never answers — the stalled-network case. */
+const stalls = () => new Promise<Response>(() => {});
 
 function shell(body = "<html>app</html>", init?: ResponseInit) {
   return new Response(body, {
@@ -97,6 +117,77 @@ describe("respondWithShell", () => {
       }),
     );
     expect(await response.text()).toContain("WordGirl did not load");
+  });
+
+  it("opens from the backup when the network stalls instead of failing", async () => {
+    // The reported symptom after the first fix: not an error, just a
+    // launch that hangs. iOS gives a stalled fetch a minute or more.
+    const wait = fakeWait();
+    const response = await respondWithShell(
+      sources({
+        fromPrecache: stalls,
+        readBackup: async () => shell("<html>backup</html>"),
+      }),
+      () => {},
+      wait,
+    );
+    expect(await response.text()).toBe("<html>backup</html>");
+    expect(wait.asked[0]).toBe(BACKUP_AFTER_MS);
+  });
+
+  it("refreshes the backup when the stalled shell finally lands", async () => {
+    let land: (response: Response) => void = () => {};
+    const writeBackup = vi.fn(async (_response: Response) => undefined);
+    const kept: Promise<unknown>[] = [];
+
+    const response = await respondWithShell(
+      sources({
+        fromPrecache: () => new Promise<Response>((res) => (land = res)),
+        readBackup: async () => shell("<html>backup</html>"),
+        writeBackup,
+      }),
+      (work) => kept.push(work),
+      fakeWait(),
+    );
+
+    expect(await response.text()).toBe("<html>backup</html>");
+    expect(writeBackup).not.toHaveBeenCalled();
+    land(shell("<html>fresh</html>"));
+    await Promise.all(kept);
+    expect(await writeBackup.mock.calls[0][0].text()).toBe("<html>fresh</html>");
+  });
+
+  it("waits longer for a stalled shell when there is no backup", async () => {
+    const wait = fakeWait();
+    const response = await respondWithShell(
+      sources({ fromPrecache: stalls, readBackup: async () => undefined }),
+      () => {},
+      wait,
+    );
+    expect(await response.text()).toContain("WordGirl did not load");
+    // The full deadline is spent before giving up on the real shell.
+    expect(wait.asked).toEqual([
+      BACKUP_AFTER_MS,
+      OFFLINE_AFTER_MS - BACKUP_AFTER_MS,
+    ]);
+  });
+
+  it("still serves a slow shell that arrives within the full deadline", async () => {
+    let land: (response: Response) => void = () => {};
+    const slow = new Promise<Response>((res) => (land = res));
+    const wait = (ms: number) =>
+      new Promise((done) => {
+        // Land the shell during the second, longer window.
+        if (ms !== BACKUP_AFTER_MS) land(shell("<html>slow</html>"));
+        setTimeout(done, 0);
+      });
+
+    const response = await respondWithShell(
+      sources({ fromPrecache: () => slow, readBackup: async () => undefined }),
+      () => {},
+      wait,
+    );
+    expect(await response.text()).toBe("<html>slow</html>");
   });
 
   it("never lets a backup-write failure break the navigation", async () => {
