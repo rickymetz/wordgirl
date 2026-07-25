@@ -41,9 +41,12 @@ export function ShapeTile({ letter, sides, introLevel, size, x, y, rotation, onT
           dead-centered — no optical nudging. Fixed size: type stays
           consistent while the shapes change scale across levels. */}
       {/* Rubik Mono One ships a single (heavy) 400 weight — no bold. */}
+      {/* Every letter wears the color of the level that introduced it —
+          the three seed letters included, so they read as the triangle's
+          own rather than as the only uncolored glyphs on the board. */}
       <span
-        className={`relative font-game text-[24px] leading-none font-normal uppercase${introLevel <= 3 ? " text-ink" : ""}`}
-        style={introLevel > 3 ? { color: `var(--level-${introLevel})` } : undefined}
+        className="relative font-game text-[24px] leading-none font-normal uppercase"
+        style={{ color: `var(--level-${introLevel})` }}
       >
         {letter}
       </span>

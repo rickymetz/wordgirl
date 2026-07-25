@@ -100,6 +100,16 @@ export function FoundWordsBar({
                 state.found.includes(w),
               ).length;
               const isCurrent = lvl.size === state.puzzle.levels[state.levelIndex].size;
+              // Alphabetical order with blanks in place: where a blank
+              // falls between found words is itself a hint. Bonus finds
+              // join the SAME run — one ABC sequence to read, not a
+              // required list with a tail of stars.
+              const entries = [
+                ...lvl.words.map((word) => ({ word, bonus: false })),
+                ...lvl.bonusWords
+                  .filter((w) => state.found.includes(w))
+                  .map((word) => ({ word, bonus: true })),
+              ].sort((a, b) => a.word.localeCompare(b.word));
               return (
                 // data-level scopes the accent: each section's hinted
                 // letters keep THEIR level's color (amethyst 3s, emerald
@@ -134,11 +144,9 @@ export function FoundWordsBar({
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    {/* Alphabetical order with blanks in place: where a
-                        blank falls between found words is itself a hint. */}
-                    {lvl.words.map((word) => {
+                    {entries.map(({ word, bonus }) => {
                       const hinted = state.revealed[word] ?? [];
-                      const isFound = state.found.includes(word);
+                      const isFound = bonus || state.found.includes(word);
                       const letters = [...word].map((letter, i) =>
                         hinted.includes(i) ? (
                           // The level color marks hint-revealed
@@ -163,6 +171,11 @@ export function FoundWordsBar({
                             key={word}
                             className="font-game text-xs uppercase"
                           >
+                            {bonus && (
+                              <span className="text-accent" aria-label="bonus">
+                                ✦
+                              </span>
+                            )}
                             {letters}
                           </span>
                         );
@@ -184,20 +197,6 @@ export function FoundWordsBar({
                         </button>
                       );
                     })}
-                    {/* Bonus finds: extra points, never required. */}
-                    {lvl.bonusWords
-                      .filter((w) => state.found.includes(w))
-                      .map((word) => (
-                        <span
-                          key={word}
-                          className="font-game text-xs uppercase"
-                        >
-                          <span className="text-accent" aria-label="bonus">
-                            ✦
-                          </span>
-                          {word}
-                        </span>
-                      ))}
                   </div>
                 </div>
               );

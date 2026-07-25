@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { ShareButton } from "../../../components/ShareButton";
+import { HoldButton } from "../../../components/HoldButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
@@ -409,15 +410,15 @@ export function GameScreen({ mode }: Props) {
             className="flex flex-col items-center gap-2"
           >
             {canSkipLevel(state) && (
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface active:scale-95 touch-manipulation select-none"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => dispatch({ type: "skipLevel" })}
+              // Held, not tapped: skipping forfeits the level's
+              // remaining words, so a stray thumb must not do it.
+              <HoldButton
+                onHoldComplete={() => dispatch({ type: "skipLevel" })}
+                className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface"
               >
                 <SkipForward aria-hidden className="h-4 w-4" />
-                Skip to next level
-              </button>
+                Hold to skip level
+              </HoldButton>
             )}
             <Controls
               onDelete={() => {
@@ -523,7 +524,7 @@ export function GameScreen({ mode }: Props) {
                       <span className="text-accent">✦</span> bonus
                     </Key>{" "}
                     points. Find enough and you can{" "}
-                    <Key>skip to the next level</Key> — or keep hunting.
+                    <Key>hold to skip the level</Key> — or keep hunting.
                   </>
                 ),
               },
