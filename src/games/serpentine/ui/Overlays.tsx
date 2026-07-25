@@ -88,8 +88,9 @@ export function SolvedOverlay({
               <p className="text-center text-sm font-medium text-ink">
                 {puzzle.text}
               </p>
-              <p className="text-center text-sm font-medium text-ink-soft italic">
-                &ldquo;{puzzle.title}&rdquo;
+              <p className="text-center text-sm font-medium text-ink-soft">
+                {puzzle.excerpt && "from "}
+                <span className="italic">&ldquo;{puzzle.title}&rdquo;</span>
               </p>
               <p className="text-center text-xs text-ink-soft">
                 by <em>{puzzle.author}</em>

@@ -24,6 +24,11 @@ export interface PuzzleDef {
    * letters map to grid cells, in order.
    */
   text: string;
+  /**
+   * True when the phrase is part of a longer poem rather than the whole
+   * of it — the readout says "from" before the title.
+   */
+  excerpt: boolean;
   /** Ordered solution path through the grid. */
   path: Cell[];
   /** Cells removed from the grid to fit non-rectangular letter counts. */

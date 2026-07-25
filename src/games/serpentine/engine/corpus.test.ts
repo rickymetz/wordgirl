@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import rawDictionary from "../../../lib/words/dictionary.txt?raw";
-import { allPoemEntries } from "./puzzles";
+import { allPoemEntries, getPoolSize, getThemedPuzzle } from "./puzzles";
 
 /**
  * The phrases were transcribed from poetry datasets by stripping
@@ -79,6 +79,33 @@ describe("serpentine poem corpus", () => {
       }
     }
     expect([...unknown]).toEqual([]);
+  });
+
+  it("marks no haiku as an excerpt", () => {
+    // A haiku is a whole poem. Only the English pool holds lines lifted
+    // out of something longer, so a restore run that mixed the two up
+    // would show here before it reached a player.
+    const flagged = allPoemEntries("haiku")
+      .filter(([, , , excerpt]) => excerpt)
+      .map(([, , text]) => text);
+    expect(flagged).toEqual([]);
+  });
+
+  it("marks the English lines as excerpts of their poems", () => {
+    const english = allPoemEntries("english");
+    const excerpts = english.filter(([, , , excerpt]) => excerpt);
+    expect(excerpts.length).toBeGreaterThan(english.length * 0.9);
+  });
+
+  it("carries the excerpt flag through to the puzzle", () => {
+    const size = getPoolSize();
+    const seen = new Set<boolean>();
+    for (let i = 0; i < size; i++) {
+      seen.add(getThemedPuzzle("haiku", i, "excerpt-test").excerpt);
+      seen.add(getThemedPuzzle("poem", i, "excerpt-test").excerpt);
+    }
+    // Both states reachable: the flag is plumbed, not hardcoded.
+    expect([...seen].sort()).toEqual([false, true]);
   });
 
   it("lists no allowlisted word the dictionary already knows", () => {
