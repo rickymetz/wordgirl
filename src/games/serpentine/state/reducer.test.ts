@@ -24,6 +24,7 @@ const puzzle: PuzzleDef = {
   author: "Test Author",
   difficulty: "haiku",
   excerpt: false,
+  titleSpoils: false,
 };
 
 function init() {

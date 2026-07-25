@@ -38,6 +38,11 @@ import { MAX_ROWS, MAX_COLS, cellKey, areAdjacent } from "./types";
  * That same search sets the excerpt flag — a phrase shorter than the
  * poem holding it is a cut from it, and the game says "from" before the
  * title. 412 English lines are excerpts; every haiku is whole.
+ *
+ * Titles here are the datasets' own, which for Dickinson means the first
+ * line, since she titled nothing. `titleSpoilsPhrase` withholds a title
+ * that would print the answer above its grid — do not "fix" such an
+ * entry by inventing a title for it.
  */
 /**
  * `[author, title, phrase]`, plus `true` when the phrase is only part of
@@ -254,6 +259,24 @@ function hamiltonianPath(
   return fallback;
 }
 
+/**
+ * True when showing the title would hand the player the phrase.
+ *
+ * Dickinson's poems are untitled and catalogued by their first line, so
+ * a phrase taken from that line is printed above its own grid; a few
+ * Byron lyrics take their title from their opening the same way. A title
+ * that echoes the first word or two is still a clue — this catches only
+ * the ones that give away half the phrase or all of it.
+ */
+export function titleSpoilsPhrase(title: string, text: string): boolean {
+  const letters = (s: string) => s.toUpperCase().replace(/[^A-Z]/g, "");
+  const t = letters(title);
+  const p = letters(text);
+  if (!t || !p) return false;
+  if (t.includes(p)) return true;
+  return p.startsWith(t) && t.length * 2 >= p.length;
+}
+
 function expand(
   author: string,
   title: string,
@@ -273,7 +296,8 @@ function expand(
   for (let i = 0; i < path.length; i++) {
     grid[path[i].row][path[i].col] = letters[i];
   }
-  return { id, title, author, difficulty, rows, cols, grid, text, path, blocked, excerpt };
+  const titleSpoils = titleSpoilsPhrase(title, text);
+  return { id, title, author, difficulty, rows, cols, grid, text, path, blocked, excerpt, titleSpoils };
 }
 
 // --- Themed poetry pools ---
@@ -327,9 +351,9 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Keats", "To Autumn", "AMONG THE RIVER SALLOWS, BORNE ALOFT", true],
     ["Keats", "Ode on a Grecian Urn", "WHAT LITTLE TOWN BY RIVER OR SEA SHORE", true],
     ["Shelley", "Ozymandias", "TELL THAT ITS SCULPTOR WELL THOSE PASSIONS READ", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "TO LOVE THAT WELL, WHICH THOU MUST LEAVE ERE LONG.", true],
+    ["Shakespeare", "Sonnet 73", "TO LOVE THAT WELL, WHICH THOU MUST LEAVE ERE LONG.", true],
     ["Wordsworth", "I Wandered Lonely as a Cloud", "BESIDE THE LAKE, BENEATH THE TREES", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "I LOVE TO HEAR HER SPEAK, YET WELL I KNOW", true],
+    ["Shakespeare", "Sonnet 130", "I LOVE TO HEAR HER SPEAK, YET WELL I KNOW", true],
     ["Rossetti", "A Birthday", "WHOSE NEST IS IN A WATER'D SHOOT", true],
     ["Rossetti", "A Birthday", "MY HEART IS LIKE A RAINBOW SHELL THAT PADDLES IN A HALCYON SEA", true],
     ["Rossetti", "A Birthday", "WHOSE NEST IS IN A WATER'D SHOOT; MY HEART IS LIKE AN APPLE-TREE", true],
@@ -380,7 +404,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Dickinson", "The butterfly obtains", "THE BUTTERFLY OBTAINS BUT LITTLE SYMPATHY", true],
     ["Dickinson", "To flee from memory", "TO FLEE FROM MEMORY HAD WE THE WINGS MANY WOULD FLY", true],
     ["Blake", "The Lamb", "LITTLE LAMB WHO MADE THEE DOST THOU KNOW WHO MADE THEE"],
-    ["Shakespeare", "Sonnet 29 (When in disgrace with fortune and men's eyes)", "LIKE TO THE LARK AT BREAK OF DAY ARISING", true],
+    ["Shakespeare", "Sonnet 29", "LIKE TO THE LARK AT BREAK OF DAY ARISING", true],
     ["Byron", "Oh! Weep for Those", "THE WILD-DOVE HATH HER NEST, THE FOX HIS CAVE", true],
     ["Byron", "Translation", "WILT THOU, NOW, WING THY DISTANT FLIGHT?", true],
     ["Byron", "A Spirit Passed Before Me.  From Job", "THE MOTH SURVIVES YOU, AND ARE YE MORE JUST?", true],
@@ -407,7 +431,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Versicles", "HILLO! I READ GLENARVON, TOO, BY CARO LAMB; GOD DAMN!", true],
     ["Blake", "The Lamb", "HE IS CALLED BY THY NAME, FOR HE CALLS HIMSELF A LAMB HE IS MEEK, AND HE IS MILD", true],
     ["Blake", "The Lamb", "MAKING ALL THE VALES REJOICE? LITTLE LAMB, WHO MADE THEE?", true],
-    ["Shakespeare", "Sonnet 29 (When in disgrace with fortune and men's eyes)", "HAPLY I THINK ON THEE,— AND THEN MY STATE, LIKE TO THE LARK AT BREAK OF DAY ARISING", true],
+    ["Shakespeare", "Sonnet 29", "HAPLY I THINK ON THEE,— AND THEN MY STATE, LIKE TO THE LARK AT BREAK OF DAY ARISING", true],
     ["Byron", "Translation", "TO WHAT UNKNOWN REGION BORNE, WILT THOU, NOW, WING THY DISTANT FLIGHT?", true],
     ["Blake", "The Lamb", "LITTLE LAMB, I'LL TELL THEE: HE IS CALLED BY THY NAME", true],
     ["Blake", "The Lamb", "FOR HE CALLS HIMSELF A LAMB HE IS MEEK, AND HE IS MILD", true],
@@ -437,7 +461,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Dickinson", "Through the Dark Sod -- as Education", "THROUGH THE DARK SOD— AS EDUCATION", true],
     ["Dickinson", "The Sun and Moon must make their haste --", "THE SUN AND MOON MUST MAKE THEIR HASTE", true],
     ["Dickinson", "You know that Portrait in the Moon --", "YOU KNOW THAT PORTRAIT IN THE MOON", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "MY MISTRESS' EYES ARE NOTHING LIKE THE SUN", true],
+    ["Shakespeare", "Sonnet 130", "MY MISTRESS' EYES ARE NOTHING LIKE THE SUN", true],
     ["Byron", "Sun of the Sleepless!", "SUN OF THE SLEEPLESS! MELANCHOLY STAR!", true],
     ["Byron", "Song", "BREEZE OF THE NIGHT IN GENTLER SIGHS", true],
     ["Dickinson", "I watched the Moon around the House", "I WATCHED THE MOON AROUND THE HOUSE", true],
@@ -462,24 +486,24 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Written After Swimming From Sestos to Abydos", "IF, IN THE MONTH OF DARK DECEMBER, LEANDER, WHO WAS NIGHTLY WONT", true],
     ["Byron", "Sun of the Sleepless!", "WHOSE TEARFUL BEAM GLOWS TREMULOUSLY FAR", true],
     ["Blake", "The Tyger", "AND WATERED HEAVEN WITH THEIR TEARS", true],
-    ["Shakespeare", "Sonnet 29 (When in disgrace with fortune and men's eyes)", "AND TROUBLE DEAF HEAVEN WITH MY BOOTLESS CRIES", true],
+    ["Shakespeare", "Sonnet 29", "AND TROUBLE DEAF HEAVEN WITH MY BOOTLESS CRIES", true],
     ["Keats", "To Autumn", "CLOSE BOSOM-FRIEND OF THE MATURING SUN", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "SOMETIME TOO HOT THE EYE OF HEAVEN SHINES", true],
-    ["Shakespeare", "Sonnet 29 (When in disgrace with fortune and men's eyes)", "FROM SULLEN EARTH, SINGS HYMNS AT HEAVEN'S GATE", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "WHICH BY AND BY BLACK NIGHT DOTH TAKE AWAY", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "IN ME THOU SEE'ST THE TWILIGHT OF SUCH DAY", true],
+    ["Shakespeare", "Sonnet 18", "SOMETIME TOO HOT THE EYE OF HEAVEN SHINES", true],
+    ["Shakespeare", "Sonnet 29", "FROM SULLEN EARTH, SINGS HYMNS AT HEAVEN'S GATE", true],
+    ["Shakespeare", "Sonnet 73", "WHICH BY AND BY BLACK NIGHT DOTH TAKE AWAY", true],
+    ["Shakespeare", "Sonnet 73", "IN ME THOU SEE'ST THE TWILIGHT OF SUCH DAY", true],
     ["Keats", "To Autumn", "OR SINKING AS THE LIGHT WIND LIVES OR DIES", true],
     ["Keats", "Bright Star", "NOT IN LONE SPLENDOUR HUNG ALOFT THE NIGHT", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "AND YET BY HEAVEN, I THINK MY LOVE AS RARE", true],
+    ["Shakespeare", "Sonnet 130", "AND YET BY HEAVEN, I THINK MY LOVE AS RARE", true],
     ["Wordsworth", "I Wandered Lonely as a Cloud", "CONTINUOUS AS THE STARS THAT SHINE", true],
     ["Blake", "The Lamb", "SOFTEST CLOTHING, WOOLLY, BRIGHT", true],
-    ["Shakespeare", "Sonnet 116 (Let me not to the marriage of true minds)", "IT IS THE STAR TO EVERY WANDERING BARK", true],
+    ["Shakespeare", "Sonnet 116", "IT IS THE STAR TO EVERY WANDERING BARK", true],
     ["Blake", "The Tyger", "IN THE FORESTS OF THE NIGHT, WHAT IMMORTAL HAND OR EYE", true],
     ["Blake", "The Lamb", "GAVE THEE CLOTHING OF DELIGHT, SOFTEST CLOTHING, WOOLLY, BRIGHT", true],
     ["Blake", "The Tyger", "WHEN THE STARS THREW DOWN THEIR SPEARS, AND WATERED HEAVEN WITH THEIR TEARS", true],
     ["Wordsworth", "I Wandered Lonely as a Cloud", "CONTINUOUS AS THE STARS THAT SHINE AND TWINKLE ON THE MILKY WAY", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "AND YET BY HEAVEN, I THINK MY LOVE AS RARE, AS ANY SHE BELIED WITH FALSE COMPARE.", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "AS AFTER SUNSET FADETH IN THE WEST; WHICH BY AND BY BLACK NIGHT DOTH TAKE AWAY", true],
+    ["Shakespeare", "Sonnet 130", "AND YET BY HEAVEN, I THINK MY LOVE AS RARE, AS ANY SHE BELIED WITH FALSE COMPARE.", true],
+    ["Shakespeare", "Sonnet 73", "AS AFTER SUNSET FADETH IN THE WEST; WHICH BY AND BY BLACK NIGHT DOTH TAKE AWAY", true],
     ["Blake", "The Tyger", "AND WATERED HEAVEN WITH THEIR TEARS, DID HE SMILE HIS WORK TO SEE?", true],
     ["Blake", "The Lamb", "SOFTEST CLOTHING, WOOLLY, BRIGHT; GAVE THEE SUCH A TENDER VOICE", true],
     ],
@@ -522,9 +546,9 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Lines Written in an Album, at Malta", "AS O'ER THE COLD SEPULCHRAL STONE", true],
     ["Dickinson", "No Autumn's intercepting Chill", "NO AUTUMN'S INTERCEPTING CHILL", true],
     ["Dickinson", "Summer is shorter than any one --", "SUMMER IS SHORTER THAN ANY ONE", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "SHALL I COMPARE THEE TO A SUMMER'S DAY?", true],
+    ["Shakespeare", "Sonnet 18", "SHALL I COMPARE THEE TO A SUMMER'S DAY?", true],
     ["Byron", "Epitaph for William Pitt", "WITH DEATH DOOMED TO GRAPPLE, BENEATH THIS COLD SLAB, HE", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "SHALL I COMPARE THEE TO A SUMMER'S DAY? THOU ART MORE LOVELY AND MORE TEMPERATE", true],
+    ["Shakespeare", "Sonnet 18", "SHALL I COMPARE THEE TO A SUMMER'S DAY? THOU ART MORE LOVELY AND MORE TEMPERATE", true],
     ["Byron", "Lines Written in an Album, at Malta", "AS O'ER THE COLD SEPULCHRAL STONE SOME NAME ARRESTS THE PASSER-BY", true],
     ["Keats", "To Autumn", "I SEASON OF MISTS AND MELLOW FRUITFULNESS", true],
     ["Byron", "Epitaph for William Pitt", "WITH DEATH DOOMED TO GRAPPLE, BENEATH THIS COLD SLAB, HE WHO LIED IN THE CHAPEL", true],
@@ -536,22 +560,22 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Sun of the Sleepless!", "DISTINCT, BUT DISTANT—CLEAR—BUT, OH HOW COLD!", true],
     ["Keats", "To Autumn", "FOR SUMMER HAS O'ER-BRIMM'D THEIR CLAMMY CELLS.", true],
     ["Keats", "To Autumn", "SEASON OF MISTS AND MELLOW FRUITFULNESS", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "BUT THY ETERNAL SUMMER SHALL NOT FADE", true],
+    ["Shakespeare", "Sonnet 18", "BUT THY ETERNAL SUMMER SHALL NOT FADE", true],
     ["Byron", "Song to the Suliotes", "HERE'S THE HARVEST OF OUR LABOUR", true],
     ["Keats", "To Autumn", "WHERE ARE THE SONGS OF SPRING? AY, WHERE ARE THEY?", true],
     ["Byron", "Remembrance", "CHILL'D BY MISFORTUNE'S WINTRY BLAST", true],
     ["Keats", "To Autumn", "UNTIL THEY THINK WARM DAYS WILL NEVER CEASE", true],
     ["Byron", "Stanzas for Music", "MAY SPRING FROM THE SPOT OF THY REST", true],
     ["Byron", "On the Eyes of Miss a----H---", "HER SUN, DISPLAYS PERPETUAL SUMMER.", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "AND SUMMER'S LEASE HATH ALL TOO SHORT A DATE", true],
+    ["Shakespeare", "Sonnet 18", "AND SUMMER'S LEASE HATH ALL TOO SHORT A DATE", true],
     ["Byron", "Sonnet on Chillon", "WORN, AS IF THY COLD PAVEMENT WERE A SOD", true],
     ["Byron", "Sonnet.  to Genevra", "AND THE WARM LUSTRE OF THY FEATURES—CAUGHT", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "IF SNOW BE WHITE, WHY THEN HER BREASTS ARE DUN", true],
+    ["Shakespeare", "Sonnet 130", "IF SNOW BE WHITE, WHY THEN HER BREASTS ARE DUN", true],
     ["Keats", "Bright Star", "OF SNOW UPON THE MOUNTAINS AND THE MOORS", true],
     ["Keats", "Ode on a Grecian Urn", "FOR EVER WARM AND STILL TO BE ENJOY'D", true],
     ["Shelley", "Ozymandias", "AND WRINKLED LIP, AND SNEER OF COLD COMMAND", true],
     ["Keats", "Ode on a Grecian Urn", "AS DOTH ETERNITY: COLD PASTORAL!", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "UPON THOSE BOUGHS WHICH SHAKE AGAINST THE COLD", true],
+    ["Shakespeare", "Sonnet 73", "UPON THOSE BOUGHS WHICH SHAKE AGAINST THE COLD", true],
     ["Keats", "To Autumn", "WHERE ARE THE SONGS OF SPRING? AY, WHERE ARE THEY?", true],
     ["Keats", "Bright Star", "OR GAZING ON THE NEW SOFT-FALLEN MASK OF SNOW UPON THE MOUNTAINS AND THE MOORS", true],
     ["Keats", "Ode on a Grecian Urn", "THOU, SILENT FORM, DOST TEASE US OUT OF THOUGHT AS DOTH ETERNITY: COLD PASTORAL!", true],
@@ -588,7 +612,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Dickinson", "A Death blow is a Life blow to Some", "A DEATH BLOW IS A LIFE BLOW TO SOME", true],
     ["Dickinson", "Too happy Time dissolves itself", "TOO HAPPY TIME DISSOLVES ITSELF", true],
     ["Dickinson", "Through those old Grounds of memory,", "THROUGH THOSE OLD GROUNDS OF MEMORY", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "THAT TIME OF YEAR THOU MAYST IN ME BEHOLD", true],
+    ["Shakespeare", "Sonnet 73", "THAT TIME OF YEAR THOU MAYST IN ME BEHOLD", true],
     ["Dickinson", "Robbed by Death -- but that was easy --", "ROBBED BY DEATH— BUT THAT WAS EASY", true],
     ["Byron", "On My Wedding-Day", "HERE'S A HAPPY NEW YEAR! BUT WITH REASON", true],
     ["Dickinson", "'Twas a long Parting -- but the time", "TWAS A LONG PARTING— BUT THE TIME", true],
@@ -602,18 +626,18 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Last Words on Greece", "WHAT ARE TO ME THOSE HONOURS OR RENOWN PAST OR TO COME, A NEW-BORN PEOPLE'S CRY?", true],
     ["Byron", "To a Lady, on Being Asked My Reason for Quitting England in the Spring", "WHEN MAN, EXPELL'D FROM EDEN'S BOWERS, A MOMENT LINGER'D NEAR THE GATE", true],
     ["Byron", "My Epitaph", "YOUTH, NATURE, AND RELENTING JOVE, TO KEEP MY LAMP IN STRONGLY STROVE", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "THAT ON THE ASHES OF HIS YOUTH DOTH LIE", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "NOR SHALL DEATH BRAG THOU WANDER'ST IN HIS SHADE", true],
+    ["Shakespeare", "Sonnet 73", "THAT ON THE ASHES OF HIS YOUTH DOTH LIE", true],
+    ["Shakespeare", "Sonnet 18", "NOR SHALL DEATH BRAG THOU WANDER'ST IN HIS SHADE", true],
     ["Keats", "To Autumn", "WHILE BARRED CLOUDS BLOOM THE SOFT-DYING DAY", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "WHEN IN ETERNAL LINES TO TIME THOU GROW'ST", true],
+    ["Shakespeare", "Sonnet 18", "WHEN IN ETERNAL LINES TO TIME THOU GROW'ST", true],
     ["Keats", "Ode on a Grecian Urn", "FAIR YOUTH, BENEATH THE TREES, THOU CANST NOT LEAVE", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "DEATH'S SECOND SELF, THAT SEALS UP ALL IN REST.", true],
+    ["Shakespeare", "Sonnet 73", "DEATH'S SECOND SELF, THAT SEALS UP ALL IN REST.", true],
     ["Keats", "Bright Star", "AND SO LIVE EVER—OR ELSE SWOON TO DEATH.", true],
-    ["Shakespeare", "Sonnet 116 (Let me not to the marriage of true minds)", "LOVE'S NOT TIME'S FOOL, THOUGH ROSY LIPS AND CHEEKS", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "AS THE DEATH-BED, WHEREON IT MUST EXPIRE", true],
+    ["Shakespeare", "Sonnet 116", "LOVE'S NOT TIME'S FOOL, THOUGH ROSY LIPS AND CHEEKS", true],
+    ["Shakespeare", "Sonnet 73", "AS THE DEATH-BED, WHEREON IT MUST EXPIRE", true],
     ["Keats", "Ode on a Grecian Urn", "THOU FOSTER-CHILD OF SILENCE AND SLOW TIME", true],
     ["Keats", "Ode on a Grecian Urn", "WHEN OLD AGE SHALL THIS GENERATION WASTE", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "THAT ON THE ASHES OF HIS YOUTH DOTH LIE, AS THE DEATH-BED, WHEREON IT MUST EXPIRE", true],
+    ["Shakespeare", "Sonnet 73", "THAT ON THE ASHES OF HIS YOUTH DOTH LIE, AS THE DEATH-BED, WHEREON IT MUST EXPIRE", true],
     ["Keats", "Ode on a Grecian Urn", "AS DOTH ETERNITY: COLD PASTORAL! WHEN OLD AGE SHALL THIS GENERATION WASTE", true],
     ],
   },
@@ -651,7 +675,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Stanzas for Music", "THEY ROSE THE FIRST—THEY SET THE LAST", true],
     ["Byron", "Stanzas for Music", "YOUNG FLOWERS AND AN EVERGREEN TREE", true],
     ["Byron", "Sonnet.  to Genevra", "ITS ROSE OF WHITENESS WITH THE BRIGHTEST BLUSH", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "IF HAIRS BE WIRES, BLACK WIRES GROW ON HER HEAD.", true],
+    ["Shakespeare", "Sonnet 130", "IF HAIRS BE WIRES, BLACK WIRES GROW ON HER HEAD.", true],
     ["Byron", "To a Lady Who Presented the Author With the Velvet Band Which Bound Her Tresses", "THE LEAVES OF LOVE WILL STILL BE GREEN", true],
     ["Keats", "Ode on a Grecian Urn", "TO WHAT GREEN ALTAR, O MYSTERIOUS PRIEST", true],
     ["Byron", "Stanzas to a Lady, With the Poems of CamoëNs", "IN SINGLE SORROW DOOM'D TO FADE?", true],
@@ -700,7 +724,7 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Dickinson", "Somewhat, to hope for,", "SOMEWHAT, TO HOPE FOR, BE IT NE'ER SO FAR IS CAPITAL AGAINST DESPAIR", true],
     ["Byron", "On My Thirty-Third Birthday", "THROUGH LIFE'S DULL ROAD, SO DIM AND DIRTY, I HAVE DRAGGED TO THREE-AND-THIRTY.", true],
     ["Byron", "Lines Written in \"Letters of an Italian Nun and an  English Gentleman, by J. J. Rousseau;  Founded on Facts.\"", "AWAY, AWAY,—YOUR FLATTERING ARTS MAY NOW BETRAY SOME SIMPLER HEARTS", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "CORAL IS FAR MORE RED, THAN HER LIPS RED", true],
+    ["Shakespeare", "Sonnet 130", "CORAL IS FAR MORE RED, THAN HER LIPS RED", true],
     ["Byron", "Lines to a Lady Weeping", "COULD WASH A FATHER'S FAULT AWAY!", true],
     ["Keats", "Ode on a Grecian Urn", "ALL BREATHING HUMAN PASSION FAR ABOVE", true],
     ["Byron", "Stanzas Written on the Road between Florence and Pisa", "THEN AWAY WITH ALL SUCH FROM THE HEAD THAT IS HOARY", true],
@@ -713,9 +737,9 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Shelley", "Ozymandias", "THE LONE AND LEVEL SANDS STRETCH FAR AWAY.", true],
     ["Byron", "To George Anson Byron(?)", "MY WOUNDS ARE FAR TOO DEEP FOR SIMPLE GRIEF", true],
     ["Keats", "Ode on a Grecian Urn", "WHY THOU ART DESOLATE, CAN E'ER RETURN.", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "THAT MUSIC HATH A FAR MORE PLEASING SOUND", true],
+    ["Shakespeare", "Sonnet 130", "THAT MUSIC HATH A FAR MORE PLEASING SOUND", true],
     ["Keats", "Ode on a Grecian Urn", "WILL SILENT BE; AND NOT A SOUL TO TELL WHY THOU ART DESOLATE, CAN E'ER RETURN.", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "THAT MUSIC HATH A FAR MORE PLEASING SOUND: I GRANT I NEVER SAW A GODDESS GO", true],
+    ["Shakespeare", "Sonnet 130", "THAT MUSIC HATH A FAR MORE PLEASING SOUND: I GRANT I NEVER SAW A GODDESS GO", true],
     ["Blake", "The Tyger", "IN WHAT DISTANT DEEPS OR SKIES BURNT THE FIRE OF THINE EYES?", true],
     ["Keats", "Ode on a Grecian Urn", "FOR EVER PANTING, AND FOR EVER YOUNG; ALL BREATHING HUMAN PASSION FAR ABOVE", true],
     ],
@@ -758,30 +782,30 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Dickinson", "Hope is a subtle Glutton --", "HOPE IS A SUBTLE GLUTTON— HE FEEDS UPON THE FAIR", true],
     ["Dickinson", "\"Hope\" is the thing with feathers", "HOPE IS THE THING WITH FEATHERS— THAT PERCHES IN THE SOUL", true],
     ["Byron", "Lines in the Travellers' Book at Orchomenus", "IN THIS BOOK A TRAVELLER HAD WRITTEN:— FAIR ALBION, SMILING, SEES HER SON DEPART", true],
-    ["Shakespeare", "Sonnet 116 (Let me not to the marriage of true minds)", "LET ME NOT TO THE MARRIAGE OF TRUE MINDS ADMIT IMPEDIMENTS. LOVE IS NOT LOVE", true],
+    ["Shakespeare", "Sonnet 116", "LET ME NOT TO THE MARRIAGE OF TRUE MINDS ADMIT IMPEDIMENTS. LOVE IS NOT LOVE", true],
     ["Keats", "Bright Star", "AWAKE FOR EVER IN A SWEET UNREST", true],
     ["Keats", "Ode on a Grecian Urn", "FOR EVER WILT THOU LOVE, AND SHE BE FAIR!", true],
     ["Keats", "Bright Star", "STILL, STILL TO HEAR HER TENDER-TAKEN BREATH", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "BARE RUIN'D CHOIRS, WHERE LATE THE SWEET BIRDS SANG.", true],
+    ["Shakespeare", "Sonnet 73", "BARE RUIN'D CHOIRS, WHERE LATE THE SWEET BIRDS SANG.", true],
     ["Wordsworth", "I Wandered Lonely as a Cloud", "AND THEN MY HEART WITH PLEASURE FILLS", true],
     ["Keats", "To Autumn", "WITH A SWEET KERNEL; TO SET BUDDING MORE", true],
     ["Blake", "The Tyger", "COULD TWIST THE SINEWS OF THY HEART?", true],
     ["Rossetti", "A Birthday", "MY HEART IS GLADDER THAN ALL THESE", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "NOR LOSE POSSESSION OF THAT FAIR THOU OW'ST", true],
+    ["Shakespeare", "Sonnet 18", "NOR LOSE POSSESSION OF THAT FAIR THOU OW'ST", true],
     ["Shelley", "Ozymandias", "THE HAND THAT MOCKED THEM, AND THE HEART THAT FED", true],
     ["Keats", "Ode on a Grecian Urn", "WILL SILENT BE; AND NOT A SOUL TO TELL", true],
     ["Keats", "Ode on a Grecian Urn", "BOLD LOVER, NEVER, NEVER CANST THOU KISS", true],
-    ["Shakespeare", "Sonnet 116 (Let me not to the marriage of true minds)", "LOVE ALTERS NOT WITH HIS BRIEF HOURS AND WEEKS", true],
+    ["Shakespeare", "Sonnet 116", "LOVE ALTERS NOT WITH HIS BRIEF HOURS AND WEEKS", true],
     ["Keats", "Ode on a Grecian Urn", "BEAUTY IS TRUTH, TRUTH BEAUTY,—THAT IS ALL", true],
     ["Blake", "The Tyger", "AND, WHEN THY HEART BEGAN TO BEAT", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "AND IN SOME PERFUMES IS THERE MORE DELIGHT", true],
-    ["Shakespeare", "Sonnet 29 (When in disgrace with fortune and men's eyes)", "FOR THY SWEET LOVE REMEMBER'D SUCH WEALTH BRINGS", true],
+    ["Shakespeare", "Sonnet 130", "AND IN SOME PERFUMES IS THERE MORE DELIGHT", true],
+    ["Shakespeare", "Sonnet 29", "FOR THY SWEET LOVE REMEMBER'D SUCH WEALTH BRINGS", true],
     ["Keats", "Ode on a Grecian Urn", "HEARD MELODIES ARE SWEET, BUT THOSE UNHEARD", true],
-    ["Shakespeare", "Sonnet 116 (Let me not to the marriage of true minds)", "ADMIT IMPEDIMENTS. LOVE IS NOT LOVE", true],
+    ["Shakespeare", "Sonnet 116", "ADMIT IMPEDIMENTS. LOVE IS NOT LOVE", true],
     ["Keats", "Ode on a Grecian Urn", "THAT LEAVES A HEART HIGH-SORROWFUL AND CLOY'D", true],
     ["Keats", "Ode on a Grecian Urn", "MORE HAPPY LOVE! MORE HAPPY, HAPPY LOVE!", true],
     ["Keats", "Bright Star", "PILLOW'D UPON MY FAIR LOVE'S RIPENING BREAST", true],
-    ["Shakespeare", "Sonnet 18 (Shall I compare thee to a summer's day?)", "AND EVERY FAIR FROM FAIR SOMETIME DECLINES", true],
+    ["Shakespeare", "Sonnet 18", "AND EVERY FAIR FROM FAIR SOMETIME DECLINES", true],
     ["Blake", "The Lamb", "GAVE THEE CLOTHING OF DELIGHT", true],
     ],
   },
@@ -814,11 +838,11 @@ const THEME_POOLS: ThemeGroup[] = [
     ["Byron", "Stanzas to a Lady, With the Poems of CamoëNs", "HIS WAS NO FAINT, FICTITIOUS FLAME", true],
     ["Byron", "A Fragment", "WHEN, POIS'D UPON THE GALE, MY FORM SHALL RIDE", true],
     ["Byron", "Written After Swimming From Sestos to Abydos", "IF, WHEN THE WINTRY TEMPEST ROARED", true],
-    ["Shakespeare", "Sonnet 73 (That time of year thou mayst in me behold)", "IN ME THOU SEE'ST THE GLOWING OF SUCH FIRE", true],
+    ["Shakespeare", "Sonnet 73", "IN ME THOU SEE'ST THE GLOWING OF SUCH FIRE", true],
     ["Dickinson", "A Drop Fell on the Apple Tree --", "THE DUST REPLACED, IN HOISTED ROADS", true],
     ["Dickinson", "Three times -- we parted -- Breath -- and I --", "THE WAVES GREW SLEEPY— BREATH— DID NOT", true],
     ["Dickinson", "I know a place where Summer strives", "BUT WHEN THE SOUTH WIND STIRS THE POOLS", true],
-    ["Shakespeare", "Sonnet 130 (My mistress' eyes are nothing like the sun)", "THAN IN THE BREATH THAT FROM MY MISTRESS REEKS.", true],
+    ["Shakespeare", "Sonnet 130", "THAN IN THE BREATH THAT FROM MY MISTRESS REEKS.", true],
     ["Dickinson", "\"Hope\" is the thing with feathers", "AND SWEETEST— IN THE GALE— IS HEARD", true],
     ["Dickinson", "\"Arcturus\" is his other name", "COMPUTES THE STAMENS IN A BREATH", true],
     ["Dickinson", "Bloom -- is Result -- to meet a Flower", "ADJUST THE HEAT— ELUDE THE WIND", true],

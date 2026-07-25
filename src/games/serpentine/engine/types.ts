@@ -29,6 +29,11 @@ export interface PuzzleDef {
    * of it — the readout says "from" before the title.
    */
   excerpt: boolean;
+  /**
+   * True when the title would give the phrase away, so it must not be
+   * shown as the clue. See `titleSpoilsPhrase`.
+   */
+  titleSpoils: boolean;
   /** Ordered solution path through the grid. */
   path: Cell[];
   /** Cells removed from the grid to fit non-rectangular letter counts. */

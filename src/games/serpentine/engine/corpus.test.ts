@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import rawDictionary from "../../../lib/words/dictionary.txt?raw";
-import { allPoemEntries, getPoolSize, getThemedPuzzle } from "./puzzles";
+import {
+  allPoemEntries,
+  getPoolSize,
+  getThemedPuzzle,
+  titleSpoilsPhrase,
+} from "./puzzles";
 
 /**
  * The phrases were transcribed from poetry datasets by stripping
@@ -95,6 +100,25 @@ describe("serpentine poem corpus", () => {
     const english = allPoemEntries("english");
     const excerpts = english.filter(([, , , excerpt]) => excerpt);
     expect(excerpts.length).toBeGreaterThan(english.length * 0.9);
+  });
+
+  it("never shows a title that gives its phrase away", () => {
+    // Dickinson is catalogued by first line, so an unguarded title
+    // prints the answer above its own grid.
+    const shown = entries.filter(([, title, text]) => !titleSpoilsPhrase(title, text));
+    const leaked = shown.filter(([, title, text]) => {
+      const t = title.toUpperCase().replace(/[^A-Z]/g, "");
+      const p = text.replace(/[^A-Z]/g, "");
+      return t.includes(p) || (p.startsWith(t) && t.length * 2 >= p.length);
+    });
+    expect(leaked).toEqual([]);
+    // …and the guard is not simply hiding every title.
+    expect(shown.length).toBeGreaterThan(entries.length * 0.7);
+  });
+
+  it("withholds the title on the poems cited by their first line", () => {
+    const withheld = entries.filter(([, title, text]) => titleSpoilsPhrase(title, text));
+    expect(withheld.length).toBeGreaterThan(50);
   });
 
   it("carries the excerpt flag through to the puzzle", () => {
