@@ -42,7 +42,19 @@
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- createRoot().render() replaces these children, so the fallback
+         only survives when the app never mounts — a chunk that 404s
+         after a deploy, an evicted precache with no network. It is
+         revealed by a pure-CSS delay (index.css) so a normal boot never
+         flashes it, and it stays legible with no stylesheet at all,
+         which is exactly the case it exists for. -->
+    <div id="root">
+      <div id="boot-fallback">
+        <h1>WordGirl did not finish loading</h1>
+        <p>Some of the app files did not arrive.</p>
+        <p><a href="/">Reload</a></p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

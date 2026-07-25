@@ -7,12 +7,32 @@ You can install WordGirl. You can play without a connection. The device makes th
 
 ## The service worker
 
-The file `vite.config.ts` configures the vite-plugin-pwa module. The mode is `autoUpdate`.
+The file `vite.config.ts` configures the vite-plugin-pwa module. The mode is `autoUpdate`. The strategy is `injectManifest`: the worker is `src/sw.ts`, and the application controls the routes.
 
 - Workbox puts these file types in the cache: js, css, html, txt, svg, png, and woff2. The txt type is important. It puts `dictionary.txt` in the cache. Thus the word check operates without a connection.
 - Navigation requests get `/index.html`.
 - The path `/docs` is not included. The documentation is at wordgirl.net/docs through a proxy in `netlify.toml`. The service worker must not catch these requests.
 - The manifest sets the standalone display mode and the icons.
+
+## The shell always gives an answer
+
+A navigation that the service worker cannot answer makes the fetch event fail. An installed application on iOS has no error page for this condition. It shows an empty white document. Thus the worker must always give a document.
+
+The file `src/sw/appShell.ts` has three steps. The worker does the steps in this sequence:
+
+1. Read `/index.html` from the Workbox cache. If the cache does not have it, Workbox gets it from the network.
+2. If step 1 fails, read the backup copy from the `wg-shell-v1` cache. The worker writes this copy after each good navigation. The copy is not in the Workbox cache, thus `cleanupOutdatedCaches()` and the browser cannot remove it with the other files.
+3. If step 2 fails, give the offline page. This page is in the worker. It has no external css, script, or font. Thus it shows when no other file on the site is available.
+
+The sequence of the routes is important. The Workbox precache route holds `/` (the `directoryIndex` option), and `/` is the `start_url` of the application. Thus `src/sw.ts` uses `precache()`, then adds the navigation route, then calls `addRoute()`. The navigation route must be first.
+
+Safari removes the cache storage of an installed application after a time. Workbox does not write a missing file to the precache again. Thus the steps above are not rare conditions on iOS: they are the usual repair path.
+
+## The boot fallback
+
+The file `index.html` has a message in `#root`. React removes this message when it mounts. Thus the message stays only if the application does not start — for example, when a code file gives a 404 after a new deployment.
+
+The message is not visible for the first 8 seconds. A css animation with a delay does this. There is no javascript, because the javascript is the part that failed. If the css also did not arrive, the message shows immediately without style, which is correct for that condition.
 
 ## Updates
 
