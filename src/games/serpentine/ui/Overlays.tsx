@@ -7,6 +7,7 @@ import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import type { Difficulty, PuzzleDef } from "../engine/types";
+import { PoemCredit } from "./PoemCredit";
 
 interface SolvedProps {
   puzzle: PuzzleDef;
@@ -88,12 +89,11 @@ export function SolvedOverlay({
               <p className="text-center text-sm font-medium text-ink">
                 {puzzle.text}
               </p>
-              <p className="text-center text-sm font-medium text-ink-soft italic">
-                &ldquo;{puzzle.title}&rdquo;
-              </p>
-              <p className="text-center text-xs text-ink-soft">
-                by <em>{puzzle.author}</em>
-              </p>
+              <PoemCredit
+                puzzle={puzzle}
+                className="text-center text-sm font-medium text-ink-soft"
+                authorClass="text-xs"
+              />
             </div>
 
             {dateKey && <ShareButton text={shareText} gameId="serpentine" />}
@@ -217,8 +217,9 @@ export function SerpentineCoach({ open, onClose }: CoachProps) {
               title: "Hidden phrase",
               body: (
                 <>
-                  The path spells a hidden phrase. The puzzle{" "}
-                  <Key>title</Key> is your only clue. The phrase is
+                  The path spells a hidden phrase. The poem{" "}
+                  <Key>title</Key> is your clue, withheld on the poems
+                  named after their own first line. The phrase is
                   revealed when the puzzle is complete.
                 </>
               ),

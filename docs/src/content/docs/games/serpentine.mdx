@@ -20,6 +20,16 @@ Almost 500 poems are hidden in this game. The poems come from seven theme groups
 
 The game shows the title of the poem and its poet. The text itself shows as `?` marks. Each letter appears when your path reaches it.
 
+The word `from` before a title means the puzzle is one part of a longer poem. Without it, the puzzle is the whole poem. Almost every haiku is a whole poem. Almost every English puzzle is one line of a long one.
+
+Some puzzles show `from a poem` and no title. Emily Dickinson did not name her poems, so a library lists each one by its first line. When that first line is the puzzle, its title would be the answer. The game hides such a title. This happens to 117 of the 490 puzzles: 111 by Dickinson and 6 by Byron, whose titles repeat their own opening line.
+
+The `?` marks keep the shape of the poem, with all its punctuation. A space separates two words. A hyphen joins the parts of a compound word, such as `WELL-BUCKET`. An apostrophe shows a missing letter or a possessive, such as `O'ER` or `LIFE'S`. Commas, dashes, and end marks stand where the poet put them. A word never breaks across two lines.
+
+No mark uses a cell of the grid — the grid holds only the letters. So the marks are always green, even before your path arrives. This also keeps a poem's own question mark apart from the `?` of a letter you have not found yet.
+
+The poems reached this game with their punctuation stripped. It was put back from the source texts, never from memory: `scripts/restore-punctuation.mjs` finds each phrase inside the poem it came from and lifts the marks out of that line. 431 of the 490 phrases are restored this way. The rest are haiku translations that the source texts do not contain. The same search says whether a phrase is the whole poem or one part of it, which is where the word `from` comes from.
+
 1. Put your finger on a cell and drag through adjacent cells. The eight cells around a cell are adjacent. Diagonal movement is permitted.
 2. Go through each cell one time.
 3. Use Undo to remove the last steps. Use Clear to start again. Use Hint when you cannot find the next step.
@@ -36,7 +46,7 @@ The game accepts each correct path. A correct path obeys three rules:
 
 The generator makes the puzzle in these steps. The code is in `src/games/serpentine/engine/puzzles.ts`.
 
-1. The generator removes all the characters that are not letters. It counts the letters.
+1. The generator removes all the characters that are not letters — the spaces and the punctuation of the phrase belong to the readout only. It counts the letters.
 2. The generator selects the best grid. It examines each grid to a maximum of 8 rows and 10 columns. The best grid has the fewest empty cells. When two grids are equal, the more square grid is better.
 3. The generator closes the empty cells. It closes corner cells first, then edge cells, then center cells. The open cells must stay connected. The generator examines the connection with a breadth-first search. The maximum is 50 tries.
 4. The generator makes the path. It starts at a random open cell. It always moves to the adjacent cell that has the fewest free adjacent cells. This method is the Warnsdorff rule. If the path stops before the last cell, the generator starts a new path. The maximum is 200 tries.
@@ -83,4 +93,4 @@ The first term counts the empty cells. The second term measures the difference f
 
 ## Versions
 
-Serpentine does not use the dictionary. Thus it does not use the dictionary version number. The seed text contains the version number. An example is `serpentine:v2:daily:haiku:2026-07-19`. Tests make sure that the letters of each poem stay connected on the grid.
+Serpentine does not use the dictionary. Thus it does not use the dictionary version number. The seed text contains the version number. An example is `serpentine:v2:daily:haiku:2026-07-19`. Tests make sure that the letters of each poem stay connected on the grid. A second test reads every word of every poem against the dictionary, because a poem that lost a hyphen would join two words into one that no one can read.

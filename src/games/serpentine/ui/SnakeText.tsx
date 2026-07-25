@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { phraseWords } from "../engine/phrase";
 import type { Cell, PuzzleDef } from "../engine/types";
 
 interface Props {
@@ -15,26 +16,10 @@ function fontSize(total: number): string {
   return "text-sm";
 }
 
-function wordRanges(text: string): [number, number][] {
-  const ranges: [number, number][] = [];
-  let letterIndex = 0;
-  let wordStart = 0;
-  for (const ch of text) {
-    if (ch === " ") {
-      if (letterIndex > wordStart) ranges.push([wordStart, letterIndex]);
-      wordStart = letterIndex;
-    } else {
-      letterIndex++;
-    }
-  }
-  if (letterIndex > wordStart) ranges.push([wordStart, letterIndex]);
-  return ranges;
-}
-
 export function SnakeText({ puzzle, cells, hintIndices }: Props) {
   const total = puzzle.path.length;
   const size = fontSize(total);
-  const words = wordRanges(puzzle.text);
+  const words = phraseWords(puzzle.text);
 
   return (
     <div
@@ -43,18 +28,26 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
       aria-label={`${cells.length} of ${total} letters placed`}
     >
       <span className={`flex flex-wrap justify-center gap-x-2 font-game ${size} font-normal uppercase`}>
-        {words.map(([start, end]) => (
-          <span key={start} className="inline-flex whitespace-nowrap">
-            {Array.from({ length: end - start }, (_, j) => {
-              const i = start + j;
+        {words.map((word) => (
+          <span key={word.start} className="inline-flex whitespace-nowrap">
+            {word.tokens.map((token, t) => {
+              // Punctuation is given, not hidden, so it always wears the
+              // accent. That is also what keeps a phrase's own question
+              // mark from reading as one more blank letter.
+              if (token.kind === "mark") {
+                return (
+                  <span key={`mark-${t}`} className="inline-block text-accent">
+                    {token.char}
+                  </span>
+                );
+              }
+              const i = token.index;
               const letter =
-                i < cells.length
-                  ? puzzle.grid[cells[i].row][cells[i].col]
+                i < cells.length ? puzzle.grid[cells[i].row][cells[i].col] : null;
+              const hintLetter =
+                !letter && hintIndices?.has(i)
+                  ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
                   : null;
-              const isHint = !letter && hintIndices?.has(i);
-              const hintLetter = isHint
-                ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
-                : null;
               return letter ? (
                 <motion.span
                   key={`${i}-${letter}`}

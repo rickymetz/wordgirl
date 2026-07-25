@@ -19,6 +19,7 @@ import { loadCoachSeen, loadDailyProgress, markCoachSeen } from "../state/persis
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
+import { PoemCredit } from "./PoemCredit";
 import { cellKey, type Difficulty } from "../engine/types";
 import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
 
@@ -249,11 +250,11 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
       {/* Puzzle title + typed-out letters */}
       <div className="px-1 pt-10 pb-5">
-        <div className="pb-1 text-center text-sm font-medium text-accent">
-          <span className="italic">&ldquo;{puzzle.title}&rdquo;</span>
-          <br />
-          <span className="text-xs text-ink-soft">by <em>{puzzle.author}</em></span>
-        </div>
+        <PoemCredit
+          puzzle={puzzle}
+          className="pb-1 text-center text-sm font-medium text-accent"
+          authorClass="text-xs text-ink-soft"
+        />
         <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintIndices} />
       </div>
 

@@ -23,6 +23,8 @@ const puzzle: PuzzleDef = {
   title: "Test Puzzle",
   author: "Test Author",
   difficulty: "haiku",
+  excerpt: false,
+  titleSpoils: false,
 };
 
 function init() {

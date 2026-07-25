@@ -6,6 +6,7 @@ import { streakAdvance } from "../../../lib/daily/persistence";
 import { getDailyPuzzle } from "../engine/dailySeed";
 import { getPracticePuzzle } from "../engine/practice";
 import type { Difficulty } from "../engine/types";
+import { cellsFitPuzzle } from "../engine/validation";
 import { gameReducer, initialState, type GameState } from "./reducer";
 import {
   loadDailyProgress,
@@ -69,7 +70,10 @@ export function useSerpentineGame(mode: GameMode) {
     let cancelled = false;
     void loadDailyProgress(difficulty, dateKey, pKey).then(async (saved) => {
       if (cancelled) return;
-      if (saved && saved.puzzleId === puzzle.id) {
+      // puzzleId is the pool index, which survives a phrase being
+      // corrected — so the cells still have to be checked against the
+      // grid this build generates.
+      if (saved && saved.puzzleId === puzzle.id && cellsFitPuzzle(saved.cells, puzzle)) {
         clock.hydrate(saved.elapsedMs, saved.solved);
         statsRecorded.current = !!saved.statsRecorded;
         hintsRef.current = saved.hints ?? 0;
@@ -84,7 +88,12 @@ export function useSerpentineGame(mode: GameMode) {
         });
         hydrated.current = true;
       } else if (persisted) {
-        const stale = await loadStaleDailyProgress(difficulty, dateKey, pKey);
+        // A save we just refused still means the day was counted. It is
+        // not "stale" by the version test — it matches this build — so
+        // loadStaleDailyProgress will not return it, and without this
+        // fallback recordStarted would count the day a second time.
+        const stale =
+          (await loadStaleDailyProgress(difficulty, dateKey, pKey)) ?? saved;
         if (cancelled) return;
         if (stale) {
           staleRecordRef.current = true;
@@ -99,7 +108,9 @@ export function useSerpentineGame(mode: GameMode) {
       }
     });
     return () => { cancelled = true; };
-  }, [difficulty, dateKey, puzzle.id, pKey, clock, persisted]);
+    // `puzzle` rather than `puzzle.id`: the grid is read here too, and
+    // it is memoized on the same keys pKey already tracks.
+  }, [difficulty, dateKey, puzzle, pKey, clock, persisted]);
 
   // Build the progress blob from current state.
   const buildProgress = useCallback(
