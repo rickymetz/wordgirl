@@ -108,9 +108,10 @@ for (const accent of accents) {
 }
 
 console.log("\n=== CVD Distinguishability (deuteranopia simulation) ===");
-console.log("  Note: level colors (3-10) are Polygram rank colors, not chart series.");
-console.log("  Cross-game charts are banned per CLAUDE.md. CVD failures in level");
-console.log("  colors are expected and documented.\n");
+console.log("  Level colors (3-10) are a CATEGORICAL set, not just rank colors:");
+console.log("  every board letter wears the color of the level that introduced");
+console.log("  it, so by the decagon all eight share one surface. They are");
+console.log("  expected to PASS. Cross-game charts remain banned per CLAUDE.md.\n");
 
 const MIN_DISTANCE = 0.08;
 
