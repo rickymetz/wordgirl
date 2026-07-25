@@ -29,38 +29,85 @@ export const SHELL_URL = "/index.html";
  */
 export const SHELL_CACHE = "wg-shell-v1";
 
+/**
+ * How long a launch waits for the network before it opens from the
+ * backup copy instead. A failing fetch rejects; a fetch on a bad
+ * mobile connection just never answers, and iOS gives it a minute or
+ * more. Either way the screen is blank, so the shell needs a deadline
+ * and not only an error path.
+ */
+export const BACKUP_AFTER_MS = 2000;
+
+/**
+ * The deadline when there is no backup to open from. Longer, because a
+ * slow real shell still beats the offline page.
+ */
+export const OFFLINE_AFTER_MS = 10000;
+
 export interface ShellSources {
-  /** Workbox's precache handler — may reject, or answer non-ok. */
+  /** Workbox's precache handler — may reject, answer non-ok, or stall. */
   fromPrecache: () => Promise<Response | undefined>;
   readBackup: () => Promise<Response | undefined>;
   writeBackup: (response: Response) => Promise<unknown>;
 }
 
+const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/** Resolves to the response, or to null if it fails or runs out of time. */
+function within(
+  work: Promise<Response | null>,
+  ms: number,
+  wait: (ms: number) => Promise<unknown>,
+): Promise<Response | null> {
+  return Promise.race([work, wait(ms).then(() => null)]);
+}
+
 /**
- * Resolve a navigation to a document, always. `keepAlive` receives the
- * background cache write so the service worker can hand it to
- * `event.waitUntil()` instead of making the navigation wait on it.
+ * Resolve a navigation to a document, always, and inside a bounded
+ * time. `keepAlive` receives background work so the service worker can
+ * hand it to `event.waitUntil()` instead of making the launch wait on
+ * it; `wait` is injectable so tests do not sleep for real.
  */
 export async function respondWithShell(
   sources: ShellSources,
   keepAlive: (work: Promise<unknown>) => void = () => {},
+  wait: (ms: number) => Promise<unknown> = sleep,
 ): Promise<Response> {
-  try {
-    const fresh = await sources.fromPrecache();
-    if (fresh && fresh.ok) {
-      keepAlive(sources.writeBackup(fresh.clone()).catch(() => {}));
-      return fresh;
-    }
-  } catch {
-    // Precache miss plus a failed network fetch — the case that used
-    // to blank the installed app.
+  // Start the attempt and fold every failure into null — a rejection
+  // here is an outcome this function plans for, not a crash, and it
+  // must never surface as an unhandled rejection while we wait out the
+  // deadline below.
+  const fresh: Promise<Response | null> = sources.fromPrecache().then(
+    (response) => (response && response.ok ? response : null),
+    () => null,
+  );
+
+  const quick = await within(fresh, BACKUP_AFTER_MS, wait);
+  if (quick) {
+    keepAlive(sources.writeBackup(quick.clone()).catch(() => {}));
+    return quick;
   }
 
-  try {
-    const backup = await sources.readBackup();
-    if (backup) return backup;
-  } catch {
-    // Cache Storage unavailable (private mode, quota) — fall through.
+  // Failed, or too slow to keep an app waiting when a working copy is
+  // already on the device.
+  const backup = await sources.readBackup().catch(() => undefined);
+  if (backup) {
+    // Let the fresh one land in its own time and refresh the backup, so
+    // the next launch is current.
+    keepAlive(
+      fresh
+        .then((response) => (response ? sources.writeBackup(response) : null))
+        .catch(() => {}),
+    );
+    return backup;
+  }
+
+  // Nothing to fall back to: give the network the rest of its deadline.
+  // `fresh` may already have settled, in which case this returns at once.
+  const last = await within(fresh, OFFLINE_AFTER_MS - BACKUP_AFTER_MS, wait);
+  if (last) {
+    keepAlive(sources.writeBackup(last.clone()).catch(() => {}));
+    return last;
   }
 
   return offlineShellResponse();

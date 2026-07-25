@@ -21,8 +21,10 @@ A navigation that the service worker cannot answer makes the fetch event fail. A
 The file `src/sw/appShell.ts` has three steps. The worker does the steps in this sequence:
 
 1. Read `/index.html` from the Workbox cache. If the cache does not have it, Workbox gets it from the network.
-2. If step 1 fails, read the backup copy from the `wg-shell-v1` cache. The worker writes this copy after each good navigation. The copy is not in the Workbox cache, thus `cleanupOutdatedCaches()` and the browser cannot remove it with the other files.
-3. If step 2 fails, give the offline page. This page is in the worker. It has no external css, script, or font. Thus it shows when no other file on the site is available.
+2. If step 1 fails or takes more than 2 seconds, read the backup copy from the `wg-shell-v1` cache. The worker writes this copy after each good navigation. The copy is not in the Workbox cache, thus `cleanupOutdatedCaches()` and the browser cannot remove it with the other files. The worker lets the slow file from step 1 arrive later. Then it writes the backup copy again, and the subsequent start is current.
+3. If step 2 finds no copy, wait for the network for 10 seconds in total. Then give the offline page. This page is in the worker. It has no external css, script, or font. Thus it shows when no other file on the site is available.
+
+The time limit is as important as the error path. A bad connection does not give an error to the worker. It gives no answer, and iOS permits one minute or more. The screen is empty for all of that time. Thus the shell must have a limit and must not only wait.
 
 The sequence of the routes is important. The Workbox precache route holds `/` (the `directoryIndex` option), and `/` is the `start_url` of the application. Thus `src/sw.ts` uses `precache()`, then adds the navigation route, then calls `addRoute()`. The navigation route must be first.
 

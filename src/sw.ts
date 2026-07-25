@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 /**
  * Service worker (injectManifest). Generated workers give no way to
- * handle a navigation the precache cannot answer, and that gap paints
- * an installed iOS app blank — see src/sw/appShell.ts.
+ * handle a navigation the precache cannot answer in time, and that gap
+ * paints an installed iOS app blank — see src/sw/appShell.ts.
  */
 import { clientsClaim } from "workbox-core";
 import type { PrecacheEntry } from "workbox-precaching";
