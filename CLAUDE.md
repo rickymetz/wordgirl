@@ -48,6 +48,16 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,
   `useModalFocus` (mark initial focus `data-autofocus`), `HomeLink`,
   `SettingsDialog`.
+- `HoldButton` — press-and-hold (default 1s) for one-way actions a
+  stray thumb must not trigger (Polygram's level skip). The house
+  alternative to a confirmation dialog when the action is small enough
+  that a modal would be heavier than the mistake. Owns the gesture,
+  the sweep, and a 44px `::after` touch floor; sizing and color come
+  from `className`. Label it with the gesture ("Hold to skip level").
+  Its sweep is `--color-press-fill`, which moves AWAY from the surface
+  color so an on-accent label GAINS contrast as the fill passes under
+  it — never re-tint it toward `surface`, which sinks the label to
+  ~2.6:1.
 
 **State & engine** (`src/lib/`)
 - `createGameStore(gameId)` — namespaced storage.

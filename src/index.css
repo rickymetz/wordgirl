@@ -36,6 +36,13 @@
   );
   --color-good: light-dark(#059669, #34d399);
   --color-warn: light-dark(#b45309, #fbbf24);
+  /* HoldButton's progress sweep, laid over whatever fills the button.
+     It moves AWAY from the surface color — darker in light mode,
+     lighter in dark — so an on-accent label gains contrast as the fill
+     passes under it (validated across all ten accents: worst case
+     7.15:1, up from 4.90:1 unfilled). A surface-colored wash would do
+     the opposite and sink the label to ~2.6:1. */
+  --color-press-fill: light-dark(rgb(0 0 0 / 0.22), rgb(255 255 255 / 0.3));
 }
 
 /*
