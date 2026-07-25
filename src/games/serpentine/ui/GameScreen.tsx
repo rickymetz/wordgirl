@@ -20,6 +20,7 @@ import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
 import { cellKey, type Difficulty } from "../engine/types";
+import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
 
 function buildShareText(
   puzzle: { path: { row: number; col: number }[]; text: string },
@@ -62,36 +63,25 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
 
   const { toast, show } = useToast();
 
-  const wordStarts = useMemo(() => {
-    const starts: number[] = [];
-    let pi = 0;
-    let atWordStart = true;
-    for (const ch of puzzle.text) {
-      if (ch === " ") {
-        atWordStart = true;
-        continue;
-      }
-      if (!/[A-Za-z]/.test(ch)) continue;
-      if (atWordStart) {
-        starts.push(pi);
-        atWordStart = false;
-      }
-      pi++;
-    }
-    return starts;
-  }, [puzzle]);
+  const wordStarts = useMemo(() => wordStartIndices(puzzle.text), [puzzle]);
 
-  // Sync hinted set from hydration.
+  // Restore the hinted set from the saved count, ONCE. hydratedHints
+  // reads a ref that taking a hint also writes, so re-running this
+  // would overwrite the cell just revealed with a replay from the
+  // phrase start — every hint landing behind the snake, invisible.
+  const hintsRestored = useRef(false);
   useEffect(() => {
-    if (hydratedHints > 0) {
-      const set = new Set<number>();
-      for (let i = 0; i < hydratedHints && i < wordStarts.length; i++) {
-        set.add(wordStarts[i]);
-      }
-      hintedRef.current = set;
-      setHintedSet(set);
-    }
-  }, [hydratedHints, wordStarts]);
+    if (hintsRestored.current || hydratedHints <= 0) return;
+    hintsRestored.current = true;
+    const set = replayHints(
+      wordStarts,
+      puzzle.path.length,
+      state.cells.length,
+      hydratedHints,
+    );
+    hintedRef.current = set;
+    setHintedSet(set);
+  }, [hydratedHints, wordStarts, puzzle.path.length, state.cells.length]);
 
   const { hintIndices, hintCellKeys } = useMemo(() => {
     if (hintedSet.size === 0) return { hintIndices: undefined, hintCellKeys: undefined };
@@ -176,15 +166,16 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               disabled={!canHint}
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                // The set is now player-driven; block any late restore.
+                hintsRestored.current = true;
                 const current = hintedRef.current;
-                const progress = state.cells.length;
-                let idx = wordStarts.find(i => i >= progress && !current.has(i));
-                if (idx == null) {
-                  for (let i = progress; i < puzzle.path.length; i++) {
-                    if (!current.has(i)) { idx = i; break; }
-                  }
-                }
-                if (idx == null) return;
+                const idx = nextHintIndex(
+                  wordStarts,
+                  puzzle.path.length,
+                  state.cells.length,
+                  current,
+                );
+                if (idx === null) return;
                 const next = new Set(current);
                 next.add(idx);
                 hintedRef.current = next;
