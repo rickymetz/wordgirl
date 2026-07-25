@@ -79,16 +79,21 @@
    accent under the deuteranopia check in scripts/validate_palette.js
    (which now reports zero failures, where the level colors used to
    contribute four "expected" ones).
-   Light mode: worst adjacent pair 15.7 ΔE, up from 6.1 — red-700 and
+   Light mode: worst adjacent pair 10.3 ΔE, up from 6.1 — red-700 and
    orange-700 used to sit 6.1 apart and read as one color; red→orange is
-   now 19.8. Dark mode's warm end is tighter (worst pair 9.1, up from
+   now 20.3. Dark mode's warm end is tighter (worst pair 9.1, up from
    6.1) because red stays today's coral #f87171 rather than going pale
    to buy the last 1.8; orange and yellow carry that spread instead.
+   Why light-mode red is DEEP: AA against white caps both red and orange
+   in one narrow lightness band, so only one of them can be bright. The
+   orange is the one that reads wrong when it darkens (it turns brown),
+   so it takes the bright end and red takes the deep one. Swapping that
+   choice is a one-line change here — nothing else in the palette moves.
    Declared as tokens on :root so TS (RankBar's gradient) can read the
    SAME values via var() instead of duplicating hex pairs. */
 :root {
-  --level-3: light-dark(#dc2626, #f87171);  /* red */
-  --level-4: light-dark(#7c2d12, #fb923c);  /* orange */
+  --level-3: light-dark(#7f1d1d, #f87171);  /* red */
+  --level-4: light-dark(#d34600, #fb923c);  /* orange */
   --level-5: light-dark(#a16207, #eab308);  /* yellow */
   --level-6: light-dark(#15803d, #4ade80);  /* green */
   --level-7: light-dark(#1e40af, #3b82f6);  /* blue */
