@@ -20,7 +20,9 @@ Almost 500 poems are hidden in this game. The poems come from seven theme groups
 
 The game shows the title of the poem and its poet. The text itself shows as `?` marks. Each letter appears when your path reaches it.
 
-The `?` marks keep the word breaks of the poem. A space separates two words. A hyphen joins the parts of a compound word the poet wrote with a hyphen, such as `WELL-BUCKET` or `APPLE-TREE`. A hyphenated word never breaks across two lines. Neither mark uses a cell of the grid — the grid holds only the letters.
+The `?` marks keep the shape of the poem. A space separates two words. A hyphen joins the parts of a compound word, such as `WELL-BUCKET` or `APPLE-TREE`. An apostrophe shows a missing letter or a possessive, such as `O'ER`, `LIFE'S`, or `DON'T`. A word never breaks across two lines. No mark uses a cell of the grid — the grid holds only the letters. Each mark turns green when your path reaches the letter before it.
+
+The poems came to this game without their punctuation. The commas and the end marks are lost. They are not in the text, so the game cannot show them. The marks you see are the ones the letters themselves prove: a word such as `OER` can only be `O'ER`.
 
 1. Put your finger on a cell and drag through adjacent cells. The eight cells around a cell are adjacent. Diagonal movement is permitted.
 2. Go through each cell one time.
@@ -38,7 +40,7 @@ The game accepts each correct path. A correct path obeys three rules:
 
 The generator makes the puzzle in these steps. The code is in `src/games/serpentine/engine/puzzles.ts`.
 
-1. The generator removes all the characters that are not letters — the spaces and hyphens of the phrase belong to the readout only. It counts the letters.
+1. The generator removes all the characters that are not letters — the spaces and the punctuation of the phrase belong to the readout only. It counts the letters.
 2. The generator selects the best grid. It examines each grid to a maximum of 8 rows and 10 columns. The best grid has the fewest empty cells. When two grids are equal, the more square grid is better.
 3. The generator closes the empty cells. It closes corner cells first, then edge cells, then center cells. The open cells must stay connected. The generator examines the connection with a breadth-first search. The maximum is 50 tries.
 4. The generator makes the path. It starts at a random open cell. It always moves to the adjacent cell that has the fewest free adjacent cells. This method is the Warnsdorff rule. If the path stops before the last cell, the generator starts a new path. The maximum is 200 tries.

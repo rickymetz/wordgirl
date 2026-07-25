@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { motion } from "motion/react";
 import { phraseWords } from "../engine/phrase";
 import type { Cell, PuzzleDef } from "../engine/types";
@@ -31,49 +30,49 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
       <span className={`flex flex-wrap justify-center gap-x-2 font-game ${size} font-normal uppercase`}>
         {words.map((word) => (
           <span key={word.start} className="inline-flex whitespace-nowrap">
-            {word.segments.map(([start, end], segment) => (
-              <Fragment key={start}>
-                {segment > 0 && (
+            {word.tokens.map((token, t) => {
+              // A mark is never hidden — it rides the letter before it,
+              // so punctuation lights up as the snake passes under it.
+              if (token.kind === "mark") {
+                const passed = word.tokens
+                  .slice(0, t)
+                  .every((prev) => prev.kind === "mark" || prev.index < cells.length);
+                return (
                   <span
-                    className={`inline-block ${
-                      start <= cells.length ? "text-accent" : "text-ink-soft/70"
-                    }`}
+                    key={`mark-${t}`}
+                    className={`inline-block ${passed ? "text-accent" : "text-ink-soft/70"}`}
                   >
-                    -
+                    {token.char}
                   </span>
-                )}
-                {Array.from({ length: end - start }, (_, j) => {
-                  const i = start + j;
-                  const letter =
-                    i < cells.length
-                      ? puzzle.grid[cells[i].row][cells[i].col]
-                      : null;
-                  const isHint = !letter && hintIndices?.has(i);
-                  const hintLetter = isHint
-                    ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
-                    : null;
-                  return letter ? (
-                    <motion.span
-                      key={`${i}-${letter}`}
-                      className="inline-block text-accent"
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 26 }}
-                    >
-                      {letter}
-                    </motion.span>
-                  ) : hintLetter ? (
-                    <span key={`${i}-hint`} className="inline-block text-accent/50">
-                      {hintLetter}
-                    </span>
-                  ) : (
-                    <span key={`${i}-blank`} className="inline-block text-ink-soft/70">
-                      ?
-                    </span>
-                  );
-                })}
-              </Fragment>
-            ))}
+                );
+              }
+              const i = token.index;
+              const letter =
+                i < cells.length ? puzzle.grid[cells[i].row][cells[i].col] : null;
+              const hintLetter =
+                !letter && hintIndices?.has(i)
+                  ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
+                  : null;
+              return letter ? (
+                <motion.span
+                  key={`${i}-${letter}`}
+                  className="inline-block text-accent"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 26 }}
+                >
+                  {letter}
+                </motion.span>
+              ) : hintLetter ? (
+                <span key={`${i}-hint`} className="inline-block text-accent/50">
+                  {hintLetter}
+                </span>
+              ) : (
+                <span key={`${i}-blank`} className="inline-block text-ink-soft/70">
+                  ?
+                </span>
+              );
+            })}
           </span>
         ))}
       </span>

@@ -15,6 +15,14 @@ describe("wordStartIndices", () => {
   it("ignores punctuation and repeated spaces", () => {
     expect(wordStartIndices("OH,  MY WORD!")).toEqual([0, 2, 4]);
   });
+
+  it("hints a punctuated word once, at its first letter", () => {
+    // Neither the apostrophe nor the hyphen opens a new word, so a
+    // compound costs one hint, not one per fragment.
+    expect(wordStartIndices("'TIS AN APPLE-TREE O'ER THE MEAD")).toEqual([
+      0, 3, 5, 14, 17, 20,
+    ]);
+  });
 });
 
 describe("nextHintIndex", () => {

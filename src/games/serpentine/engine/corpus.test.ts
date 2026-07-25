@@ -48,17 +48,26 @@ describe("serpentine poem corpus", () => {
     expect(entries.length).toBeGreaterThan(400);
   });
 
-  it("uses only uppercase letters and single word separators", () => {
+  it("uses only uppercase letters, apostrophes, and single word separators", () => {
     const malformed = entries
       .map(([, , text]) => text)
-      .filter((text) => !/^[A-Z]+(?:[ -][A-Z]+)*$/.test(text));
+      .filter((text) => !/^[A-Z']+(?:[ -][A-Z']+)*$/.test(text));
+    expect(malformed).toEqual([]);
+  });
+
+  it("never doubles an apostrophe or leaves one against a separator", () => {
+    const malformed = entries
+      .map(([, , text]) => text)
+      .filter((text) => /''|'-|-'/.test(text));
     expect(malformed).toEqual([]);
   });
 
   it("spells real words — no dash-welded runs", () => {
     const unknown = new Set<string>();
     for (const [, , text] of entries) {
-      for (const word of text.split(/[ -]/)) {
+      // Apostrophes are typography, not spelling: LIFE'S is judged as
+      // LIFES, which the allowlist carries as an elision.
+      for (const word of text.replace(/'/g, "").split(/[ -]/)) {
         if (!DICTIONARY.has(word) && !POETIC_WORDS.has(word)) {
           unknown.add(word);
         }
