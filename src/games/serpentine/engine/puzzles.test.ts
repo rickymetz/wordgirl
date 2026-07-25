@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getThemedPuzzle, getPoolSize, titleSpoilsPhrase } from "./puzzles";
-import { validatePuzzle } from "./validation";
+import { cellsFitPuzzle, validatePuzzle } from "./validation";
 
 describe("titleSpoilsPhrase", () => {
   it("withholds a title that is the phrase", () => {
@@ -48,4 +48,33 @@ describe("serpentine puzzles", () => {
       });
     }
   }
+});
+
+describe("cellsFitPuzzle", () => {
+  const puzzle = getThemedPuzzle("haiku", 0, "fit-test");
+
+  it("accepts the puzzle's own solution path", () => {
+    expect(cellsFitPuzzle(puzzle.path, puzzle)).toBe(true);
+  });
+
+  it("accepts an empty save", () => {
+    expect(cellsFitPuzzle([], puzzle)).toBe(true);
+  });
+
+  it("rejects a cell past the last row", () => {
+    // What a save from a build whose grid was one row taller looks like.
+    expect(cellsFitPuzzle([{ row: puzzle.rows, col: 0 }], puzzle)).toBe(false);
+  });
+
+  it("rejects a cell past the last column, or a negative one", () => {
+    expect(cellsFitPuzzle([{ row: 0, col: puzzle.cols }], puzzle)).toBe(false);
+    expect(cellsFitPuzzle([{ row: -1, col: 0 }], puzzle)).toBe(false);
+  });
+
+  it("rejects a blocked cell", () => {
+    const blocked = [...puzzle.blocked].map((k) => k.split(",").map(Number));
+    if (blocked.length === 0) return;
+    const [row, col] = blocked[0];
+    expect(cellsFitPuzzle([{ row, col }], puzzle)).toBe(false);
+  });
 });

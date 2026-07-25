@@ -8,6 +8,25 @@ export function isContiguousPath(path: Cell[]): boolean {
   return true;
 }
 
+/**
+ * True when every cell is a live cell of THIS puzzle's grid.
+ *
+ * A save records raw coordinates, and a puzzle's grid can be reshaped by
+ * a later build — correcting a phrase's letter count re-runs `bestGrid`,
+ * which turned one 6×7 board into a 5×8. Replaying such a save would
+ * read past the end of the grid, so hydration drops it instead.
+ */
+export function cellsFitPuzzle(cells: readonly Cell[], puzzle: PuzzleDef): boolean {
+  return cells.every(
+    (c) =>
+      c.row >= 0 &&
+      c.row < puzzle.rows &&
+      c.col >= 0 &&
+      c.col < puzzle.cols &&
+      !puzzle.blocked.has(cellKey(c)),
+  );
+}
+
 function pathSpellsText(path: Cell[], puzzle: PuzzleDef): boolean {
   const expected = puzzle.text.replace(/[^A-Z]/g, "");
   if (path.length !== expected.length) return false;
