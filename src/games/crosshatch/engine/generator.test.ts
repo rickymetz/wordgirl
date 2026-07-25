@@ -12,8 +12,18 @@ import {
 import type { Shape } from "./types";
 import { cellKey, comboKey, slotCells } from "./types";
 
-const dict = parseDictionary(
-  readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
+const rawDict = readFileSync(
+  new URL("../../../lib/words/dictionary.txt", import.meta.url),
+  "utf8",
+);
+const dict = parseDictionary(rawDict);
+
+/** Bonus-tier words: "+"-prefixed lines in the shipped dictionary. */
+const bonusWords = new Set(
+  rawDict
+    .split("\n")
+    .filter((line) => line.startsWith("+"))
+    .map((line) => line.trim().slice(1)),
 );
 
 describe("enumerateCombos", () => {
@@ -63,6 +73,19 @@ describe("generateCrosshatch", () => {
     const b = generateCrosshatch(dict, dailySeed("2026-07-08"));
     expect(comboKey(a.combos[0]) === comboKey(b.combos[0]) && a.shape.id === b.shape.id).toBe(false);
   });
+
+  it("never requires a bonus-tier word", () => {
+    // Every enumerated word gates the solve and can be hinted, so all
+    // of them must come from the common tier — no ENABLE obscurities
+    // (kagu, habu, vatu) among the day's mandatory finds.
+    for (let i = 0; i < 120; i++) {
+      const date = new Date(2026, 6, 6 + i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const words = new Set(generateCrosshatch(dict, dailySeed(key)).combos.flat());
+      const bonus = [...words].filter((w) => bonusWords.has(w));
+      expect(bonus, `${key}: bonus-tier words required`).toEqual([]);
+    }
+  }, 60_000);
 
   it("sweep over 200 consecutive dates: all constraints hold", () => {
     const start = Date.now();

@@ -177,6 +177,16 @@ function fixedSlotCount(shape: Shape, combos: Combo[]): number {
 }
 
 /**
+ * Generation draws from the REQUIRED tier only. Crosshatch validates a
+ * submission by combo membership, never by dictionary lookup, so every
+ * word the generator enumerates is mandatory to solve and hintable —
+ * there is no "accepted but optional" state to put a bonus word in.
+ * Enumerating from `all` therefore made ENABLE obscurities (kagu, habu,
+ * vatu) compulsory: two thirds of a day's list, by measurement.
+ */
+const TIER = "required" as const;
+
+/**
  * Position-indexed word lookup: for each (length, position, letter),
  * the set of words with that letter at that position. Lets candidatesFor
  * intersect small sets instead of scanning the full bucket.
@@ -190,7 +200,7 @@ function buildLetterIndex(dict: Dictionary): LetterIndex {
   if (cached) return cached;
 
   const idx = new Map<number, Map<number, Map<string, string[]>>>();
-  for (const [len, bucket] of dict.all.buckets) {
+  for (const [len, bucket] of dict[TIER].buckets) {
     const byPos = new Map<number, Map<string, string[]>>();
     for (let pos = 0; pos < len; pos++) {
       byPos.set(pos, new Map());
@@ -238,7 +248,7 @@ function candidatesFor(
   }
 
   if (constraints.length === 0) {
-    return [...(dict.all.buckets.get(slot.len) ?? [])];
+    return [...(dict[TIER].buckets.get(slot.len) ?? [])];
   }
 
   const out: string[] = [];

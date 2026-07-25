@@ -92,6 +92,17 @@ export function crosshatchPuzzleKey(puzzle: CrosshatchPuzzle): string {
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-06";
 
+/**
+ * DICT_VERSION at which crosshatch's own puzzle derivation last
+ * changed (v17: generate from the required tier). Every save below it
+ * describes a puzzle that no longer exists for its date. The archive
+ * listing can't detect that from `puzzleKey` — it would have to
+ * regenerate all 200+ puzzles to compare — so the version is the
+ * marker. Raise this ONLY when crosshatch generation itself changes;
+ * an unrelated game's bump must keep resolving through puzzleKey.
+ */
+const GENERATOR_VERSION = 17;
+
 function validShape(saved: DailyProgress | null): DailyProgress | null {
   return base.validShape(saved);
 }
@@ -132,7 +143,9 @@ export async function loadAllDailyProgress(): Promise<
     if (saved) {
       out[saved.dateKey] = {
         ...saved,
-        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
+        stale:
+          saved.dictVersion < GENERATOR_VERSION ||
+          (!saved.puzzleKey && saved.dictVersion !== DICT_VERSION),
       };
     }
   }
