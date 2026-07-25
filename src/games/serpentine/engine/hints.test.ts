@@ -23,6 +23,11 @@ describe("wordStartIndices", () => {
       0, 3, 5, 14, 17, 20,
     ]);
   });
+
+  it("opens a new word after an em dash", () => {
+    // An em dash separates two whole words, so UNITE is hintable.
+    expect(wordStartIndices("FLY TO—UNITE IT")).toEqual([0, 3, 5, 10]);
+  });
 });
 
 describe("nextHintIndex", () => {

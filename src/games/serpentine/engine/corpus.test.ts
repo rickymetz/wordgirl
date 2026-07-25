@@ -48,27 +48,32 @@ describe("serpentine poem corpus", () => {
     expect(entries.length).toBeGreaterThan(400);
   });
 
-  it("uses only uppercase letters, apostrophes, and single word separators", () => {
+  /** The marks the readout knows how to draw. */
+  const MARKS = "'\\-—,.;:!?";
+
+  it("uses only uppercase letters, drawable marks, and single spaces", () => {
+    const shape = new RegExp(`^[A-Z${MARKS}]+(?: [A-Z${MARKS}]+)*$`);
     const malformed = entries
       .map(([, , text]) => text)
-      .filter((text) => !/^[A-Z']+(?:[ -][A-Z']+)*$/.test(text));
+      .filter((text) => !shape.test(text));
     expect(malformed).toEqual([]);
   });
 
-  it("never doubles an apostrophe or leaves one against a separator", () => {
+  it("never doubles a mark or leaves one stranded", () => {
     const malformed = entries
       .map(([, , text]) => text)
-      .filter((text) => /''|'-|-'/.test(text));
+      .filter((text) => /''|'-|-'|,,|--|\s[,.;:!?]|^[,.;:!?]/.test(text));
     expect(malformed).toEqual([]);
   });
 
   it("spells real words — no dash-welded runs", () => {
     const unknown = new Set<string>();
     for (const [, , text] of entries) {
-      // Apostrophes are typography, not spelling: LIFE'S is judged as
-      // LIFES, which the allowlist carries as an elision.
-      for (const word of text.replace(/'/g, "").split(/[ -]/)) {
-        if (!DICTIONARY.has(word) && !POETIC_WORDS.has(word)) {
+      // Marks are typography, not spelling: LIFE'S is judged as LIFES,
+      // which the allowlist carries as an elision. Only a space, hyphen,
+      // or em dash ends a word — TO—UNITE is two words, not TOUNITE.
+      for (const word of text.replace(/[^A-Z —-]/g, "").split(/[ —-]/)) {
+        if (word && !DICTIONARY.has(word) && !POETIC_WORDS.has(word)) {
           unknown.add(word);
         }
       }

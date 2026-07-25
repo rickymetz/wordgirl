@@ -4,13 +4,17 @@
  * so targeting is always relative to their progress.
  */
 
-/** Path indices where each word of the phrase begins. */
+/**
+ * Path indices where each word of the phrase begins. A space or an em
+ * dash starts a new word; a hyphen or an apostrophe does not, so a
+ * compound (APPLE-TREE) costs one hint rather than one per fragment.
+ */
 export function wordStartIndices(text: string): number[] {
   const starts: number[] = [];
   let pathIndex = 0;
   let atWordStart = true;
   for (const ch of text) {
-    if (ch === " ") {
+    if (ch === " " || ch === "—") {
       atWordStart = true;
       continue;
     }

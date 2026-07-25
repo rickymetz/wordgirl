@@ -37,6 +37,17 @@ describe("phraseWords", () => {
     ]);
   });
 
+  it("breaks the line after an em dash but not after a hyphen", () => {
+    // TO—UNITE is two words the line may wrap between; the dash stays
+    // with the word it followed.
+    expect(shape("FLY TO—UNITE IT")).toEqual([
+      [0, 1, 2],
+      [3, 4, "—"],
+      [5, 6, 7, 8, 9],
+      [10, 11],
+    ]);
+  });
+
   it("handles a mark at either end of a word", () => {
     expect(shape("'TIS LIFE'S")).toEqual([
       ["'", 0, 1, 2],

@@ -24,10 +24,10 @@ export interface PhraseWord {
 }
 
 /**
- * Split `text` into display words at its spaces. Each word keeps its
- * letters and marks interleaved, so the readout can draw a word as one
- * unbreakable run. Runs of spaces collapse; a word of pure punctuation
- * is dropped, having nothing to anchor to.
+ * Split `text` into display words at its spaces and em dashes. Each
+ * word keeps its letters and marks interleaved, so the readout can draw
+ * a word as one unbreakable run. Runs of spaces collapse; a word of pure
+ * punctuation is dropped, having nothing to anchor to.
  */
 export function phraseWords(text: string): PhraseWord[] {
   const words: PhraseWord[] = [];
@@ -46,7 +46,12 @@ export function phraseWords(text: string): PhraseWord[] {
   for (const ch of text) {
     if (ch === " ") closeWord();
     else if (ch >= "A" && ch <= "Z") tokens.push({ kind: "letter", index: letterIndex++ });
-    else tokens.push({ kind: "mark", char: ch });
+    else {
+      tokens.push({ kind: "mark", char: ch });
+      // An em dash joins two whole words (TO—UNITE), so the line may
+      // break after it. A hyphen binds a compound and may not.
+      if (ch === "—") closeWord();
+    }
   }
   closeWord();
 
