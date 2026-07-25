@@ -5,6 +5,7 @@ import {
   displayStreak,
   loadAllDailyProgress,
   loadDailyProgress,
+  loadStaleDailyProgress,
   loadStats,
   saveDailyProgress,
   updateStats,
@@ -167,5 +168,30 @@ describe("archive roll-up", () => {
     }));
     expect(displayStreak(await loadStats(), "2026-07-13")).toBe(1);
     expect(displayStreak(await loadStats(), "2026-07-15")).toBe(0);
+  });
+});
+
+describe("a save refused for not fitting its grid", () => {
+  // Correcting a phrase's letters can reshape the board, so hydration
+  // drops a save whose cells no longer fit. The day was still counted,
+  // and loadStaleDailyProgress will not hand it back — it matches this
+  // build's fingerprint. Hydration falls back to the refused save so
+  // recordStarted never counts the day twice.
+  it("is not reported as stale, so hydration must keep it itself", async () => {
+    const pKey = "fingerprint-abc";
+    await saveDailyProgress({
+      ...day("haiku", { cells: [{ row: 9, col: 9 }], statsRecorded: true }),
+      puzzleKey: pKey,
+    });
+
+    // Same puzzle by every test persistence applies…
+    const current = await loadDailyProgress("haiku", "2026-07-12", pKey);
+    expect(current?.cells).toEqual([{ row: 9, col: 9 }]);
+
+    // …so the stale channel is empty, and the refused save is the only
+    // record that the day was already played.
+    const stale = await loadStaleDailyProgress("haiku", "2026-07-12", pKey);
+    expect(stale).toBeNull();
+    expect(current?.statsRecorded).toBe(true);
   });
 });

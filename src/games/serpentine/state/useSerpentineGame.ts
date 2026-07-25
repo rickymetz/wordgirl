@@ -88,7 +88,12 @@ export function useSerpentineGame(mode: GameMode) {
         });
         hydrated.current = true;
       } else if (persisted) {
-        const stale = await loadStaleDailyProgress(difficulty, dateKey, pKey);
+        // A save we just refused still means the day was counted. It is
+        // not "stale" by the version test — it matches this build — so
+        // loadStaleDailyProgress will not return it, and without this
+        // fallback recordStarted would count the day a second time.
+        const stale =
+          (await loadStaleDailyProgress(difficulty, dateKey, pKey)) ?? saved;
         if (cancelled) return;
         if (stale) {
           staleRecordRef.current = true;
