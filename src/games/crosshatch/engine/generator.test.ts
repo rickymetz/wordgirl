@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { puzzleKey } from "../../../lib/puzzleKey";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import {
   MAX_SLOT_WORDS,
@@ -72,6 +73,26 @@ describe("generateCrosshatch", () => {
     const a = generateCrosshatch(dict, dailySeed("2026-07-07"));
     const b = generateCrosshatch(dict, dailySeed("2026-07-08"));
     expect(comboKey(a.combos[0]) === comboKey(b.combos[0]) && a.shape.id === b.shape.id).toBe(false);
+  });
+
+  it("derivation is pinned — changing it is a migration", () => {
+    // Fingerprints mirror crosshatchPuzzleKey (givens + combos), the
+    // identity saved progress is matched against.
+    //
+    // IF THIS FAILS, every date's puzzle changed and saved days no
+    // longer describe the puzzle they were played on. That's allowed,
+    // but it's a migration: bump DICT_VERSION and raise
+    // GENERATOR_VERSION in state/persistence.ts (which marks older
+    // saves retired) before updating these fingerprints.
+    const pinned = [
+      ["2026-07-06", "kkvr3k"],
+      ["2026-12-25", "gvd3mp"],
+      ["2027-06-01", "1o6lk8"],
+    ];
+    for (const [date, fingerprint] of pinned) {
+      const p = generateCrosshatch(dict, dailySeed(date));
+      expect(puzzleKey([p.givens, p.combos]), date).toBe(fingerprint);
+    }
   });
 
   it("never requires a bonus-tier word", () => {
