@@ -21,11 +21,17 @@ import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
+import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
+import { TutorialDone } from "../../../components/game/TutorialDone";
+import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
+import { tutorialStepIndex } from "../engine/tutorial";
+import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import {
-  loadCoachSeen,
   loadDailyProgress,
-  markCoachSeen,
+  loadTutorialSeen,
+  markTutorialSeen,
 } from "../state/persistence";
 import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
@@ -62,28 +68,28 @@ interface Props {
   onNewPuzzle?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
   onReplay?: () => void;
+  /** Tutorial: replay the script from step one. */
+  onRestartTutorial?: () => void;
 }
 
-export function GameScreen({ mode }: Props) {
+export function GameScreen({ mode, onRestartTutorial }: Props) {
   const { state, dispatch, doneElapsedMs, hydratedAsSolved } =
     usePolygramGame(mode);
   const level = currentLevel(state);
+  const isTutorial = mode.kind === "tutorial";
+  const isDaily = mode.kind === "daily";
 
   const storageBroken = useStorageBroken();
   const done = state.phase === "done";
   const { showConfetti, showResults } = useSolveTransition(done, hydratedAsSolved);
 
-  // One-time first-run coach, reopenable from the header "?".
+  // The tutorial's running instruction. Only ever moves forward.
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
+
+  // The coach sheet opens on demand only — the first-run introduction is
+  // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
-  useEffect(() => {
-    void loadCoachSeen().then((seen) => {
-      if (!seen) setCoachOpen(true);
-    });
-  }, []);
-  const closeCoach = () => {
-    setCoachOpen(false);
-    void markCoachSeen();
-  };
+  const closeCoach = () => setCoachOpen(false);
 
   // The words panel is controlled here so the lightbulb can open it.
   const [wordsOpen, setWordsOpen] = useState(false);
@@ -141,7 +147,7 @@ export function GameScreen({ mode }: Props) {
     });
   };
   const requestHint = () => {
-    if (mode.kind !== "practice" && !hintUsed) {
+    if ((mode.kind === "daily" || mode.kind === "archive") && !hintUsed) {
       setHintWarningOpen(true);
     } else {
       revealNextLetter();
@@ -273,7 +279,7 @@ export function GameScreen({ mode }: Props) {
               New daily puzzle
             </Link>
           )}
-          {!done && (
+          {!done && !isTutorial && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -331,28 +337,49 @@ export function GameScreen({ mode }: Props) {
             practice
           </span>
         )}
+        {isTutorial && (
+          <span className="text-base font-semibold text-ink-soft">
+            tutorial
+          </span>
+        )}
       </div>
 
-      {storageBroken && (
+      {isTutorial && (
+        <div className="pb-3">
+          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
+        </div>
+      )}
+
+      {storageBroken && !isTutorial && (
         <p className="pb-2 text-xs font-semibold text-warn" role="alert">
           Progress can't be saved on this device.
         </p>
       )}
 
-      <RankBar state={state} />
+      {/* Day-scale progress chrome, omitted on the tutorial: a rank of
+          "Beginner" out of a five-word toy puzzle measures nothing, and
+          the words panel is a browse-and-aim-hints affordance for a full
+          day (hints are off here). The center shape still counts down the
+          words left, and the step banner says what to do — so nothing is
+          lost, and the board keeps its room at large text sizes. */}
+      {!isTutorial && (
+        <>
+          <RankBar state={state} />
 
-      <div className="pt-3">
-        <FoundWordsBar
-          state={state}
-          open={wordsOpen}
-          onToggle={() => setWordsOpen((v) => !v)}
-          onHint={requestHint}
-          hintTargetWord={hintTargetWord}
-          onSelectWord={(w) =>
-            setHintTargetWord((cur) => (cur === w ? null : w))
-          }
-        />
-      </div>
+          <div className="pt-3">
+            <FoundWordsBar
+              state={state}
+              open={wordsOpen}
+              onToggle={() => setWordsOpen((v) => !v)}
+              onHint={requestHint}
+              hintTargetWord={hintTargetWord}
+              onSelectWord={(w) =>
+                setHintTargetWord((cur) => (cur === w ? null : w))
+              }
+            />
+          </div>
+        </>
+      )}
 
       <div className="flex flex-1 flex-col items-center justify-center">
         {/* The typed-word slot is an input affordance: once the puzzle
@@ -361,7 +388,9 @@ export function GameScreen({ mode }: Props) {
             at `done`, not at the results card, so the confetti plays
             over a finished board rather than over empty slots.
             Symmetric breathing room above and below the typed word;
-            tightens on short screens so controls stay on-screen. */}
+            tightens on short screens so controls stay on-screen — and on
+            the tutorial, where the step banner has already claimed a band
+            of the same height. */}
         <AnimatePresence initial={false}>
           {!done && (
             <motion.div
@@ -370,7 +399,13 @@ export function GameScreen({ mode }: Props) {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25 }}
             >
-              <div className="py-8 [@media(max-height:720px)]:py-2">
+              <div
+                className={
+                  isTutorial
+                    ? "py-3 [@media(max-height:720px)]:py-1"
+                    : "py-8 [@media(max-height:720px)]:py-2"
+                }
+              >
                 <CurrentWord state={state} />
               </div>
             </motion.div>
@@ -380,6 +415,7 @@ export function GameScreen({ mode }: Props) {
             has moved on from browsing to playing. */}
         <PolygonBoard
           state={state}
+          reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
           order={order}
           onLetter={(letter) => {
             setWordsOpen(false);
@@ -393,7 +429,19 @@ export function GameScreen({ mode }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        {done && showResults ? (
+        {done && showResults && isTutorial ? (
+          <motion.div
+            key="tutorial-done"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <TutorialDone
+              gameId="polygram"
+              recap={TUTORIAL_RECAP}
+              onRestart={onRestartTutorial}
+            />
+          </motion.div>
+        ) : done && showResults ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 12 }}
@@ -414,7 +462,9 @@ export function GameScreen({ mode }: Props) {
                 Used hint
               </span>
             )}
-            {mode.kind !== "practice" && mode.dateKey && doneElapsedMs !== null && (
+            {(mode.kind === "daily" || mode.kind === "archive") &&
+              mode.dateKey &&
+              doneElapsedMs !== null && (
               <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} gameId="polygram" />
             )}
           </motion.div>
@@ -499,6 +549,7 @@ export function GameScreen({ mode }: Props) {
         {coachOpen && (
           <CoachSheet
             onClose={closeCoach}
+            tutorialTo={isTutorial ? undefined : "/games/polygram/tutorial"}
             rules={[
               {
                 Icon: Type,
@@ -560,6 +611,14 @@ export function GameScreen({ mode }: Props) {
           />
         )}
       </AnimatePresence>
+
+      <TutorialPrompt
+        enabled={isDaily}
+        gameId="polygram"
+        gameName="Polygram"
+        loadSeen={loadTutorialSeen}
+        markSeen={markTutorialSeen}
+      />
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">

@@ -103,6 +103,7 @@ export const loadStaleDailyProgress = (
   currentPuzzleKey?: string,
 ) => daily.loadStaleDay(dateKey, currentPuzzleKey);
 export const { loadCoachSeen, markCoachSeen } = daily;
+export const { loadTutorialSeen, markTutorialSeen } = daily;
 
 export async function loadStats(): Promise<PolygramStats> {
   return normalizeStatFields(await daily.loadStats());

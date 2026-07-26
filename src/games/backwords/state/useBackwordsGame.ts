@@ -13,6 +13,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
 import { dailySeed, generateBackwords } from "../engine/generator";
+import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
   backwordsPuzzleKey,
   loadDailyProgress,
@@ -33,23 +34,39 @@ import {
 export type GameMode =
   | { kind: "daily"; dateKey: string }
   | { kind: "archive"; dateKey: string }
-  | { kind: "practice"; seed: string };
+  | { kind: "practice"; seed: string }
+  | { kind: "tutorial" };
+
+/** Modes whose progress is written to storage — see `persisted` below. */
+function isPersisted(mode: GameMode): boolean {
+  return mode.kind === "daily" || mode.kind === "archive";
+}
 
 export function useBackwordsGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date
   // and remount on rollover) — it must never drift mid-session.
-  const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
-  const persisted = mode.kind !== "practice";
-  const seed = persisted ? dailySeed(dateKey) : mode.seed;
+  const persisted = isPersisted(mode);
+  const dateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
+  const seed = persisted
+    ? dailySeed(dateKey)
+    : mode.kind === "practice"
+      ? mode.seed
+      : TUTORIAL_PUZZLE.seed;
 
   // Suspends until the dictionary asset loads (router Suspense boundary).
+  // The tutorial's bank is hand-picked, but the lexicon is still needed:
+  // the reducer resolves every placement through it.
   const dict = use(loadDictionary());
   const lexicon = useMemo(() => buildLexicon(dict), [dict]);
   const words = useMemo(() => commonWords(dict), [dict]);
   const items = useMemo(() => lexiconItems(lexicon), [lexicon]);
   const puzzle = useMemo(
-    () => generateBackwords(dict, seed, items),
-    [dict, seed, items],
+    () =>
+      mode.kind === "tutorial"
+        ? TUTORIAL_PUZZLE
+        : generateBackwords(dict, seed, items),
+    [dict, seed, items, mode.kind],
   );
   const pKey = useMemo(() => backwordsPuzzleKey(puzzle.bank), [puzzle]);
   const [state, rawDispatch] = useReducer(

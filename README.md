@@ -3,6 +3,11 @@
 A little collection of games, made with love. Mobile-first, offline-capable
 PWA — install it on a phone and play anywhere.
 
+Every game has a **tutorial**: one hand-picked miniature puzzle, walked
+a step at a time, introducing the rules in the order they stop being
+guessable. It is offered once on your first visit to a game and lives
+behind the "?" afterwards — nothing about it is scored, timed or saved.
+
 ## Games
 
 ### Polygram

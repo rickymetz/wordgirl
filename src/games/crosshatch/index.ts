@@ -12,6 +12,7 @@ export const crosshatch: GameDefinition = {
   Status: CrosshatchStatus,
   Page: lazy(() => import("./ui/CrosshatchPage")),
   extraRoutes: [
+    { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },

@@ -12,6 +12,7 @@ export const polygram: GameDefinition = {
   Status: PolygramStatus,
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
+    { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },

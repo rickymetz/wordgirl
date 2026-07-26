@@ -12,6 +12,7 @@ export const serpentine: GameDefinition = {
   Status: SerpentineStatus,
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
+    { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },

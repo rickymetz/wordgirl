@@ -168,6 +168,21 @@ export function createDailyPersistence<
     await store.set("coachSeen", true);
   }
 
+  /**
+   * The first-visit tutorial offer, marked once the player has either
+   * taken it or waved it off. Deliberately OUTSIDE the "daily:" prefix
+   * so it never surfaces in loadAllDailyProgress (the archive calendar
+   * and the trends charts both walk that prefix), and deliberately
+   * separate from coachSeen: the coach sheet is now opened on demand
+   * only, so its flag no longer tracks "has been introduced".
+   */
+  async function loadTutorialSeen(): Promise<boolean> {
+    return (await store.get<boolean>("tutorialSeen")) === true;
+  }
+  async function markTutorialSeen(): Promise<void> {
+    await store.set("tutorialSeen", true);
+  }
+
   return {
     store,
     validShape,
@@ -179,6 +194,8 @@ export function createDailyPersistence<
     recordStarted,
     loadCoachSeen,
     markCoachSeen,
+    loadTutorialSeen,
+    markTutorialSeen,
   };
 }
 

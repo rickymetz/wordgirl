@@ -15,13 +15,19 @@ import {
   useSerpentineGame,
   type GameMode,
 } from "../state/useSerpentineGame";
-import { loadCoachSeen, loadDailyProgress, markCoachSeen } from "../state/persistence";
+import { loadDailyProgress, loadTutorialSeen, markTutorialSeen } from "../state/persistence";
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
 import { PoemCredit } from "./PoemCredit";
 import { cellKey, type Difficulty } from "../engine/types";
 import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
+import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { TutorialBanner } from "../../../components/game/TutorialBanner";
+import { TutorialDone } from "../../../components/game/TutorialDone";
+import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
+import { tutorialStepIndex } from "../engine/tutorial";
+import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 function buildShareText(
   puzzle: { path: { row: number; col: number }[]; text: string },
@@ -48,14 +54,26 @@ interface Props {
   onDifficultyChange?: (d: Difficulty) => void;
   onNewPuzzle?: () => void;
   onReplay?: () => Promise<void>;
+  /** Tutorial: replay the script from step one. */
+  onRestartTutorial?: () => void;
 }
 
-export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
+export function GameScreen({
+  mode,
+  difficulty,
+  onDifficultyChange,
+  onRestartTutorial,
+}: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, hydratedHints, setHints } =
     useSerpentineGame(mode);
+  const isTutorial = mode.kind === "tutorial";
+  const isDaily = mode.kind === "daily";
 
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+
+  // The tutorial's running instruction. Only ever moves forward.
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());
@@ -100,16 +118,9 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
     return false;
   }, [state.cells.length, puzzle.path.length, hintedSet]);
 
-  // First-run coach.
-  useEffect(() => {
-    void loadCoachSeen().then((seen) => {
-      if (!seen) setCoachOpen(true);
-    });
-  }, []);
-  const closeCoach = () => {
-    setCoachOpen(false);
-    void markCoachSeen();
-  };
+  // The coach sheet opens on demand only — the first-run introduction is
+  // now the tutorial offer (see TutorialPrompt).
+  const closeCoach = () => setCoachOpen(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -158,7 +169,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
               New daily puzzle
             </Link>
           )}
-          {!state.solved && (
+          {!state.solved && !isTutorial && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -211,12 +222,22 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <span className="text-base font-semibold text-ink-soft">
             practice
           </span>
+        ) : mode.kind === "tutorial" ? (
+          <span className="text-base font-semibold text-ink-soft">
+            tutorial
+          </span>
         ) : mode.kind === "archive" ? (
           <span className="text-base font-semibold text-ink-soft">
             {formatDateKey(mode.dateKey)}
           </span>
         ) : null}
       </div>
+
+      {isTutorial && (
+        <div className="pb-3">
+          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
+        </div>
+      )}
 
       {/* Difficulty pills */}
       {difficulty !== undefined && onDifficultyChange && (
@@ -242,19 +263,28 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         </div>
       )}
 
-      {storageBroken && (
+      {storageBroken && !isTutorial && (
         <p className="pb-2 text-xs font-semibold text-warn" role="alert">
           Progress can't be saved on this device.
         </p>
       )}
 
-      {/* Puzzle title + typed-out letters */}
-      <div className="px-1 pt-10 pb-5">
-        <PoemCredit
-          puzzle={puzzle}
-          className="pb-1 text-center text-sm font-medium text-accent"
-          authorClass="text-xs text-ink-soft"
-        />
+      {/* Puzzle title + typed-out letters. The tutorial's phrase is not a
+          poem, so it carries no credit. */}
+      <div
+        className={
+          isTutorial
+            ? "px-1 pt-4 pb-5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2"
+            : "px-1 pt-10 pb-5"
+        }
+      >
+        {!isTutorial && (
+          <PoemCredit
+            puzzle={puzzle}
+            className="pb-1 text-center text-sm font-medium text-accent"
+            authorClass="text-xs text-ink-soft"
+          />
+        )}
         <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintIndices} />
       </div>
 
@@ -277,7 +307,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        {state.solved && showResults ? (
+        {state.solved && showResults && isTutorial ? (
+          <motion.div
+            key="tutorial-done"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <TutorialDone
+              gameId="serpentine"
+              recap={TUTORIAL_RECAP}
+              onRestart={onRestartTutorial}
+            />
+          </motion.div>
+        ) : state.solved && showResults ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 12 }}
@@ -293,7 +335,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             <p className="text-sm text-ink-soft">
               {puzzle.path.length} letters · {puzzle.rows}×{puzzle.cols} grid
             </p>
-            {mode.kind !== "practice" && solvedElapsedMs !== null && (
+            {(mode.kind === "daily" || mode.kind === "archive") &&
+              solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs, hintCount)}
                 gameId="serpentine"
@@ -337,7 +380,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {showConfetti && <ConfettiOverlay />}
 
       {/* Coach */}
-      <SerpentineCoach open={coachOpen} onClose={closeCoach} />
+      <SerpentineCoach
+        open={coachOpen}
+        onClose={closeCoach}
+        tutorialTo={isTutorial ? undefined : "/games/serpentine/tutorial"}
+      />
+
+      <TutorialPrompt
+        enabled={isDaily}
+        gameId="serpentine"
+        gameName="Serpentine"
+        loadSeen={loadTutorialSeen}
+        markSeen={markTutorialSeen}
+      />
 
       {/* Accessibility */}
       <div aria-live="polite" role="status" className="sr-only">

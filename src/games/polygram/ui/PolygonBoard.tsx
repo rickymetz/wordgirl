@@ -11,6 +11,10 @@ interface Props {
   order: number[];
   onLetter: (letter: string) => void;
   onSubmit: () => void;
+  /** Extra chrome above the board (the tutorial banner), px at default
+   *  text size — folded into the height budget so a big-text tutorial
+   *  gets a smaller flower rather than controls below the fold. */
+  reservedH?: number;
 }
 
 /** Whitespace between the central shape's edges and the petals, px. */
@@ -21,14 +25,20 @@ const RING_GAP = 18;
  * get a smaller flower instead of losing the controls below the fold. */
 const CHROME_H = 300;
 
-export function PolygonBoard({ state, order, onLetter, onSubmit }: Props) {
+export function PolygonBoard({
+  state,
+  order,
+  onLetter,
+  onSubmit,
+  reservedH = 0,
+}: Props) {
   const { vw, vh, rem } = useViewport();
   // Fit narrow phones AND short/large-text viewports instead of
   // clipping a hard-coded square.
   const maxBoard = vw >= 768 ? 460 : 340;
   const BOARD = Math.max(
     240,
-    Math.min(maxBoard, vw - 40, vh - CHROME_H * (rem / 16)),
+    Math.min(maxBoard, vw - 40, vh - (CHROME_H + reservedH) * (rem / 16)),
   );
   const sides = state.puzzle.levels[state.levelIndex].size;
   const letters = state.puzzle.letters.slice(0, sides);

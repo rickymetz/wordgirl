@@ -26,9 +26,14 @@ const CHROME_H = 540;
 export function GridBoard({
   state,
   onFocus,
+  reservedH = 0,
 }: {
   state: GameState;
   onFocus: (row: number, col: number) => void;
+  /** Extra chrome above the grid (the tutorial banner), px at default
+   *  text size — folded into the height budget so a big-text tutorial
+   *  gets smaller cells rather than a keyboard below the fold. */
+  reservedH?: number;
 }) {
   const { puzzle } = state;
   const { vw, vh, rem } = useViewport();
@@ -38,7 +43,8 @@ export function GridBoard({
   const wCell =
     (Math.min(maxBoardW, vw - 40) - (puzzle.cols - 1) * GAP) / puzzle.cols;
   const hCell =
-    (vh - CHROME_H * (rem / 16) - (puzzle.rows - 1) * GAP) / puzzle.rows;
+    (vh - (CHROME_H + reservedH) * (rem / 16) - (puzzle.rows - 1) * GAP) /
+    puzzle.rows;
   const cell = Math.max(MIN_CELL, Math.min(maxCell, wCell, hCell));
 
   const active = cursorSlot(state);

@@ -4,6 +4,7 @@ import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateDoublet } from "../engine/generator";
+import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import type { Difficulty } from "../engine/types";
 import {
   doubletPuzzleKey,
@@ -18,17 +19,32 @@ import { gameReducer, initialState, type GameState } from "./reducer";
 export type GameMode =
   | { kind: "daily"; dateKey: string; difficulty: Difficulty }
   | { kind: "archive"; dateKey: string; difficulty: Difficulty }
-  | { kind: "practice"; seed: string; difficulty: Difficulty };
+  | { kind: "practice"; seed: string; difficulty: Difficulty }
+  | { kind: "tutorial"; difficulty: Difficulty };
+
+/** Modes whose progress is written to storage — see `persisted` below. */
+function isPersisted(mode: GameMode): boolean {
+  return mode.kind === "daily" || mode.kind === "archive";
+}
 
 export function useDoubletGame(mode: GameMode) {
-  const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
-  const persisted = mode.kind !== "practice";
+  const persisted = isPersisted(mode);
+  const dateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
   const seed = persisted
     ? dailySeed(dateKey, mode.difficulty)
-    : mode.seed;
+    : mode.kind === "practice"
+      ? mode.seed
+      : TUTORIAL_PUZZLE.seed;
 
   const dict = use(loadDictionary());
-  const puzzle = useMemo(() => generateDoublet(dict, seed), [dict, seed]);
+  const puzzle = useMemo(
+    () =>
+      mode.kind === "tutorial"
+        ? TUTORIAL_PUZZLE
+        : generateDoublet(dict, seed),
+    [dict, seed, mode.kind],
+  );
   const pKey = useMemo(() => doubletPuzzleKey(puzzle), [puzzle]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 

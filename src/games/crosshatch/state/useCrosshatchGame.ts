@@ -4,6 +4,7 @@ import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch } from "../engine/generator";
+import { tutorialPuzzle } from "../engine/tutorial";
 import { isSolved, uniqueWords } from "../engine/scoring";
 import {
   crosshatchPuzzleKey,
@@ -19,18 +20,35 @@ import { gameReducer, initialState, type GameState } from "./reducer";
 export type GameMode =
   | { kind: "daily"; dateKey: string }
   | { kind: "archive"; dateKey: string }
-  | { kind: "practice"; seed: string };
+  | { kind: "practice"; seed: string }
+  | { kind: "tutorial" };
+
+/** Modes whose progress is written to storage — see `persisted` below. */
+function isPersisted(mode: GameMode): boolean {
+  return mode.kind === "daily" || mode.kind === "archive";
+}
 
 export function useCrosshatchGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date and
   // remount on rollover) — it must never drift mid-session.
-  const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
-  const persisted = mode.kind !== "practice";
-  const seed = persisted ? dailySeed(dateKey) : mode.seed;
+  const persisted = isPersisted(mode);
+  const dateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
+  const seed = persisted
+    ? dailySeed(dateKey)
+    : mode.kind === "practice"
+      ? mode.seed
+      : "tutorial";
 
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
-  const puzzle = useMemo(() => generateCrosshatch(dict, seed), [dict, seed]);
+  const puzzle = useMemo(
+    () =>
+      mode.kind === "tutorial"
+        ? tutorialPuzzle(dict)
+        : generateCrosshatch(dict, seed),
+    [dict, seed, mode.kind],
+  );
   const pKey = useMemo(() => crosshatchPuzzleKey(puzzle), [puzzle]);
   const totalWords = useMemo(
     () => uniqueWords(puzzle.combos).length,
