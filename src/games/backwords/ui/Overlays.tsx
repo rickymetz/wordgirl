@@ -16,7 +16,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
   return [
-    `Backwords — ${date}`,
+    `🪞 Backwords — ${date}`,
     `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}`,
     SHARE_URL,
   ].join("\n");

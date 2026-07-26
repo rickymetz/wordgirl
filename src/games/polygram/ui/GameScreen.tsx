@@ -51,7 +51,7 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   const date = formatShareDate(dateKey);
   return [
-    `Polygram — ${date}`,
+    `🔻 Polygram — ${date}`,
     `${state.score} pts · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");

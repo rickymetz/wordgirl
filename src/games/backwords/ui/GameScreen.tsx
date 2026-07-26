@@ -44,7 +44,7 @@ function buildShareText(
   const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
-    `Backwords — ${date}`,
+    `🪞 Backwords — ${date}`,
     `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}${hintPart}`,
     SHARE_URL,
   ].join("\n");

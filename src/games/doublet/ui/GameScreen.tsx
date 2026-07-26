@@ -34,7 +34,7 @@ function buildShareText(
 ): string {
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
-    `Doublet — ${formatShareDate(dateKey)}`,
+    `👯‍♂️ Doublet — ${formatShareDate(dateKey)}`,
     `${DIFF_LABELS[difficulty]} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");

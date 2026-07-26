@@ -56,7 +56,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
   return [
-    `Crosshatch — ${date}`,
+    `🧺 Crosshatch — ${date}`,
     `${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");

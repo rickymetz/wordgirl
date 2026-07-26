@@ -26,10 +26,10 @@ function buildShareText(
   dateKey: string | undefined,
   elapsedMs: number | null,
 ): string {
-  const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
+  const title = `🐍 Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
   const label = difficulty === "haiku" ? "Haiku" : "Poem";
   const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
-  return `${title}\n${label}: ${puzzle.path.length} letters${time} 🐍\n\n${SHARE_URL}`;
+  return `${title}\n${label}: ${puzzle.path.length} letters${time}\n${SHARE_URL}`;
 }
 
 export function SolvedOverlay({
