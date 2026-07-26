@@ -12,6 +12,7 @@ export const backwords: GameDefinition = {
   Status: BackwordsStatus,
   Page: lazy(() => import("./ui/BackwordsPage")),
   extraRoutes: [
+    { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },
@@ -26,5 +27,6 @@ export const backwords: GameDefinition = {
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
     { label: "Stats", path: "stats" },
+    { label: "Tutorial", path: "tutorial" },
   ],
 };

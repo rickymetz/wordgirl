@@ -80,6 +80,7 @@ export const loadStaleDailyProgress = (
   currentPuzzleKey?: string,
 ) => base.loadStaleDay(dateKey, currentPuzzleKey);
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
+export const { loadTutorialSeen, markTutorialSeen } = base;
 export const recordDailyStarted = base.recordStarted;
 export { displayStreak };
 

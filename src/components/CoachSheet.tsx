@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { BottomSheet } from "./BottomSheet";
 
 export interface CoachRule {
@@ -20,9 +21,12 @@ export function Key({ children }: { children: ReactNode }) {
 export function CoachSheet({
   rules,
   onClose,
+  tutorialTo,
 }: {
   rules: CoachRule[];
   onClose: () => void;
+  /** Route of this game's tutorial; omitted on the tutorial itself. */
+  tutorialTo?: string;
 }) {
   return (
     <BottomSheet labelledBy="coach-title" onClose={onClose}>
@@ -55,6 +59,15 @@ export function CoachSheet({
       >
         Got it
       </button>
+      {tutorialTo && (
+        <Link
+          to={tutorialTo}
+          onClick={onClose}
+          className="mt-3 block text-center text-sm font-semibold text-ink-soft"
+        >
+          Play the tutorial
+        </Link>
+      )}
     </BottomSheet>
   );
 }

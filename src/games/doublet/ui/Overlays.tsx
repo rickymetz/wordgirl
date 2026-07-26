@@ -5,14 +5,17 @@ import { CoachSheet, Key } from "../../../components/CoachSheet";
 interface CoachProps {
   open: boolean;
   onClose: () => void;
+  /** Route of the tutorial; omitted on the tutorial itself. */
+  tutorialTo?: string;
 }
 
-export function DoubletCoach({ open, onClose }: CoachProps) {
+export function DoubletCoach({ open, onClose, tutorialTo }: CoachProps) {
   return (
     <AnimatePresence>
       {open && (
         <CoachSheet
           onClose={onClose}
+          tutorialTo={tutorialTo}
           rules={[
             {
               Icon: Grid2X2,

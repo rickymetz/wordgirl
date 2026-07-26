@@ -12,6 +12,7 @@ export const doublet: GameDefinition = {
   Status: DoubletStatus,
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
+    { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
     { path: "archive", Page: lazy(() => import("./ui/ArchivePage")) },
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },
@@ -25,5 +26,6 @@ export const doublet: GameDefinition = {
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
     { label: "Stats", path: "stats" },
+    { label: "Tutorial", path: "tutorial" },
   ],
 };

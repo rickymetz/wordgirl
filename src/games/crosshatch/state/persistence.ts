@@ -184,6 +184,7 @@ export async function resetDailyForReplay(
 
 /** One-time first-run coach marks. */
 export const { loadCoachSeen, markCoachSeen } = base;
+export const { loadTutorialSeen, markTutorialSeen } = base;
 
 export const loadStats = base.loadStats;
 

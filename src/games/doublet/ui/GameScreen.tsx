@@ -17,8 +17,14 @@ import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { DoubletCoach } from "./Overlays";
-import { loadCoachSeen, markCoachSeen } from "../state/persistence";
+import { loadTutorialSeen, markTutorialSeen } from "../state/persistence";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
+import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { TutorialBanner } from "../../../components/game/TutorialBanner";
+import { TutorialDone } from "../../../components/game/TutorialDone";
+import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
+import { tutorialStepIndex } from "../engine/tutorial";
+import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",
@@ -51,28 +57,35 @@ interface DragState {
 interface Props {
   mode: GameMode;
   difficulty: Difficulty;
-  onDifficultyChange: (d: Difficulty) => void;
+  /** Omitted on the tutorial, which has no difficulty to choose. */
+  onDifficultyChange?: (d: Difficulty) => void;
+  /** Tutorial: replay the script from step one. */
+  onRestartTutorial?: () => void;
 }
 
-export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
+export function GameScreen({
+  mode,
+  difficulty,
+  onDifficultyChange,
+  onRestartTutorial,
+}: Props) {
   const { state, dispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved } =
     useDoubletGame(mode);
+  const isTutorial = mode.kind === "tutorial";
+  const isDaily = mode.kind === "daily";
 
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
+  // The tutorial's running instruction. Only ever moves forward.
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
+
   const [cursorCell, setCursorCell] = useState<Cell | null>(null);
 
+  // The coach sheet opens on demand only — the first-run introduction is
+  // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
-  useEffect(() => {
-    void loadCoachSeen().then((seen) => {
-      if (!seen) setCoachOpen(true);
-    });
-  }, []);
-  const closeCoach = () => {
-    setCoachOpen(false);
-    void markCoachSeen();
-  };
+  const closeCoach = () => setCoachOpen(false);
 
   const { toast, show: showToast } = useToast();
 
@@ -387,7 +400,7 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
           <HomeLink />
         )}
         <span className="flex items-center gap-2">
-          {!state.solved && (
+          {!state.solved && !isTutorial && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -426,31 +439,44 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
             {formatDateKey(mode.dateKey)}
           </span>
         )}
+        {isTutorial && (
+          <span className="text-base font-semibold text-ink-soft">
+            tutorial
+          </span>
+        )}
       </div>
 
-      {/* Difficulty tabs */}
-      <div className="flex gap-1 pb-3" role="group" aria-label="Difficulty">
-        {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
-          <button
-            key={d}
-            aria-pressed={d === difficulty}
-            className={[
-              "relative px-4 py-1.5 rounded-full text-sm font-semibold",
-              "touch-manipulation select-none transition-colors",
-              "after:absolute after:inset-x-0 after:-inset-y-1.5",
-              d === difficulty
-                ? "bg-accent text-surface"
-                : "bg-surface-tint text-ink-soft",
-            ].join(" ")}
-            onPointerDown={(e) => e.preventDefault()}
-            onClick={() => onDifficultyChange(d)}
-          >
-            {DIFF_LABELS[d]}
-          </button>
-        ))}
-      </div>
+      {/* Difficulty tabs — the tutorial has one fixed board. */}
+      {onDifficultyChange && (
+        <div className="flex gap-1 pb-3" role="group" aria-label="Difficulty">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
+            <button
+              key={d}
+              aria-pressed={d === difficulty}
+              className={[
+                "relative px-4 py-1.5 rounded-full text-sm font-semibold",
+                "touch-manipulation select-none transition-colors",
+                "after:absolute after:inset-x-0 after:-inset-y-1.5",
+                d === difficulty
+                  ? "bg-accent text-surface"
+                  : "bg-surface-tint text-ink-soft",
+              ].join(" ")}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => onDifficultyChange(d)}
+            >
+              {DIFF_LABELS[d]}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {storageBroken && (
+      {isTutorial && (
+        <div className="pb-3">
+          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
+        </div>
+      )}
+
+      {storageBroken && !isTutorial && (
         <p className="pb-2 text-xs font-semibold text-warn" role="alert">
           Progress can't be saved on this device.
         </p>
@@ -479,7 +505,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
         style={state.solved ? { minHeight: frozenBottomH.current } : undefined}
       >
         <AnimatePresence mode="wait">
-          {state.solved && showResults ? (
+          {state.solved && showResults && isTutorial ? (
+            <motion.div
+              key="tutorial-done"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <TutorialDone
+                gameId="doublet"
+                recap={TUTORIAL_RECAP}
+                onRestart={onRestartTutorial}
+              />
+            </motion.div>
+          ) : state.solved && showResults ? (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 12 }}
@@ -492,7 +530,8 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
                   {formatDuration(solvedElapsedMs)}
                 </p>
               )}
-              {mode.kind !== "practice" && solvedElapsedMs !== null && (
+              {(mode.kind === "daily" || mode.kind === "archive") &&
+                solvedElapsedMs !== null && (
                 <ShareButton
                   text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs, state.hints)}
                   gameId="doublet"
@@ -548,7 +587,19 @@ export function GameScreen({ mode, difficulty, onDifficultyChange }: Props) {
       {showConfetti && <ConfettiOverlay />}
 
       {/* Coach */}
-      <DoubletCoach open={coachOpen} onClose={closeCoach} />
+      <DoubletCoach
+        open={coachOpen}
+        onClose={closeCoach}
+        tutorialTo={isTutorial ? undefined : "/games/doublet/tutorial"}
+      />
+
+      <TutorialPrompt
+        enabled={isDaily}
+        gameId="doublet"
+        gameName="Doublet"
+        loadSeen={loadTutorialSeen}
+        markSeen={markTutorialSeen}
+      />
 
       {/* Accessibility */}
       <div aria-live="polite" role="status" className="sr-only">

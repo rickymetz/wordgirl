@@ -3,6 +3,7 @@ import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
+import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import { levelBonus } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
 import {
@@ -19,7 +20,13 @@ import { gameReducer, initialState, type GameState } from "./reducer";
 export type GameMode =
   | { kind: "daily"; dateKey: string }
   | { kind: "archive"; dateKey: string }
-  | { kind: "practice"; seed: string };
+  | { kind: "practice"; seed: string }
+  | { kind: "tutorial" };
+
+/** Modes whose progress is written to storage — see `persisted` below. */
+function isPersisted(mode: GameMode): boolean {
+  return mode.kind === "daily" || mode.kind === "archive";
+}
 
 /**
  * Older saves stored a revealed-letter COUNT per word; normalize to
@@ -71,13 +78,26 @@ export function usePolygramGame(mode: GameMode) {
   // Daily and archive are the same date-keyed puzzle. The dateKey is
   // FROZEN per mount (PolygramPage/ArchivePlayPage key the component by
   // date and remount on rollover) — it must never drift mid-session.
-  const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
-  const persisted = mode.kind !== "practice";
-  const seed = persisted ? dailySeed(dateKey) : mode.seed;
+  const persisted = isPersisted(mode);
+  const dateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
+  const seed = persisted
+    ? dailySeed(dateKey)
+    : mode.kind === "practice"
+      ? mode.seed
+      : TUTORIAL_PUZZLE.seed;
 
   // Suspends until the dictionary asset loads (router Suspense boundary).
+  // The tutorial's puzzle is hand-written and needs no dictionary, but the
+  // call has to stay unconditional — and the asset is precached anyway.
   const dict = use(loadDictionary());
-  const puzzle = useMemo(() => generatePuzzle(dict, seed), [dict, seed]);
+  const puzzle = useMemo(
+    () =>
+      mode.kind === "tutorial"
+        ? TUTORIAL_PUZZLE
+        : generatePuzzle(dict, seed),
+    [dict, seed, mode.kind],
+  );
   const pKey = useMemo(() => polygramPuzzleKey(puzzle), [puzzle]);
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
 

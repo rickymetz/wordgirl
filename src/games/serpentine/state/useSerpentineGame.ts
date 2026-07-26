@@ -5,6 +5,7 @@ import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { streakAdvance } from "../../../lib/daily/persistence";
 import { getDailyPuzzle } from "../engine/dailySeed";
 import { getPracticePuzzle } from "../engine/practice";
+import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import type { Difficulty } from "../engine/types";
 import { cellsFitPuzzle } from "../engine/validation";
 import { gameReducer, initialState, type GameState } from "./reducer";
@@ -22,17 +23,26 @@ import {
 export type GameMode =
   | { kind: "daily"; dateKey: string; difficulty: Difficulty }
   | { kind: "archive"; dateKey: string; difficulty: Difficulty }
-  | { kind: "practice"; seed: string; difficulty: Difficulty };
+  | { kind: "practice"; seed: string; difficulty: Difficulty }
+  | { kind: "tutorial"; difficulty: Difficulty };
+
+/** Modes whose progress is written to storage — see `persisted` below. */
+function isPersisted(mode: GameMode): boolean {
+  return mode.kind === "daily" || mode.kind === "archive";
+}
 
 export function useSerpentineGame(mode: GameMode) {
   const difficulty = mode.difficulty;
-  const dateKey = mode.kind === "practice" ? "" : mode.dateKey;
-  const persisted = mode.kind !== "practice";
+  const persisted = isPersisted(mode);
+  const dateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
   const puzzle = useMemo(
     () =>
-      mode.kind === "practice"
-        ? getPracticePuzzle(mode.seed, mode.difficulty)
-        : getDailyPuzzle(difficulty, dateKey),
+      mode.kind === "tutorial"
+        ? TUTORIAL_PUZZLE
+        : mode.kind === "practice"
+          ? getPracticePuzzle(mode.seed, mode.difficulty)
+          : getDailyPuzzle(difficulty, dateKey),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode.kind, mode.kind === "practice" ? mode.seed : dateKey, difficulty],
   );

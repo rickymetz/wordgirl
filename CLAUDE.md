@@ -44,6 +44,48 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   saved before a metric shipped chart as GAPS via `null`, never fake
   zeros).
 
+**Tutorials** (`components/game/`, `lib/tutorial/`)
+- `TutorialBanner` + `TUTORIAL_BANNER_H` — the step instruction above a
+  board ("Step 2 of 4", headline, one-liner), narrated via `aria-live`.
+  A board whose height budget actually binds must add `TUTORIAL_BANNER_H`
+  to its `CHROME_H` via the `reservedH` prop, or the tutorial overflows at
+  the Huge text setting — `PolygonBoard` and `GridBoard` do; the other
+  three measured 0px over with slack to spare and pass nothing. Re-measure
+  rather than assume: the check is every viewport × Huge text, and the
+  budget is what tells you which group a board is in. Keep step bodies to
+  TWO lines at default text — the constant is sized for that.
+- `TutorialDone` — the finish card that stands in for a game's results
+  block: no time, no score, no share, a link to the daily.
+- `TutorialPrompt` (`components/`) — the once-per-game first-visit offer,
+  mounted on the DAILY only (`enabled={mode.kind === "daily"}`). It owns
+  its own `tutorialSeen` load/mark. **The coach sheet no longer
+  auto-opens** — it is the "?" button only, and takes a `tutorialTo` prop
+  that adds a "Play the tutorial" link.
+- Three ways in, in order of how most players will meet it: the first-visit
+  prompt, the hub bento's `Tutorial` tile (LAST in `secondaryActions`,
+  after Stats), and the coach sheet's link. Adding that fourth bento tile
+  is why `GameCard`'s tiles carry `md:min-h-11`: on md+ the cluster is a
+  column dividing a fixed height, so a fourth action drove each tile to
+  28px, under the touch floor.
+- `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
+  monotonic clamp, so a step never flaps backwards when the player
+  undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
+  and a pure `tutorialStepIndex`, no React) and `ui/tutorialSteps.tsx`
+  (the JSX copy + `TUTORIAL_RECAP`).
+- A tutorial is a fourth `GameMode` arm, `{ kind: "tutorial" }`, and is
+  NOT persisted: every hook derives `persisted` from an
+  `isPersisted(mode)` allowlist (`daily` or `archive`), never
+  `!== "practice"`. `tutorialSeen` lives OUTSIDE the `daily:` prefix so
+  it can't reach the archive calendar or the trends charts.
+- Tutorial puzzles are hand-picked and bypass the generators, whose
+  bands are tuned for a day's play. Put them in their own module — never
+  append to `SHAPES`/`THEME_POOLS`, which daily seeds index by position.
+  Each has an `engine/tutorial.test.ts` asserting the puzzle against the
+  REAL dictionary (word lists exhaustive, decomposition unique, board
+  solvable) so a dictionary change can't silently make it teach a lie.
+- Hints and day-scale progress chrome are hidden in tutorial mode (a
+  rank of "Beginner" out of a five-word toy measures nothing).
+
 **Dialogs & chrome**
 - `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,
   `useModalFocus` (mark initial focus `data-autofocus`), `HomeLink`,
@@ -189,11 +231,15 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 7. `TrendsPage` using `GameTrends` with `solvedHour` metric
 8. Hub card via `GameStatus`
 9. Bento preview component using `Tile mini`
-10. Coach sheet via `CoachSheet`
+10. Coach sheet via `CoachSheet` (opened by "?" only — never auto)
 11. Share string ending with `SHARE_URL`
 12. Replay confirmation dialog via `ModalDialog`
-13. `engine/*.test.ts` + `state/reducer.test.ts` + `state/persistence.dom.test.ts`
-14. Run `scripts/validate_palette.js` after adding accent color
+13. Tutorial: `engine/tutorial.ts` + `ui/tutorialSteps.tsx` +
+    `ui/TutorialPage.tsx`, a `tutorial` entry in BOTH `extraRoutes` and
+    `secondaryActions` (last, after Stats), and
+    `TutorialPrompt`/`TutorialBanner`/`TutorialDone` in the GameScreen
+14. `engine/*.test.ts` + `state/reducer.test.ts` + `state/persistence.dom.test.ts`
+15. Run `scripts/validate_palette.js` after adding accent color
 
 ## Pre-merge review checklist
 
@@ -205,7 +251,11 @@ Before merging any game feature, verify:
 - `preserveAspectRatio="xMidYMid meet"` on SVG overlays
 - Board dimensions scale by `rem/16` via `useViewport`
 - `e.preventDefault()` on game-surface pointer handlers
-- ShareButton gated on `dateKey` (no practice-mode shares)
+- ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
+- `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
+- Tutorial mode: no save, no stats, no streak, no hints, no share
+- Tutorial fits with no page scroll at Huge text — `reservedH` added to
+  the board's budget wherever that budget binds
 - Replay shows a confirmation dialog
 - Archive separators use `·` not `.`
 - No emoji in UI chrome (share strings only)

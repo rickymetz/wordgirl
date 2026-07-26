@@ -66,6 +66,8 @@ export const {
   recordStarted,
   loadCoachSeen,
   markCoachSeen,
+  loadTutorialSeen,
+  markTutorialSeen,
   validShape,
 } = daily;
 

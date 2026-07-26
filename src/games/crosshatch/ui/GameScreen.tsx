@@ -21,15 +21,21 @@ import { HomeLink } from "../../../components/HomeLink";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
+import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
+import { TutorialDone } from "../../../components/game/TutorialDone";
+import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
+import { tutorialStepIndex } from "../engine/tutorial";
+import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
-  loadCoachSeen,
   loadDailyProgress,
-  markCoachSeen,
+  loadTutorialSeen,
+  markTutorialSeen,
 } from "../state/persistence";
 import {
   hintTarget,
@@ -65,11 +71,13 @@ function buildShareText(
 interface Props {
   mode: GameMode;
   onNewPuzzle?: () => void;
+  /** Tutorial: replay the script from step one. */
+  onRestartTutorial?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode }: Props) {
+export function GameScreen({ mode, onRestartTutorial }: Props) {
   const {
     state,
     dispatch,
@@ -79,21 +87,19 @@ export function GameScreen({ mode }: Props) {
     hydratedAsSolved,
   } = useCrosshatchGame(mode);
   const dict = use(loadDictionary());
+  const isTutorial = mode.kind === "tutorial";
+  const isDaily = mode.kind === "daily";
 
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
-  // One-time first-run coach, reopenable from the header "?".
+  // The tutorial's running instruction. Only ever moves forward.
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
+
+  // The coach sheet opens on demand only — the first-run introduction is
+  // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
-  useEffect(() => {
-    void loadCoachSeen().then((seen) => {
-      if (!seen) setCoachOpen(true);
-    });
-  }, []);
-  const closeCoach = () => {
-    setCoachOpen(false);
-    void markCoachSeen();
-  };
+  const closeCoach = () => setCoachOpen(false);
 
   const [wordsOpen, setWordsOpen] = useState(false);
 
@@ -155,7 +161,7 @@ export function GameScreen({ mode }: Props) {
     });
   };
   const requestHint = () => {
-    if (mode.kind !== "practice" && !hintUsed) {
+    if ((mode.kind === "daily" || mode.kind === "archive") && !hintUsed) {
       setHintWarningOpen(true);
     } else {
       revealRandomLetter();
@@ -385,7 +391,7 @@ export function GameScreen({ mode }: Props) {
               New daily puzzle
             </Link>
           )}
-          {!state.solved && (
+          {!state.solved && !isTutorial && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -440,28 +446,45 @@ export function GameScreen({ mode }: Props) {
             practice
           </span>
         )}
+        {isTutorial && (
+          <span className="text-base font-semibold text-ink-soft">
+            tutorial
+          </span>
+        )}
       </div>
 
-      {storageBroken && (
+      {isTutorial && (
+        <div className="pb-3">
+          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
+        </div>
+      )}
+
+      {storageBroken && !isTutorial && (
         <p className="pb-2 text-xs font-semibold text-warn" role="alert">
           Progress can't be saved on this device.
         </p>
       )}
 
+      {/* The progress bar stays — "2/5" is what the last step asks you to
+          watch. The words panel does not: it is a browse-the-day list whose
+          job is aiming hints, and hints are off on the tutorial. Dropping
+          it also keeps the grid and keyboard on-screen at large text. */}
       <ProgressBar found={state.found.length} total={total} />
 
-      <div className="pt-3">
-        <WordsPanel
-          state={state}
-          open={wordsOpen}
-          onToggle={() => setWordsOpen((v) => !v)}
-          onHint={requestHint}
-          hintTargetWord={hintTargetWord}
-          onSelectWord={(w) =>
-            setHintTargetWord((cur) => (cur === w ? null : w))
-          }
-        />
-      </div>
+      {!isTutorial && (
+        <div className="pt-3">
+          <WordsPanel
+            state={state}
+            open={wordsOpen}
+            onToggle={() => setWordsOpen((v) => !v)}
+            onHint={requestHint}
+            hintTargetWord={hintTargetWord}
+            onSelectWord={(w) =>
+              setHintTargetWord((cur) => (cur === w ? null : w))
+            }
+          />
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4 [@media(max-height:720px)]:gap-2 [@media(max-height:720px)]:py-2">
         <div className="relative">
@@ -469,6 +492,7 @@ export function GameScreen({ mode }: Props) {
               has moved on from browsing to playing. */}
           <GridBoard
             state={state}
+            reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
             onFocus={(row, col) => {
               setWordsOpen(false);
               dispatch({ type: "focusCell", row, col });
@@ -483,7 +507,19 @@ export function GameScreen({ mode }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        {state.solved && showResults ? (
+        {state.solved && showResults && isTutorial ? (
+          <motion.div
+            key="tutorial-done"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <TutorialDone
+              gameId="crosshatch"
+              recap={TUTORIAL_RECAP}
+              onRestart={onRestartTutorial}
+            />
+          </motion.div>
+        ) : state.solved && showResults ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 12 }}
@@ -500,7 +536,9 @@ export function GameScreen({ mode }: Props) {
               {state.found.length}/{total} words
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
-            {mode.kind !== "practice" && mode.dateKey && solvedElapsedMs !== null && (
+            {(mode.kind === "daily" || mode.kind === "archive") &&
+              mode.dateKey &&
+              solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(
                   state.found.length,
@@ -599,6 +637,7 @@ export function GameScreen({ mode }: Props) {
         {coachOpen && (
           <CoachSheet
             onClose={closeCoach}
+            tutorialTo={isTutorial ? undefined : "/games/crosshatch/tutorial"}
             rules={[
               {
                 Icon: Lock,
@@ -675,6 +714,14 @@ export function GameScreen({ mode }: Props) {
           />
         )}
       </AnimatePresence>
+
+      <TutorialPrompt
+        enabled={isDaily}
+        gameId="crosshatch"
+        gameName="Crosshatch"
+        loadSeen={loadTutorialSeen}
+        markSeen={markTutorialSeen}
+      />
 
       {/* Outcomes are otherwise visual-only; narrate them politely.
           Keyed by nonce so an identical repeated outcome still mutates

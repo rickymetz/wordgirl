@@ -17,14 +17,20 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
+import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { TutorialBanner } from "../../../components/game/TutorialBanner";
+import { TutorialDone } from "../../../components/game/TutorialDone";
+import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
+import { tutorialStepIndex } from "../engine/tutorial";
+import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useBackwordsGame, type GameMode } from "../state/useBackwordsGame";
 import {
-  loadCoachSeen,
   loadDailyProgress,
-  markCoachSeen,
+  loadTutorialSeen,
+  markTutorialSeen,
 } from "../state/persistence";
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
 import { isStraddle } from "../engine/types";
@@ -51,16 +57,23 @@ function buildShareText(
 interface Props {
   mode: GameMode;
   onNewPuzzle?: () => void;
+  /** Tutorial: replay the script from step one. */
+  onRestartTutorial?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode }: Props) {
+export function GameScreen({ mode, onRestartTutorial }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
     useBackwordsGame(mode);
+  const isTutorial = mode.kind === "tutorial";
+  const isDaily = mode.kind === "daily";
 
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+
+  // The tutorial's running instruction. Only ever moves forward.
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
 
   // A tile in flight: the mirror reflects it LIVE — the ghost tracks
   // the drag, mirrored across the glass, so it works from EITHER side
@@ -108,17 +121,10 @@ export function GameScreen({ mode }: Props) {
   const currentStraddle = !!resolved.def && isStraddle(resolved.def);
   const activePlace = resolved.place;
 
-  // One-time first-run coach, reopenable from the header "?".
+  // The coach sheet opens on demand only — the first-run introduction is
+  // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
-  useEffect(() => {
-    void loadCoachSeen().then((seen) => {
-      if (!seen) setCoachOpen(true);
-    });
-  }, []);
-  const closeCoach = () => {
-    setCoachOpen(false);
-    void markCoachSeen();
-  };
+  const closeCoach = () => setCoachOpen(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -250,7 +256,7 @@ export function GameScreen({ mode }: Props) {
               New daily puzzle
             </Link>
           )}
-          {!state.solved && (
+          {!state.solved && !isTutorial && (
             <button
               className="relative flex items-center gap-1 px-2.5 py-1 rounded-full
                          text-ink-soft text-xs font-semibold
@@ -301,9 +307,20 @@ export function GameScreen({ mode }: Props) {
             practice
           </span>
         )}
+        {isTutorial && (
+          <span className="text-base font-semibold text-ink-soft">
+            tutorial
+          </span>
+        )}
       </div>
 
-      {storageBroken && (
+      {isTutorial && (
+        <div className="pb-3">
+          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
+        </div>
+      )}
+
+      {storageBroken && !isTutorial && (
         <p className="pb-2 text-xs font-semibold text-warn" role="alert">
           Progress can't be saved on this device.
         </p>
@@ -335,7 +352,19 @@ export function GameScreen({ mode }: Props) {
       </div>
 
       <AnimatePresence mode="wait">
-        {state.solved && showResults ? (
+        {state.solved && showResults && isTutorial ? (
+          <motion.div
+            key="tutorial-done"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <TutorialDone
+              gameId="backwords"
+              recap={TUTORIAL_RECAP}
+              onRestart={onRestartTutorial}
+            />
+          </motion.div>
+        ) : state.solved && showResults ? (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 12 }}
@@ -357,7 +386,8 @@ export function GameScreen({ mode }: Props) {
                 {glyphRowCount(state.rows)} true mirror {glyphRowCount(state.rows) === 1 ? "row" : "rows"}
               </span>
             )}
-            {mode.kind !== "practice" && solvedElapsedMs !== null && (
+            {(mode.kind === "daily" || mode.kind === "archive") &&
+              solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(state.rows.length, mode.dateKey, solvedElapsedMs, state.hints)}
                 gameId="backwords"
@@ -418,6 +448,7 @@ export function GameScreen({ mode }: Props) {
         {coachOpen && (
           <CoachSheet
             onClose={closeCoach}
+            tutorialTo={isTutorial ? undefined : "/games/backwords/tutorial"}
             rules={[
               {
                 Icon: Type,
@@ -486,6 +517,14 @@ export function GameScreen({ mode }: Props) {
           />
         )}
       </AnimatePresence>
+
+      <TutorialPrompt
+        enabled={isDaily}
+        gameId="backwords"
+        gameName="Backwords"
+        loadSeen={loadTutorialSeen}
+        markSeen={markTutorialSeen}
+      />
 
       {/* Outcomes are otherwise visual-only; narrate them politely. */}
       <div aria-live="polite" role="status" className="sr-only">
