@@ -81,15 +81,26 @@ function DominoChip({
 
   const dragging = React.useRef(false);
   const startPt = React.useRef({ x: 0, y: 0 });
+  /**
+   * Is a pointer actually held down on this tile? A MOUSE also delivers
+   * pointermove on plain hover, and without this the threshold test below
+   * measured from an unset origin of (0,0) — so moving the cursor across
+   * the tray started a phantom drag, and its ghost tile never cleared
+   * because no pointerup ever followed. Touch devices send no hover
+   * events, which is why it went unseen on a phone.
+   */
+  const pointerDown = React.useRef(false);
 
   function handlePointerDown(e: React.PointerEvent<HTMLButtonElement>) {
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     startPt.current = { x: e.clientX, y: e.clientY };
     dragging.current = false;
+    pointerDown.current = true;
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (!pointerDown.current) return;
     if (!dragging.current) {
       const dx = e.clientX - startPt.current.x;
       const dy = e.clientY - startPt.current.y;
@@ -105,6 +116,7 @@ function DominoChip({
   }
 
   function handlePointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+    pointerDown.current = false;
     if (dragging.current) {
       dragging.current = false;
       onDragEnd?.();
@@ -120,6 +132,7 @@ function DominoChip({
   }
 
   function handlePointerCancel(e: React.PointerEvent<HTMLButtonElement>) {
+    pointerDown.current = false;
     if (dragging.current) {
       dragging.current = false;
       onDragEnd?.();
