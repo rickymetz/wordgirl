@@ -47,10 +47,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 **Tutorials** (`components/game/`, `lib/tutorial/`)
 - `TutorialBanner` + `TUTORIAL_BANNER_H` — the step instruction above a
   board ("Step 2 of 4", headline, one-liner), narrated via `aria-live`.
-  Board height budgets MUST add `TUTORIAL_BANNER_H` to their `CHROME_H`
-  (`reservedH` prop; see `PolygonBoard`/`GridBoard`) or the tutorial
-  overflows at the Huge text setting. Keep step bodies to TWO lines at
-  default text — the constant is sized for that.
+  A board whose height budget actually binds must add `TUTORIAL_BANNER_H`
+  to its `CHROME_H` via the `reservedH` prop, or the tutorial overflows at
+  the Huge text setting — `PolygonBoard` and `GridBoard` do; the other
+  three measured 0px over with slack to spare and pass nothing. Re-measure
+  rather than assume: the check is every viewport × Huge text, and the
+  budget is what tells you which group a board is in. Keep step bodies to
+  TWO lines at default text — the constant is sized for that.
 - `TutorialDone` — the finish card that stands in for a game's results
   block: no time, no score, no share, a link to the daily.
 - `TutorialPrompt` (`components/`) — the once-per-game first-visit offer,
@@ -251,7 +254,8 @@ Before merging any game feature, verify:
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
 - Tutorial mode: no save, no stats, no streak, no hints, no share
-- Board `reservedH` includes `TUTORIAL_BANNER_H` in tutorial mode
+- Tutorial fits with no page scroll at Huge text — `reservedH` added to
+  the board's budget wherever that budget binds
 - Replay shows a confirmation dialog
 - Archive separators use `·` not `.`
 - No emoji in UI chrome (share strings only)

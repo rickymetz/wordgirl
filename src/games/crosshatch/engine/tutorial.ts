@@ -1,6 +1,5 @@
 import { DICT_VERSION, type Dictionary } from "../../../lib/words/dictionary";
 import { enumerateCombos, gridSize } from "./generator";
-import { uniqueWords } from "./scoring";
 import type { CrosshatchPuzzle, Shape } from "./types";
 
 /**
@@ -82,9 +81,4 @@ export function tutorialStepIndex(s: {
   // Both typeable cells filled: the grid is ready to submit.
   if (Object.keys(s.grid).length >= 2) return 1;
   return 0;
-}
-
-/** Total words in the tutorial grid — for the recap copy and tests. */
-export function tutorialWordCount(dict: Dictionary): number {
-  return uniqueWords(tutorialPuzzle(dict).combos).length;
 }
