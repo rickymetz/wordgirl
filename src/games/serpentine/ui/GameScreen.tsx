@@ -34,7 +34,7 @@ function buildShareText(
   const label = difficulty === "haiku" ? "Haiku" : "Poem";
   const time = elapsedMs !== null ? ` · ⏱️ ${formatDuration(elapsedMs)}` : "";
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
-  return `${title}\n${label}: ${puzzle.path.length} letters${time}${hintPart}\n${SHARE_URL}`;
+  return `${title}\n${label} · ${puzzle.path.length} letters${time}${hintPart}\n${SHARE_URL}`;
 }
 
 const DIFF_LABELS: Record<Difficulty, string> = {
