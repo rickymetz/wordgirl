@@ -37,13 +37,19 @@ export function GameCard({ game }: { game: GameDefinition }) {
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
+              // Phone: width comes from the label, not a fixed 160px — a
+              // four-action row of same-size slabs spent most of its space on
+              // padding and pushed the last one well off screen. `shrink-0`
+              // stays so the scroller never squeezes a label instead of
+              // scrolling.
+              //
               // md+ stacks these into a column that divides the cluster's
               // height, so each tile shrinks as actions are added — four of
               // them landed at 28px, under the 44px touch floor (and 820px
               // tablets hit this breakpoint). min-h keeps the floor and lets
               // the cluster grow past the primary tile instead; it is
               // rem-based, so it scales with the Text-size setting.
-              className="w-40 shrink-0 rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
+              className="shrink-0 rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
             >
               <div className="font-semibold text-accent">{action.label}</div>
               {action.description && (
