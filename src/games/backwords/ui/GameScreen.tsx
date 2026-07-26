@@ -42,7 +42,7 @@ function buildShareText(
 ): string {
   const date = formatShareDate(dateKey);
   const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
     `🪞 Backwords — ${date}`,
     `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}${hintPart}`,

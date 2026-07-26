@@ -54,7 +54,7 @@ function buildShareText(
   elapsedMs: number,
 ): string {
   const date = formatShareDate(dateKey);
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
     `🧺 Crosshatch — ${date}`,
     `${found}/${total} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
