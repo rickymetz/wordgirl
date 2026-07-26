@@ -35,17 +35,15 @@ import { dragPoint } from "./dragPoint";
 
 function buildShareText(
   words: number,
-  glyphs: number,
   dateKey: string,
   elapsedMs: number,
   hints: number,
 ): string {
   const date = formatShareDate(dateKey);
-  const glyphPart = glyphs > 0 ? ` · ✦${glyphs}` : "";
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
-    `Backwords — ${date}`,
-    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${glyphPart}${hintPart}`,
+    `🪞 Backwords — ${date}`,
+    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -361,7 +359,7 @@ export function GameScreen({ mode }: Props) {
             )}
             {mode.kind !== "practice" && solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(state.rows.length, glyphRowCount(state.rows), mode.dateKey, solvedElapsedMs, state.hints)}
+                text={buildShareText(state.rows.length, mode.dateKey, solvedElapsedMs, state.hints)}
                 gameId="backwords"
               />
             )}

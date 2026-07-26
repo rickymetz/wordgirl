@@ -30,11 +30,11 @@ function buildShareText(
   elapsedMs: number | null,
   hints: number,
 ): string {
-  const title = `Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
+  const title = `🐍 Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
   const label = difficulty === "haiku" ? "Haiku" : "Poem";
-  const time = elapsedMs !== null ? ` in ${formatDuration(elapsedMs)}` : "";
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓";
-  return `${title}\n${label}: ${puzzle.path.length} letters${time}${hintPart} 🐍\n\n${SHARE_URL}`;
+  const time = elapsedMs !== null ? ` · ⏱️ ${formatDuration(elapsedMs)}` : "";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  return `${title}\n${label} · ${puzzle.path.length} letters${time}${hintPart}\n${SHARE_URL}`;
 }
 
 const DIFF_LABELS: Record<Difficulty, string> = {
