@@ -5,8 +5,9 @@ PWA — install it on a phone and play anywhere.
 
 Every game has a **tutorial**: one hand-picked miniature puzzle, walked
 a step at a time, introducing the rules in the order they stop being
-guessable. It is offered once on your first visit to a game and lives
-behind the "?" afterwards — nothing about it is scored, timed or saved.
+guessable. It is offered once on your first visit to a game, and stays on
+the hub as each game's **Tutorial** tile — nothing about it is scored,
+timed or saved.
 The strips below step through each one; **[docs/tutorials.md](docs/tutorials.md)**
 has them full size, with a note on why each puzzle is the one it is.
 

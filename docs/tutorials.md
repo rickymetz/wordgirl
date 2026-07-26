@@ -3,11 +3,14 @@
 Every game ships a tutorial: one hand-picked miniature puzzle, walked a step
 at a time, introducing the rules in the order they stop being guessable.
 
-A tutorial is offered once, on your first visit to a game, and lives behind
-the header's "?" afterwards. Nothing about it is scored, timed, shared or
-saved — no day record, no stats, no streak. Hints are switched off, and the
-day-scale chrome (rank titles, the browse-the-day word panels) is hidden,
-because neither means anything on a five-word puzzle.
+A tutorial is offered once, on your first visit to a game. Afterwards it
+stays reachable two ways: the **Tutorial** tile in the game's bento on the
+hub (last, after Stats), and a link inside the header's "?" sheet.
+
+Nothing about it is scored, timed, shared or saved — no day record, no
+stats, no streak. Hints are switched off, and the day-scale chrome (rank
+titles, the browse-the-day word panels) is hidden, because neither means
+anything on a five-word puzzle.
 
 Every screenshot on this page is the real thing, captured from a production
 build at 390×844. Light and dark are both included and follow your GitHub

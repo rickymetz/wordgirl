@@ -58,6 +58,12 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   its own `tutorialSeen` load/mark. **The coach sheet no longer
   auto-opens** — it is the "?" button only, and takes a `tutorialTo` prop
   that adds a "Play the tutorial" link.
+- Three ways in, in order of how most players will meet it: the first-visit
+  prompt, the hub bento's `Tutorial` tile (LAST in `secondaryActions`,
+  after Stats), and the coach sheet's link. Adding that fourth bento tile
+  is why `GameCard`'s tiles carry `md:min-h-11`: on md+ the cluster is a
+  column dividing a fixed height, so a fourth action drove each tile to
+  28px, under the touch floor.
 - `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
   monotonic clamp, so a step never flaps backwards when the player
   undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
@@ -226,7 +232,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 11. Share string ending with `SHARE_URL`
 12. Replay confirmation dialog via `ModalDialog`
 13. Tutorial: `engine/tutorial.ts` + `ui/tutorialSteps.tsx` +
-    `ui/TutorialPage.tsx` + a `tutorial` entry in `extraRoutes`, and
+    `ui/TutorialPage.tsx`, a `tutorial` entry in BOTH `extraRoutes` and
+    `secondaryActions` (last, after Stats), and
     `TutorialPrompt`/`TutorialBanner`/`TutorialDone` in the GameScreen
 14. `engine/*.test.ts` + `state/reducer.test.ts` + `state/persistence.dom.test.ts`
 15. Run `scripts/validate_palette.js` after adding accent color

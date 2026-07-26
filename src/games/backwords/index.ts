@@ -27,5 +27,6 @@ export const backwords: GameDefinition = {
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
     { label: "Stats", path: "stats" },
+    { label: "Tutorial", path: "tutorial" },
   ],
 };
