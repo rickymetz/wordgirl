@@ -5,9 +5,10 @@ import { ModalDialog } from "./ModalDialog";
 
 /**
  * The one-time offer of a game's tutorial, shown the first time a player
- * opens its daily. Taking it or waving it off both mark the flag, so the
- * question is asked exactly once per game and the tutorial stays
- * available afterwards from the how-to-play sheet.
+ * opens its daily. Taking it or waving it off both mark the flag —
+ * including a backdrop tap or Escape — so the question is asked exactly
+ * once per game. Afterwards the tutorial is still reachable from the hub's
+ * bento tile and from the how-to-play sheet.
  *
  * This replaces the coach sheet's old auto-open: a wall of rules on
  * arrival taught less than one hand-picked puzzle does, and the sheet is
