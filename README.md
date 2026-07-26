@@ -7,6 +7,8 @@ Every game has a **tutorial**: one hand-picked miniature puzzle, walked
 a step at a time, introducing the rules in the order they stop being
 guessable. It is offered once on your first visit to a game and lives
 behind the "?" afterwards — nothing about it is scored, timed or saved.
+The strips below step through each one; **[docs/tutorials.md](docs/tutorials.md)**
+has them full size, with a note on why each puzzle is the one it is.
 
 ## Games
 
@@ -34,6 +36,16 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
 - One **daily puzzle** (same for everyone, deterministic from the date)
   plus unlimited **practice** puzzles.
 
+
+<a href="docs/tutorials.md#polygram">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/polygram-strip-dark.png">
+    <img alt="Polygram tutorial, step by step" src="docs/tutorials/polygram-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
+
 ### Crosshatch
 
 <p align="center">
@@ -60,6 +72,16 @@ A small crossword frame with many right answers:
   the first daily hint warns that the share text will carry a 🫣 count.
 - Daily + practice + a replayable archive, same as Polygram.
 
+
+<a href="docs/tutorials.md#crosshatch">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/crosshatch-strip-dark.png">
+    <img alt="Crosshatch tutorial, step by step" src="docs/tutorials/crosshatch-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
+
 ### Backwords
 
 <p align="center">
@@ -82,6 +104,16 @@ A race against a hidden clock, played into a mirror:
 - Rows a real mirror would render (LIT reflects as TIL) earn a **✦**.
 - Daily + practice + a replayable archive, same as the others.
 
+
+<a href="docs/tutorials.md#backwords">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/backwords-strip-dark.png">
+    <img alt="Backwords tutorial, step by step" src="docs/tutorials/backwords-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 3 steps, one small puzzle. Click through for full size.</sub>
+
 ### Doublet
 
 <p align="center">
@@ -99,6 +131,16 @@ A domino-placement word puzzle:
 - **Rotate** dominoes to change orientation before placing them.
 - Three difficulty tiers: **Easy**, **Medium**, **Hard**.
 - Daily + practice + a replayable archive, same as the others.
+
+
+<a href="docs/tutorials.md#doublet">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/doublet-strip-dark.png">
+    <img alt="Doublet tutorial, step by step" src="docs/tutorials/doublet-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
 
 ### Serpentine
 
@@ -118,6 +160,16 @@ A path-tracing puzzle that uncovers hidden poetry:
   placed cell to undo back to it.
 - Two modes: **Haiku** and **Poem**.
 - Daily + practice + a replayable archive, same as the others.
+
+
+<a href="docs/tutorials.md#serpentine">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/serpentine-strip-dark.png">
+    <img alt="Serpentine tutorial, step by step" src="docs/tutorials/serpentine-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
 
 ## Development
 
