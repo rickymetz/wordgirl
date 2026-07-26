@@ -355,11 +355,27 @@ export function GameScreen({ mode }: Props) {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center">
-        {/* Symmetric breathing room above and below the typed word;
+        {/* The typed-word slot is an input affordance: once the puzzle
+            is done every letter/submit action is a no-op, so blanks
+            there would ask for a word that can't be spelled — it goes
+            at `done`, not at the results card, so the confetti plays
+            over a finished board rather than over empty slots.
+            Symmetric breathing room above and below the typed word;
             tightens on short screens so controls stay on-screen. */}
-        <div className="py-8 [@media(max-height:720px)]:py-2">
-          <CurrentWord state={state} />
-        </div>
+        <AnimatePresence initial={false}>
+          {!done && (
+            <motion.div
+              key="current-word"
+              className="overflow-hidden"
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className="py-8 [@media(max-height:720px)]:py-2">
+                <CurrentWord state={state} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Any puzzle input closes an open words panel — the player
             has moved on from browsing to playing. */}
         <PolygonBoard
