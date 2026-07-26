@@ -25,7 +25,6 @@ import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
-import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
@@ -72,8 +71,12 @@ export function GameScreen({
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
 
-  // The tutorial's running instruction. Only ever moves forward.
-  const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
+  // The tutorial's running instruction — deliberately NOT clamped forward
+  // here, unlike the other games. Undoing is ordinary play in Serpentine,
+  // and the steps are position-aware: backing off the diagonal should put
+  // the diagonal lesson back up, and wandering off the path should return
+  // to "tap a placed cell to undo back to it".
+  const tutorialStep = tutorialStepIndex(state);
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());

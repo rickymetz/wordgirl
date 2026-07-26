@@ -32,8 +32,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Change a line, submit again",
     body: (
       <>
-        Banked. Now find a <Key>different</Key> valid grid — new words
-        count.
+        Banked. The counter is <Key>words found of the five</Key> this grid
+        holds — all of them are needed.
       </>
     ),
   },
@@ -41,7 +41,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Sweep them all",
     body: (
       <>
-        Keep rearranging until the counter reads <Key>5 / 5</Key>.
+        So keep finding <Key>different</Key> valid grids until it reads 5/5.
       </>
     ),
   },

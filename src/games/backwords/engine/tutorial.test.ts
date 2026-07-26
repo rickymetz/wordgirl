@@ -82,14 +82,26 @@ describe("the tutorial bank", () => {
 describe("tutorialStepIndex", () => {
   const at = (s: Partial<Parameters<typeof tutorialStepIndex>[0]>) =>
     tutorialStepIndex({ current: "", rows: [], solved: false, ...s });
+  const pair = { def: { kind: "pair" as const } };
+  const palindrome = { def: { kind: "palindrome" as const } };
 
   it("starts on step one", () => {
     expect(at({})).toBe(0);
   });
 
-  it("advances on staging, then on the first committed row", () => {
+  it("advances on staging, then on the committed PAIR", () => {
     expect(at({ current: "t" })).toBe(1);
-    expect(at({ rows: [{}] })).toBe(2);
+    expect(at({ rows: [pair] })).toBe(2);
+  });
+
+  it("does not skip to the palindrome lesson when DA went down first", () => {
+    // Nothing forces the order. A player who lays DA before TOP still needs
+    // the step that names TOP — being told to lay the palindrome they just
+    // laid is worse than no guidance at all.
+    expect(at({ rows: [palindrome] })).toBe(0);
+    expect(at({ rows: [palindrome], current: "to" })).toBe(1);
+    // ...and once the pair follows, the script moves on as normal.
+    expect(at({ rows: [palindrome, pair] })).toBe(2);
   });
 
   it("reports the script finished only when solved", () => {

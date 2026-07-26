@@ -39,12 +39,15 @@ export const TUTORIAL_STEP_COUNT = 3;
  */
 export function tutorialStepIndex(s: {
   current: string;
-  rows: readonly unknown[];
+  rows: readonly { def: { kind: "pair" | "palindrome" } }[];
   solved: boolean;
 }): number {
   if (s.solved) return TUTORIAL_STEP_COUNT;
-  // A committed row means the pair lesson landed; the palindrome is next.
-  if (s.rows.length >= 1) return 2;
+  // Move on to the palindrome lesson only once the PAIR is actually down.
+  // Nothing stops a player laying DA first, and if they do, the step that
+  // still helps is the one naming TOP — not one telling them to do what
+  // they just did.
+  if (s.rows.some((r) => r.def.kind === "pair")) return 2;
   if (s.current.length >= 1) return 1;
   return 0;
 }

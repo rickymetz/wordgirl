@@ -63,6 +63,21 @@ export const TUTORIAL_FIRST_DIAGONAL = 2;
 export const TUTORIAL_STEP_COUNT = 4;
 
 /**
+ * True when the traced cells are EXACTLY the solution's first N cells.
+ *
+ * The reducer accepts any adjacent move — it only checks the phrase at the
+ * end — so a player can wander off down a route that spells nothing. The
+ * step script has to know the difference, because one of its steps makes a
+ * claim about where the next letter is.
+ */
+export function onSolutionPath(cells: readonly Cell[]): boolean {
+  if (cells.length > TUTORIAL_PATH.length) return false;
+  return cells.every(
+    (c, i) => c.row === TUTORIAL_PATH[i].row && c.col === TUTORIAL_PATH[i].col,
+  );
+}
+
+/**
  * Which step the board is on. Takes the fields it reads rather than the
  * reducer's GameState, so the engine stays free of state/ imports.
  */
@@ -71,9 +86,15 @@ export function tutorialStepIndex(s: {
   solved: boolean;
 }): number {
   if (s.solved) return TUTORIAL_STEP_COUNT;
-  // Past the first diagonal: the player has taken a corner move.
-  if (s.cells.length > TUTORIAL_FIRST_DIAGONAL) return 3;
-  if (s.cells.length >= TUTORIAL_FIRST_DIAGONAL) return 2;
-  if (s.cells.length >= 1) return 1;
-  return 0;
+  const n = s.cells.length;
+  if (n === 0) return 0;
+  // "Corners count too" tells the player the NEXT letter is diagonal, so it
+  // may only appear when that is actually true: on the solution path, with
+  // exactly the cells before the first diagonal traced. Anywhere else —
+  // including off down a wrong route — "tap a placed cell to undo back to
+  // it" is the instruction that helps, so hold at that step instead.
+  if (!onSolutionPath(s.cells)) return 1;
+  if (n < TUTORIAL_FIRST_DIAGONAL) return 1;
+  if (n === TUTORIAL_FIRST_DIAGONAL) return 2;
+  return 3;
 }

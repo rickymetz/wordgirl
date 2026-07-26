@@ -4,6 +4,7 @@ import { areAdjacent, cellKey } from "./types";
 import { checkSolved, validatePuzzle } from "./validation";
 import {
   TUTORIAL_FIRST_DIAGONAL,
+  onSolutionPath,
   TUTORIAL_PUZZLE,
   TUTORIAL_STEP_COUNT,
   tutorialStepIndex,
@@ -106,6 +107,55 @@ describe("tutorialStepIndex", () => {
   it("reports the script finished only when solved", () => {
     expect(at({ cells: TUTORIAL_PUZZLE.path, solved: true })).toBe(
       TUTORIAL_STEP_COUNT,
+    );
+  });
+
+  // The diagonal step asserts where the NEXT letter is, so it must never
+  // appear to a player who isn't standing where that is true. The reducer
+  // accepts any adjacent move, so wandering off is easy to do.
+  it("never shows the diagonal step off the solution path", () => {
+    // Two cells traced, but down a route that spells nothing: T then A
+    // (straight down) instead of T then R.
+    const wrong = [
+      { row: 0, col: 0 },
+      { row: 1, col: 0 },
+    ];
+    expect(onSolutionPath(wrong)).toBe(false);
+    expect(at({ cells: wrong })).toBe(1);
+  });
+
+  it("holds at the follow-the-letters step for any wrong route", () => {
+    // A long wrong route still gets the step that tells you how to undo,
+    // never the positional claim and never the near-the-end step.
+    const wrong = [
+      { row: 0, col: 0 },
+      { row: 1, col: 0 },
+      { row: 2, col: 0 },
+      { row: 2, col: 1 },
+      { row: 1, col: 1 },
+    ];
+    expect(onSolutionPath(wrong)).toBe(false);
+    expect(at({ cells: wrong })).toBe(1);
+  });
+
+  it("recovers the diagonal step when the player backs onto the path", () => {
+    // Undo is ordinary play here, and the screen does not clamp the step
+    // forward — stepping back to the diagonal should put its lesson back.
+    expect(at({ cells: path(3) })).toBe(3);
+    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(2);
+    expect(at({ cells: path(1) })).toBe(1);
+    expect(at({ cells: [] })).toBe(0);
+  });
+
+  it("accepts every prefix of the real path as on-path", () => {
+    for (let n = 0; n <= TUTORIAL_PUZZLE.path.length; n++) {
+      expect(onSolutionPath(path(n))).toBe(true);
+    }
+  });
+
+  it("rejects a path longer than the solution", () => {
+    expect(onSolutionPath([...TUTORIAL_PUZZLE.path, { row: 0, col: 0 }])).toBe(
+      false,
     );
   });
 });
