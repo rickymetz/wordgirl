@@ -40,7 +40,7 @@ import {
 } from "./polygonPath";
 
 function buildShareText(
-  state: { score: number; puzzle: { maxScore: number }; revealed: Record<string, number[]> },
+  state: { found: string[]; revealed: Record<string, number[]> },
   dateKey: string,
   elapsedMs: number,
 ): string {
@@ -52,7 +52,7 @@ function buildShareText(
   const date = formatShareDate(dateKey);
   return [
     `🔻 Polygram — ${date}`,
-    `${state.score} pts · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${state.found.length} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
