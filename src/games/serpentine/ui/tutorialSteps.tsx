@@ -13,8 +13,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Follow the letters",
     body: (
       <>
-        The first letter is given. Move to a <Key>touching</Key> cell; tap
-        a placed one to undo.
+        Each word's first letter is given. Move to a <Key>touching</Key>{" "}
+        cell; tap a placed one to undo.
       </>
     ),
   },
@@ -38,4 +38,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 export const TUTORIAL_RECAP =
-  "A real day hides a line of poetry instead, on a bigger grid, with only the poem's title as a clue — and, like this one, its first letter already placed.";
+  "A real day hides a line of poetry instead, on a bigger grid, with only the poem's title as a clue — and, like this one, every word's first letter given from the outset.";

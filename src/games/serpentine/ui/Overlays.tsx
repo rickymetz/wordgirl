@@ -56,8 +56,8 @@ export function SerpentineCoach({ open, onClose, tutorialTo }: CoachProps) {
               title: "Use hints",
               body: (
                 <>
-                  Tap <Key>Hint</Key> to highlight cells where words begin in
-                  the hidden phrase.
+                  Tap <Key>Hint</Key> to mark the <Key>next cell</Key> of the
+                  path on the grid — the one you are stuck on.
                 </>
               ),
             },
@@ -66,10 +66,10 @@ export function SerpentineCoach({ open, onClose, tutorialTo }: CoachProps) {
               title: "Hidden phrase",
               body: (
                 <>
-                  The path spells a hidden phrase. The poem{" "}
-                  <Key>title</Key> is your clue, withheld on the poems
-                  named after their own first line. The phrase is
-                  revealed when the puzzle is complete.
+                  The path spells a hidden phrase, and the readout gives{" "}
+                  <Key>every word's first letter</Key> — which letter, not
+                  where. The poem <Key>title</Key> is your other clue,
+                  withheld on the poems named after their own first line.
                 </>
               ),
             },

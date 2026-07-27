@@ -21,7 +21,8 @@ import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
 import { PoemCredit } from "./PoemCredit";
 import { cellKey, type Difficulty } from "../engine/types";
-import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
+import { nextHintIndex, replayHints } from "../engine/hints";
+import { wordStartIndices } from "../engine/phrase";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
@@ -85,7 +86,11 @@ export function GameScreen({
 
   const { toast, show } = useToast();
 
-  const wordStarts = useMemo(() => wordStartIndices(puzzle.text), [puzzle]);
+  // The letters the puzzle gives: the first letter of every word.
+  const givenIndices = useMemo(
+    () => wordStartIndices(puzzle.text),
+    [puzzle],
+  );
 
   // Restore the hinted set from the saved count, ONCE. hydratedHints
   // reads a ref that taking a hint also writes, so re-running this
@@ -96,22 +101,30 @@ export function GameScreen({
     if (hintsRestored.current || hydratedHints <= 0) return;
     hintsRestored.current = true;
     const set = replayHints(
-      wordStarts,
       puzzle.path.length,
       state.cells.length,
       hydratedHints,
     );
     hintedRef.current = set;
     setHintedSet(set);
-  }, [hydratedHints, wordStarts, puzzle.path.length, state.cells.length]);
+  }, [hydratedHints, puzzle.path.length, state.cells.length]);
 
-  const { hintIndices, hintCellKeys } = useMemo(() => {
-    if (hintedSet.size === 0) return { hintIndices: undefined, hintCellKeys: undefined };
+  // The readout shows given letters and hinted ones alike — both are
+  // letters known but not yet placed. The GRID marks hinted cells only:
+  // a given letter says what, never where.
+  const revealed = useMemo(() => {
+    const set = new Set(givenIndices);
+    for (const idx of hintedSet) set.add(idx);
+    return set;
+  }, [givenIndices, hintedSet]);
+
+  const hintCellKeys = useMemo(() => {
+    if (hintedSet.size === 0) return undefined;
     const keys = new Set<string>();
     for (const idx of hintedSet) {
       keys.add(cellKey(puzzle.path[idx]));
     }
-    return { hintIndices: hintedSet, hintCellKeys: keys };
+    return keys;
   }, [hintedSet, puzzle]);
 
   const canHint = useMemo(() => {
@@ -185,7 +198,6 @@ export function GameScreen({
                 hintsRestored.current = true;
                 const current = hintedRef.current;
                 const idx = nextHintIndex(
-                  wordStarts,
                   puzzle.path.length,
                   state.cells.length,
                   current,
@@ -288,7 +300,7 @@ export function GameScreen({
             authorClass="text-xs text-ink-soft"
           />
         )}
-        <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintIndices} />
+        <SnakeText puzzle={puzzle} cells={state.cells} revealed={revealed} />
       </div>
 
       {/* Grid */}
