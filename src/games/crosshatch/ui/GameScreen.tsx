@@ -342,13 +342,24 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           : banked.length === 1
             ? `${banked[0]} — ${state.found.length} of ${total}`
             : `${banked.length} new words — ${state.found.length} of ${total}`,
-      nothingNew: "You\u2019ve already found all these words — change a line",
+      // Kept short enough to stay on ONE line: these are the longest
+      // strings any game emits, and the pill is now capped to the
+      // viewport, so wordier phrasing wraps to two lines on a phone.
+      // They double as the screen-reader narration, so each still names
+      // what actually failed.
+      nothingNew: "No new words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
+      // The two ways a line can be wrong, said apart — the second is
+      // the one players hit holding a word they KNOW is real. It is:
+      // the generator enumerates answers from the `required` tier, but
+      // dict.has() also accepts `bonus`, so a real-but-rarer word is
+      // rejected here. Naming the crossings for that would be a lie —
+      // the word simply isn't one of this puzzle's answers.
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`
-          : `${r.word.toUpperCase()} doesn't work with the crossing lines`
+          : `${r.word.toUpperCase()} isn't an answer here`
         : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
@@ -499,8 +510,12 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             }}
           />
           {/* Transient submit feedback, floating above the board.
-              mode="wait" so rapid submits never stack two pills. */}
-          <GameToast toast={toast} className="-top-10" />
+              mode="wait" so rapid submits never stack two pills.
+              Anchored by its BOTTOM, not a negative top: this game's
+              misses are its longest messages, and a wrapped second line
+              has to grow up into the gap rather than down over the
+              grid's top row. */}
+          <GameToast toast={toast} className="bottom-full mb-1" />
         </div>
 
         <SlotChips state={state} onFocusSlot={focusSlot} />

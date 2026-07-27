@@ -22,6 +22,7 @@ import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
+import { GameToast, useToast } from "../../../components/game/GameToast";
 import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
@@ -93,6 +94,11 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
 
   // The words panel is controlled here so the lightbulb can open it.
   const [wordsOpen, setWordsOpen] = useState(false);
+
+  // Rejection feedback. It lives up here rather than inside CurrentWord
+  // because the pill has to render OUTSIDE the collapsing wrapper the
+  // typed word sits in — see where <GameToast> is mounted below.
+  const { toast, show: showToast } = useToast();
 
   const advance = useCallback(
     () => dispatch({ type: "advanceLevel" }),
@@ -241,6 +247,21 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       empty: "Tap letters to spell a word.",
     };
     setAnnouncement(messages[r.type] ?? "");
+    // The pill mirrors the narration for rejections only. A correct
+    // submit shows "" — which renders nothing, and, crucially, RETIRES
+    // any rejection still on screen, so a stale "Not in word list"
+    // can't sit over a word that is actually scoring.
+    showToast(
+      r.type === "correct"
+        ? ""
+        : {
+            invalid: "Not in word list",
+            duplicate: "Already found",
+            tooShort: `Too short — ${level.size}-letter words`,
+            empty: "Tap letters to spell a word",
+          }[r.type],
+      1400,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.lastResult]);
   useEffect(() => {
@@ -391,6 +412,19 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             tightens on short screens so controls stay on-screen — and on
             the tutorial, where the step banner has already claimed a band
             of the same height. */}
+        {/* The rejection pill, floated over the band above the typed
+            word. Zero-height, so it never moves the board — and it is
+            deliberately a SIBLING of the wrapper below, not a child:
+            that wrapper is `overflow-hidden` (it animates height to 0
+            on solve) and shrink-to-fit around the "?" slots, so a pill
+            rendered inside it gets clipped to the width of the blanks.
+            Straddling the seam rather than sitting under it spends the
+            gap on BOTH sides, which is what keeps the pill clear of the
+            blanks where the band below is squeezed — short screens and
+            the tutorial, whose padding drops to py-2/py-3. */}
+        <div className="relative z-10 h-0 w-full">
+          <GameToast toast={toast} className="top-0 -translate-y-1/2" />
+        </div>
         <AnimatePresence initial={false}>
           {!done && (
             <motion.div
