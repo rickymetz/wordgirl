@@ -216,17 +216,11 @@ function hamiltonianPath(
     const path: Cell[] = [start];
     const steps = new Set<string>();
 
-    /**
-     * True when `from → to` would draw the other arm of an X already
-     * drawn. `pending` is a step not yet committed — the lookahead below
-     * scores a candidate before stepping onto it, so the step that would
-     * reach it has to be counted as drawn.
-     */
-    const crosses = (from: Cell, to: Cell, pending?: string): boolean => {
+    /** True when `from → to` would draw the other arm of an X already drawn. */
+    const crosses = (from: Cell, to: Cell): boolean => {
       const straddled = straddledCells(from, to);
       if (!straddled) return false;
-      const key = stepKey(straddled[0], straddled[1]);
-      return steps.has(key) || key === pending;
+      return steps.has(stepKey(straddled[0], straddled[1]));
     };
 
     const open = (from: Cell, to: Cell): boolean =>
@@ -242,14 +236,15 @@ function hamiltonianPath(
       let bestScore = Infinity;
       const scored: { cell: Cell; score: number }[] = [];
       for (const n of nexts) {
-        // Count only the exits that would still be legal AFTER stepping
-        // here, so the least-exits heuristic sees the crossing rule too —
-        // a cell whose neighbours are all walled off by drawn X's is as
-        // dead as one whose neighbours are all visited.
-        const pending = stepKey(tail, n);
+        // Count only the exits the crossing rule would still allow, so
+        // the least-exits heuristic sees it too — a cell whose neighbours
+        // are all walled off by drawn X's is as dead as one whose
+        // neighbours are all visited. The step that would REACH n needs
+        // no accounting here: it ends at n, and a segment can never cross
+        // one it shares an endpoint with.
         let free = 0;
         for (const nn of getNeighbors(n.row, n.col)) {
-          if (!visited[nn.row][nn.col] && !crosses(n, nn, pending)) free++;
+          if (!visited[nn.row][nn.col] && !crosses(n, nn)) free++;
         }
         scored.push({ cell: n, score: free });
         if (free < bestScore) bestScore = free;

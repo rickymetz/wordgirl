@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PuzzleDef, Cell } from "../engine/types";
+import { getThemedPuzzle } from "../engine/puzzles";
 import { gameReducer, initialState } from "./reducer";
 
 const path: Cell[] = [
@@ -202,6 +203,24 @@ describe("Serpentine reducer", () => {
     const before = s;
     const after = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     expect(after).toBe(before);
+  });
+
+  it("accepts every step of a real generated solution", () => {
+    // The cases around this one are 2×2 toys, so nothing else here would
+    // notice the crossing rule refusing a step the SOLUTION needs. These
+    // are full-size boards traced end to end, which is the guarantee the
+    // rule rests on: it may only ever block a move that was wrong.
+    for (const salt of ["2026-07-10", "2026-12-25", "abc"]) {
+      for (const difficulty of ["haiku", "poem"] as const) {
+        const puzzle = getThemedPuzzle(difficulty, 7, salt);
+        let s = initialState(puzzle, difficulty);
+        for (const cell of puzzle.path.slice(1)) {
+          s = gameReducer(s, { type: "tapCell", row: cell.row, col: cell.col });
+        }
+        expect(s.cells, `${salt} ${difficulty}`).toHaveLength(puzzle.path.length);
+        expect(s.solved, `${salt} ${difficulty}`).toBe(true);
+      }
+    }
   });
 
   it("allows a diagonal that only touches the line, rather than cutting it", () => {

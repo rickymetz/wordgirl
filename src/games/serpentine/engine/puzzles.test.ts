@@ -7,6 +7,9 @@ import {
   validatePuzzle,
 } from "./validation";
 import type { Cell } from "./types";
+import { getDailyPuzzle } from "./dailySeed";
+import { getPracticePuzzle, practiceSeed } from "./practice";
+import { dateKeyRange } from "../../../lib/date";
 
 describe("titleSpoilsPhrase", () => {
   it("withholds a title that is the phrase", () => {
@@ -141,6 +144,32 @@ describe("generated paths never cross themselves", () => {
         i > 0 && c.row !== puzzle.path[i - 1].row && c.col !== puzzle.path[i - 1].col,
     );
     expect(diagonals.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the puzzles that actually ship", () => {
+  // The sweeps above drive getThemedPuzzle with synthetic salts; these
+  // two entry points are what a player reaches. Generation can now throw
+  // (a fallback that is non-contiguous or crosses), so a board it cannot
+  // lay is a crashed screen on a real date, not a poor puzzle.
+  it("generates a valid daily for a year of dates, both difficulties", () => {
+    // From the archive epoch, so every date a player can open is covered.
+    for (const dateKey of dateKeyRange("2026-07-10", "2027-07-10")) {
+      for (const difficulty of ["haiku", "poem"] as const) {
+        const puzzle = getDailyPuzzle(difficulty, dateKey);
+        expect(validatePuzzle(puzzle), `${dateKey} ${difficulty}`).toBeNull();
+      }
+    }
+  });
+
+  it("generates a valid practice puzzle across many seeds", () => {
+    for (let i = 0; i < 200; i++) {
+      for (const difficulty of ["haiku", "poem"] as const) {
+        const seed = practiceSeed(String(i), difficulty);
+        const puzzle = getPracticePuzzle(seed, difficulty);
+        expect(validatePuzzle(puzzle), seed).toBeNull();
+      }
+    }
   });
 });
 

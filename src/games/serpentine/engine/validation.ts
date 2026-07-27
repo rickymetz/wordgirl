@@ -27,6 +27,11 @@ export function isContiguousPath(path: Cell[]): boolean {
  * (`checkSolved`, `validatePuzzle`); the only crossing left once every
  * cell is visited once is that X, so a step is judged against the segment
  * between the cells it straddles.
+ *
+ * Expects a CONTIGUOUS path — the straddle of a step between two distant
+ * cells is not a segment anything could have drawn, so the answer for a
+ * broken path is meaningless rather than conservative. Check
+ * `isContiguousPath` first, as `validatePuzzle` does.
  */
 export function crossingStepIndex(path: readonly Cell[]): number {
   const steps = new Set<string>();
