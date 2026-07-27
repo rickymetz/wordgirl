@@ -1,6 +1,7 @@
 import { GameStatus } from "../../../components/GameStatus";
 import {
   displayStreak,
+  hasProgress,
   loadDailyProgress,
   loadStats,
 } from "../state/persistence";
@@ -18,9 +19,7 @@ export function SerpentineStatus() {
         if (haikuSolved && poemSolved) return "All solved";
         if (haikuSolved) return "Haiku solved";
         if (poemSolved) return "Poem solved";
-        const started =
-          (haiku && haiku.cells.length > 0) ||
-          (poem && poem.cells.length > 0);
+        const started = hasProgress(haiku) || hasProgress(poem);
         return started ? "In progress" : null;
       }}
       loadStreak={async (today) => displayStreak(await loadStats(), today)}

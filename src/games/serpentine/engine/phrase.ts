@@ -57,3 +57,20 @@ export function phraseWords(text: string): PhraseWord[] {
 
   return words;
 }
+
+/**
+ * Path indices of the letters the puzzle GIVES: the first letter of
+ * every word, shown in the readout from the outset.
+ *
+ * It reads the same splitting the readout draws with, so "word" means
+ * one thing in this game: a space or an em dash starts a new one, a
+ * hyphen or an apostrophe does not, and a compound (APPLE-TREE) is one
+ * word with one given letter rather than two.
+ *
+ * Letters only — where each one SITS is still the puzzle. Index 0 is a
+ * special case: it is also the snake's given start cell, so the board
+ * shows its position too.
+ */
+export function wordStartIndices(text: string): number[] {
+  return phraseWords(text).map((w) => w.start);
+}

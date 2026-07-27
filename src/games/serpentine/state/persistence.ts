@@ -93,6 +93,19 @@ export function saveDailyProgress(progress: DayProgress): Promise<void> {
   return daily.saveDay(progress);
 }
 
+/**
+ * True when a save holds more than the puzzle's given first letter.
+ *
+ * Every board now opens with one cell already traced, and merely opening
+ * a day can write that state — so "has any cells" would report an
+ * untouched day as played, on the hub and in the archive alike.
+ */
+export function hasProgress(
+  save: Pick<DayProgress, "cells"> | null | undefined,
+): boolean {
+  return !!save && save.cells.length > 1;
+}
+
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
@@ -106,7 +119,7 @@ export async function loadAllDailyProgress(): Promise<
   const out: Record<string, ArchivedDay> = {};
   for (const [dateKey, saves] of Object.entries(byDate)) {
     const solvedSaves = saves.filter((s) => s.solved);
-    const started = saves.some((s) => s.cells.length > 0);
+    const started = saves.some(hasProgress);
     out[dateKey] = {
       dateKey,
       solved: solvedSaves.length > 0,

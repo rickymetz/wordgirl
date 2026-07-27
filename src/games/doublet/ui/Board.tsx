@@ -63,6 +63,22 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
     return { keys: new Set([cellKey(c1.row, c1.col), cellKey(c2.row, c2.col)]), valid: false };
   }, [hoverCell, resolvedAnchor, previewOrientation]);
 
+  // Live verdicts, cell by cell. A cell can sit in two judged slots at
+  // once — a good across and a bad down — and the warning is the half
+  // worth acting on, so bad wins. Nothing is tinted once the board is
+  // solved: the solved state has its own accent treatment.
+  const slotTone = useMemo(() => {
+    const tone = new Map<string, "good" | "bad">();
+    if (state.solved) return tone;
+    for (const i of state.validSlots) {
+      for (const c of puzzle.slots[i].cells) tone.set(cellKey(c.row, c.col), "good");
+    }
+    for (const i of state.invalidSlots) {
+      for (const c of puzzle.slots[i].cells) tone.set(cellKey(c.row, c.col), "bad");
+    }
+    return tone;
+  }, [state.validSlots, state.invalidSlots, state.solved, puzzle.slots]);
+
   const dominoIndex = useMemo(() => {
     const byId = new Map<number, { cells: [Cell, Cell]; letters: [string, string] }>();
     const byCell = new Map<string, import("../engine/types").PlacedDomino>();
@@ -204,9 +220,15 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
         const isHover = !isPreview && hoverCell && hoverCell.row === row && hoverCell.col === col;
         const isCursor = cursorCell && cursorCell.row === row && cursorCell.col === col;
 
+        const tone = slotTone.get(k);
+
         let cellBg = "bg-surface";
         if (isPreview && !pd) cellBg = previewCells.valid ? "bg-good/15" : "bg-warn/15";
         else if (isHover) cellBg = "bg-accent/15";
+        // A wrong run is louder than a right one: the player needs to find
+        // it, not be congratulated on the rest of the board.
+        else if (tone === "bad") cellBg = "bg-warn/15";
+        else if (tone === "good") cellBg = "bg-good/10";
 
         return (
           <div key={k} className="relative" style={{ gridRow: row + 1, gridColumn: col + 1, zIndex: 1 }}>
@@ -281,7 +303,9 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
               }}
               aria-label={
                 letter
-                  ? `${letter} at row ${row + 1}, column ${col + 1}`
+                  ? `${letter} at row ${row + 1}, column ${col + 1}${
+                      tone === "bad" ? ", in a run that isn't a word" : ""
+                    }`
                   : `Empty cell row ${row + 1}, column ${col + 1}`
               }
             >

@@ -10,7 +10,7 @@ import { HomeLink } from "../../../components/HomeLink";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
-import { dominoCells, dominoLetters, cellKey } from "../engine/types";
+import { dominoCells, dominoLetters, cellKey, slotWord } from "../engine/types";
 import { Board } from "./Board";
 import { DominoTray } from "./DominoTray";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
@@ -89,14 +89,20 @@ export function GameScreen({
 
   const { toast, show: showToast } = useToast();
 
-  const prevInvalidRef = useRef(0);
+  // Words are judged as they are laid, so the toast names the run that
+  // failed — "which word?" is otherwise a search of the whole board. It
+  // fires for slots that went wrong on THIS move only: a slot already
+  // flagged stays flagged silently, and a restored day (moveSeq 0) comes
+  // back with its tinting but no toast.
+  const prevInvalidRef = useRef<readonly number[]>([]);
   useEffect(() => {
-    const n = state.invalidSlots.length;
-    if (n > 0 && prevInvalidRef.current === 0) {
-      showToast("Not quite");
-    }
-    prevInvalidRef.current = n;
-  }, [state.invalidSlots.length, showToast]);
+    const prev = new Set(prevInvalidRef.current);
+    const fresh = state.invalidSlots.filter((i) => !prev.has(i));
+    prevInvalidRef.current = state.invalidSlots;
+    if (fresh.length === 0 || state.moveSeq === 0) return;
+    const word = slotWord(puzzle.slots[fresh[0]], state.grid);
+    showToast(word ? `${word} isn't a word` : "Not quite");
+  }, [state.invalidSlots, state.moveSeq, state.grid, puzzle.slots, showToast]);
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [hoverCell, setHoverCell] = useState<Cell | null>(null);
@@ -220,7 +226,7 @@ export function GameScreen({
               return cellKey(c1.row, c1.col) === k || cellKey(c2.row, c2.col) === k;
             });
             if (pd) {
-              dispatch({ type: "removeDomino", dominoId: pd.dominoId });
+              dispatch({ type: "removeDomino", dominoId: pd.dominoId, dict });
             }
             return cur;
           });
@@ -257,14 +263,14 @@ export function GameScreen({
   const handleTapPlaced = useCallback(
     (dominoId: number) => {
       if (state.solved) return;
-      dispatch({ type: "removeDomino", dominoId });
+      dispatch({ type: "removeDomino", dominoId, dict });
     },
-    [state.solved, dispatch],
+    [state.solved, dispatch, dict],
   );
 
   const handleBoardDragStart = useCallback(
     (dominoId: number, orientation: Orientation) => {
-      dispatch({ type: "removeDomino", dominoId });
+      dispatch({ type: "removeDomino", dominoId, dict });
       setDrag({
         dominoId,
         orientation,
@@ -273,7 +279,7 @@ export function GameScreen({
         originRect: new DOMRect(),
       });
     },
-    [dispatch],
+    [dispatch, dict],
   );
 
 

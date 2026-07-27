@@ -21,7 +21,8 @@ import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
 import { PoemCredit } from "./PoemCredit";
 import { cellKey, type Difficulty } from "../engine/types";
-import { nextHintIndex, replayHints, wordStartIndices } from "../engine/hints";
+import { nextHintIndex, replayHints } from "../engine/hints";
+import { wordStartIndices } from "../engine/phrase";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
@@ -85,7 +86,11 @@ export function GameScreen({
 
   const { toast, show } = useToast();
 
-  const wordStarts = useMemo(() => wordStartIndices(puzzle.text), [puzzle]);
+  // The letters the puzzle gives: the first letter of every word.
+  const givenIndices = useMemo(
+    () => wordStartIndices(puzzle.text),
+    [puzzle],
+  );
 
   // Restore the hinted set from the saved count, ONCE. hydratedHints
   // reads a ref that taking a hint also writes, so re-running this
@@ -96,22 +101,30 @@ export function GameScreen({
     if (hintsRestored.current || hydratedHints <= 0) return;
     hintsRestored.current = true;
     const set = replayHints(
-      wordStarts,
       puzzle.path.length,
       state.cells.length,
       hydratedHints,
     );
     hintedRef.current = set;
     setHintedSet(set);
-  }, [hydratedHints, wordStarts, puzzle.path.length, state.cells.length]);
+  }, [hydratedHints, puzzle.path.length, state.cells.length]);
 
-  const { hintIndices, hintCellKeys } = useMemo(() => {
-    if (hintedSet.size === 0) return { hintIndices: undefined, hintCellKeys: undefined };
+  // The readout shows given letters and hinted ones alike — both are
+  // letters known but not yet placed. The GRID marks hinted cells only:
+  // a given letter says what, never where.
+  const revealed = useMemo(() => {
+    const set = new Set(givenIndices);
+    for (const idx of hintedSet) set.add(idx);
+    return set;
+  }, [givenIndices, hintedSet]);
+
+  const hintCellKeys = useMemo(() => {
+    if (hintedSet.size === 0) return undefined;
     const keys = new Set<string>();
     for (const idx of hintedSet) {
       keys.add(cellKey(puzzle.path[idx]));
     }
-    return { hintIndices: hintedSet, hintCellKeys: keys };
+    return keys;
   }, [hintedSet, puzzle]);
 
   const canHint = useMemo(() => {
@@ -185,7 +198,6 @@ export function GameScreen({
                 hintsRestored.current = true;
                 const current = hintedRef.current;
                 const idx = nextHintIndex(
-                  wordStarts,
                   puzzle.path.length,
                   state.cells.length,
                   current,
@@ -214,7 +226,10 @@ export function GameScreen({
       </header>
 
       {/* Title + status */}
-      <div className="flex items-baseline gap-2.5 pb-3">
+      {/* flex-wrap: at 320px with Huge text the mode label ("practice",
+          "tutorial") does not fit beside the title, and an unwrapped row
+          pushed it off the right edge. */}
+      <div className="flex flex-wrap items-baseline gap-2.5 pb-3 [@media(max-height:720px)]:pb-1">
         <h1 className="text-2xl font-bold tracking-tight">Serpentine</h1>
         <svg role="img" aria-label="serpentine" width="20" height="20" viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent">
@@ -242,7 +257,7 @@ export function GameScreen({
 
       {/* Difficulty pills */}
       {difficulty !== undefined && onDifficultyChange && (
-        <div className="flex gap-1 pb-3" role="group" aria-label="Difficulty">
+        <div className="flex gap-1 pb-3 [@media(max-height:720px)]:pb-1" role="group" aria-label="Difficulty">
           {(["haiku", "poem"] as Difficulty[]).map((d) => (
             <button
               key={d}
@@ -276,7 +291,9 @@ export function GameScreen({
         className={
           isTutorial
             ? "px-1 pt-4 pb-5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2"
-            : "px-1 pt-10 pb-5"
+            : // pt-10 is 50px of air at Huge text — the one block on this
+              // screen that never tightened on a short viewport.
+              "px-1 pt-10 pb-5 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-2"
         }
       >
         {!isTutorial && (
@@ -286,11 +303,13 @@ export function GameScreen({
             authorClass="text-xs text-ink-soft"
           />
         )}
-        <SnakeText puzzle={puzzle} cells={state.cells} hintIndices={hintIndices} />
+        <SnakeText puzzle={puzzle} cells={state.cells} revealed={revealed} />
       </div>
 
-      {/* Grid */}
-      <div className="relative flex flex-1 flex-col justify-center py-2">
+      {/* Grid. min-h-0 so the board takes what is LEFT of the column
+          rather than setting the column's height — see SnakeGrid, which
+          measures this box. */}
+      <div className="relative flex min-h-0 flex-1 flex-col py-2 [@media(max-height:720px)]:py-1">
         <SnakeGrid
           rows={puzzle.rows}
           cols={puzzle.cols}
@@ -349,9 +368,9 @@ export function GameScreen({
             key="controls"
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col items-center gap-3"
+            className="flex flex-col items-center gap-3 [@media(max-height:720px)]:gap-1"
           >
-            <div className="pb-3 text-center text-sm font-medium text-ink-soft">
+            <div className="pb-3 [@media(max-height:720px)]:pb-1 text-center text-sm font-medium text-ink-soft">
               {state.cells.length} / {puzzle.path.length} letters
             </div>
             <div className="flex items-center justify-center gap-4">
