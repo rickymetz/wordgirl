@@ -40,8 +40,13 @@
  * bonus-tier ENABLE obscurities were two thirds of a day's list.
  * Every crosshatch puzzle changes; saved days before v17 are records,
  * not resumable progress.
+ * v18: backwords admits a hand-picked list of everyday bonus-tier
+ * words (MIRROR_WORDS) whose reversals are also words — its playable
+ * lexicon goes 110 rows -> 178, and every backwords puzzle changes.
+ * No dictionary.txt change and no other game is affected, so their
+ * saved days match on puzzleKey and survive the bump.
  */
-export const DICT_VERSION = 17;
+export const DICT_VERSION = 18;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;

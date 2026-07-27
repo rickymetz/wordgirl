@@ -157,6 +157,7 @@ export function useBackwordsGame(mode: GameMode) {
           hints: s.hints,
         }),
         glyphRows: glyphRowCount(s.rows),
+        parRows: puzzle.parRows,
         ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
         ...(solvedHourRef.current !== null && {
           solvedHour: solvedHourRef.current,
@@ -267,6 +268,7 @@ export function useBackwordsGame(mode: GameMode) {
         dateKey,
         ms,
         glyphRowCount(state.rows),
+        state.rows.length <= puzzle.parRows,
         mode.kind === "daily",
       );
     }

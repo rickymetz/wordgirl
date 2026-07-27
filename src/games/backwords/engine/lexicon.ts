@@ -23,12 +23,58 @@ function glyphMirror(word: string): string | null {
 
 const sortLetters = (w: string) => [...w].sort().join("");
 
-/** The COMMON tier as a flat set — the words backwords plays with. */
+/**
+ * Everyday words the frequency-gated required tier misses, admitted to
+ * THIS game's word set only.
+ *
+ * The required tier is ranked by subtitle frequency, which is a poor
+ * proxy for "would a player accept this?" once the mirror constraint
+ * bites: a row needs BOTH readings in the set, so every near-miss costs
+ * a pair, and the survivors were 76 pairs and 34 palindromes — a move
+ * space small enough to memorize in a fortnight (DEER|REED alone opened
+ * a third of all days). Opening the reflection side to the whole
+ * dictionary would fix the size and import ENABLE junk with it (SETON,
+ * REGNA, DEETS) — exactly the trade dictionary v17 rolled back for
+ * crosshatch. So this list is hand-picked instead, under one rule: BOTH
+ * readings must be words an ordinary player accepts, because a mirror
+ * row shows both.
+ *
+ * Every entry is already in the dictionary's bonus tier — this promotes
+ * them for backwords, not globally, since "its reversal is a word" is a
+ * daft reason to reshape the other four games' vocabulary.
+ * `lexicon.test.ts` asserts each one still parses as a word, so a
+ * dictionary change can't leave a typo here playing as real.
+ */
+export const MIRROR_WORDS: readonly string[] = [
+  // Pair reflections, by the word this list adds (the other side is
+  // already required-tier): MAY|YAM, WAY|YAW, PAY|YAP, BAG|GAB…
+  "yam", "yaw", "yap", "gab", "sag", "nit", "nib", "mar", "dub", "lag",
+  // …KNOW|WONK, TIME|EMIT, ROOM|MOOR, MEET|TEEM, GUNS|SNUG, NUTS|STUN.
+  "wonk", "emit", "moor", "teem", "snug", "stun", "nori", "flog", "nips",
+  "pans", "snot", "gulp", "edit", "wets", "ajar", "gnat", "snip", "yaws",
+  "snub", "garb", "leer", "spat", "bonk", "gums",
+  // The long mirrors are the reason to play at all, and not one of them
+  // was reachable: STRAW|WARTS, LEVER|REVEL, DIAPER|REPAID, and the
+  // eight-letter showpiece STRESSED|DESSERTS.
+  "peels", "trams", "warts", "spans", "remit", "loots", "tubed", "revel",
+  "sloop", "decaf", "knits", "serif", "lamina", "repaid", "reviled",
+  "desserts",
+  // Palindromes. A mirror game missing KAYAK, CIVIC, ROTOR and TENET is
+  // missing its best material.
+  "bib", "dud", "eke", "pup", "tot", "tut", "kook", "naan", "toot",
+  "civic", "kayak", "rotor", "solos", "stats", "tenet", "redder",
+  "reviver", "rotator",
+];
+
+/** The words backwords plays with: the common tier plus MIRROR_WORDS. */
 export function commonWords(dict: Dictionary): Set<string> {
   const common = new Set<string>();
   for (const bucket of dict.required.buckets.values()) {
     for (const w of bucket) common.add(w);
   }
+  // Gate on the dictionary: an entry that no longer parses as a word
+  // must not play just because it is listed here.
+  for (const w of MIRROR_WORDS) if (dict.has(w)) common.add(w);
   return common;
 }
 

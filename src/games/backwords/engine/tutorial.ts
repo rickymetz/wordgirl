@@ -28,6 +28,9 @@ export const TUTORIAL_PUZZLE: Puzzle = {
   seedRows: ["top", "da"],
   solutionCount: 1,
   rowCounts: [2],
+  // The one decomposition IS par. Day-scale chrome stays hidden in the
+  // tutorial anyway — a par of 2 over five letters measures nothing.
+  parRows: 2,
 };
 
 /** How many steps the script has — the index that means "finished". */

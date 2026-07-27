@@ -43,6 +43,13 @@ export interface Puzzle {
   solutionCount: number;
   /** Distinct row-counts across solutions — ≥2 means real strategy. */
   rowCounts: number[];
+  /**
+   * The day's par: the FEWEST rows any full decomposition needs. Exact
+   * (see `minRows`), not the minimum of the capped enumeration — par is
+   * shown before the board is solved, so a par nobody can reach would
+   * be a lie, and one that can be beaten isn't a target.
+   */
+  parRows: number;
 }
 
 /** Letter multiset helpers shared by the solver, reducer, and UI. */

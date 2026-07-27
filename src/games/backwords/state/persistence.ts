@@ -21,6 +21,9 @@ export interface DailyProgress extends DailyBase {
   hints?: number;
   /** ✦ rows on the board (the lifetime total lives in stats). */
   glyphRows?: number;
+  /** The day's par (fewest possible rows) — stored so the archive and
+   * the charts can read a finished day without re-deriving its puzzle. */
+  parRows?: number;
   /** Local hour (0-23) the board was solved. */
   solvedHour?: number;
 }
@@ -30,6 +33,8 @@ export interface BackwordsStats extends StreakStats {
   bestTimeMs: number | null;
   /** Lifetime ✦ rows — placements a real mirror would render. */
   glyphRows: number;
+  /** Days solved in the fewest possible rows. */
+  parSolves: number;
 }
 
 const EMPTY_STATS: BackwordsStats = {
@@ -40,6 +45,7 @@ const EMPTY_STATS: BackwordsStats = {
   lastSolvedDate: null,
   bestTimeMs: null,
   glyphRows: 0,
+  parSolves: 0,
 };
 
 /** The first daily puzzle — the archive reaches back to here. */
@@ -145,6 +151,9 @@ export function recordDailySolved(
   dateKey: string,
   elapsedMs: number,
   glyphRows: number,
+  /** Solved in the fewest possible rows — counts in every daily mode
+   * (unlike the best time, an archive par is a real par). */
+  atPar: boolean,
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it.
   allowGrace = true,
@@ -155,6 +164,7 @@ export function recordDailySolved(
       ...stats,
       solved: stats.solved + 1,
       glyphRows: stats.glyphRows + glyphRows,
+      parSolves: stats.parSolves + (atPar ? 1 : 0),
       ...(countsAsToday(dateKey, allowGrace) && {
         bestTimeMs:
           stats.bestTimeMs === null
