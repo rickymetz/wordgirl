@@ -65,6 +65,37 @@ export function solveBank(
   return found;
 }
 
+/**
+ * The fewest rows that clear the bank — the day's par.
+ *
+ * Iterative deepening from below, bounded above by `upper` (the best
+ * row count the caller already has a solution for). Almost always the
+ * enumeration's minimum IS par, so the search only has to refute the
+ * counts beneath it, and refuting k=1 or k=2 is near-instant: the
+ * letters-vs-budget bound kills a branch as soon as what's left can't
+ * fit in the rows remaining.
+ */
+export function minRows(bank: Multiset, items: RowDef[], upper: number): number {
+  const costs = items.map((i) => toMultiset(i.cost));
+  const widest = items.reduce((m, i) => Math.max(m, i.cost.length), 0);
+  const search = (left: Multiset, startIdx: number, budget: number): boolean => {
+    const n = multisetSize(left);
+    if (n === 0) return true;
+    if (budget === 0 || n > budget * widest) return false;
+    for (let i = startIdx; i < items.length; i++) {
+      if (
+        fitsIn(costs[i], left) &&
+        search(subtract(left, costs[i]), i + 1, budget - 1)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+  for (let k = 1; k < upper; k++) if (search(bank, 0, k)) return k;
+  return upper;
+}
+
 interface Candidate {
   bank: string[];
   seedRows: string[];
@@ -118,15 +149,15 @@ export function generateBackwords(
     const c = attempt(rng, items, big);
     if (!c) continue;
     if (c.solutions.length >= PREFERRED_SOLUTIONS) {
-      return toPuzzle(seed, c);
+      return toPuzzle(seed, c, items);
     }
     fallback ??= c; // meets the ≥2 band; keep looking for ≥3
   }
-  if (fallback) return toPuzzle(seed, fallback);
+  if (fallback) return toPuzzle(seed, fallback, items);
   throw new Error(`backwords generator exhausted attempts for ${seed}`);
 }
 
-function toPuzzle(seed: string, c: Candidate): Puzzle {
+function toPuzzle(seed: string, c: Candidate, items: RowDef[]): Puzzle {
   return {
     seed,
     dictVersion: DICT_VERSION,
@@ -134,5 +165,8 @@ function toPuzzle(seed: string, c: Candidate): Puzzle {
     seedRows: c.seedRows,
     solutionCount: c.solutions.length,
     rowCounts: c.rowCounts,
+    // Once, on the chosen candidate only — never inside `attempt`,
+    // which runs up to MAX_ATTEMPTS times.
+    parRows: minRows(toMultiset(c.bank), items, c.rowCounts[0]),
   };
 }

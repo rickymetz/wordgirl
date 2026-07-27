@@ -24,9 +24,22 @@ const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     {
-      key: "words",
-      label: "Words placed",
+      key: "rows",
+      label: "Rows placed",
       value: (d) => (d.solved ? d.rows.length : null),
+      lowerIsBetter: true,
+    },
+    {
+      // 0 is par. Days saved before par shipped chart as a GAP, never a
+      // fake 0 — which on a lower-is-better line would read as a par run
+      // that never happened.
+      key: "overPar",
+      label: "Rows over par",
+      value: (d) =>
+        d.solved && d.parRows !== undefined
+          ? Math.max(0, d.rows.length - d.parRows)
+          : null,
+      lowerIsBetter: true,
     },
     solvedCounter<ArchivedDay>("glyphRows", "Mirror rows", (d) => d.glyphRows),
     solvedCounter<ArchivedDay>("takeBacks", "Take-backs", (d) => d.takeBacks, {

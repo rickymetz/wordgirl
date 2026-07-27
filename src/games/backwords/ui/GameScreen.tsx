@@ -10,6 +10,7 @@ import {
   Hourglass,
   Lightbulb,
   Sparkles,
+  Target,
   Type,
 } from "lucide-react";
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
@@ -40,16 +41,20 @@ import { LetterBank } from "./LetterBank";
 import { dragPoint } from "./dragPoint";
 
 function buildShareText(
-  words: number,
+  rows: number,
+  parRows: number,
   dateKey: string,
   elapsedMs: number,
   hints: number,
 ): string {
   const date = formatShareDate(dateKey);
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  // Rows against par, not a bare word count: everyone empties the rack,
+  // so the count alone compared nothing between two players' results.
+  const parPart = rows <= parRows ? "⭐️ par" : `par ${parRows}`;
   return [
     `🪞 Backwords — ${date}`,
-    `${words} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${rows} rows · ${parPart} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -120,6 +125,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   const resolved = resolvePlacement(state.lexicon, state.current);
   const currentStraddle = !!resolved.def && isStraddle(resolved.def);
   const activePlace = resolved.place;
+
+  // Par is exact, so a solve can meet it but never beat it; `<=` is
+  // belt and braces against a save from an older, laxer derivation.
+  const atPar = state.solved && state.rows.length <= puzzle.parRows;
 
   // The coach sheet opens on demand only — the first-run introduction is
   // now the tutorial offer (see TutorialPrompt).
@@ -326,10 +335,15 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         </p>
       )}
 
+      {/* The day's target, stated before the first move — it is what
+          turns "empty the rack" into "find the long word hiding in it".
+          Par is day-scale chrome, so the tutorial's five-letter toy
+          board hides it, as it hides hints and rank. */}
       <div role="status" className="text-sm font-medium text-ink-soft">
         {state.solved
           ? "Every letter placed"
           : `${state.bank.length} letters left`}
+        {!isTutorial && !state.solved && ` · par ${puzzle.parRows} rows`}
       </div>
 
       {/* id: the drop target for dragged bank tiles. */}
@@ -371,15 +385,22 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">Solved</p>
+            <p className="text-lg font-bold text-ink">
+              {atPar ? "Solved at par" : "Solved"}
+            </p>
             <p className="text-ink-soft">
-              {state.rows.length} {state.rows.length === 1 ? "word" : "words"}
+              {/* Tutorial solves render TutorialDone instead of this
+                  block, so par needs no guard here. */}
+              {state.rows.length} {state.rows.length === 1 ? "row" : "rows"}
+              {` · par ${puzzle.parRows}`}
             </p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(solvedElapsedMs)}
               </p>
             )}
+            {/* No par pill: the headline and the subline already say it,
+                and a third restatement crowds the ✦ badge out. */}
             {glyphRowCount(state.rows) > 0 && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
                 <Sparkles aria-hidden className="h-3.5 w-3.5 text-accent" />
@@ -389,7 +410,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             {(mode.kind === "daily" || mode.kind === "archive") &&
               solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(state.rows.length, mode.dateKey, solvedElapsedMs, state.hints)}
+                text={buildShareText(
+                  state.rows.length,
+                  puzzle.parRows,
+                  mode.dateKey,
+                  solvedElapsedMs,
+                  state.hints,
+                )}
                 gameId="backwords"
               />
             )}
@@ -492,8 +519,19 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                   <>
                     The board is solved when the rack is <Key>empty</Key>.
                     The clock runs silently and your <Key>time</Key> is
-                    revealed at the end — fewer long words or many short
-                    ones both win.
+                    revealed at the end.
+                  </>
+                ),
+              },
+              {
+                Icon: Target,
+                title: "Play for par",
+                body: (
+                  <>
+                    <Key>Par</Key> is the fewest rows the day can be solved
+                    in — always reachable, never beatable. Short pairs
+                    clear the rack; the long word hiding in it clears the
+                    rack <Key>at par</Key>.
                   </>
                 ),
               },

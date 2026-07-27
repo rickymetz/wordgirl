@@ -30,51 +30,64 @@ afterEach(() => {
 describe("stats recording", () => {
   it("solving just after midnight still counts the session's day", async () => {
     vi.setSystemTime(new Date(2026, 6, 7, 0, 0, 30));
-    const stats = await recordDailySolved("2026-07-06", 61_000, 1);
+    const stats = await recordDailySolved("2026-07-06", 61_000, 1, false);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06");
     vi.setSystemTime(new Date(2026, 6, 7, 21, 0, 0));
-    const next = await recordDailySolved("2026-07-07", 45_000, 0);
+    const next = await recordDailySolved("2026-07-07", 45_000, 0, false);
     expect(next.currentStreak).toBe(2);
   });
 
   it("an archive play of yesterday never borrows the grace day", async () => {
     vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
-    const stats = await recordDailySolved("2026-07-06", 30_000, 0, false);
+    const stats = await recordDailySolved("2026-07-06", 30_000, 0, false, false);
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(0);
     expect(stats.lastSolvedDate).toBeNull();
   });
 
   it("re-recording the same day is a no-op", async () => {
-    await recordDailySolved("2026-07-06", 40_000, 2);
-    const stats = await recordDailySolved("2026-07-06", 40_000, 2);
+    await recordDailySolved("2026-07-06", 40_000, 2, false);
+    const stats = await recordDailySolved("2026-07-06", 40_000, 2, false);
     expect(stats.solved).toBe(1);
     expect(stats.glyphRows).toBe(2);
   });
 
   it("only TODAY's solve can claim the best time", async () => {
-    await recordDailySolved("2026-07-06", 90_000, 0);
+    await recordDailySolved("2026-07-06", 90_000, 0, false);
     // A blistering archive run of an old day: totals yes, record no.
-    const stats = await recordDailySolved("2026-07-01", 5_000, 0, false);
+    const stats = await recordDailySolved("2026-07-01", 5_000, 0, false, false);
     expect(stats.solved).toBe(2);
     expect(stats.bestTimeMs).toBe(90_000);
     // A faster run TODAY (replay records once, but a next-day daily
     // improves the record).
     vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
-    const next = await recordDailySolved("2026-07-07", 30_000, 0);
+    const next = await recordDailySolved("2026-07-07", 30_000, 0, false);
     expect(next.bestTimeMs).toBe(30_000);
   });
 
   it("glyph rows accumulate across days", async () => {
-    await recordDailySolved("2026-07-06", 40_000, 2);
+    await recordDailySolved("2026-07-06", 40_000, 2, false);
     vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
-    const stats = await recordDailySolved("2026-07-07", 40_000, 1);
+    const stats = await recordDailySolved("2026-07-07", 40_000, 1, false);
     expect(stats.glyphRows).toBe(3);
   });
 
+  it("counts par solves, including archive plays", async () => {
+    // Unlike the best time, a par is a par whenever it was played —
+    // the archive can't fake it (the day's par is fixed by its bank).
+    await recordDailySolved("2026-07-06", 40_000, 0, true);
+    const stats = await recordDailySolved("2026-07-01", 40_000, 0, true, false);
+    expect(stats.solved).toBe(2);
+    expect(stats.parSolves).toBe(2);
+    vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
+    const over = await recordDailySolved("2026-07-07", 40_000, 0, false);
+    expect(over.solved).toBe(3);
+    expect(over.parSolves).toBe(2);
+  });
+
   it("a lapsed streak displays as zero without a write", async () => {
-    await recordDailySolved("2026-07-06", 40_000, 0);
+    await recordDailySolved("2026-07-06", 40_000, 0, false);
     expect(displayStreak(await loadStats(), "2026-07-07")).toBe(1); // grace
     expect(displayStreak(await loadStats(), "2026-07-09")).toBe(0); // lapsed
   });

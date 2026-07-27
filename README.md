@@ -97,11 +97,12 @@ A race against a hidden clock, played into a mirror:
   mirror from just their first half.
 - **Use every letter** to solve the board. Rows stay editable (tap ×
   to take one back) until the last letter lands.
-- The generator guarantees **multiple valid decompositions with
-  different row counts**, so strategy is real: a few long words or
-  many quick short ones.
+- Every day states its **par** — the fewest rows it can possibly be
+  solved in, computed exactly, so it is always reachable and never
+  beatable. Short pairs clear the rack; the long word hiding in it
+  (STRAW|WARTS, DIAPER|REPAID) clears it at par.
 - The **timer runs silently** and is revealed at the end — the share
-  line is your word count and time. No hints.
+  line is your rows against par, and your time.
 - Rows a real mirror would render (LIT reflects as TIL) earn a **✦**.
 - Daily + practice + a replayable archive, same as the others.
 

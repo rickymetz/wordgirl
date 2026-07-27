@@ -29,6 +29,7 @@ const puzzle: Puzzle = {
   seedRows: ["mo", "lit", "was"],
   solutionCount: 2,
   rowCounts: [3],
+  parRows: 3,
 };
 
 let state: GameState;

@@ -28,8 +28,9 @@ const config: GameArchiveConfig<ArchivedDay, BackwordsStats> = {
       label: "Best time",
       value: stats.bestTimeMs === null ? "—" : formatDuration(stats.bestTimeMs),
     },
-    // "Mirror rows": the ✦ character stays in share strings only.
-    { label: "Mirror rows", value: stats.glyphRows },
+    // The tile a player can chase. Lifetime ✦ rows accrue whatever you
+    // do, so they stayed a results badge and a trends line instead.
+    { label: "Par solves", value: stats.parSolves },
   ],
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => {
@@ -41,15 +42,23 @@ const config: GameArchiveConfig<ArchivedDay, BackwordsStats> = {
       }
       return {
         text: `In progress · ${day.rows.length} ${
-          day.rows.length === 1 ? "word" : "words"
+          day.rows.length === 1 ? "row" : "rows"
         }`,
         done: false,
       };
     }
+    // Days saved before par shipped have no par to compare against —
+    // they read as a plain row count rather than claiming one.
+    const par =
+      day.parRows === undefined
+        ? ""
+        : day.rows.length <= day.parRows
+          ? " · par"
+          : ` · par ${day.parRows}`;
     return {
       text: `Solved · ${day.rows.length} ${
-        day.rows.length === 1 ? "word" : "words"
-      }${day.stale ? " · older words" : ""}`,
+        day.rows.length === 1 ? "row" : "rows"
+      }${par}${day.stale ? " · older words" : ""}`,
       done: true,
     };
   },
