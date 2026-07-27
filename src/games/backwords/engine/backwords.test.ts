@@ -13,6 +13,8 @@ const dict = parseDictionary(
 );
 const lexicon = buildLexicon(dict);
 const items = lexiconItems(lexicon);
+const required = new Set<string>();
+for (const b of dict.required.buckets.values()) for (const w of b) required.add(w);
 
 describe("lexicon", () => {
   it("holds pairs under both orientations with one shared cost", () => {
@@ -84,9 +86,20 @@ describe("lexicon", () => {
       // is dead weight the list should drop).
       const r = [...w].reverse().join("");
       expect(w === r || dict.has(r), `${w} has no mirror reading`).toBe(true);
+      // Dead weight: a word later promoted to the required tier is
+      // already in the set, so its entry here should be pruned.
+      expect(required.has(w), `${w} is required-tier now`).toBe(false);
     }
-    // No duplicates, and nothing already in the required tier.
     expect(new Set(MIRROR_WORDS).size).toBe(MIRROR_WORDS.length);
+  });
+
+  it("keeps a displaced pair reachable under its other orientation", () => {
+    // A new palindrome can outrank a pair for a placement key (the
+    // lexicon's documented collision rule): TENET takes "ten" from
+    // TEN|NET. The pair must survive under "net", or a row the solver
+    // still counts would be unplaceable.
+    expect(lexicon.get("ten")?.words).toEqual(["tenet"]);
+    expect(lexicon.get("net")?.words).toEqual(["net", "ten"]);
   });
 });
 
