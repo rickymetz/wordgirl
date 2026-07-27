@@ -105,9 +105,6 @@ export function SnakeGrid({
   const heightCap = box.h > 0 ? box.h / rows : Infinity;
 
   // Height gives way only down to a tappable cell; width always binds.
-  // When the floor wins, the board is bigger than the box it was handed
-  // — `minHeight` on the wrapper below turns that into a page scroll
-  // rather than a board sitting on top of the controls.
   // Floored to a whole pixel: a fractional cell makes the board a
   // fraction taller than the box it was measured against, which is a
   // page scroll of one or two pixels and nothing else.
@@ -117,6 +114,24 @@ export function SnakeGrid({
   const gridW = cellPx * cols;
   const gridH = cellPx * rows;
   const letterPx = Math.min(rem, cellPx * LETTER_MAX_RATIO);
+
+  /**
+   * The height the wrapper must keep even when the column has less to
+   * give: the board at its smallest permitted size. Past that the board
+   * stops shrinking, so the column has to grow and the page scroll —
+   * without this an absolutely positioned board just sits on top of the
+   * controls.
+   *
+   * Derived from WIDTH only. A minHeight computed from the current cell
+   * size feeds straight back into the height it is measured against, and
+   * the board latches at whatever it first drew: on a 1024×700 it held
+   * 59px cells and scrolled the page rather than shrinking the ~5px per
+   * row that would have made it fit.
+   */
+  const floorCell = Math.floor(
+    Math.min(maxCellPx(vw, rem), widthCap, MIN_CELL),
+  );
+  const minBoardH = floorCell * rows;
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
   const [cursorRow, setCursorRow] = useState(0);
@@ -231,122 +246,122 @@ export function SnakeGrid({
     <div
       ref={wrapRef}
       className="relative w-full min-h-0 flex-1"
-      style={{ minHeight: gridH }}
+      style={{ minHeight: minBoardH }}
     >
       <div
-      ref={gridRef}
-      tabIndex={0}
-      role="grid"
-      aria-label="Puzzle grid"
-      className="absolute inset-0 m-auto select-none touch-manipulation outline-none"
-      style={{
-        width: gridW,
-        height: gridH,
-        maxWidth: "100%",
-      }}
-      onPointerDown={(e) => {
-        setCursorVisible(false);
-        onPointerDown(e);
-      }}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onKeyDown={onKeyDown}
-      onFocus={() => setCursorVisible(true)}
-      onBlur={() => setCursorVisible(false)}
-    >
-      {/* SVG overlay: gradient snake with circles + pipes */}
-      <svg
-        className="pointer-events-none absolute inset-0 h-full w-full"
-        viewBox={`0 0 ${cols} ${rows}`}
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {n > 0 && (
-          <g>
-            {/* Pipe connectors */}
-            {cells.map((c, i) => {
-              if (i === 0) return null;
-              const prev = cells[i - 1];
-              return (
-                <line
-                  key={`pipe-${i}`}
-                  x1={prev.col + 0.5}
-                  y1={prev.row + 0.5}
-                  x2={c.col + 0.5}
-                  y2={c.row + 0.5}
-                  style={{ stroke: nodeColor(i) }}
-                  strokeWidth={PIPE_W}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-            {/* Node circles */}
-            {cells.map((c, i) => (
-              <circle
-                key={`node-${i}`}
-                cx={c.col + 0.5}
-                cy={c.row + 0.5}
-                r={NODE_R}
-                style={{ fill: nodeColor(i) }}
-              />
-            ))}
-          </g>
-        )}
-      </svg>
-
-      {/* Grid cells — letters sit on top of SVG */}
-      <div
-        className="grid h-full w-full"
+        ref={gridRef}
+        tabIndex={0}
+        role="grid"
+        aria-label="Puzzle grid"
+        className="absolute inset-0 m-auto select-none touch-manipulation outline-none"
         style={{
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          width: gridW,
+          height: gridH,
+          maxWidth: "100%",
         }}
+        onPointerDown={(e) => {
+          setCursorVisible(false);
+          onPointerDown(e);
+        }}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onKeyDown={onKeyDown}
+        onFocus={() => setCursorVisible(true)}
+        onBlur={() => setCursorVisible(false)}
       >
-        {Array.from({ length: rows }, (_, r) =>
-          Array.from({ length: cols }, (_, c) => {
-            const k = cellKey({ row: r, col: c });
-            const isBlocked = blocked.has(k);
-            const isClaimed = claimed.has(k);
-            const isHint = !isBlocked && !isClaimed && !!hintCells?.has(k);
-            const isCursor = cursorVisible && r === cursorRow && c === cursorCol && !isBlocked;
-            return (
-              <div
-                key={k}
-                className={[
-                  "relative flex items-center justify-center rounded-full font-game",
-                  isBlocked ? "" : "text-ink",
-                  isCursor ? "ring-2 ring-accent ring-offset-1" : "",
-                ].join(" ")}
-                style={{
-                  fontSize: `${letterPx}px`,
-                  lineHeight: 1,
-                  ...(isBlocked
-                    ? { visibility: "hidden" as const }
-                    : isClaimed
-                      ? { color: "var(--color-surface)" }
-                      : isHint
-                        ? { color: "var(--color-accent)" }
-                        : null),
-                }}
-              >
-                {!isBlocked && (
-                  <span className="relative z-10 select-none">{grid[r][c]}</span>
-                )}
-                {isHint && (
-                  <span
-                    className="absolute inset-[15%] rounded-full"
-                    style={{
-                      border: "2px solid var(--color-accent)",
-                      opacity: 0.5,
-                    }}
+        {/* SVG overlay: gradient snake with circles + pipes */}
+        <svg
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox={`0 0 ${cols} ${rows}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {n > 0 && (
+            <g>
+              {/* Pipe connectors */}
+              {cells.map((c, i) => {
+                if (i === 0) return null;
+                const prev = cells[i - 1];
+                return (
+                  <line
+                    key={`pipe-${i}`}
+                    x1={prev.col + 0.5}
+                    y1={prev.row + 0.5}
+                    x2={c.col + 0.5}
+                    y2={c.row + 0.5}
+                    style={{ stroke: nodeColor(i) }}
+                    strokeWidth={PIPE_W}
+                    strokeLinecap="round"
                   />
-                )}
-              </div>
-            );
-          }),
-        )}
+                );
+              })}
+              {/* Node circles */}
+              {cells.map((c, i) => (
+                <circle
+                  key={`node-${i}`}
+                  cx={c.col + 0.5}
+                  cy={c.row + 0.5}
+                  r={NODE_R}
+                  style={{ fill: nodeColor(i) }}
+                />
+              ))}
+            </g>
+          )}
+        </svg>
+
+        {/* Grid cells — letters sit on top of SVG */}
+        <div
+          className="grid h-full w-full"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateRows: `repeat(${rows}, 1fr)`,
+          }}
+        >
+          {Array.from({ length: rows }, (_, r) =>
+            Array.from({ length: cols }, (_, c) => {
+              const k = cellKey({ row: r, col: c });
+              const isBlocked = blocked.has(k);
+              const isClaimed = claimed.has(k);
+              const isHint = !isBlocked && !isClaimed && !!hintCells?.has(k);
+              const isCursor = cursorVisible && r === cursorRow && c === cursorCol && !isBlocked;
+              return (
+                <div
+                  key={k}
+                  className={[
+                    "relative flex items-center justify-center rounded-full font-game",
+                    isBlocked ? "" : "text-ink",
+                    isCursor ? "ring-2 ring-accent ring-offset-1" : "",
+                  ].join(" ")}
+                  style={{
+                    fontSize: `${letterPx}px`,
+                    lineHeight: 1,
+                    ...(isBlocked
+                      ? { visibility: "hidden" as const }
+                      : isClaimed
+                        ? { color: "var(--color-surface)" }
+                        : isHint
+                          ? { color: "var(--color-accent)" }
+                          : null),
+                  }}
+                >
+                  {!isBlocked && (
+                    <span className="relative z-10 select-none">{grid[r][c]}</span>
+                  )}
+                  {isHint && (
+                    <span
+                      className="absolute inset-[15%] rounded-full"
+                      style={{
+                        border: "2px solid var(--color-accent)",
+                        opacity: 0.5,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            }),
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
