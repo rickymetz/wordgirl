@@ -1,6 +1,14 @@
 import { seededRandom } from "../../../lib/random";
 import type { Cell, Difficulty, PuzzleDef } from "./types";
-import { MAX_ROWS, MAX_COLS, cellKey, areAdjacent } from "./types";
+import {
+  MAX_ROWS,
+  MAX_COLS,
+  cellKey,
+  areAdjacent,
+  stepKey,
+  straddledCells,
+} from "./types";
+import { crossingStepIndex } from "./validation";
 
 /**
  * Poetry entries for Serpentine puzzles, grouped by theme.
@@ -206,20 +214,37 @@ function hamiltonianPath(
     const start = liveCells[Math.floor(rand() * liveCells.length)];
     visited[start.row][start.col] = true;
     const path: Cell[] = [start];
+    const steps = new Set<string>();
+
+    /** True when `from → to` would draw the other arm of an X already drawn. */
+    const crosses = (from: Cell, to: Cell): boolean => {
+      const straddled = straddledCells(from, to);
+      if (!straddled) return false;
+      return steps.has(stepKey(straddled[0], straddled[1]));
+    };
+
+    const open = (from: Cell, to: Cell): boolean =>
+      !visited[to.row][to.col] && !crosses(from, to);
 
     while (path.length < total) {
       const tail = path[path.length - 1];
-      const nexts = getNeighbors(tail.row, tail.col).filter(
-        (n) => !visited[n.row][n.col],
+      const nexts = getNeighbors(tail.row, tail.col).filter((n) =>
+        open(tail, n),
       );
       if (nexts.length === 0) return null;
 
       let bestScore = Infinity;
       const scored: { cell: Cell; score: number }[] = [];
       for (const n of nexts) {
+        // Count only the exits the crossing rule would still allow, so
+        // the least-exits heuristic sees it too — a cell whose neighbours
+        // are all walled off by drawn X's is as dead as one whose
+        // neighbours are all visited. The step that would REACH n needs
+        // no accounting here: it ends at n, and a segment can never cross
+        // one it shares an endpoint with.
         let free = 0;
         for (const nn of getNeighbors(n.row, n.col)) {
-          if (!visited[nn.row][nn.col]) free++;
+          if (!visited[nn.row][nn.col] && !crosses(n, nn)) free++;
         }
         scored.push({ cell: n, score: free });
         if (free < bestScore) bestScore = free;
@@ -228,6 +253,7 @@ function hamiltonianPath(
       const best = scored.filter((s) => s.score === bestScore);
       const pick = best[Math.floor(rand() * best.length)].cell;
       visited[pick.row][pick.col] = true;
+      steps.add(stepKey(tail, pick));
       path.push(pick);
     }
     return path;
@@ -255,6 +281,15 @@ function hamiltonianPath(
         `Hamiltonian path failed after 200 attempts and fallback is non-contiguous at ${cellKey(fallback[i - 1])} → ${cellKey(fallback[i])}`,
       );
     }
+  }
+  // The boustrophedon draws one step between any two rows, and only a
+  // pair of them can cross — so it cannot. Asserted rather than assumed,
+  // since a blocked cell is what bends those steps onto the diagonal.
+  const crossing = crossingStepIndex(fallback);
+  if (crossing >= 0) {
+    throw new Error(
+      `Hamiltonian path failed after 200 attempts and fallback crosses itself at ${cellKey(fallback[crossing - 1])} → ${cellKey(fallback[crossing])}`,
+    );
   }
   return fallback;
 }

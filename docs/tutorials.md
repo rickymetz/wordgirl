@@ -275,46 +275,58 @@ AM, US and GO read across; MUG and SO read down.
 
 The corpus can't supply this — its shortest line is 25 letters, and every
 corpus layout is randomised per date, whereas a tutorial needs a fixed path the
-steps can describe. Three of the moves are diagonal, and they are load-bearing:
+steps can describe. Two rules are hand-laid into the board, because they are the
+two the grid alone never suggests.
+
+**The diagonal.** Three of the moves are diagonal, and they are load-bearing:
 the next letter genuinely sits on the corner, so the trace cannot be completed
 by orthogonal moves alone.
 
+**The crossing.** At step four the line stands on the H with exactly two cells
+still touching it — and both show an E, the letter it needs. One of them sits
+across the diagonal the line already drew, so taking it would cut through the
+line and the board refuses it; the other is the answer. The closed cell is not
+lost either, since the trace comes back for it last, the long way round. A rule
+that only ever refuses a wrong move is invisible until it refuses one, and the
+tutorial is the one screen with no hints to fall back on, so the board stages
+the refusal rather than describing it.
+
 | Step | |
 | --: | :-- |
-| 1 | Start the line |
-| 2 | Follow the letters |
-| 3 | Corners count too |
-| 4 | Cover every letter |
+| 1 | Follow the letters |
+| 2 | Corners count too |
+| 3 | Cover every letter |
+| 4 | The line never crosses |
 
 <details>
 <summary>Full-size frames</summary>
 
-**1 · Start the line**
+**1 · Follow the letters**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-1-blank-grid-dark.png">
-  <img alt="Serpentine tutorial, Start the line" src="tutorials/serpentine-1-blank-grid-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-1-first-letter-dark.png">
+  <img alt="Serpentine tutorial, Follow the letters" src="tutorials/serpentine-1-first-letter-light.png" width="390">
 </picture>
 
-**2 · Follow the letters**
+**2 · Corners count too**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-2-first-cell-dark.png">
-  <img alt="Serpentine tutorial, Follow the letters" src="tutorials/serpentine-2-first-cell-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-2-at-the-diagonal-dark.png">
+  <img alt="Serpentine tutorial, Corners count too" src="tutorials/serpentine-2-at-the-diagonal-light.png" width="390">
 </picture>
 
-**3 · Corners count too**
+**3 · Cover every letter**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-3-at-the-diagonal-dark.png">
-  <img alt="Serpentine tutorial, Corners count too" src="tutorials/serpentine-3-at-the-diagonal-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-3-covering-dark.png">
+  <img alt="Serpentine tutorial, Cover every letter" src="tutorials/serpentine-3-covering-light.png" width="390">
 </picture>
 
-**4 · Cover every letter**
+**4 · The line never crosses**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-4-diagonal-taken-dark.png">
-  <img alt="Serpentine tutorial, Cover every letter" src="tutorials/serpentine-4-diagonal-taken-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/serpentine-4-blocked-twin-dark.png">
+  <img alt="Serpentine tutorial, The line never crosses" src="tutorials/serpentine-4-blocked-twin-light.png" width="390">
 </picture>
 
 **5 · Tutorial complete**

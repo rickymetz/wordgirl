@@ -155,6 +155,8 @@ A path-tracing puzzle that uncovers hidden poetry:
 - A grid of letters hides a **single continuous path** — trace it by
   moving through adjacent cells (horizontally, vertically, or
   **diagonally**).
+- The path **never crosses itself** — two diagonals never make an X, so
+  the line reads the way a snake does.
 - The path must **cover every letter** in the grid.
 - The letters along the path spell a **hidden phrase** — the puzzle
   title is your only clue.

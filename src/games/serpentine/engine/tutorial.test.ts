@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { allPoemEntries } from "./puzzles";
 import { areAdjacent, cellKey } from "./types";
-import { checkSolved, validatePuzzle } from "./validation";
+import { checkSolved, pathSelfCrosses, validatePuzzle } from "./validation";
 import {
+  TUTORIAL_BLOCKED_TWIN,
   TUTORIAL_FIRST_DIAGONAL,
   onSolutionPath,
   TUTORIAL_PUZZLE,
@@ -49,12 +50,61 @@ describe("the tutorial puzzle", () => {
     }
   });
 
+  it("never crosses its own line, like every generated board", () => {
+    expect(pathSelfCrosses(TUTORIAL_PUZZLE.path)).toBe(false);
+  });
+
   it("keeps every step adjacent", () => {
     for (let i = 1; i < TUTORIAL_PUZZLE.path.length; i++) {
       expect(
         areAdjacent(TUTORIAL_PUZZLE.path[i - 1], TUTORIAL_PUZZLE.path[i]),
       ).toBe(true);
     }
+  });
+
+  it("stages the crossing rule: two touching Es, one closed by the line", () => {
+    // The lesson step four makes a claim about. Everything it says has to
+    // be true of the board at exactly that moment, or the tutorial teaches
+    // a lie on the one screen with no hints to fall back on.
+    const traced = TUTORIAL_PUZZLE.path.slice(0, TUTORIAL_BLOCKED_TWIN);
+    const tail = traced[traced.length - 1];
+    const seen = new Set(traced.map(cellKey));
+    const letterAt = (c: { row: number; col: number }) =>
+      TUTORIAL_PUZZLE.grid[c.row][c.col];
+
+    const touching = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const c = { row: tail.row + dr, col: tail.col + dc };
+        if (c.row < 0 || c.row >= TUTORIAL_PUZZLE.rows) continue;
+        if (c.col < 0 || c.col >= TUTORIAL_PUZZLE.cols) continue;
+        if (!seen.has(cellKey(c))) touching.push(c);
+      }
+    }
+
+    // "Both cells left touching yours show an E."
+    expect(touching).toHaveLength(2);
+    const needed = letterAt(TUTORIAL_PUZZLE.path[TUTORIAL_BLOCKED_TWIN]);
+    expect(needed).toBe("E");
+    expect(touching.map(letterAt)).toEqual([needed, needed]);
+
+    // "The one across the line you drew is closed" — exactly one of the two
+    // crosses, and it is NOT the one the solution takes.
+    const crosses = touching.filter(
+      (c) => pathSelfCrosses([...traced, c]),
+    );
+    expect(crosses).toHaveLength(1);
+    expect(cellKey(crosses[0])).not.toBe(
+      cellKey(TUTORIAL_PUZZLE.path[TUTORIAL_BLOCKED_TWIN]),
+    );
+
+    // "Come back for it later" — the closed cell is a detour, not a dead
+    // end, so the player is never told to abandon a letter.
+    const later = TUTORIAL_PUZZLE.path.findIndex(
+      (c) => cellKey(c) === cellKey(crosses[0]),
+    );
+    expect(later).toBeGreaterThan(TUTORIAL_BLOCKED_TWIN);
   });
 
   it("carries no poem credit to print", () => {
@@ -101,6 +151,16 @@ describe("tutorialStepIndex", () => {
   it("advances at the diagonal, then past it", () => {
     expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(1);
     expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL + 1) })).toBe(2);
+  });
+
+  it("advances at the blocked twin and stays there to the end", () => {
+    expect(at({ cells: path(TUTORIAL_BLOCKED_TWIN - 1) })).toBe(2);
+    expect(at({ cells: path(TUTORIAL_BLOCKED_TWIN) })).toBe(3);
+    // The closed cell is still on the board until the last move, so the
+    // lesson holds rather than handing back to "cover every letter".
+    for (let n = TUTORIAL_BLOCKED_TWIN; n <= TUTORIAL_PUZZLE.path.length; n++) {
+      expect(at({ cells: path(n) })).toBe(3);
+    }
   });
 
   it("reports the script finished only when solved", () => {

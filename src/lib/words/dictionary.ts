@@ -45,8 +45,14 @@
  * lexicon goes 110 rows -> 178, and every backwords puzzle changes.
  * No dictionary.txt change and no other game is affected, so their
  * saved days match on puzzleKey and survive the bump.
+ * v19: serpentine's path may no longer cross itself, so every board is
+ * re-laid — same phrase, different cells. Saves carrying a puzzleKey
+ * catch that on their own; this bump is for the keyless ones, whose
+ * cells would otherwise be replayed onto the new layout. No
+ * dictionary.txt change, and every other game's saves match on
+ * puzzleKey.
  */
-export const DICT_VERSION = 18;
+export const DICT_VERSION = 19;
 
 const MIN_WORD_LEN = 2;
 const MAX_WORD_LEN = 10;

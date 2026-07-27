@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PuzzleDef, Cell } from "../engine/types";
+import { getThemedPuzzle } from "../engine/puzzles";
 import { gameReducer, initialState } from "./reducer";
 
 const path: Cell[] = [
@@ -192,5 +193,60 @@ describe("Serpentine reducer", () => {
   it("supports diagonal adjacency", () => {
     const s = gameReducer(init(), { type: "tapCell", row: 1, col: 1 });
     expect(s.cells).toHaveLength(2);
+  });
+
+  it("refuses a diagonal that would cut through the line already drawn", () => {
+    // (0,0)→(1,1) is drawn; (1,0)→(0,1) is the other arm of that X.
+    let s = init();
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 0 });
+    const before = s;
+    const after = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    expect(after).toBe(before);
+  });
+
+  it("accepts every step of a real generated solution", () => {
+    // The cases around this one are 2×2 toys, so nothing else here would
+    // notice the crossing rule refusing a step the SOLUTION needs. These
+    // are full-size boards traced end to end, which is the guarantee the
+    // rule rests on: it may only ever block a move that was wrong.
+    for (const salt of ["2026-07-10", "2026-12-25", "abc"]) {
+      for (const difficulty of ["haiku", "poem"] as const) {
+        const puzzle = getThemedPuzzle(difficulty, 7, salt);
+        let s = initialState(puzzle, difficulty);
+        for (const cell of puzzle.path.slice(1)) {
+          s = gameReducer(s, { type: "tapCell", row: cell.row, col: cell.col });
+        }
+        expect(s.cells, `${salt} ${difficulty}`).toHaveLength(puzzle.path.length);
+        expect(s.solved, `${salt} ${difficulty}`).toBe(true);
+      }
+    }
+  });
+
+  it("allows a diagonal that only touches the line, rather than cutting it", () => {
+    // (0,0)→(1,0) is drawn; (1,0)→(0,1) straddles it without crossing —
+    // the arm that would cross, (0,0)→(1,1), was never drawn.
+    const wide: PuzzleDef = {
+      ...puzzle,
+      rows: 2,
+      cols: 3,
+      grid: [
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+      ],
+      path: [
+        { row: 0, col: 0 },
+        { row: 1, col: 0 },
+        { row: 0, col: 1 },
+        { row: 1, col: 1 },
+        { row: 0, col: 2 },
+        { row: 1, col: 2 },
+      ],
+      text: "ADBECF",
+    };
+    let s = initialState(wide, "haiku");
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 0 });
+    s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    expect(s.cells).toHaveLength(3);
   });
 });
