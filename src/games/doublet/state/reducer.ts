@@ -14,7 +14,21 @@ export interface GameState {
   currentOrientation: Orientation;
   solved: boolean;
   grid: Map<string, string>;
+  /**
+   * Verdicts on the slots that are FULLY covered right now, updated on
+   * every placement rather than only when the last domino lands. A slot
+   * still missing a letter gets no verdict — it appears in neither list.
+   */
   invalidSlots: number[];
+  validSlots: number[];
+  /**
+   * Bumped by every board change the PLAYER makes; hydrate leaves it at
+   * zero. Restoring a half-finished day re-flags whatever was wrong on
+   * it, and the screen uses this to tell that from a word just laid —
+   * one deserves a toast, the other is old news the tinting already
+   * says. Session-only; never persisted.
+   */
+  moveSeq: number;
   /** Successful placements this board (persisted for trends). */
   moves: number;
   /** Tray + on-board rotations (persisted for trends). */
@@ -32,7 +46,7 @@ export type GameAction =
   | { type: "selectDomino"; dominoId: number }
   | { type: "rotateDomino" }
   | { type: "placeDomino"; cell: Cell; dict: Dictionary; dominoId?: number; orientation?: Orientation }
-  | { type: "removeDomino"; dominoId: number }
+  | { type: "removeDomino"; dominoId: number; dict: Dictionary }
   | { type: "rotatePlaced"; dominoId: number; dict: Dictionary }
   | { type: "clearBoard" }
   | { type: "revealHint"; dict: Dictionary }
@@ -40,6 +54,7 @@ export type GameAction =
       type: "hydrate";
       placed: PlacedDomino[];
       solved: boolean;
+      dict: Dictionary;
       moves?: number;
       rotations?: number;
       removals?: number;
@@ -56,6 +71,8 @@ export function initialState(puzzle: DoubletPuzzle): GameState {
     solved: false,
     grid: new Map(),
     invalidSlots: [],
+    validSlots: [],
+    moveSeq: 0,
     // Action counters, persisted per board (trend metrics).
     moves: 0,
     rotations: 0,
@@ -81,36 +98,42 @@ function buildGrid(
   return grid;
 }
 
-function checkSolved(
+function isBoardFull(
+  grid: Map<string, string>,
+  puzzle: DoubletPuzzle,
+): boolean {
+  return grid.size >= puzzle.board.cells.length;
+}
+
+/**
+ * Judge every slot the board can currently answer for.
+ *
+ * A slot is judged the moment its last cell is covered — a wrong run is
+ * called out where it is laid, not held back until the board fills. The
+ * board is solved only when it is full AND nothing is invalid; a full
+ * board's slots are all covered, so that is the same test it always was.
+ */
+function judgeSlots(
   grid: Map<string, string>,
   puzzle: DoubletPuzzle,
   dict: Dictionary,
-): { solved: boolean; invalidSlots: number[] } {
-  if (grid.size < puzzle.board.cells.length)
-    return { solved: false, invalidSlots: [] };
-
+): { solved: boolean; invalidSlots: number[]; validSlots: number[] } {
   const invalidSlots: number[] = [];
+  const validSlots: number[] = [];
+
   for (let i = 0; i < puzzle.slots.length; i++) {
     const word = slotWord(puzzle.slots[i], grid);
-    if (!word) {
-      invalidSlots.push(i);
-      continue;
-    }
-    if (!dict.has(word.toLowerCase())) invalidSlots.push(i);
+    // Still filling — no verdict to give yet.
+    if (!word) continue;
+    if (dict.has(word.toLowerCase())) validSlots.push(i);
+    else invalidSlots.push(i);
   }
 
-  return { solved: invalidSlots.length === 0, invalidSlots };
-}
-
-function retainValidInvalidSlots(
-  prevInvalid: number[],
-  grid: Map<string, string>,
-  puzzle: DoubletPuzzle,
-): number[] {
-  return prevInvalid.filter((i) => {
-    const slot = puzzle.slots[i];
-    return slot.cells.every((c) => grid.has(cellKey(c.row, c.col)));
-  });
+  return {
+    solved: isBoardFull(grid, puzzle) && invalidSlots.length === 0,
+    invalidSlots,
+    validSlots,
+  };
 }
 
 export function gameReducer(
@@ -175,7 +198,7 @@ export function gameReducer(
 
       const newPlaced = [...state.placed, newPlacement];
       const newGrid = buildGrid(newPlaced, state.puzzle);
-      const { solved, invalidSlots } = checkSolved(
+      const { solved, invalidSlots, validSlots } = judgeSlots(
         newGrid,
         state.puzzle,
         action.dict,
@@ -194,10 +217,17 @@ export function gameReducer(
         currentOrientation: 0,
         solved,
         invalidSlots,
+        validSlots,
+        moveSeq: state.moveSeq + 1,
         moves: state.moves + 1,
-        // invalidSlots is only ever non-empty on a FULL board.
+        // invalidSlots is now populated mid-solve too, so the metric has
+        // to ask for the full board itself — it counts boards that were
+        // finished wrong, not wrong words along the way.
         invalidBoards:
-          state.invalidBoards + (invalidSlots.length > 0 ? 1 : 0),
+          state.invalidBoards +
+          (isBoardFull(newGrid, state.puzzle) && invalidSlots.length > 0
+            ? 1
+            : 0),
       };
     }
 
@@ -210,7 +240,14 @@ export function gameReducer(
         (p) => p.dominoId !== action.dominoId,
       );
       const newGrid = buildGrid(newPlaced, state.puzzle);
-      const invalidSlots = retainValidInvalidSlots(state.invalidSlots, newGrid, state.puzzle);
+      // Lifting a piece un-judges the slots it was part of and can leave
+      // others still complete — re-judge rather than filtering the old
+      // verdicts, so a slot never keeps a flag it no longer earns.
+      const { invalidSlots, validSlots } = judgeSlots(
+        newGrid,
+        state.puzzle,
+        action.dict,
+      );
       return {
         ...state,
         placed: newPlaced,
@@ -218,6 +255,8 @@ export function gameReducer(
         selectedDominoId: action.dominoId,
         currentOrientation: removed?.orientation ?? 0,
         invalidSlots,
+        validSlots,
+        moveSeq: state.moveSeq + 1,
         removals: removed ? state.removals + 1 : state.removals,
       };
     }
@@ -249,7 +288,7 @@ export function gameReducer(
       const newPlaced = [...state.placed];
       newPlaced[idx] = { ...p, orientation: newOri };
       const newGrid = buildGrid(newPlaced, state.puzzle);
-      const { solved, invalidSlots } = checkSolved(
+      const { solved, invalidSlots, validSlots } = judgeSlots(
         newGrid,
         state.puzzle,
         action.dict,
@@ -260,10 +299,12 @@ export function gameReducer(
         grid: newGrid,
         solved,
         invalidSlots,
+        validSlots,
+        moveSeq: state.moveSeq + 1,
         rotations: state.rotations + 1,
         // No invalidBoards increment here: a +1 rotation always flips
-        // the domino's axis, which can't succeed on a full board, and
-        // on a non-full board invalidSlots is always empty.
+        // the domino's axis, so it needs a free cell to swing into and
+        // can never be the move that fills the board.
       };
     }
 
@@ -276,6 +317,8 @@ export function gameReducer(
         selectedDominoId: null,
         currentOrientation: 0,
         invalidSlots: [],
+        validSlots: [],
+        moveSeq: state.moveSeq + 1,
         // Clearing IS taking back — every placed domino comes off, so
         // it counts like N removals (else clear-board play styles
         // chart artificially low take-backs).
@@ -300,7 +343,7 @@ export function gameReducer(
       });
       newPlaced = [...newPlaced, hint];
       const newGrid = buildGrid(newPlaced, state.puzzle);
-      const { solved, invalidSlots } = checkSolved(newGrid, state.puzzle, action.dict);
+      const { solved, invalidSlots, validSlots } = judgeSlots(newGrid, state.puzzle, action.dict);
       const newPlacedIds = new Set(newPlaced.map((p) => p.dominoId));
       const nextUnplaced = solved
         ? null
@@ -313,18 +356,30 @@ export function gameReducer(
         currentOrientation: 0,
         solved,
         invalidSlots,
+        validSlots,
+        moveSeq: state.moveSeq + 1,
         hints: state.hints + 1,
       };
     }
 
     case "hydrate": {
       const newGrid = buildGrid(action.placed, state.puzzle);
+      // Judge the restored board so a part-finished day comes back with
+      // the same marks it was left with, rather than a clean slate that
+      // hides a wrong word until the next placement.
+      const { invalidSlots, validSlots } = judgeSlots(
+        newGrid,
+        state.puzzle,
+        action.dict,
+      );
       return {
         ...state,
         placed: action.placed,
         grid: newGrid,
         solved: action.solved,
-        invalidSlots: [],
+        invalidSlots,
+        validSlots,
+        moveSeq: 0,
         moves: action.moves ?? 0,
         rotations: action.rotations ?? 0,
         removals: action.removals ?? 0,
