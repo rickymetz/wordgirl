@@ -499,8 +499,12 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             }}
           />
           {/* Transient submit feedback, floating above the board.
-              mode="wait" so rapid submits never stack two pills. */}
-          <GameToast toast={toast} className="-top-10" />
+              mode="wait" so rapid submits never stack two pills.
+              Anchored by its BOTTOM, not a negative top: this game's
+              misses are its longest messages, and a wrapped second line
+              has to grow up into the gap rather than down over the
+              grid's top row. */}
+          <GameToast toast={toast} className="bottom-full mb-1" />
         </div>
 
         <SlotChips state={state} onFocusSlot={focusSlot} />
