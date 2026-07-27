@@ -30,13 +30,25 @@ export function TutorialBanner({
   index: number;
 }) {
   const done = index >= steps.length;
-  const step = done ? undefined : steps[index];
+
+  // Nothing left to instruct: TutorialDone has taken over the screen and
+  // says so itself. Keeping a full tinted band here to read "All steps
+  // done" cost a whole line of height at the exact moment the finish card
+  // needs it — enough to push "Run it again" off the bottom of a 375x667
+  // screen at the Huge text setting.
+  if (done) return null;
+
+  const step = steps[index];
 
   return (
-    <div className="rounded-2xl bg-surface-tint px-3.5 py-2.5 [@media(max-height:720px)]:py-2">
+    // The gap under the banner belongs to the banner, not to a wrapper in
+    // each GameScreen — otherwise the `return null` above would leave five
+    // stray 12px bands behind on the finish screen. TUTORIAL_BANNER_H has
+    // always described the banner PLUS this gap.
+    <div className="mb-3 rounded-2xl bg-surface-tint px-3.5 py-2.5 [@media(max-height:720px)]:py-2">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-xs font-semibold tracking-wide text-accent uppercase">
-          {done ? "All steps done" : `Step ${index + 1} of ${steps.length}`}
+          {`Step ${index + 1} of ${steps.length}`}
         </span>
         <span aria-hidden className="flex gap-1">
           {steps.map((s, i) => (
@@ -50,20 +62,18 @@ export function TutorialBanner({
           ))}
         </span>
       </div>
-      {step && (
-        <motion.div
-          key={step.title}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="pt-0.5"
-        >
-          <p className="text-sm font-semibold text-ink">{step.title}</p>
-          <p className="text-sm leading-tight text-ink-soft">{step.body}</p>
-        </motion.div>
-      )}
+      <motion.div
+        key={step.title}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="pt-0.5"
+      >
+        <p className="text-sm font-semibold text-ink">{step.title}</p>
+        <p className="text-sm leading-tight text-ink-soft">{step.body}</p>
+      </motion.div>
       <div aria-live="polite" role="status" className="sr-only">
-        {step ? `Step ${index + 1} of ${steps.length}. ${step.title}.` : null}
+        {`Step ${index + 1} of ${steps.length}. ${step.title}.`}
       </div>
     </div>
   );

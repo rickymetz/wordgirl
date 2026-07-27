@@ -47,18 +47,28 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 **Tutorials** (`components/game/`, `lib/tutorial/`)
 - `TutorialBanner` + `TUTORIAL_BANNER_H` — the step instruction above a
   board ("Step 2 of 4", headline, one-liner), narrated via `aria-live`.
-  A board whose height budget actually binds must add `TUTORIAL_BANNER_H`
-  to its `CHROME_H` via the `reservedH` prop, or the tutorial overflows at
-  the Huge text setting — `PolygonBoard` and `GridBoard` do; `DominoTray`'s
-  board measured 0px over with slack and passes nothing. Re-measure rather
-  than assume: the check is every viewport × Huge text, and the budget is
-  what tells you which group a board is in. Keep step bodies to TWO lines
-  at default text — the constant is sized for that.
+  It owns the gap under itself (`mb-3`) and renders NOTHING once the
+  script is finished, so the finish card gets the whole band back — do
+  not wrap it in a spacer div, which would leave the gap behind. A board
+  whose height budget actually binds must add `TUTORIAL_BANNER_H` to its
+  `CHROME_H` via the `reservedH` prop, or the tutorial overflows at the
+  Huge text setting — `PolygonBoard`, `GridBoard`, `MirrorBoard` and
+  doublet's `Board` all do. Watch for a `min-h-*` FLOOR on the board too:
+  it outranks the budget, and on Backwords it — not `CHROME_H` — was what
+  pushed the rack off a 375×667 screen at Huge, so `MirrorBoard` drops to
+  `min-h-40` in tutorial mode. Re-measure rather than assume: the check is
+  every viewport × Huge text, and the budget is what tells you which group
+  a board is in. Keep step bodies to TWO lines at default text — the
+  constant is sized for that. (Known gap: at 320×568 with Huge text the
+  DAILY screens scroll too — an app-wide budget limit, not a tutorial one.)
   `SnakeGrid` is the exception that needs none of this: it MEASURES the box
   the flex column leaves it (see below), so a banner is just chrome that
   leaves less room. Prefer that where a screen's chrome is variable.
 - `TutorialDone` — the finish card that stands in for a game's results
-  block: no time, no score, no share, a link to the daily.
+  block: no time, no score, no share, a link to the daily. It takes focus
+  on mount and announces itself: `data-autofocus` is only read by
+  `useModalFocus`, and a results block is not a dialog, so the card
+  focuses itself explicitly.
 - `TutorialPrompt` (`components/`) — the once-per-game first-visit offer,
   mounted on the DAILY only (`enabled={mode.kind === "daily"}`). It owns
   its own `tutorialSeen` load/mark. **The coach sheet no longer
@@ -66,10 +76,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   that adds a "Play the tutorial" link.
 - Three ways in, in order of how most players will meet it: the first-visit
   prompt, the hub bento's `Tutorial` tile (LAST in `secondaryActions`,
-  after Stats), and the coach sheet's link. Adding that fourth bento tile
-  is why `GameCard`'s tiles carry `md:min-h-11`: on md+ the cluster is a
-  column dividing a fixed height, so a fourth action drove each tile to
-  28px, under the touch floor.
+  after Stats), and the coach sheet's link. That fourth bento tile is why
+  `GameCard`'s secondary actions are a two-column GRID on phones — as a
+  horizontal scroller the fourth tile started at x=364 in a 390px
+  viewport, entirely off screen, so the tutorial had no visible way back
+  once the prompt was answered. It is also why the tiles carry
+  `md:min-h-11`: on md+ the cluster is a column dividing a fixed height,
+  so a fourth action drove each tile to 28px, under the touch floor.
 - `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
   monotonic clamp, so a step never flaps backwards when the player
   undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
@@ -288,8 +301,13 @@ Before merging any game feature, verify:
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
 - Tutorial mode: no save, no stats, no streak, no hints, no share
-- Tutorial fits with no page scroll at Huge text — `reservedH` added to
-  the board's budget wherever that budget binds
+- Tutorial fits with no page scroll at Huge text, at 375px wide and up —
+  `reservedH` added to the board's budget wherever that budget binds, and
+  any `min-h-*` board floor lowered to match
+- Every control a tutorial step NAMES actually exists on screen. A step
+  that says "tap X" when X is a hidden gesture is a dead end, not a
+  wording nit — the tutorial is the one screen with no hints to fall back
+  on. Play each tutorial following only its own instructions
 - Replay shows a confirmation dialog
 - Archive separators use `·` not `.`
 - No emoji in UI chrome (share strings only)

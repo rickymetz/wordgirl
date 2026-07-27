@@ -11,28 +11,29 @@ import type { TutorialStep } from "../../../lib/tutorial/types";
  */
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
-    title: "Lay letters against the glass",
+    title: "Place your first letters",
     body: (
       <>
-        Tap or drag letters from the rack into the row.
+        Tap the letters at the bottom — they fill the dashed slots beside the
+        mirror.
       </>
     ),
   },
   {
-    title: "The reflection is a word too",
+    title: "Read the reflection",
     body: (
       <>
         The mirror spells your row <Key>backwards</Key>. Three of these
-        letters make <Key>TOP</Key> — which reflects as POT.
+        letters make <Key>TOP</Key>, which reflects as POT.
       </>
     ),
   },
   {
-    title: "Palindromes need only half",
+    title: "Lay only half a palindrome",
     body: (
       <>
-        Lay <Key>DA</Key> and the mirror finishes DAD. Solved when the rack
-        is empty.
+        Place <Key>DA</Key> and the mirror finishes DAD. Solved when no
+        letters are left.
       </>
     ),
   },

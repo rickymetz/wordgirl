@@ -29,9 +29,13 @@ interface Props {
   resolvedAnchor?: Cell | null;
   previewOrientation?: Orientation | null;
   cursorCell?: Cell | null;
+  /** Extra chrome above the board (the tutorial banner), px at default
+   *  text size — folded into the height budget so a big-text tutorial
+   *  gets smaller cells rather than a tray below the fold. */
+  reservedH?: number;
 }
 
-export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation, cursorCell }: Props) {
+export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoardDragMove, onBoardDragEnd, hoverCell, resolvedAnchor, previewOrientation, cursorCell, reservedH = 0 }: Props) {
   const { puzzle, grid } = state;
   const { vw, vh, rem } = useViewport();
 
@@ -39,7 +43,7 @@ export function Board({ state, onCellTap, onTapPlaced, onBoardDragStart, onBoard
   const wCell =
     (Math.min(maxBoardW, vw - 32) - (puzzle.board.cols - 1) * GAP) / puzzle.board.cols;
   const hCell =
-    (vh - CHROME_H * (rem / 16) - (puzzle.board.rows - 1) * GAP) /
+    (vh - (CHROME_H + reservedH) * (rem / 16) - (puzzle.board.rows - 1) * GAP) /
     puzzle.board.rows;
   const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, wCell, hCell));
 

@@ -22,7 +22,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Corners count too",
     body: (
       <>
-        The next letter is <Key>diagonal</Key> — all eight neighbours are
+        The next letter is <Key>diagonal</Key> — all eight neighbors are
         fair game.
       </>
     ),

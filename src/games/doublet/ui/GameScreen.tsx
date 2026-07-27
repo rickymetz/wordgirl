@@ -1,7 +1,7 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CircleHelp, Lightbulb, RotateCcw } from "lucide-react";
+import { CircleHelp, Lightbulb, RotateCcw, RotateCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
@@ -20,7 +20,7 @@ import { DoubletCoach } from "./Overlays";
 import { loadTutorialSeen, markTutorialSeen } from "../state/persistence";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
-import { TutorialBanner } from "../../../components/game/TutorialBanner";
+import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { tutorialStepIndex } from "../engine/tutorial";
@@ -477,9 +477,7 @@ export function GameScreen({
       )}
 
       {isTutorial && (
-        <div className="pb-3">
-          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
-        </div>
+        <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
       )}
 
       {storageBroken && !isTutorial && (
@@ -501,6 +499,7 @@ export function GameScreen({
           resolvedAnchor={resolvedAnchor}
           previewOrientation={previewOri}
           cursorCell={cursorCell}
+          reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
         />
         <GameToast toast={toast} />
       </div>
@@ -555,6 +554,28 @@ export function GameScreen({
               <span className="text-sm font-medium text-ink-soft">
                 {placedCount}/{totalDominoes} placed
               </span>
+              {/* Rotation used to be reachable only by tapping an already-
+                  selected chip a second time (still supported, see
+                  DominoTray) or by pressing R — neither of which a phone
+                  player can discover, while both the coach sheet and the
+                  tutorial told them to press a "rotate button" that did not
+                  exist. Doublet boards can require an upright piece, so that
+                  was a dead end, not just a missing shortcut. */}
+              <button
+                className={[
+                  "relative flex items-center gap-1 px-2.5 py-1 rounded-full",
+                  "text-accent text-xs font-semibold",
+                  "active:scale-95 touch-manipulation select-none",
+                  "after:absolute after:inset-x-0 after:-inset-y-2.5",
+                  state.selectedDominoId === null ? "invisible" : "",
+                ].join(" ")}
+                aria-label="Rotate the selected domino"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => dispatch({ type: "rotateDomino" })}
+              >
+                <RotateCw aria-hidden className="h-3.5 w-3.5" />
+                Rotate
+              </button>
               <button
                 className={[
                   "relative flex items-center gap-1 px-2.5 py-1 rounded-full",
@@ -566,7 +587,7 @@ export function GameScreen({
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => dispatch({ type: "clearBoard" })}
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw aria-hidden className="h-3.5 w-3.5" />
                 Clear
               </button>
             </div>
