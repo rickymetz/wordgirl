@@ -193,4 +193,41 @@ describe("Serpentine reducer", () => {
     const s = gameReducer(init(), { type: "tapCell", row: 1, col: 1 });
     expect(s.cells).toHaveLength(2);
   });
+
+  it("refuses a diagonal that would cut through the line already drawn", () => {
+    // (0,0)→(1,1) is drawn; (1,0)→(0,1) is the other arm of that X.
+    let s = init();
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 0 });
+    const before = s;
+    const after = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    expect(after).toBe(before);
+  });
+
+  it("allows a diagonal that only touches the line, rather than cutting it", () => {
+    // (0,0)→(1,0) is drawn; (1,0)→(0,1) straddles it without crossing —
+    // the arm that would cross, (0,0)→(1,1), was never drawn.
+    const wide: PuzzleDef = {
+      ...puzzle,
+      rows: 2,
+      cols: 3,
+      grid: [
+        ["A", "B", "C"],
+        ["D", "E", "F"],
+      ],
+      path: [
+        { row: 0, col: 0 },
+        { row: 1, col: 0 },
+        { row: 0, col: 1 },
+        { row: 1, col: 1 },
+        { row: 0, col: 2 },
+        { row: 1, col: 2 },
+      ],
+      text: "ADBECF",
+    };
+    let s = initialState(wide, "haiku");
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 0 });
+    s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    expect(s.cells).toHaveLength(3);
+  });
 });

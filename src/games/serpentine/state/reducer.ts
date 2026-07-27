@@ -2,6 +2,8 @@ import {
   areAdjacent,
   cellKey,
   cellsEqual,
+  stepKey,
+  straddledCells,
   type Cell,
   type Difficulty,
   type PuzzleDef,
@@ -108,13 +110,33 @@ function handleTapCell(state: GameState, cell: Cell): GameState {
     return applyPathUpdate(state, [cell]);
   }
 
-  // Adjacent to tail -> extend.
+  // Adjacent to tail -> extend, unless the step would cut through the
+  // line already drawn.
   const tail = cells[cells.length - 1];
-  if (areAdjacent(tail, cell)) {
+  if (areAdjacent(tail, cell) && !crossesSnake(cells, tail, cell)) {
     return applyPathUpdate(state, [...cells, cell]);
   }
 
   return state;
+}
+
+/**
+ * True when stepping tail → cell would cross the drawn line.
+ *
+ * A snake does not pass through its own body: the two arms of a 2×2
+ * block's X may not both be drawn (see `crossingStepIndex`). Generated
+ * solutions never cross, so this refuses only moves that were wrong
+ * anyway — and it makes a diagonal blocked by the line feel like a wall
+ * mid-drag rather than a trap discovered at the end.
+ */
+function crossesSnake(cells: readonly Cell[], tail: Cell, cell: Cell): boolean {
+  const straddled = straddledCells(tail, cell);
+  if (!straddled) return false;
+  const key = stepKey(straddled[0], straddled[1]);
+  for (let i = 1; i < cells.length; i++) {
+    if (stepKey(cells[i - 1], cells[i]) === key) return true;
+  }
+  return false;
 }
 
 function handleUndo(state: GameState): GameState {

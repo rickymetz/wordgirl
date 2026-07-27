@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { getThemedPuzzle, getPoolSize, titleSpoilsPhrase } from "./puzzles";
-import { cellsFitPuzzle, validatePuzzle } from "./validation";
+import {
+  cellsFitPuzzle,
+  crossingStepIndex,
+  pathSelfCrosses,
+  validatePuzzle,
+} from "./validation";
+import type { Cell } from "./types";
 
 describe("titleSpoilsPhrase", () => {
   it("withholds a title that is the phrase", () => {
@@ -48,6 +54,94 @@ describe("serpentine puzzles", () => {
       });
     }
   }
+});
+
+describe("crossingStepIndex", () => {
+  const cells = (...pairs: [number, number][]): Cell[] =>
+    pairs.map(([row, col]) => ({ row, col }));
+
+  it("finds the X two diagonals draw through one 2×2 block", () => {
+    // (0,0)→(1,1) and (1,0)→(0,1) are the two arms of the same X.
+    const path = cells([0, 0], [1, 1], [2, 1], [1, 0], [0, 1]);
+    expect(crossingStepIndex(path)).toBe(4);
+    expect(pathSelfCrosses(path)).toBe(true);
+  });
+
+  it("catches the crossing whichever arm is drawn first", () => {
+    expect(pathSelfCrosses(cells([1, 0], [0, 1], [1, 1], [0, 0]))).toBe(true);
+  });
+
+  it("lets two diagonals share a 2×2 block without crossing", () => {
+    // Both arms of the OTHER diagonal — parallel, never meeting.
+    expect(pathSelfCrosses(cells([0, 0], [1, 1], [1, 2], [0, 3]))).toBe(false);
+  });
+
+  it("lets the line run alongside itself", () => {
+    expect(
+      pathSelfCrosses(cells([0, 0], [0, 1], [0, 2], [1, 2], [1, 1], [1, 0])),
+    ).toBe(false);
+  });
+
+  it("says no for orthogonal-only and trivial paths", () => {
+    expect(pathSelfCrosses(cells([0, 0], [0, 1], [1, 1], [1, 0]))).toBe(false);
+    expect(pathSelfCrosses(cells([0, 0]))).toBe(false);
+    expect(pathSelfCrosses([])).toBe(false);
+  });
+});
+
+describe("generated paths never cross themselves", () => {
+  const size = getPoolSize();
+  // Layout is re-rolled per date, so one salt proves nothing about the
+  // next. These salts cover ~1500 boards; before the rule, 44% crossed.
+  for (const salt of ["2026-07-10", "2026-11-03", "2027-02-29", "x", "yz"]) {
+    it(`holds across the pool for salt ${salt}`, () => {
+      for (const difficulty of ["haiku", "poem"] as const) {
+        for (let i = 0; i < size; i++) {
+          const puzzle = getThemedPuzzle(difficulty, i, salt);
+          const at = crossingStepIndex(puzzle.path);
+          expect(
+            at,
+            `${puzzle.id} (${difficulty}) crosses at step ${at}`,
+          ).toBe(-1);
+        }
+      }
+    });
+  }
+
+  it("is enforced by validatePuzzle, so a hand-laid path is held to it too", () => {
+    const crossed = {
+      id: "crossed",
+      title: "Crossed",
+      author: "",
+      difficulty: "haiku" as const,
+      rows: 2,
+      cols: 2,
+      grid: [
+        ["A", "B"],
+        ["C", "D"],
+      ],
+      text: "ADCB",
+      excerpt: false,
+      titleSpoils: false,
+      blocked: new Set<string>(),
+      path: [
+        { row: 0, col: 0 },
+        { row: 1, col: 1 },
+        { row: 1, col: 0 },
+        { row: 0, col: 1 },
+      ],
+    };
+    expect(validatePuzzle(crossed)).toMatch(/crosses itself/);
+  });
+
+  it("still turns corners — the rule bans crossings, not diagonals", () => {
+    const puzzle = getThemedPuzzle("poem", 3, "2026-07-10");
+    const diagonals = puzzle.path.filter(
+      (c, i) =>
+        i > 0 && c.row !== puzzle.path[i - 1].row && c.col !== puzzle.path[i - 1].col,
+    );
+    expect(diagonals.length).toBeGreaterThan(0);
+  });
 });
 
 describe("cellsFitPuzzle", () => {

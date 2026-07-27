@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { allPoemEntries } from "./puzzles";
 import { areAdjacent, cellKey } from "./types";
-import { checkSolved, validatePuzzle } from "./validation";
+import { checkSolved, pathSelfCrosses, validatePuzzle } from "./validation";
 import {
   TUTORIAL_FIRST_DIAGONAL,
   onSolutionPath,
@@ -47,6 +47,10 @@ describe("the tutorial puzzle", () => {
         isDiagonal(TUTORIAL_PUZZLE.path[j - 1], TUTORIAL_PUZZLE.path[j]),
       ).toBe(false);
     }
+  });
+
+  it("never crosses its own line, like every generated board", () => {
+    expect(pathSelfCrosses(TUTORIAL_PUZZLE.path)).toBe(false);
   });
 
   it("keeps every step adjacent", () => {

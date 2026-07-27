@@ -1,4 +1,13 @@
-import { areAdjacent, cellKey, MAX_COLS, MAX_ROWS, type Cell, type PuzzleDef } from "./types";
+import {
+  areAdjacent,
+  cellKey,
+  MAX_COLS,
+  MAX_ROWS,
+  stepKey,
+  straddledCells,
+  type Cell,
+  type PuzzleDef,
+} from "./types";
 
 /** True when every consecutive pair in `path` is 8-directionally adjacent. */
 export function isContiguousPath(path: Cell[]): boolean {
@@ -6,6 +15,32 @@ export function isContiguousPath(path: Cell[]): boolean {
     if (!areAdjacent(path[i - 1], path[i])) return false;
   }
   return true;
+}
+
+/**
+ * The index of the first step that crosses an earlier one, or -1 when the
+ * line never crosses itself.
+ *
+ * A snake does not pass through its own body, so neither does a
+ * Serpentine solution: it may run alongside itself, but the two arms of a
+ * 2×2 block's X may not both be drawn. Cell reuse is caught elsewhere
+ * (`checkSolved`, `validatePuzzle`); the only crossing left once every
+ * cell is visited once is that X, so a step is judged against the segment
+ * between the cells it straddles.
+ */
+export function crossingStepIndex(path: readonly Cell[]): number {
+  const steps = new Set<string>();
+  for (let i = 1; i < path.length; i++) {
+    const straddled = straddledCells(path[i - 1], path[i]);
+    if (straddled && steps.has(stepKey(straddled[0], straddled[1]))) return i;
+    steps.add(stepKey(path[i - 1], path[i]));
+  }
+  return -1;
+}
+
+/** True when the line crosses itself. See `crossingStepIndex`. */
+export function pathSelfCrosses(path: readonly Cell[]): boolean {
+  return crossingStepIndex(path) >= 0;
 }
 
 /**
@@ -62,6 +97,11 @@ export function validatePuzzle(puzzle: PuzzleDef): string | null {
 
   if (!isContiguousPath(puzzle.path)) {
     return "Path is not contiguous";
+  }
+
+  const crossing = crossingStepIndex(puzzle.path);
+  if (crossing >= 0) {
+    return `Path crosses itself at ${cellKey(puzzle.path[crossing - 1])} → ${cellKey(puzzle.path[crossing])}`;
   }
 
   const allCells = new Set<string>();
