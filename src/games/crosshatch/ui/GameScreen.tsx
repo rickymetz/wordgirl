@@ -342,13 +342,18 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           : banked.length === 1
             ? `${banked[0]} — ${state.found.length} of ${total}`
             : `${banked.length} new words — ${state.found.length} of ${total}`,
-      nothingNew: "You\u2019ve already found all these words — change a line",
+      // Kept short enough to stay on ONE line: these are the longest
+      // strings any game emits, and the pill is now capped to the
+      // viewport, so wordier phrasing wraps to two lines on a phone.
+      // They double as the screen-reader narration, so each still names
+      // what actually failed.
+      nothingNew: "No new words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`
-          : `${r.word.toUpperCase()} doesn't work with the crossing lines`
+          : `${r.word.toUpperCase()} doesn't fit the crossing lines`
         : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });

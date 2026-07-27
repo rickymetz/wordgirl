@@ -37,11 +37,14 @@ export function useToast(): {
  * Width: `w-max` keeps a message on ONE line — the shrink-to-fit an
  * absolute box would otherwise get is only the space right of `left-1/2`,
  * i.e. half the board, which would wrap pills that comfortably fit. The
- * cap then bounds it to the viewport, so a long message (Crosshatch's
- * "already found all these words") wraps to two centered lines instead
- * of running off both screen edges and making the page scroll
- * sideways. Position pills that can wrap so they grow AWAY from the
- * board — `bottom-full`, not a negative `top`.
+ * cap then bounds it to the viewport, so an over-long message wraps to
+ * two centered lines instead of running off both screen edges and making
+ * the page scroll sideways.
+ *
+ * The cap is a backstop, not a licence to be wordy: keep message copy
+ * short enough to fit one line on a phone (~38 characters), and position
+ * any pill that can still wrap so it grows AWAY from the board —
+ * `bottom-full`, not a negative `top`.
  */
 export function GameToast({
   toast,
