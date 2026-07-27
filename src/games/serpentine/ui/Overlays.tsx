@@ -24,7 +24,9 @@ export function SerpentineCoach({ open, onClose, tutorialTo }: CoachProps) {
                 <>
                   Find a <Key>single continuous path</Key> through the
                   grid. The path snakes through adjacent cells —
-                  horizontally, vertically, or <Key>diagonally</Key>.
+                  horizontally, vertically, or <Key>diagonally</Key>. The{" "}
+                  <Key>first letter</Key> is placed for you; carry on from
+                  there.
                 </>
               ),
             },

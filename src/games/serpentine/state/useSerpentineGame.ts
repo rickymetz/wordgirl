@@ -8,7 +8,7 @@ import { getPracticePuzzle } from "../engine/practice";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import type { Difficulty } from "../engine/types";
 import { cellsFitPuzzle } from "../engine/validation";
-import { gameReducer, initialState, type GameState } from "./reducer";
+import { gameReducer, initialState, isStartState, type GameState } from "./reducer";
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
@@ -143,7 +143,8 @@ export function useSerpentineGame(mode: GameMode) {
 
   persistRef.current = () => {
     if (!persisted || !hydrated.current || abandoned.current) return;
-    if (staleRecordRef.current && stateRef.current.cells.length === 0) return;
+    // The untouched board is the given letter, not an empty snake.
+    if (staleRecordRef.current && isStartState(stateRef.current)) return;
     staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(stateRef.current));
   };
@@ -151,7 +152,7 @@ export function useSerpentineGame(mode: GameMode) {
   // Save on every state change.
   useEffect(() => {
     if (!persisted || !hydrated.current || abandoned.current) return;
-    if (staleRecordRef.current && state.cells.length === 0) return;
+    if (staleRecordRef.current && isStartState(state)) return;
     staleRecordRef.current = false;
     void saveDailyProgress(buildProgress(state));
   }, [state, buildProgress, persisted]);

@@ -94,14 +94,13 @@ describe("tutorialStepIndex", () => {
     tutorialStepIndex({ cells: [], solved: false, ...s });
   const path = (n: number) => TUTORIAL_PUZZLE.path.slice(0, n);
 
-  it("starts on step one", () => {
-    expect(at({})).toBe(0);
+  it("starts on step one, on the given first letter", () => {
+    expect(at({ cells: path(1) })).toBe(0);
   });
 
-  it("advances on the first tap, then at the diagonal", () => {
-    expect(at({ cells: path(1) })).toBe(1);
-    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(2);
-    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL + 1) })).toBe(3);
+  it("advances at the diagonal, then past it", () => {
+    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(1);
+    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL + 1) })).toBe(2);
   });
 
   it("reports the script finished only when solved", () => {
@@ -121,7 +120,7 @@ describe("tutorialStepIndex", () => {
       { row: 1, col: 0 },
     ];
     expect(onSolutionPath(wrong)).toBe(false);
-    expect(at({ cells: wrong })).toBe(1);
+    expect(at({ cells: wrong })).toBe(0);
   });
 
   it("holds at the follow-the-letters step for any wrong route", () => {
@@ -135,16 +134,15 @@ describe("tutorialStepIndex", () => {
       { row: 1, col: 1 },
     ];
     expect(onSolutionPath(wrong)).toBe(false);
-    expect(at({ cells: wrong })).toBe(1);
+    expect(at({ cells: wrong })).toBe(0);
   });
 
   it("recovers the diagonal step when the player backs onto the path", () => {
     // Undo is ordinary play here, and the screen does not clamp the step
     // forward — stepping back to the diagonal should put its lesson back.
-    expect(at({ cells: path(3) })).toBe(3);
-    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(2);
-    expect(at({ cells: path(1) })).toBe(1);
-    expect(at({ cells: [] })).toBe(0);
+    expect(at({ cells: path(3) })).toBe(2);
+    expect(at({ cells: path(TUTORIAL_FIRST_DIAGONAL) })).toBe(1);
+    expect(at({ cells: path(1) })).toBe(0);
   });
 
   it("accepts every prefix of the real path as on-path", () => {

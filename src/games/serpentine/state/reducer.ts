@@ -26,16 +26,36 @@ function buildClaimed(cells: Cell[]): Set<string> {
   return new Set(cells.map(cellKey));
 }
 
+/**
+ * The start state: the phrase's first letter is GIVEN, so every puzzle
+ * opens with the snake already one cell long, on `path[0]`.
+ *
+ * It is a floor, not a move — undo and clear stop here, and hint
+ * targeting starts from it (progress is 1, so the first letter can
+ * never be spent on). The board is the only place a player can be told
+ * where the line begins; without it the opening move is a guess among
+ * every cell in the grid.
+ */
+export function startCells(puzzle: PuzzleDef): Cell[] {
+  return puzzle.path.length > 0 ? [puzzle.path[0]] : [];
+}
+
+/** True when the snake is untouched — still exactly the given letter. */
+export function isStartState(state: GameState): boolean {
+  return state.cells.length <= startCells(state.puzzle).length;
+}
+
 export function initialState(
   puzzle: PuzzleDef,
   difficulty: Difficulty,
 ): GameState {
+  const cells = startCells(puzzle);
   return {
     puzzle,
     difficulty,
-    cells: [],
+    cells,
     solved: false,
-    claimed: new Set(),
+    claimed: buildClaimed(cells),
   };
 }
 
@@ -66,7 +86,8 @@ function handleTapCell(state: GameState, cell: Cell): GameState {
     return handleUndo(state);
   }
 
-  // Tap earlier in path -> truncate to that point.
+  // Tap earlier in path -> truncate to that point. Index 0 is the given
+  // letter, so the shortest this can leave is the start state.
   const idx = cells.findIndex((c) => cellsEqual(c, cell));
   if (idx >= 0) {
     return applyPathUpdate(state, cells.slice(0, idx + 1));
@@ -81,7 +102,8 @@ function handleTapCell(state: GameState, cell: Cell): GameState {
   // Path is at target length -> can't extend further.
   if (cells.length >= targetLen) return state;
 
-  // Empty path -> start here.
+  // Empty path -> start here. Only reachable for a pathless puzzle,
+  // where there is no given letter to open from.
   if (cells.length === 0) {
     return applyPathUpdate(state, [cell]);
   }
@@ -97,25 +119,41 @@ function handleTapCell(state: GameState, cell: Cell): GameState {
 
 function handleUndo(state: GameState): GameState {
   if (state.solved) return state;
-  if (state.cells.length === 0) return state;
+  // Undo stops at the given letter rather than emptying the board.
+  if (isStartState(state)) return state;
   return applyPathUpdate(state, state.cells.slice(0, -1));
 }
 
 function handleClearSnake(state: GameState): GameState {
   if (state.solved) return state;
-  return applyPathUpdate(state, []);
+  return applyPathUpdate(state, startCells(state.puzzle));
+}
+
+/**
+ * A save records raw coordinates and predates the given first letter, so
+ * it can hold a trace that starts somewhere else entirely. Replaying one
+ * would strand the player: undo floors at cell one, and cell one would be
+ * a cell the puzzle never gives. Such a save restarts from the given
+ * letter instead.
+ */
+function normalizeCells(cells: Cell[], puzzle: PuzzleDef): Cell[] {
+  const start = startCells(puzzle);
+  if (start.length === 0) return cells;
+  if (cells.length === 0) return start;
+  return cellsEqual(cells[0], start[0]) ? cells : start;
 }
 
 function handleHydrate(
   state: GameState,
   action: { cells: Cell[]; solved: boolean },
 ): GameState {
-  const solved = checkSolved(action.cells, state.puzzle);
+  const cells = normalizeCells(action.cells, state.puzzle);
+  const solved = checkSolved(cells, state.puzzle);
   return {
     ...state,
-    cells: action.cells,
+    cells,
     solved,
-    claimed: buildClaimed(action.cells),
+    claimed: buildClaimed(cells),
   };
 }
 

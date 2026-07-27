@@ -2,7 +2,7 @@ import { Key } from "../../../components/CoachSheet";
 import type { TutorialStep } from "../../../lib/tutorial/types";
 
 /**
- * The tutorial script. Step three arrives exactly when the path needs its
+ * The tutorial script. Step two arrives exactly when the path needs its
  * first diagonal, which is the rule the grid alone never suggests.
  *
  * Bodies are two lines at the default text size — the banner's height
@@ -10,19 +10,11 @@ import type { TutorialStep } from "../../../lib/tutorial/types";
  */
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
-    title: "Start the line",
-    body: (
-      <>
-        Tap a cell to begin. The readout above fills in as you go.
-      </>
-    ),
-  },
-  {
     title: "Follow the letters",
     body: (
       <>
-        Move to a <Key>touching</Key> cell to extend. Tap a placed cell to
-        undo back to it.
+        The first letter is given. Move to a <Key>touching</Key> cell; tap
+        a placed one to undo.
       </>
     ),
   },
@@ -46,4 +38,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 export const TUTORIAL_RECAP =
-  "A real day hides a line of poetry instead, on a bigger grid, with only the poem's title as a clue.";
+  "A real day hides a line of poetry instead, on a bigger grid, with only the poem's title as a clue — and, like this one, its first letter already placed.";
