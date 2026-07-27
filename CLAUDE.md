@@ -49,11 +49,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   board ("Step 2 of 4", headline, one-liner), narrated via `aria-live`.
   A board whose height budget actually binds must add `TUTORIAL_BANNER_H`
   to its `CHROME_H` via the `reservedH` prop, or the tutorial overflows at
-  the Huge text setting — `PolygonBoard` and `GridBoard` do; the other
-  three measured 0px over with slack to spare and pass nothing. Re-measure
-  rather than assume: the check is every viewport × Huge text, and the
-  budget is what tells you which group a board is in. Keep step bodies to
-  TWO lines at default text — the constant is sized for that.
+  the Huge text setting — `PolygonBoard` and `GridBoard` do; `DominoTray`'s
+  board measured 0px over with slack and passes nothing. Re-measure rather
+  than assume: the check is every viewport × Huge text, and the budget is
+  what tells you which group a board is in. Keep step bodies to TWO lines
+  at default text — the constant is sized for that.
+  `SnakeGrid` is the exception that needs none of this: it MEASURES the box
+  the flex column leaves it (see below), so a banner is just chrome that
+  leaves less room. Prefer that where a screen's chrome is variable.
 - `TutorialDone` — the finish card that stands in for a game's results
   block: no time, no score, no share, a link to the daily.
 - `TutorialPrompt` (`components/`) — the once-per-game first-visit offer,
@@ -181,6 +184,37 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   never `min-h-dvh`. Board height budgets must scale with the root
   font-size — use `src/lib/useViewport.ts` (`vh` excludes safe-area
   insets; `rem` is the Text-size setting).
+- Two ways to budget a board's height. A `CHROME_H` constant subtracted
+  from `vh` (four of the five boards) is fine where the chrome around it
+  is FIXED. Where it is not — Serpentine's poem credit wraps to one, two
+  or three lines and its readout follows the phrase's length — a constant
+  tuned on one puzzle is wrong for the next, so `SnakeGrid` measures
+  instead: the board container is `flex min-h-0 flex-1`, the board's
+  wrapper is `flex-1 min-h-0` inside it, and the board itself is absolute,
+  contributing no height of its own. That last part is what keeps it a
+  measurement and not a feedback loop. Note `h-full` does NOT work for the
+  wrapper — an absolute child leaves no content height for a percentage to
+  resolve against, and it silently measures 0.
+- The touch floor OUTRANKS the no-scroll rule. A board gives way to its
+  height budget only down to a tappable cell (`MIN_CELL`); past that it
+  stops shrinking and the page scrolls, because a board too small to hit
+  is a broken game and a scroll is only an ugly one. Width still binds
+  absolutely — a board wider than the screen cannot be tapped at all.
+  When the floor wins, put a `minHeight` on the board's wrapper so the
+  column grows and the page scrolls; without it an absolutely positioned
+  board simply sits on top of the controls.
+- A board that can be squeezed must scale its TYPE with its cells, not
+  just its geometry (`LETTER_MAX_RATIO` in `SnakeGrid`). A rem-sized
+  letter in a shrunken cell overflows it, and where the letters sit on a
+  drawn overlay they visibly part company with it. Make it a CAP, not a
+  ratio: the letter keeps its rem size — which is what the Text-size
+  setting is for — and gives that up only on a cell too small to hold it.
+- Cell sizes floor to whole pixels. A fractional cell makes a board a
+  fraction taller than the box it was measured against, which is a page
+  scroll of a pixel or two and nothing else.
+- Fixed paddings need a `[@media(max-height:720px)]` variant wherever they
+  stack up: 50px of `pt-10` at Huge text is the difference between a board
+  that fits and one that scrolls on a 667px screen.
 - Touch targets ≥ ~44px (invisible `::after` expansion or negative-
   margin padding is fine). `touch-manipulation` + `select-none` on
   game surfaces; `onPointerDown={(e) => e.preventDefault()}` on

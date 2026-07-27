@@ -5,7 +5,13 @@ import type { Cell, PuzzleDef } from "../engine/types";
 interface Props {
   puzzle: PuzzleDef;
   cells: Cell[];
-  hintIndices?: Set<number>;
+  /**
+   * Letters the player knows but has not traced: the given first letter
+   * of every word, plus any cell they have spent a hint on. One
+   * treatment for both — from here they are the same thing, a letter
+   * whose place on the grid is still to be found.
+   */
+  revealed?: Set<number>;
 }
 
 function fontSize(total: number): string {
@@ -16,7 +22,7 @@ function fontSize(total: number): string {
   return "text-sm";
 }
 
-export function SnakeText({ puzzle, cells, hintIndices }: Props) {
+export function SnakeText({ puzzle, cells, revealed }: Props) {
   const total = puzzle.path.length;
   const size = fontSize(total);
   const words = phraseWords(puzzle.text);
@@ -44,8 +50,8 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
               const i = token.index;
               const letter =
                 i < cells.length ? puzzle.grid[cells[i].row][cells[i].col] : null;
-              const hintLetter =
-                !letter && hintIndices?.has(i)
+              const knownLetter =
+                !letter && revealed?.has(i)
                   ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
                   : null;
               return letter ? (
@@ -58,9 +64,16 @@ export function SnakeText({ puzzle, cells, hintIndices }: Props) {
                 >
                   {letter}
                 </motion.span>
-              ) : hintLetter ? (
-                <span key={`${i}-hint`} className="inline-block text-accent/50">
-                  {hintLetter}
+              ) : knownLetter ? (
+                // Known but not placed. NOT a lighter accent: the accent
+                // clears AA on surface by 4.99:1 in light mode, so any
+                // alpha on it fails — 50% measured 2.05:1, and these are
+                // letters every player reads every day now, not the rare
+                // hint they used to be. Neutral ink-soft carries them at
+                // 5.18:1 / 6.27:1, and leaves the accent to mean one
+                // thing: cells the player has actually traced.
+                <span key={`${i}-known`} className="inline-block text-ink-soft">
+                  {knownLetter}
                 </span>
               ) : (
                 <span key={`${i}-blank`} className="inline-block text-ink-soft/70">

@@ -32,22 +32,16 @@ function init() {
 }
 
 describe("Serpentine reducer", () => {
-  it("starts with empty cells and not solved", () => {
+  it("starts with the phrase's first letter given, not solved", () => {
     const s = init();
-    expect(s.cells).toEqual([]);
+    expect(s.cells).toEqual([path[0]]);
     expect(s.solved).toBe(false);
-    expect(s.claimed.size).toBe(0);
-  });
-
-  it("tapCell on empty path starts the path", () => {
-    const s = gameReducer(init(), { type: "tapCell", row: 0, col: 0 });
-    expect(s.cells).toEqual([{ row: 0, col: 0 }]);
     expect(s.claimed.has("0,0")).toBe(true);
+    expect(s.claimed.size).toBe(1);
   });
 
   it("tapCell extends path to adjacent cell", () => {
     let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     expect(s.cells).toHaveLength(2);
     expect(s.cells[1]).toEqual({ row: 0, col: 1 });
@@ -62,16 +56,13 @@ describe("Serpentine reducer", () => {
       path: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }],
       text: "ABCD",
     };
-    let s = initialState(bigPuzzle, "haiku");
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
-    const before = s;
-    s = gameReducer(s, { type: "tapCell", row: 2, col: 2 });
+    const before = initialState(bigPuzzle, "haiku");
+    const s = gameReducer(before, { type: "tapCell", row: 2, col: 2 });
     expect(s).toBe(before);
   });
 
   it("tapCell on already-claimed cell truncates to that point", () => {
     let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
     expect(s.cells).toHaveLength(3);
@@ -82,7 +73,6 @@ describe("Serpentine reducer", () => {
 
   it("tapCell on tail undoes one step", () => {
     let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     expect(s.cells).toHaveLength(1);
@@ -90,30 +80,36 @@ describe("Serpentine reducer", () => {
 
   it("undo removes last cell", () => {
     let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     s = gameReducer(s, { type: "undo" });
     expect(s.cells).toHaveLength(1);
   });
 
-  it("undo on empty path is a no-op", () => {
+  it("undo stops at the given first letter", () => {
     const s = init();
     const after = gameReducer(s, { type: "undo" });
     expect(after).toBe(s);
+    expect(after.cells).toEqual([path[0]]);
   });
 
-  it("clearSnake empties the path", () => {
+  it("tapping the given letter alone cannot remove it", () => {
+    const s = init();
+    const after = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
+    expect(after.cells).toEqual([path[0]]);
+  });
+
+  it("clearSnake returns to the given first letter", () => {
     let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
     s = gameReducer(s, { type: "clearSnake" });
-    expect(s.cells).toEqual([]);
-    expect(s.claimed.size).toBe(0);
+    expect(s.cells).toEqual([path[0]]);
+    expect(s.claimed.size).toBe(1);
   });
 
   it("solves when path matches solution", () => {
     let s = init();
-    for (const cell of path) {
+    for (const cell of path.slice(1)) {
       s = gameReducer(s, { type: "tapCell", row: cell.row, col: cell.col });
     }
     expect(s.solved).toBe(true);
@@ -121,7 +117,7 @@ describe("Serpentine reducer", () => {
 
   it("does not accept moves after solved", () => {
     let s = init();
-    for (const cell of path) {
+    for (const cell of path.slice(1)) {
       s = gameReducer(s, { type: "tapCell", row: cell.row, col: cell.col });
     }
     expect(s.solved).toBe(true);
@@ -149,15 +145,34 @@ describe("Serpentine reducer", () => {
     expect(s.solved).toBe(false);
   });
 
+  it("hydrate of an empty save restores the given first letter", () => {
+    const s = gameReducer(init(), {
+      type: "hydrate",
+      cells: [],
+      solved: false,
+    });
+    expect(s.cells).toEqual([path[0]]);
+    expect(s.claimed.has("0,0")).toBe(true);
+  });
+
+  it("hydrate restarts a legacy trace that began somewhere else", () => {
+    // Saves predate the given letter, so cell one can be any cell. Keeping
+    // it would floor undo on a cell the puzzle never gives.
+    const s = gameReducer(init(), {
+      type: "hydrate",
+      cells: [{ row: 1, col: 1 }, { row: 1, col: 0 }],
+      solved: false,
+    });
+    expect(s.cells).toEqual([path[0]]);
+  });
+
   it("rejects tapCell on blocked cell", () => {
     const blockedPuzzle: PuzzleDef = {
       ...puzzle,
       blocked: new Set(["0,1"]),
     };
-    let s = initialState(blockedPuzzle, "haiku");
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
-    const before = s;
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
+    const before = initialState(blockedPuzzle, "haiku");
+    const s = gameReducer(before, { type: "tapCell", row: 0, col: 1 });
     expect(s).toBe(before);
   });
 
@@ -168,7 +183,6 @@ describe("Serpentine reducer", () => {
       text: "TE",
     };
     let s = initialState(shortPuzzle, "haiku");
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
     s = gameReducer(s, { type: "tapCell", row: 0, col: 1 });
     const before = s;
     s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
@@ -176,9 +190,7 @@ describe("Serpentine reducer", () => {
   });
 
   it("supports diagonal adjacency", () => {
-    let s = init();
-    s = gameReducer(s, { type: "tapCell", row: 0, col: 0 });
-    s = gameReducer(s, { type: "tapCell", row: 1, col: 1 });
+    const s = gameReducer(init(), { type: "tapCell", row: 1, col: 1 });
     expect(s.cells).toHaveLength(2);
   });
 });

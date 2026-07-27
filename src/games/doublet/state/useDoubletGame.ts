@@ -132,6 +132,7 @@ export function useDoubletGame(mode: GameMode) {
             type: "hydrate",
             placed: saved.placed,
             solved: saved.solved,
+            dict,
             moves: saved.moves,
             rotations: saved.rotations,
             removals: saved.removals,

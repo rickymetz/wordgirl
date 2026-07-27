@@ -59,8 +59,15 @@ export const TUTORIAL_PUZZLE: PuzzleDef = {
 /** Index into TUTORIAL_PATH of the first move that is diagonal. */
 export const TUTORIAL_FIRST_DIAGONAL = 2;
 
-/** How many steps the script has — the index that means "finished". */
-export const TUTORIAL_STEP_COUNT = 4;
+/**
+ * How many steps the script has — the index that means "finished".
+ *
+ * Three, not four: the puzzle now opens with its first letter already
+ * placed, so the old "tap a cell to begin" beat has no move to describe.
+ * Its one useful line — extend to a touching cell, tap a placed cell to
+ * undo — is what step one says instead.
+ */
+export const TUTORIAL_STEP_COUNT = 3;
 
 /**
  * True when the traced cells are EXACTLY the solution's first N cells.
@@ -87,14 +94,14 @@ export function tutorialStepIndex(s: {
 }): number {
   if (s.solved) return TUTORIAL_STEP_COUNT;
   const n = s.cells.length;
-  if (n === 0) return 0;
   // "Corners count too" tells the player the NEXT letter is diagonal, so it
   // may only appear when that is actually true: on the solution path, with
   // exactly the cells before the first diagonal traced. Anywhere else —
-  // including off down a wrong route — "tap a placed cell to undo back to
+  // including off down a wrong route, and including the untouched board,
+  // which is the given letter alone — "tap a placed cell to undo back to
   // it" is the instruction that helps, so hold at that step instead.
-  if (!onSolutionPath(s.cells)) return 1;
-  if (n < TUTORIAL_FIRST_DIAGONAL) return 1;
-  if (n === TUTORIAL_FIRST_DIAGONAL) return 2;
-  return 3;
+  if (!onSolutionPath(s.cells)) return 0;
+  if (n < TUTORIAL_FIRST_DIAGONAL) return 0;
+  if (n === TUTORIAL_FIRST_DIAGONAL) return 1;
+  return 2;
 }

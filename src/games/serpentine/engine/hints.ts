@@ -1,47 +1,27 @@
 /**
- * Hint targeting. A hint reveals one cell of the solution path; the
- * player only benefits from cells their snake has not already reached,
- * so targeting is always relative to their progress.
+ * Hint targeting. A hint reveals one cell of the solution path ON THE
+ * GRID; the player only benefits from cells their snake has not already
+ * reached, so targeting is always relative to their progress.
+ *
+ * Hints no longer prefer the first letter of each word. Those letters
+ * are given for free in the readout (`wordStartIndices` in phrase.ts),
+ * so what a hint adds is a POSITION — and the position worth paying for
+ * is the next one the player has to find, which is exactly where they
+ * are stuck. That includes a word's opening cell: knowing the letter is
+ * a W says nothing about which of the eight neighbours it is.
  */
 
 /**
- * Path indices where each word of the phrase begins. A space or an em
- * dash starts a new word; a hyphen or an apostrophe does not, so a
- * compound (APPLE-TREE) costs one hint rather than one per fragment.
- */
-export function wordStartIndices(text: string): number[] {
-  const starts: number[] = [];
-  let pathIndex = 0;
-  let atWordStart = true;
-  for (const ch of text) {
-    if (ch === " " || ch === "—") {
-      atWordStart = true;
-      continue;
-    }
-    if (!/[A-Za-z]/.test(ch)) continue;
-    if (atWordStart) {
-      starts.push(pathIndex);
-      atWordStart = false;
-    }
-    pathIndex++;
-  }
-  return starts;
-}
-
-/**
- * The cell the next hint should reveal: the first un-hinted word start
- * at or after the player's progress, else the next un-hinted cell.
- * Cells behind progress are already shown by the snake, so hinting one
- * would spend a hint on nothing. Returns null when nothing is left.
+ * The cell the next hint should reveal: the first un-hinted cell at or
+ * after the player's progress. Cells behind progress are already shown
+ * by the snake, so hinting one would spend a hint on nothing. Returns
+ * null when nothing is left.
  */
 export function nextHintIndex(
-  wordStarts: readonly number[],
   pathLength: number,
   progress: number,
   hinted: ReadonlySet<number>,
 ): number | null {
-  const start = wordStarts.find((i) => i >= progress && !hinted.has(i));
-  if (start !== undefined) return start;
   for (let i = progress; i < pathLength; i++) {
     if (!hinted.has(i)) return i;
   }
@@ -52,17 +32,16 @@ export function nextHintIndex(
  * Rebuild the hinted set from a saved COUNT. Only the count is
  * persisted, so replay the same targeting rule against the restored
  * progress — that reproduces hints the player can still see, rather
- * than the first N word starts of the phrase.
+ * than the first N cells of the phrase.
  */
 export function replayHints(
-  wordStarts: readonly number[],
   pathLength: number,
   progress: number,
   count: number,
 ): Set<number> {
   const hinted = new Set<number>();
   for (let n = 0; n < count; n++) {
-    const idx = nextHintIndex(wordStarts, pathLength, progress, hinted);
+    const idx = nextHintIndex(pathLength, progress, hinted);
     if (idx === null) break;
     hinted.add(idx);
   }

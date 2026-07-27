@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { phraseWords, type PhraseToken } from "./phrase";
+import { phraseWords, wordStartIndices, type PhraseToken } from "./phrase";
 
 const letter = (index: number): PhraseToken => ({ kind: "letter", index });
 const mark = (char: string): PhraseToken => ({ kind: "mark", char });
@@ -70,5 +70,35 @@ describe("phraseWords", () => {
 
   it("returns nothing for an empty phrase", () => {
     expect(phraseWords("")).toEqual([]);
+  });
+});
+
+describe("wordStartIndices", () => {
+  // The letters every puzzle gives away: one per word, in the readout.
+  const TEXT = "A WORLD OF GRIEF AND PAIN FLOWERS BLOOM EVEN THEN";
+
+  it("maps each word to its path index", () => {
+    expect(wordStartIndices(TEXT)).toEqual([0, 1, 6, 8, 13, 16, 20, 27, 32, 36]);
+  });
+
+  it("ignores punctuation and repeated spaces", () => {
+    expect(wordStartIndices("OH,  MY WORD!")).toEqual([0, 2, 4]);
+  });
+
+  it("gives a punctuated word one letter, at its opening", () => {
+    // Neither the apostrophe nor the hyphen opens a new word, so a
+    // compound gives one letter, not one per fragment.
+    expect(wordStartIndices("'TIS AN APPLE-TREE O'ER THE MEAD")).toEqual([
+      0, 3, 5, 14, 17, 20,
+    ]);
+  });
+
+  it("opens a new word after an em dash", () => {
+    // An em dash separates two whole words, so UNITE gets its U.
+    expect(wordStartIndices("FLY TO—UNITE IT")).toEqual([0, 3, 5, 10]);
+  });
+
+  it("returns nothing for an empty phrase", () => {
+    expect(wordStartIndices("")).toEqual([]);
   });
 });

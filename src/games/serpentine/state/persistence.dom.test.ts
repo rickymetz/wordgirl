@@ -135,7 +135,10 @@ describe("archive roll-up", () => {
     );
     await saveDailyProgress(
       day("poem", {
-        cells: [{ row: 0, col: 0 }],
+        cells: [
+          { row: 0, col: 0 },
+          { row: 0, col: 1 },
+        ],
         elapsedMs: 30_000,
         puzzleId: "p001",
       }),
@@ -145,8 +148,17 @@ describe("archive roll-up", () => {
     const rolled = days["2026-07-12"];
     expect(rolled.solved).toBe(true);
     expect(rolled.elapsedMs).toBe(45_000);
-    expect(rolled.cellCount).toBe(1);
+    expect(rolled.cellCount).toBe(2);
     expect(rolled.foundWords).toEqual(["h001"]);
+  });
+
+  it("does not count a board holding only the given first letter", async () => {
+    // Opening a day can write the start state — one cell, no play. That
+    // must not show up as progress in the archive.
+    await saveDailyProgress(day("haiku", { cells: [{ row: 0, col: 0 }] }));
+    const rolled = (await loadAllDailyProgress())["2026-07-12"];
+    expect(rolled.solved).toBe(false);
+    expect(rolled.cellCount).toBe(0);
   });
 
   it("marks a day stale when any save is from an older dictionary", async () => {
