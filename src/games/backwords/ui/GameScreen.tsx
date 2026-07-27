@@ -19,7 +19,7 @@ import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
-import { TutorialBanner } from "../../../components/game/TutorialBanner";
+import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { tutorialStepIndex } from "../engine/tutorial";
@@ -324,9 +324,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </div>
 
       {isTutorial && (
-        <div className="pb-3">
-          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
-        </div>
+        <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
       )}
 
       {storageBroken && !isTutorial && (
@@ -361,6 +359,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           onBreakRow={(index) => dispatch({ type: "breakRow", index })}
           onUnstage={(index) => dispatch({ type: "unstage", index })}
           onDragLive={onDragLive}
+          reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
         />
         <GameToast toast={toast} />
       </div>

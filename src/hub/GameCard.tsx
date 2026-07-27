@@ -29,19 +29,17 @@ export function GameCard({ game }: { game: GameDefinition }) {
         </div>
       </Link>
       {game.secondaryActions && (
-        <div
-          className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 md:mx-0 md:mt-0 md:w-36 md:shrink-0 md:flex-col md:overflow-x-visible md:px-0 md:pb-0"
-          style={{ scrollbarWidth: "none" }}
-        >
+        <div className="mt-3 grid grid-cols-2 gap-3 md:mt-0 md:flex md:w-36 md:shrink-0 md:flex-col">
           {game.secondaryActions.map((action) => (
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
-              // Phone: width comes from the label, not a fixed 160px — a
-              // four-action row of same-size slabs spent most of its space on
-              // padding and pushed the last one well off screen. `shrink-0`
-              // stays so the scroller never squeezes a label instead of
-              // scrolling.
+              // Phone: a two-column grid, not a horizontal scroller. As a
+              // scroller, the fourth action (Tutorial) started at x=364 in a
+              // 390px viewport — entirely off screen on every card, which
+              // left a brand-new player no visible way back to the tutorial
+              // once the first-visit prompt had been answered. A grid shows
+              // all four without a gesture.
               //
               // md+ stacks these into a column that divides the cluster's
               // height, so each tile shrinks as actions are added — four of
@@ -49,7 +47,7 @@ export function GameCard({ game }: { game: GameDefinition }) {
               // tablets hit this breakpoint). min-h keeps the floor and lets
               // the cluster grow past the primary tile instead; it is
               // rem-based, so it scales with the Text-size setting.
-              className="shrink-0 rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
+              className="rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
             >
               <div className="font-semibold text-accent">{action.label}</div>
               {action.description && (

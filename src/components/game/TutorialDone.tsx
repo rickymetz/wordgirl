@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 /**
@@ -17,13 +17,31 @@ export function TutorialDone({
   /** Replays the tutorial from step one (the page remounts the board). */
   onRestart?: () => void;
 }) {
+  /**
+   * Take focus on mount. `data-autofocus` alone does nothing here — only
+   * useModalFocus reads that attribute, and a results block is not a
+   * dialog — so focus stayed on <body> at the finish and a keyboard or
+   * screen-reader player was never told the tutorial had ended. The
+   * attribute stays as the house marker for "the intended initial focus".
+   * preventScroll, because the card is already in view and scrolling to it
+   * would shift a page that is meant not to scroll at all.
+   */
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    cardRef.current?.focus({ preventScroll: true });
+  }, []);
+
   return (
     <div
-      className="flex flex-col items-center gap-3 pb-2"
+      ref={cardRef}
+      className="flex flex-col items-center gap-3 pb-2 outline-none"
       data-autofocus
       tabIndex={-1}
     >
       <p className="text-lg font-bold text-ink">Tutorial complete</p>
+      <div aria-live="polite" role="status" className="sr-only">
+        Tutorial complete.
+      </div>
       <p className="max-w-xs text-center text-sm leading-snug text-ink-soft">
         {recap}
       </p>

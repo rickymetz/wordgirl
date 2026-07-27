@@ -30,7 +30,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Turn it on end",
     body: (
       <>
-        <Key>Rotate</Key> to stand a domino upright — on this board some
+        Tap <Key>Rotate</Key> to stand the picked-up domino upright. Some
         pieces only fit that way.
       </>
     ),

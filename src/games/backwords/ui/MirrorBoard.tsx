@@ -29,6 +29,7 @@ export function MirrorBoard({
   onBreakRow,
   onUnstage,
   onDragLive,
+  reservedH = 0,
 }: {
   rows: CommittedRow[];
   current: string;
@@ -46,6 +47,10 @@ export function MirrorBoard({
   onUnstage: (index: number) => void;
   /** Stream drag positions so the mirror can reflect the tile live. */
   onDragLive: DragLive;
+  /** Extra chrome above the board (the tutorial banner), px at default
+   *  text size — folded into the height budget so a big-text tutorial
+   *  gets smaller tiles rather than controls below the fold. */
+  reservedH?: number;
 }) {
   const { vw, vh, rem } = useViewport();
   // One tile size for the whole board. Every row's LEFT half must fit
@@ -70,7 +75,7 @@ export function MirrorBoard({
   // chrome leaves over, scaled with the Text-size setting — 7-row
   // days at Huge text shrink tiles instead of scrolling the page.
   const CHROME_H = 330;
-  const availH = vh - CHROME_H * (rem / 16);
+  const availH = vh - (CHROME_H + reservedH) * (rem / 16);
   const rowsShown = rows.length + (solved ? 0 : 1);
   caps.push(Math.floor((availH / rowsShown - 12) / 1.2));
   const tile = Math.max(12, Math.min(...caps));
@@ -85,7 +90,15 @@ export function MirrorBoard({
   return (
     <div
       id="bw-mirror"
-      className="relative flex max-h-[26rem] min-h-52 w-full grow touch-manipulation flex-col justify-center select-none"
+      className={[
+        "relative flex max-h-[26rem] w-full grow touch-manipulation flex-col justify-center select-none",
+        // The floor keeps a one-row day from collapsing to a sliver, but it
+        // is also a hard minimum that no height budget can shrink past — at
+        // 375x667 with Huge text it, not CHROME_H, was what pushed the rack
+        // off the bottom of the tutorial. The tutorial's board holds at most
+        // two short rows, so it can sit lower.
+        reservedH > 0 ? "min-h-40" : "min-h-52",
+      ].join(" ")}
     >
       {/* The glass: a filled pane behind the reflections, with a
           diagonal sheen — the shared --backwords-glass token, so it

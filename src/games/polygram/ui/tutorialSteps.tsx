@@ -31,19 +31,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Find all three",
     body: (
       <>
-        Letters <Key>can repeat</Key> — a word may use a shape twice.
+        Two of them reuse a shape — letters <Key>can repeat</Key>.
       </>
     ),
   },
   {
-    title: "The flock grows",
+    title: "Use the new letter",
     body: (
       <>
-        A <Key>new letter</Key> joined. Words are now four letters.
+        <Key>N</Key> joined the shape. Words are now four letters.
       </>
     ),
   },
 ];
 
 export const TUTORIAL_RECAP =
-  "Sweep every word at a level, take the new letter, keep climbing the polygons.";
+  "Sweep a level, take the new letter, move up a shape. A real day keeps growing past the pentagon.";

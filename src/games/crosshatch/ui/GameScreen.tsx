@@ -465,9 +465,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </div>
 
       {isTutorial && (
-        <div className="pb-3">
-          <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
-        </div>
+        <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
       )}
 
       {storageBroken && !isTutorial && (

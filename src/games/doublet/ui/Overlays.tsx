@@ -54,8 +54,8 @@ export function DoubletCoach({ open, onClose, tutorialTo }: CoachProps) {
               title: "Rotate dominoes",
               body: (
                 <>
-                  Tap the <Key>rotate</Key> button to change a domino's
-                  orientation before placing it.
+                  With a domino picked up, tap <Key>Rotate</Key> under the
+                  board to stand it upright before placing it.
                 </>
               ),
             },

@@ -14,8 +14,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Fill the blanks",
     body: (
       <>
-        Type into the empty cells. The <Key>padlocked</Key> letters never
-        change.
+        Tap a blank and type, then tap the other blank. <Key>Padlocked</Key>{" "}
+        letters never change.
       </>
     ),
   },
@@ -32,8 +32,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Change a line, submit again",
     body: (
       <>
-        Banked. The counter is <Key>words found of the five</Key> this grid
-        holds — all of them are needed.
+        Those two words are yours. This grid holds <Key>five</Key> in all.
       </>
     ),
   },
@@ -41,7 +40,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Sweep them all",
     body: (
       <>
-        So keep finding <Key>different</Key> valid grids until it reads 5/5.
+        Keep filling the grid <Key>different</Key> ways until it reads 5/5.
       </>
     ),
   },
