@@ -350,10 +350,16 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       nothingNew: "No new words — change a line",
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
+      // The two ways a line can be wrong, said apart — the second is
+      // the one players hit holding a word they KNOW is real. It is:
+      // the generator enumerates answers from the `required` tier, but
+      // dict.has() also accepts `bonus`, so a real-but-rarer word is
+      // rejected here. Naming the crossings for that would be a lie —
+      // the word simply isn't one of this puzzle's answers.
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`
-          : `${r.word.toUpperCase()} doesn't fit the crossing lines`
+          : `${r.word.toUpperCase()} isn't an answer here`
         : "Not a valid grid",
     };
     setToast({ text: messages[r.type] ?? "", nonce: r.nonce });
