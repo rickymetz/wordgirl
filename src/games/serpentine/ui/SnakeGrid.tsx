@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useViewport } from "../../../lib/useViewport";
 import { type Cell, cellKey, cellsEqual } from "../engine/types";
 
@@ -21,6 +21,23 @@ const PIPE_W = 0.32;
 const TRAIL_START = 0;
 const TRAIL_END = 100;
 
+/**
+ * Largest a cell is ever drawn, before the space actually available
+ * takes over. Scaled by the Text-size setting like every board.
+ */
+function maxCellPx(vw: number, rem: number): number {
+  return (vw >= 768 ? 56 : 44) * (rem / 16);
+}
+
+/**
+ * Letter size as a fraction of the cell. The letters ARE the board here
+ * — the snake is drawn behind them in grid coordinates — so a letter
+ * that does not scale with its cell drifts out of the circle it belongs
+ * to. 0.38 is the ratio the board already had wherever it was drawn at
+ * full size, so nothing changes until the cell is genuinely squeezed.
+ */
+const LETTER_RATIO = 0.38;
+
 export function SnakeGrid({
   rows,
   cols,
@@ -35,8 +52,47 @@ export function SnakeGrid({
   onClear,
 }: Props) {
   const { vw, rem } = useViewport();
-  const cellPx = (vw >= 768 ? 56 : 44) * (rem / 16);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * The board's height budget, measured rather than assumed.
+   *
+   * Every other board subtracts a CHROME_H constant from the viewport,
+   * which works where the chrome is fixed. This screen's is not: the
+   * poem credit wraps to one, two or three lines depending on the
+   * title, and the readout's height follows the phrase's length. A
+   * constant tuned on one puzzle is wrong for the next — and it was
+   * wrong here, at 132px of page scroll on a 375×667 at Huge text.
+   *
+   * So the wrapper takes whatever space the flex column has left, and
+   * the grid is absolutely positioned inside it: it contributes no
+   * height of its own, which is what keeps this a measurement rather
+   * than a feedback loop. Measuring also subsumes the `reservedH`
+   * convention — the tutorial banner is simply chrome that leaves less
+   * room, and needs no announcing.
+   */
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Infinity until measured, so a browser without ResizeObserver still
+  // gets the old width-capped board rather than a collapsed one.
+  const cellPx = Math.min(
+    maxCellPx(vw, rem),
+    box.w > 0 ? box.w / cols : Infinity,
+    box.h > 0 ? box.h / rows : Infinity,
+  );
+  const gridW = cellPx * cols;
+  const gridH = cellPx * rows;
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
   const [cursorRow, setCursorRow] = useState(0);
@@ -144,16 +200,21 @@ export function SnakeGrid({
     return `color-mix(in oklch, ${accent} ${Math.round(pct)}%, ${trail})`;
   }
 
+  // The wrapper is flex-1 min-h-0 rather than h-full: the grid inside it
+  // is absolute, so the box has no content height for a percentage to
+  // resolve against — the flex algorithm has to give it one.
   return (
-    <div
+    <div ref={wrapRef} className="relative w-full min-h-0 flex-1">
+      <div
       ref={gridRef}
       tabIndex={0}
       role="grid"
       aria-label="Puzzle grid"
-      className="relative mx-auto w-full select-none touch-manipulation outline-none"
+      className="absolute inset-0 m-auto select-none touch-manipulation outline-none"
       style={{
-        maxWidth: `min(100%, ${cols * cellPx}px)`,
-        aspectRatio: `${cols} / ${rows}`,
+        width: gridW,
+        height: gridH,
+        maxWidth: "100%",
       }}
       onPointerDown={(e) => {
         setCursorVisible(false);
@@ -224,19 +285,21 @@ export function SnakeGrid({
               <div
                 key={k}
                 className={[
-                  "relative flex items-center justify-center rounded-full font-game text-base",
+                  "relative flex items-center justify-center rounded-full font-game",
                   isBlocked ? "" : "text-ink",
                   isCursor ? "ring-2 ring-accent ring-offset-1" : "",
                 ].join(" ")}
-                style={
-                  isBlocked
-                    ? { visibility: "hidden" }
+                style={{
+                  fontSize: `${cellPx * LETTER_RATIO}px`,
+                  lineHeight: 1,
+                  ...(isBlocked
+                    ? { visibility: "hidden" as const }
                     : isClaimed
                       ? { color: "var(--color-surface)" }
                       : isHint
                         ? { color: "var(--color-accent)" }
-                        : undefined
-                }
+                        : null),
+                }}
               >
                 {!isBlocked && (
                   <span className="relative z-10 select-none">{grid[r][c]}</span>
@@ -255,6 +318,7 @@ export function SnakeGrid({
           }),
         )}
       </div>
+    </div>
     </div>
   );
 }
