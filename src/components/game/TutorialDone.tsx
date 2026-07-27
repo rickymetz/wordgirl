@@ -37,11 +37,14 @@ export function TutorialDone({
       className="flex flex-col items-center gap-3 pb-2 outline-none"
       data-autofocus
       tabIndex={-1}
+      // The name the focus move announces. An sr-only live region saying
+      // the same words would land on top of this and read the headline
+      // twice — moving focus to a NAMED container is the announcement.
+      aria-labelledby="tutorial-done-title"
     >
-      <p className="text-lg font-bold text-ink">Tutorial complete</p>
-      <div aria-live="polite" role="status" className="sr-only">
-        Tutorial complete.
-      </div>
+      <h2 id="tutorial-done-title" className="text-lg font-bold text-ink">
+        Tutorial complete
+      </h2>
       <p className="max-w-xs text-center text-sm leading-snug text-ink-soft">
         {recap}
       </p>
