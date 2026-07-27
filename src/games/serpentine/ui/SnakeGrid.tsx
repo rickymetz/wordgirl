@@ -30,13 +30,28 @@ function maxCellPx(vw: number, rem: number): number {
 }
 
 /**
- * Letter size as a fraction of the cell. The letters ARE the board here
- * — the snake is drawn behind them in grid coordinates — so a letter
- * that does not scale with its cell drifts out of the circle it belongs
- * to. 0.38 is the ratio the board already had wherever it was drawn at
- * full size, so nothing changes until the cell is genuinely squeezed.
+ * Smallest a cell may be squeezed to for want of HEIGHT. A cell is a tap
+ * target, and the page-scroll rule does not outrank the touch one: below
+ * this the board stops giving way and the page scrolls instead, which is
+ * what the other boards do too (`MIN_CELL` in Doublet's).
+ *
+ * Deliberately not scaled by the Text-size setting — a thumb is the same
+ * size whatever the type is set to.
+ *
+ * Width is a different matter and still binds absolutely: a board wider
+ * than the screen cannot be tapped at all.
  */
-const LETTER_RATIO = 0.38;
+const MIN_CELL = 44;
+
+/**
+ * Ceiling on the letter as a fraction of its cell. The letters ARE the
+ * board here — the snake is drawn behind them in grid coordinates — so a
+ * letter that outgrows its cell parts company with the circle it belongs
+ * to. This is a cap rather than a ratio: the letter keeps its rem size,
+ * which is what the Text-size setting is for, and only gives that up on a
+ * cell too small to hold it.
+ */
+const LETTER_MAX_RATIO = 0.55;
 
 export function SnakeGrid({
   rows,
@@ -86,13 +101,22 @@ export function SnakeGrid({
 
   // Infinity until measured, so a browser without ResizeObserver still
   // gets the old width-capped board rather than a collapsed one.
-  const cellPx = Math.min(
-    maxCellPx(vw, rem),
-    box.w > 0 ? box.w / cols : Infinity,
-    box.h > 0 ? box.h / rows : Infinity,
+  const widthCap = box.w > 0 ? box.w / cols : Infinity;
+  const heightCap = box.h > 0 ? box.h / rows : Infinity;
+
+  // Height gives way only down to a tappable cell; width always binds.
+  // When the floor wins, the board is bigger than the box it was handed
+  // — `minHeight` on the wrapper below turns that into a page scroll
+  // rather than a board sitting on top of the controls.
+  // Floored to a whole pixel: a fractional cell makes the board a
+  // fraction taller than the box it was measured against, which is a
+  // page scroll of one or two pixels and nothing else.
+  const cellPx = Math.floor(
+    Math.min(maxCellPx(vw, rem), widthCap, Math.max(heightCap, MIN_CELL)),
   );
   const gridW = cellPx * cols;
   const gridH = cellPx * rows;
+  const letterPx = Math.min(rem, cellPx * LETTER_MAX_RATIO);
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
   const [cursorRow, setCursorRow] = useState(0);
@@ -204,7 +228,11 @@ export function SnakeGrid({
   // is absolute, so the box has no content height for a percentage to
   // resolve against — the flex algorithm has to give it one.
   return (
-    <div ref={wrapRef} className="relative w-full min-h-0 flex-1">
+    <div
+      ref={wrapRef}
+      className="relative w-full min-h-0 flex-1"
+      style={{ minHeight: gridH }}
+    >
       <div
       ref={gridRef}
       tabIndex={0}
@@ -290,7 +318,7 @@ export function SnakeGrid({
                   isCursor ? "ring-2 ring-accent ring-offset-1" : "",
                 ].join(" ")}
                 style={{
-                  fontSize: `${cellPx * LETTER_RATIO}px`,
+                  fontSize: `${letterPx}px`,
                   lineHeight: 1,
                   ...(isBlocked
                     ? { visibility: "hidden" as const }

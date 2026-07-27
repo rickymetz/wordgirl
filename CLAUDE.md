@@ -195,10 +195,23 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   measurement and not a feedback loop. Note `h-full` does NOT work for the
   wrapper — an absolute child leaves no content height for a percentage to
   resolve against, and it silently measures 0.
+- The touch floor OUTRANKS the no-scroll rule. A board gives way to its
+  height budget only down to a tappable cell (`MIN_CELL`); past that it
+  stops shrinking and the page scrolls, because a board too small to hit
+  is a broken game and a scroll is only an ugly one. Width still binds
+  absolutely — a board wider than the screen cannot be tapped at all.
+  When the floor wins, put a `minHeight` on the board's wrapper so the
+  column grows and the page scrolls; without it an absolutely positioned
+  board simply sits on top of the controls.
 - A board that can be squeezed must scale its TYPE with its cells, not
-  just its geometry (`LETTER_RATIO` in `SnakeGrid`). A rem-sized letter in
-  a shrunken cell overflows it, and where the letters sit on a drawn
-  overlay they visibly part company with it.
+  just its geometry (`LETTER_MAX_RATIO` in `SnakeGrid`). A rem-sized
+  letter in a shrunken cell overflows it, and where the letters sit on a
+  drawn overlay they visibly part company with it. Make it a CAP, not a
+  ratio: the letter keeps its rem size — which is what the Text-size
+  setting is for — and gives that up only on a cell too small to hold it.
+- Cell sizes floor to whole pixels. A fractional cell makes a board a
+  fraction taller than the box it was measured against, which is a page
+  scroll of a pixel or two and nothing else.
 - Fixed paddings need a `[@media(max-height:720px)]` variant wherever they
   stack up: 50px of `pt-10` at Huge text is the difference between a board
   that fits and one that scrolls on a 667px screen.
