@@ -1,10 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+  /*
+   * The two house faces, and the one that can stand in for both.
+   *
+   * `--font-display`/`--font-game` are what the app reads; the three
+   * `-house`/`-access` tokens are what the Font setting switches between
+   * (html[data-font] below). Settings previews each option in its own
+   * face, so those have to stay readable whichever option is active —
+   * which they cannot be if they are the same token being overridden.
+   */
+  --font-display-house: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
   /* Bold square monospace for game glyphs — fixed advance width keeps
      typed-word spacing perfectly regular. Single 400 weight (heavy). */
-  --font-game: "Rubik Mono One", ui-monospace, monospace;
+  --font-game-house: "Rubik Mono One", ui-monospace, monospace;
+  /* Lexend, calibrated for reading proficiency. Declared below. */
+  --font-access: "Lexend Variable", ui-rounded, system-ui, sans-serif;
+
+  --font-display: var(--font-display-house);
+  --font-game: var(--font-game-house);
 
   /*
    * Every color is a light-dark() pair resolved by the root's
@@ -156,6 +170,77 @@ html {
 /* Manual override from Settings (applied by src/lib/settings.ts). */
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
+
+/*
+ * Lexend, latin subset only — the games, the dictionary and every label
+ * are English. The package's own entrypoints bundle latin-ext and
+ * vietnamese too (another 48KB precached for glyphs nothing here can
+ * render), so the face is declared by hand against the one file wanted.
+ *
+ * Variable weight, because it stands in for BOTH house faces: the
+ * display font asks for 400/600/700, and the game font replaces a single
+ * very heavy face (see below).
+ */
+@font-face {
+  font-family: "Lexend Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/lexend/files/lexend-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
+/*
+ * The Accessible font setting. Lexend is calibrated for reading
+ * proficiency, and it replaces BOTH faces — there is no half-measure
+ * that would leave a player reading two typefaces.
+ *
+ * Same mechanism as data-theme: the tokens are custom properties and
+ * Tailwind's font utilities are `var()` reads, so overriding them on the
+ * root re-points every `font-display`/`font-game` class at once.
+ */
+html[data-font="accessible"] {
+  --font-display: var(--font-access);
+  /* Rubik Mono One is a single very heavy weight, and the game glyphs are
+     letters read at a glance on tinted tiles. Lexend at 400 reads thin
+     against that, so the game face carries its own weight (below). */
+  --font-game: var(--font-access);
+}
+/*
+ * Rubik Mono One ships ONE weight, so the `font-normal`/`font-bold`
+ * utilities that sit alongside `font-game` around the app are there to
+ * stop a bold parent leaking in — not to pick a weight, because there is
+ * none to pick. This rule outranks them (it is scoped, they are plain
+ * utilities), which is the intent: in Lexend the game face needs a weight
+ * chosen for it, and 600 is the one that holds up as a letter read at a
+ * glance on a tinted tile.
+ */
+html[data-font="accessible"] .font-game {
+  font-weight: 600;
+}
+
+/*
+ * `data-glyph` marks a span whose CONTENT CHANGES as a player plays: a
+ * letter once placed, a `?` until then. Serpentine's phrase, Polygram's
+ * typed word, Crosshatch's slot chips are all built from them.
+ *
+ * The house game face is monospaced, so those runs hold still as letters
+ * land. Lexend is proportional — a `?` measures 0.528em and a `W` 0.994em
+ * — so without help every placement would re-wrap the line the player is
+ * watching. In Accessible each of these spans takes a fixed advance
+ * instead, wide enough for the widest of them (both measured at weight
+ * 600, not guessed).
+ *
+ * Only the spans that change: punctuation is given from the outset and
+ * never swaps, so it keeps its natural width rather than floating in a
+ * letter-wide box. And only in Accessible, since Default already has one
+ * advance for every glyph.
+ */
+html[data-font="accessible"] [data-glyph] {
+  display: inline-block;
+  min-width: 1em;
+  text-align: center;
+}
 
 /* Kill springs, morphs, shakes, and pops for motion-sensitive users.
    Inline transition styles need the !important to be overridden. */

@@ -53,6 +53,29 @@ const MIN_CELL = 44;
  */
 const LETTER_MAX_RATIO = 0.55;
 
+/**
+ * Did this focus come from the keyboard?
+ *
+ * The board is `tabIndex=0` and paints a cursor ring when focused, but
+ * focus arrives by more routes than a Tab: `useModalFocus` hands it back
+ * to whatever held it when a sheet opened, a resumed tab restores it, and
+ * assistive tech moves it about. A player who has only ever tapped should
+ * never be shown a keyboard cursor — that was the top-left letter lighting
+ * up on a phone, unprompted.
+ *
+ * `:focus-visible` is the platform's own answer to this question, so ask
+ * it rather than re-deriving it. Browsers too old to know the selector
+ * throw on it, and there the honest fallback is the old behaviour: a
+ * visible cursor too often beats a keyboard user with none.
+ */
+function isKeyboardFocus(el: Element): boolean {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export function SnakeGrid({
   rows,
   cols,
@@ -134,9 +157,30 @@ export function SnakeGrid({
   const minBoardH = floorCell * rows;
   const dragging = useRef(false);
   const lastDragCell = useRef<Cell | null>(null);
-  const [cursorRow, setCursorRow] = useState(0);
-  const [cursorCol, setCursorCol] = useState(0);
+  /**
+   * The keyboard cursor homes on the LINE'S HEAD, not cell (0,0). It is
+   * where the next move has to come from, so it is where a keyboard player
+   * needs to start — arrowing out of the top-left corner to reach their own
+   * snake is a trek — and it is the only cell a stray ring could sit on
+   * without looking arbitrary.
+   */
+  const head = cells.length > 0 ? cells[cells.length - 1] : null;
+  const [cursorRow, setCursorRow] = useState(head?.row ?? 0);
+  const [cursorCol, setCursorCol] = useState(head?.col ?? 0);
   const [cursorVisible, setCursorVisible] = useState(false);
+
+  // Follow the head as the line grows, however it grew — a tap, a drag, or
+  // Enter on this very cell. Only while the cursor is PUT AWAY: once it is
+  // on screen the arrows own it, and it must not be yanked back mid-move.
+  const headKey = head ? cellKey(head) : "";
+  useLayoutEffect(() => {
+    if (cursorVisible || !head) return;
+    setCursorRow(head.row);
+    setCursorCol(head.col);
+    // head is derived from headKey; depending on the key keeps this to one
+    // run per actual move.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headKey, cursorVisible]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -267,7 +311,12 @@ export function SnakeGrid({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onKeyDown={onKeyDown}
-        onFocus={() => setCursorVisible(true)}
+        // Only a keyboard focus raises the cursor. A tap, a sheet handing
+        // focus back on close, a resumed tab — all reach here, and none of
+        // them means the player wants a cursor.
+        onFocus={(e) => {
+          if (isKeyboardFocus(e.currentTarget)) setCursorVisible(true);
+        }}
         onBlur={() => setCursorVisible(false)}
       >
         {/* SVG overlay: gradient snake with circles + pipes */}

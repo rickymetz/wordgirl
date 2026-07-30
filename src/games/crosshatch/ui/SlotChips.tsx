@@ -93,8 +93,18 @@ export function SlotChips({
                   strokeWidth={3}
                 />
                 {/* Game mono: a ? is exactly one letter wide, so chips
-                    never reflow as cells fill in. */}
-                <span className="font-game text-xs">{display}</span>
+                    never reflow as cells fill in. The Accessible face is
+                    proportional, so the word is split per glyph for
+                    data-glyph to pin one advance each (see index.css) —
+                    without it a chip changes width per letter typed, and
+                    a row of chips re-wraps under the player's thumb. */}
+                <span className="font-game text-xs">
+                  {[...display].map((ch, d) => (
+                    <span key={d} data-glyph>
+                      {ch}
+                    </span>
+                  ))}
+                </span>
                 {verdict && (
                   <verdict.Icon
                     aria-hidden

@@ -193,6 +193,15 @@ npm run preview    # serve the production build locally
   registry, and each game is a lazy code-split chunk.
 - **Game engines are pure TS** (`src/games/polygram/engine/`) — no React,
   no DOM — so they're unit-testable and portable (Capacitor later).
+- **Display settings** (theme, text size, font) are applied by mutating
+  `<html>` — `data-theme` flips `color-scheme` so the `light-dark()`
+  tokens resolve the other way, text size scales the root font-size, and
+  `data-font="accessible"` re-points the two font tokens at Lexend. One
+  mechanism each, no duplicated token blocks. The Accessible face is
+  precached, so it works offline the first time it is chosen; spans whose
+  content swaps between a letter and a `?` carry `data-glyph`, which pins
+  one advance width apiece in that face (Lexend is proportional; the house
+  game face is monospaced).
 - **Storage** goes through an async `StorageAdapter`
   (`src/lib/storage/`), localStorage-backed today. The `profileId`
   namespace segment is the seam for adding auth/cloud sync later without

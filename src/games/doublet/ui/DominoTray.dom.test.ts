@@ -46,9 +46,12 @@ interface Calls {
   rotates: number;
 }
 
-function render(): { chip: Element; calls: Calls } {
+function render(selectFirst = false): { chip: Element; calls: Calls } {
   const calls: Calls = { dragStarts: 0, dragEnds: 0, selects: 0, rotates: 0 };
-  const state = initialState(TUTORIAL_PUZZLE);
+  const base = initialState(TUTORIAL_PUZZLE);
+  const state = selectFirst
+    ? { ...base, selectedDominoId: TUTORIAL_PUZZLE.dominoes[0].id }
+    : base;
   act(() => {
     root.render(
       createElement(DominoTray, {
@@ -119,5 +122,54 @@ describe("a tray domino", () => {
     // Cursor drifts on across the tray — no button held, so nothing starts.
     pointer(chip, "pointermove", { x: 300, y: 400 });
     expect(calls.dragStarts).toBe(0);
+  });
+
+  // The piece is a <button>, so focus lands on it — and for a while nothing
+  // could press it: every handler here was a POINTER handler, and a key
+  // press fires none of those. Selecting by keyboard only worked because
+  // the game screen had taken Tab over to cycle the tray itself, which cost
+  // that screen every other control.
+  for (const key of ["Enter", " "]) {
+    it(`selects on ${key === " " ? "Space" : key}, like a tap`, () => {
+      const { chip, calls } = render();
+      act(() => {
+        chip.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+      });
+      expect(calls.selects).toBe(1);
+      expect(calls.rotates).toBe(0);
+    });
+  }
+
+  it("rotates on Enter when the piece is already selected, like a re-tap", () => {
+    const { chip, calls } = render(true);
+    act(() => {
+      chip.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+    expect(calls.rotates).toBe(1);
+    expect(calls.selects).toBe(0);
+  });
+
+  it("ignores keys that are not an activation", () => {
+    const { chip, calls } = render();
+    for (const key of ["a", "Tab", "ArrowRight", "Escape"]) {
+      act(() => {
+        chip.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+      });
+    }
+    expect(calls.selects).toBe(0);
+    expect(calls.rotates).toBe(0);
+  });
+
+  it("does not double-fire when a tap and a key both reach the piece", () => {
+    // A tap already selects on pointerup. If activation ALSO rode on
+    // onClick, the browser's synthetic click would select a second time —
+    // and selecting twice toggles the piece back off.
+    const { chip, calls } = render();
+    pointer(chip, "pointerdown", { x: 100, y: 100 });
+    pointer(chip, "pointerup", { x: 100, y: 100 });
+    act(() => {
+      chip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(calls.selects).toBe(1);
   });
 });

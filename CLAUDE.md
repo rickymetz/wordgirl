@@ -189,7 +189,28 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   🔻 Polygram, 🪞 Backwords, 🧺 Crosshatch).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
-  nothing reflows as letters fill in.
+  nothing reflows as letters fill in. That holds only in the DEFAULT
+  face: Settings offers an `accessible` font that swaps both house faces
+  for Lexend, which is proportional. So every span whose content swaps
+  between a letter and a `?` must carry `data-glyph` — one attribute,
+  which pins a fixed advance in that face (`html[data-font]` in
+  `index.css`). Put it on the swapping spans only, never on punctuation,
+  which is given from the outset and never changes width. A run rendered
+  as one string can't be pinned; split it per glyph (see
+  crosshatch's `SlotChips`).
+- The two font tokens are `--font-display` and `--font-game`, and the
+  Font setting overrides both. Read them via `font-display`/`font-game`
+  utilities, never a hardcoded family — a literal font-family is invisible
+  to the setting. The `-house`/`-access` tokens exist so Settings can
+  preview each option in its own face; nothing else should read them.
+- A game RULE must never depend on letterforms, because the face is now a
+  setting. Backwords' ✦ ("a real mirror would render this") is the one
+  that does, and it does not survive the swap — Lexend's Y is not
+  symmetric. It stays keyed to the default face because `glyphRows` is a
+  banked lifetime stat, and a per-face rule would make one solve count two
+  ways; see the KNOWN GAP note in `backwords/engine/lexicon.ts` before
+  touching it. Don't add another: if a new rule leans on a glyph's shape,
+  it has to hold in BOTH faces or not be a rule.
 
 **Layout & interaction**
 - No game screen may have a page scroll when content fits. `#root` is

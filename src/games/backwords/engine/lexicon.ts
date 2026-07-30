@@ -8,6 +8,29 @@ import { reverse, type RowDef } from "./types";
  * vertical mirror unchanged; no cap is another cap's mirror image
  * (lowercase b/d p/q tricks don't exist up here). A row is glyph-true
  * when its full visual reading is unchanged by a real mirror.
+ *
+ * KNOWN GAP, and please read before "fixing" it. This set describes the
+ * DEFAULT face (Rubik Mono One). Settings offers an Accessible face
+ * (Lexend), and Lexend's Y is NOT mirror-symmetric — its stem sits off
+ * the axis of its arms. Overlaying every cap on its own mirror and
+ * counting pixels that disagree: in Rubik the worst letter here scores
+ * 0.069 (X, diagonal antialiasing) against 0.122 for the best letter
+ * that ISN'T symmetric (Q) — clearly separated. In Lexend at the weight
+ * the board uses, Y scores 0.214 against Q's 0.216, i.e. it is
+ * indistinguishable from an asymmetric letter. Six of the 25 glyph-true
+ * rows are affected: YAY, AY|YA, YO|OY, WAY|YAW, MAY|YAM, YAH|HAY.
+ *
+ * Left as it is on purpose. `glyphRows` is a lifetime stat, banked per
+ * day and charted on the Trends page, so the flourish has to mean one
+ * thing for one play — make this set depend on the active face and the
+ * same solve counts differently per font, with the chart silently mixing
+ * the two. Dropping Y instead would take the flourish off those six rows
+ * for every player, in a face where it is true. So the claim is accurate
+ * in the default face and slightly generous in the accessible one, which
+ * is the least-bad of the three.
+ *
+ * Nothing else in the game reads letterforms: the generator never looks
+ * at `glyph`, so no board, bank or puzzleKey depends on any of this.
  */
 const SELF = new Set(["a", "h", "i", "m", "o", "t", "u", "v", "w", "x", "y"]);
 

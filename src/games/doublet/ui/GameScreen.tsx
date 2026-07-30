@@ -134,12 +134,6 @@ export function GameScreen({
     [puzzle.board.cells],
   );
 
-  // Unplaced domino ids for Tab cycling
-  const unplacedIds = useMemo(() => {
-    const placedSet = new Set(state.placed.map((p) => p.dominoId));
-    return puzzle.dominoes.filter((d) => !placedSet.has(d.id)).map((d) => d.id);
-  }, [puzzle.dominoes, state.placed]);
-
   // Keyboard navigation
   useEffect(() => {
     if (state.solved) return;
@@ -149,23 +143,22 @@ export function GameScreen({
       const target = e.target as HTMLElement;
       if (target.closest("dialog, [role='dialog']")) return;
 
-      switch (e.key) {
-        case "Tab": {
-          e.preventDefault();
-          if (unplacedIds.length === 0) return;
-          const currentIdx = state.selectedDominoId !== null
-            ? unplacedIds.indexOf(state.selectedDominoId)
-            : -1;
-          let nextIdx: number;
-          if (e.shiftKey) {
-            nextIdx = currentIdx <= 0 ? unplacedIds.length - 1 : currentIdx - 1;
-          } else {
-            nextIdx = currentIdx < 0 || currentIdx >= unplacedIds.length - 1 ? 0 : currentIdx + 1;
-          }
-          dispatch({ type: "selectDomino", dominoId: unplacedIds[nextIdx] });
-          break;
-        }
+      // Tab is the platform's, not ours. It used to cycle the tray here,
+      // which meant preventing it — and that left NOTHING on this screen
+      // reachable by keyboard: not the home link, not Hint, not the coach
+      // sheet, not the difficulty toggles. The tray pieces are buttons
+      // with their own labels, so native Tab already walks them and
+      // native activation selects one; the shortcut was costing the
+      // screen its keyboard access to duplicate what Tab does anyway.
+      //
+      // With focus able to land on a control again, Enter and Space have
+      // to defer to it (`onControl` below) the way the other games do, or
+      // activating Hint would also drop a domino on the board.
+      const onControl = !!target.closest(
+        "button, a, input, select, textarea",
+      );
 
+      switch (e.key) {
         case "r":
         case "R": {
           if (state.selectedDominoId !== null) {
@@ -201,6 +194,7 @@ export function GameScreen({
 
         case "Enter":
         case " ": {
+          if (onControl) return; // native activation wins
           e.preventDefault();
           setCursorCell((cur) => {
             if (!cur || state.selectedDominoId === null) return cur;
@@ -247,7 +241,7 @@ export function GameScreen({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.solved, state.selectedDominoId, state.currentOrientation, state.placed, unplacedIds, sortedBoardCells, dict, dispatch, puzzle.dominoes]);
+  }, [state.solved, state.selectedDominoId, state.currentOrientation, state.placed, sortedBoardCells, dict, dispatch, puzzle.dominoes]);
 
   const handleCellTap = (cell: Cell) => {
     if (state.solved) return;
