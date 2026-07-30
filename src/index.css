@@ -10,14 +10,14 @@
    * face, so those have to stay readable whichever option is active —
    * which they cannot be if they are the same token being overridden.
    */
-  --font-house: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+  --font-display-house: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
   /* Bold square monospace for game glyphs — fixed advance width keeps
      typed-word spacing perfectly regular. Single 400 weight (heavy). */
   --font-game-house: "Rubik Mono One", ui-monospace, monospace;
   /* Lexend, calibrated for reading proficiency. Declared below. */
   --font-access: "Lexend Variable", ui-rounded, system-ui, sans-serif;
 
-  --font-display: var(--font-house);
+  --font-display: var(--font-display-house);
   --font-game: var(--font-game-house);
 
   /*

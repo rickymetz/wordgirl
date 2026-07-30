@@ -93,7 +93,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
                     fontFamily:
                       value === "accessible"
                         ? "var(--font-access)"
-                        : "var(--font-house)",
+                        : "var(--font-display-house)",
                   }}
                 >
                   {label}
