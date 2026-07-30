@@ -131,6 +131,26 @@ function DominoChip({
     }
   }
 
+  /**
+   * Keyboard activation, which the pointer handlers above cannot provide:
+   * a key press fires no pointer events, so without this the piece is a
+   * button that focus can land on and nothing can press. It matches the
+   * tap: select, or rotate if this piece is already selected.
+   *
+   * Deliberately onKeyDown rather than onClick. A button synthesises a
+   * click from Enter/Space, but a TAP would fire click as well as
+   * pointerup — two selects, and selecting twice toggles back off.
+   * preventDefault keeps Space from scrolling the page, and the window
+   * handler on the game screen already defers to a focused control, so
+   * this is the only thing that runs.
+   */
+  function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    if (selected) onRotate();
+    else onSelect();
+  }
+
   function handlePointerCancel(e: React.PointerEvent<HTMLButtonElement>) {
     pointerDown.current = false;
     if (dragging.current) {
@@ -164,6 +184,7 @@ function DominoChip({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onKeyDown={handleKeyDown}
       aria-label={`Domino ${piece.letters[0]}-${piece.letters[1]}${selected ? ", selected" : ""}`}
       aria-pressed={selected}
     >
