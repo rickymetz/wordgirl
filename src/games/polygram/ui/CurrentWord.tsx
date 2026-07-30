@@ -13,13 +13,16 @@ export function CurrentWord({ state }: { state: GameState }) {
   return (
     <div className="flex h-12 items-center justify-center">
       {/* Monospace: every glyph shares one advance width, so spacing
-          between typed letters and placeholders is perfectly regular. */}
+          between typed letters and placeholders is perfectly regular.
+          data-glyph keeps that true in the proportional Accessible face
+          (see index.css). */}
       <span className="flex font-game text-2xl font-normal uppercase">
         {Array.from({ length: currentLevel(state).size }, (_, i) => {
           const letter = state.current[i];
           return letter ? (
             <motion.span
               key={`${i}-${letter}`}
+              data-glyph
               className="inline-block text-accent"
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -28,7 +31,7 @@ export function CurrentWord({ state }: { state: GameState }) {
               {letter}
             </motion.span>
           ) : (
-            <span key={i} className="inline-block text-ink-soft/70">
+            <span key={i} data-glyph className="inline-block text-ink-soft/70">
               ?
             </span>
           );

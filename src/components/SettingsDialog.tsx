@@ -4,6 +4,7 @@ import { Monitor, Moon, RefreshCw, Sun, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import {
   FONT_SCALES,
+  FONTS,
   loadSettings,
   saveSettings,
   type Settings,
@@ -78,6 +79,29 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             }))}
             value={settings.fontScale}
             onChange={(fontScale) => update({ fontScale })}
+          />
+          <Segmented
+            label="Font"
+            options={FONTS.map(({ value, label }) => ({
+              value,
+              label,
+              // Each option is set in the face it selects, so the choice
+              // shows what it does before it is made.
+              content: (
+                <span
+                  style={{
+                    fontFamily:
+                      value === "accessible"
+                        ? "var(--font-access)"
+                        : "var(--font-house)",
+                  }}
+                >
+                  {label}
+                </span>
+              ),
+            }))}
+            value={settings.font}
+            onChange={(font) => update({ font })}
           />
           <UpdateRow />
         </div>

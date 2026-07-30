@@ -54,9 +54,14 @@ export function SnakeText({ puzzle, cells, revealed }: Props) {
                 !letter && revealed?.has(i)
                   ? puzzle.grid[puzzle.path[i].row][puzzle.path[i].col]
                   : null;
+              // data-glyph on all three arms, never on the mark above:
+              // these are the spans that swap a `?` for a letter, so in
+              // the proportional Accessible face they are the ones that
+              // need a fixed advance (see index.css).
               return letter ? (
                 <motion.span
                   key={`${i}-${letter}`}
+                  data-glyph
                   className="inline-block text-accent"
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -72,11 +77,19 @@ export function SnakeText({ puzzle, cells, revealed }: Props) {
                 // hint they used to be. Neutral ink-soft carries them at
                 // 5.18:1 / 6.27:1, and leaves the accent to mean one
                 // thing: cells the player has actually traced.
-                <span key={`${i}-known`} className="inline-block text-ink-soft">
+                <span
+                  key={`${i}-known`}
+                  data-glyph
+                  className="inline-block text-ink-soft"
+                >
                   {knownLetter}
                 </span>
               ) : (
-                <span key={`${i}-blank`} className="inline-block text-ink-soft/70">
+                <span
+                  key={`${i}-blank`}
+                  data-glyph
+                  className="inline-block text-ink-soft/70"
+                >
                   ?
                 </span>
               );
