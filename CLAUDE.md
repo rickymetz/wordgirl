@@ -203,6 +203,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   utilities, never a hardcoded family — a literal font-family is invisible
   to the setting. The `-house`/`-access` tokens exist so Settings can
   preview each option in its own face; nothing else should read them.
+- A game RULE must never depend on letterforms, because the face is now a
+  setting. Backwords' ✦ ("a real mirror would render this") is the one
+  that does, and it does not survive the swap — Lexend's Y is not
+  symmetric. It stays keyed to the default face because `glyphRows` is a
+  banked lifetime stat, and a per-face rule would make one solve count two
+  ways; see the KNOWN GAP note in `backwords/engine/lexicon.ts` before
+  touching it. Don't add another: if a new rule leans on a glyph's shape,
+  it has to hold in BOTH faces or not be a rule.
 
 **Layout & interaction**
 - No game screen may have a page scroll when content fits. `#root` is
