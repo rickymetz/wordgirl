@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { trackArchivePlay } from "../../../lib/analytics";
+import { trackArchivePlay, trackReplay } from "../../../lib/analytics";
 import { localDateKey } from "../../../lib/date";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
 import { getDailyPuzzle } from "../engine/dailySeed";
@@ -26,6 +26,7 @@ export default function ArchivePlayPage() {
       difficulty={difficulty}
       onDifficultyChange={setDifficulty}
       onReplay={async () => {
+        trackReplay("serpentine");
         const puzzle = getDailyPuzzle(difficulty, dateKey);
         await resetDailyForReplay(difficulty, dateKey, puzzle.id);
         setRunId((n) => n + 1);

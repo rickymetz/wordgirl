@@ -18,6 +18,7 @@ import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "..
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
@@ -410,6 +411,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                trackHint("crosshatch");
                 setWordsOpen(true);
                 requestHint();
               }}
@@ -420,7 +422,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("crosshatch");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >

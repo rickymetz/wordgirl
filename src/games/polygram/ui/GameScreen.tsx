@@ -14,6 +14,7 @@ import {
   Type,
 } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint, trackSkipLevel } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { HoldButton } from "../../../components/HoldButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
@@ -308,6 +309,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                trackHint("polygram");
                 setWordsOpen(true);
                 requestHint();
               }}
@@ -318,7 +320,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("polygram");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >
@@ -511,7 +516,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               // Held, not tapped: skipping forfeits the level's
               // remaining words, so a stray thumb must not do it.
               <HoldButton
-                onHoldComplete={() => dispatch({ type: "skipLevel" })}
+                onHoldComplete={() => {
+                  trackSkipLevel("polygram");
+                  dispatch({ type: "skipLevel" });
+                }}
                 className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface"
               >
                 <SkipForward aria-hidden className="h-4 w-4" />
