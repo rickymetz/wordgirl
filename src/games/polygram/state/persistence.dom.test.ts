@@ -104,7 +104,7 @@ describe("legacy field normalization", () => {
     const loaded = await loadDailyProgress("2026-07-12");
     expect(loaded?.foundWords).toEqual(["bad", "dab"]);
     expect(loaded?.solved).toBe(true);
-    expect(loaded?.totalWords).toBeUndefined();
+    expect(loaded?.requiredWords).toBeUndefined();
   });
 
   it("stats banked with totalScore keep their streak and count", async () => {

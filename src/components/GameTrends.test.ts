@@ -121,23 +121,13 @@ describe("polygram's new metrics", () => {
   const solved = (fields: Partial<PolygramDay>) =>
     day<PolygramDay>({ solved: true, completed: true, ...fields });
 
-  it("reports words found against the day's own ceiling", () => {
-    // The reason this exists: the same 12 words is a near sweep on one
-    // board and half a game on another.
-    const share = metric(polygram, "share");
-    const found = (n: number) =>
-      Array.from({ length: n }, (_, i) => `w${i}`);
-    expect(
-      share.value(solved({ foundWords: found(12), totalWords: 14 })),
-    ).toBeCloseTo(85.7, 1);
-    expect(
-      share.value(solved({ foundWords: found(12), totalWords: 25 })),
-    ).toBeCloseTo(48, 1);
-  });
-
-  it("gaps a day banked before the ceiling was stored", () => {
-    const share = metric(polygram, "share");
-    expect(share.value(solved({ foundWords: ["cat", "cart"] }))).toBeNull();
+  it("charts no share-of-board metric at all", () => {
+    // Deliberately absent. A share needs a denominator, and the only
+    // candidate was every word on the board — a tier that averages 142
+    // words against 17 required and swings from 3 to 615, so a fully
+    // solved day charted in the single digits. Bonus words are texture,
+    // and texture has no percentage.
+    expect(polygram.metrics.find((m) => m.key === "share")).toBeUndefined();
   });
 
   it("counts levels skipped, and knows nothing from a save without them", () => {

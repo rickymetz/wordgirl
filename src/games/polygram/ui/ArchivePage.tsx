@@ -18,17 +18,17 @@ export function rowStatus(day: ArchivedDay): { text: string; done: boolean } {
     return { text: `In progress · ${found} words`, done: false };
   }
   // A stale save's words are real history from a puzzle that no longer
-  // exists, and `totalWords` accrues only from the day it shipped —
+  // exists, and `requiredWords` accrues only from the day it shipped —
   // either way the row reports the count alone rather than a ratio
   // against a total the player can't reproduce.
-  if (day.stale || !day.totalWords) {
+  if (day.stale || !day.requiredWords) {
     return {
       text: `Solved · ${found} words${day.stale ? " · older words" : ""}`,
       done: true,
     };
   }
   return {
-    text: `${found}/${day.totalWords}${
+    text: `${found}/${day.requiredWords}${
       Object.keys(day.revealed ?? {}).length > 0 ? " · used hint" : ""
     }`,
     done: true,

@@ -149,29 +149,14 @@ export function trackStatsDay(gameId: string) {
 }
 
 /**
- * A bonus word was found — the tier that used to be worth points.
+ * A bonus word was found — the rare tier, which is texture rather than a
+ * target: unbounded, uncounted against any total, and never asked for.
  *
- * Polygram's score was cut on the premise that players hunt bonus words
- * to complete the board, not to run a total up. This is the count that
- * premise stands or falls on: if the tier goes quiet without points
- * attached to it, the premise was wrong.
+ * Worth counting precisely because it is optional. If rare words stop
+ * landing entirely once nothing rewards them, the tier is decoration
+ * nobody sees and the generator should stop paying for it.
  */
 export function trackBonusWord(gameId: string) {
   track(`${gameId}:bonus-word`);
 }
 
-/**
- * A day was finished with EVERY word on the board found, bonus included.
- *
- * The completionist ceiling, and a deliberately strict one: submitting is
- * closed once the last required word lands, so a full sweep means the
- * player held that word back on purpose. Read it as a rate against
- * `solved`, never as a population.
- *
- * The tutorial never fires this. Its hand-picked puzzle has no bonus tier,
- * so finishing it is a sweep by construction, and counting it would report
- * the ceiling reached every time anyone was taught the game.
- */
-export function trackSwept(gameId: string) {
-  track(`${gameId}:swept`);
-}

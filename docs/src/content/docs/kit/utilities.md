@@ -55,9 +55,9 @@ The settings are the theme and the text size. The themes are system, light, and 
   - **Friction**: hint, replay, coach (the "?" sheet), skip level. Hint
     fires where a letter is spent, not where the button is tapped, so a
     declined confirmation counts nothing.
-  - **Completion**: bonus word, and swept for a board finished with every
-    word found. The tutorial never sends swept — its puzzle has no bonus
-    tier, so finishing it is a sweep by construction.
+  - **Texture**: bonus word, sent when a rare word lands. There is no
+    "swept" event — bonus words are not a target, so completing them is
+    not a thing to measure.
   - **Reading the stats**: stats day, sent once a visit when a player
     reads a single day out of the charts.
   - **Display settings**: theme, text size, and font, as
