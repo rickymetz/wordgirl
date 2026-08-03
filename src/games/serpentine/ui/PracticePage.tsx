@@ -1,24 +1,28 @@
-import { useEffect, useState } from "react";
-import { trackPractice } from "../../../lib/analytics";
+import { useState } from "react";
 import { randomSeed } from "../../../lib/random";
 import { practiceSeed } from "../engine/practice";
+import { PracticeShell } from "../../../components/game/pageShells";
 import type { Difficulty } from "../engine/types";
 import { GameScreen } from "./GameScreen";
 
 export default function PracticePage() {
-  useEffect(() => { trackPractice("serpentine"); }, []);
+  // Switching difficulty must hand over a board of the new size, which
+  // is what `resetKey` buys: a fresh seed the moment it changes.
   const [difficulty, setDifficulty] = useState<Difficulty>("haiku");
-  const [seed, setSeed] = useState(() => practiceSeed(randomSeed(), difficulty));
   return (
-    <GameScreen
-      key={seed}
-      mode={{ kind: "practice", seed, difficulty }}
-      difficulty={difficulty}
-      onDifficultyChange={(d) => {
-        setDifficulty(d);
-        setSeed(practiceSeed(randomSeed(), d));
-      }}
-      onNewPuzzle={() => setSeed(practiceSeed(randomSeed(), difficulty))}
+    <PracticeShell
+      gameId="serpentine"
+      makeSeed={() => practiceSeed(randomSeed(), difficulty)}
+      resetKey={difficulty}
+      renderScreen={(seed, newPuzzle) => (
+        <GameScreen
+          key={seed}
+          mode={{ kind: "practice", seed, difficulty }}
+          difficulty={difficulty}
+          onDifficultyChange={setDifficulty}
+          onNewPuzzle={newPuzzle}
+        />
+      )}
     />
   );
 }

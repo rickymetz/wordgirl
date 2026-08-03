@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
-import { trackPractice } from "../../../lib/analytics";
 import { randomSeed } from "../../../lib/random";
 import { practiceSeed } from "../engine/generator";
+import { PracticeShell } from "../../../components/game/pageShells";
 import { GameScreen } from "./GameScreen";
 
 export default function PracticePage() {
-  useEffect(() => { trackPractice("polygram"); }, []);
-  const [seed, setSeed] = useState(() => practiceSeed(randomSeed()));
   return (
-    // key remounts the whole screen for a fresh puzzle
-    <GameScreen
-      key={seed}
-      mode={{ kind: "practice", seed }}
-      onNewPuzzle={() => setSeed(practiceSeed(randomSeed()))}
+    <PracticeShell
+      gameId="polygram"
+      makeSeed={() => practiceSeed(randomSeed())}
+      renderScreen={(seed, newPuzzle) => (
+        <GameScreen
+          key={seed}
+          mode={{ kind: "practice", seed }}
+          onNewPuzzle={newPuzzle}
+        />
+      )}
     />
   );
 }

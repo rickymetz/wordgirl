@@ -59,9 +59,24 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
   const [progress, setProgress] = useState<Record<string, Day> | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
 
+  // A rejected read must land on a RENDERED empty state, not on a promise
+  // that never settles — without the catch the page holds its loading
+  // state forever and says nothing about why.
   useEffect(() => {
-    void config.loadAllDays().then(setProgress);
-    void config.loadStats().then(setStats);
+    void config
+      .loadAllDays()
+      .catch((err) => {
+        console.warn("archive: could not read saved days", err);
+        return {} as Record<string, Day>;
+      })
+      .then(setProgress);
+    void config
+      .loadStats()
+      .catch((err) => {
+        console.warn("archive: could not read stats", err);
+        return null;
+      })
+      .then(setStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.gameId]);
 
@@ -262,7 +277,7 @@ function DayCell<Day extends ArchiveDayBase, Stats>({
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    // min-w-0 + truncate: a long mono value (AMAZING) must ellipsize
+    // min-w-0 + truncate: a long mono value must ellipsize
     // inside its grid column, not collide with its neighbor.
     <div className="min-w-0">
       <div className="truncate font-game text-lg text-accent">{value}</div>

@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { loadDailyProgress } from "./state/persistence";
 import { PolygramPreview } from "./ui/PolygramPreview";
 import { PolygramStatus } from "./ui/PolygramStatus";
 
@@ -10,6 +11,8 @@ export const polygram: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: PolygramPreview,
   Status: PolygramStatus,
+  solvedToday: async (today) =>
+    (await loadDailyProgress(today))?.completed === true,
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

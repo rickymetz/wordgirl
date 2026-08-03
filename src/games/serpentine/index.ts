@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { loadDailyProgress } from "./state/persistence";
 import { SerpentinePreview } from "./ui/SerpentinePreview";
 import { SerpentineStatus } from "./ui/SerpentineStatus";
 
@@ -10,6 +11,14 @@ export const serpentine: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: SerpentinePreview,
   Status: SerpentineStatus,
+  // Two boards a day; the game is done when both are solved.
+  solvedToday: async (today) => {
+    const boards = await Promise.all([
+      loadDailyProgress("haiku", today),
+      loadDailyProgress("poem", today),
+    ]);
+    return boards.every((b) => b?.solved === true);
+  },
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

@@ -100,6 +100,16 @@
 # site lives at wordgirl.net/docs with no DNS or extra host. Custom
 # headers below do NOT apply to proxied responses, which is deliberate:
 # the docs need inline styles/scripts the app CSP forbids.
+#
+# KNOWN GAP, and the reason to prefer a subdomain eventually: proxied at
+# status 200, these pages run in wordgirl.net's ORIGIN. Any script on
+# them can read the app's localStorage — every saved day, every streak.
+# Same author, same repo, so the practical risk is small, but the docs
+# are inside the app's security boundary rather than beside it, and no
+# header written here can move them out. Only a separate host can
+# (docs.wordgirl.net, or the github.io URL unproxied). The block below
+# restores what a proxy CAN carry if Netlify applies it; treat it as
+# defence in depth, not as the fix.
 # No /docs -> /docs/ self-redirect: Netlify's slash normalization
 # turns that into an infinite loop. Proxy both forms directly.
 [[redirects]]
@@ -128,6 +138,16 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
     Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.usefathom.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cdn.usefathom.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'"
+
+# Docs — same protections as the app minus the CSP, which Starlight's
+# inline styles and scripts would break. See the proxy note above for
+# why this is defence in depth and not the fix.
+[[headers]]
+  for = "/docs/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
 
 # Hashed assets are immutable — cache for one year
 [[headers]]
