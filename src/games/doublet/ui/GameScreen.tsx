@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
+import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
@@ -18,7 +19,16 @@ import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { DoubletCoach } from "./Overlays";
-import { loadTutorialSeen, markTutorialSeen } from "../state/persistence";
+import {
+  displayStreak,
+  loadStats,
+  loadTutorialSeen,
+  markTutorialSeen,
+} from "../state/persistence";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
@@ -35,6 +45,7 @@ const DIFF_LABELS: Record<Difficulty, string> = {
 
 function buildShareText(
   difficulty: Difficulty,
+  pieces: number,
   dateKey: string,
   elapsedMs: number,
   hints: number,
@@ -42,7 +53,10 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
     `👯‍♂️ Doublet — ${formatShareDate(dateKey)}`,
-    `${DIFF_LABELS[difficulty]} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    // The piece count, not just the band: "Easy" spans 3 to 4 dominoes,
+    // and every other game's share says something about the board it was
+    // played on rather than only which board it was.
+    `${DIFF_LABELS[difficulty]} · ${pieces} pieces · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -539,9 +553,12 @@ export function GameScreen({
               {(mode.kind === "daily" || mode.kind === "archive") &&
                 solvedElapsedMs !== null && (
                 <ShareButton
-                  text={buildShareText(difficulty, mode.dateKey, solvedElapsedMs, state.hints)}
+                  text={buildShareText(difficulty, totalDominoes, mode.dateKey, solvedElapsedMs, state.hints)}
                   gameId="doublet"
                 />
+              )}
+              {isDaily && (
+                <DailyOutro gameId="doublet" loadStreak={outroStreak} />
               )}
             </motion.div>
           ) : !state.solved ? (

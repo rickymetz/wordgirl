@@ -17,6 +17,7 @@ import {
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
+import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast } from "../../../components/game/GameToast";
@@ -34,10 +35,16 @@ import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
+  displayStreak,
   loadDailyProgress,
+  loadStats,
   loadTutorialSeen,
   markTutorialSeen,
 } from "../state/persistence";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 import {
   hintTarget,
   letterAt,
@@ -573,6 +580,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 )}
                 gameId="crosshatch"
               />
+            )}
+            {isDaily && (
+              <DailyOutro gameId="crosshatch" loadStreak={outroStreak} />
             )}
           </motion.div>
         ) : !state.solved ? (

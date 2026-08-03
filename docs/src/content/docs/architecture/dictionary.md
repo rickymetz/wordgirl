@@ -24,7 +24,7 @@ The function `loadDictionary()` is in `src/lib/words/loader.ts`. It gets `dictio
 
 ## DICT_VERSION
 
-`DICT_VERSION` connects the saved days to their puzzles. The number is 16 at this time. Refer to [How daily puzzles work](/docs/games/daily-puzzles/) and [Data storage and streaks](/docs/architecture/persistence/).
+`DICT_VERSION` connects the saved days to their puzzles. The number is 19 at this time. Refer to [How daily puzzles work](/docs/games/daily-puzzles/) and [Data storage and streaks](/docs/architecture/persistence/).
 
 This is the rule: increase the number for each change to the puzzle calculation. Examples are a word list change, a generator change, and a seed change. If you do not increase the number, the saves do not agree with the puzzles. This defect is not easy to see.
 
@@ -50,3 +50,6 @@ The rule is not abstract — the source file records every bump and its reason. 
 | v14 | Crosshatch accepts bonus words; Polygram removes its per-level bonus cap. |
 | v15 | The 20-cell hard Doublet boards leave — their uniqueness verification froze mobile browsers. |
 | v16 | The Doublet e5 board becomes a staircase. The old T-bar had checkerboard colors 4/2 — no domino tiling existed, and every attempt that drew it failed. |
+| v17 | Crosshatch generates from the required tier only, so no day demands a rare word. |
+| v18 | Backwords gets a bigger vocabulary and a target worth missing. |
+| v19 | Serpentine paths never cross themselves, so every board is re-laid. |

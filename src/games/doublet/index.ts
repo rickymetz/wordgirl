@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { loadDailyProgress } from "./state/persistence";
 import { DoubletPreview } from "./ui/DoubletPreview";
 import { DoubletStatus } from "./ui/DoubletStatus";
 
@@ -10,6 +11,15 @@ export const doublet: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: DoubletPreview,
   Status: DoubletStatus,
+  // Three boards a day; the game is done when every one is solved.
+  solvedToday: async (today) => {
+    const boards = await Promise.all(
+      (["easy", "medium", "hard"] as const).map((d) =>
+        loadDailyProgress(today, d),
+      ),
+    );
+    return boards.every((b) => b?.solved === true);
+  },
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

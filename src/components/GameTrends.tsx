@@ -70,8 +70,17 @@ export function GameTrends<Day extends { dateKey: string }>({
   config: GameTrendsConfig<Day>;
 }) {
   const [days, setDays] = useState<Record<string, Day> | null>(null);
+  // A rejected read must land on a RENDERED empty state, not on a promise
+  // that never settles — without the catch the page holds its loading
+  // state forever and says nothing about why.
   useEffect(() => {
-    void config.loadAllDays().then(setDays);
+    void config
+      .loadAllDays()
+      .catch((err) => {
+        console.warn("stats: could not read saved days", err);
+        return {} as Record<string, Day>;
+      })
+      .then(setDays);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.gameId]);
 

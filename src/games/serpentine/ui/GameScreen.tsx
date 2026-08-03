@@ -6,6 +6,7 @@ import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
+import { DailyOutro } from "../../../components/game/DailyOutro";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
@@ -16,7 +17,17 @@ import {
   useSerpentineGame,
   type GameMode,
 } from "../state/useSerpentineGame";
-import { loadDailyProgress, loadTutorialSeen, markTutorialSeen } from "../state/persistence";
+import {
+  displayStreak,
+  loadDailyProgress,
+  loadStats,
+  loadTutorialSeen,
+  markTutorialSeen,
+} from "../state/persistence";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
@@ -369,6 +380,9 @@ export function GameScreen({
                 text={buildShareText(puzzle, mode.difficulty, mode.dateKey, solvedElapsedMs, hintCount)}
                 gameId="serpentine"
               />
+            )}
+            {isDaily && (
+              <DailyOutro gameId="serpentine" loadStreak={outroStreak} />
             )}
           </motion.div>
         ) : !state.solved ? (

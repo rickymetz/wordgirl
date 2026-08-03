@@ -16,6 +16,7 @@ import {
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint, trackSkipLevel } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
+import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HoldButton } from "../../../components/HoldButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
@@ -31,10 +32,16 @@ import { tutorialStepIndex } from "../engine/tutorial";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { usePolygramGame, type GameMode } from "../state/usePolygramGame";
 import {
+  displayStreak,
   loadDailyProgress,
+  loadStats,
   loadTutorialSeen,
   markTutorialSeen,
 } from "../state/persistence";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
@@ -509,6 +516,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               mode.dateKey &&
               doneElapsedMs !== null && (
               <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} gameId="polygram" />
+            )}
+            {isDaily && (
+              <DailyOutro gameId="polygram" loadStreak={outroStreak} />
             )}
           </motion.div>
         ) : !done ? (

@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { loadDailyProgress } from "./state/persistence";
 import { BackwordsPreview } from "./ui/BackwordsPreview";
 import { BackwordsStatus } from "./ui/BackwordsStatus";
 
@@ -10,6 +11,8 @@ export const backwords: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: BackwordsPreview,
   Status: BackwordsStatus,
+  solvedToday: async (today) =>
+    (await loadDailyProgress(today))?.solved === true,
   Page: lazy(() => import("./ui/BackwordsPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

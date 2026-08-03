@@ -16,6 +16,7 @@ import {
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
+import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
@@ -30,10 +31,16 @@ import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useBackwordsGame, type GameMode } from "../state/useBackwordsGame";
 import {
+  displayStreak,
   loadDailyProgress,
+  loadStats,
   loadTutorialSeen,
   markTutorialSeen,
 } from "../state/persistence";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
 import { isStraddle } from "../engine/types";
 import { GameToast, useToast } from "../../../components/game/GameToast";
@@ -425,6 +432,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 )}
                 gameId="backwords"
               />
+            )}
+            {isDaily && (
+              <DailyOutro gameId="backwords" loadStreak={outroStreak} />
             )}
           </motion.div>
         ) : !state.solved ? (

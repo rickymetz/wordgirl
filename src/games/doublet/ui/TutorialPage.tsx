@@ -1,28 +1,24 @@
-import { useEffect, useState } from "react";
+import { TutorialShell } from "../../../components/game/pageShells";
 import { markTutorialSeen } from "../state/persistence";
-import { trackTutorialStarted } from "../../../lib/analytics";
 import { GameScreen } from "./GameScreen";
 
 /**
- * The tutorial: the six-cell staircase board, with the step script running
- * above it. No difficulty pills — there is one fixed board — and nothing
- * here is persisted. Arriving is all it takes to mark the offer answered,
- * so a player who bails halfway is not asked again.
+ * The six-cell staircase board, with the step script above it. No
+ * difficulty pills — the tutorial has one board.
  */
 export default function TutorialPage() {
-  useEffect(() => {
-    void markTutorialSeen();
-    // Every route in lands here — the first-visit prompt, the hub bento
-    // tile, and the coach sheet's link — so this counts them all.
-    trackTutorialStarted("doublet");
-  }, []);
-  const [runId, setRunId] = useState(0);
   return (
-    <GameScreen
-      key={runId}
-      mode={{ kind: "tutorial", difficulty: "easy" }}
-      difficulty="easy"
-      onRestartTutorial={() => setRunId((n) => n + 1)}
+    <TutorialShell
+      gameId="doublet"
+      markSeen={markTutorialSeen}
+      renderScreen={(runId, restart) => (
+        <GameScreen
+          key={runId}
+          mode={{ kind: "tutorial", difficulty: "easy" }}
+          difficulty="easy"
+          onRestartTutorial={restart}
+        />
+      )}
     />
   );
 }

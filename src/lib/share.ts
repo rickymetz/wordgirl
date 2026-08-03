@@ -14,7 +14,8 @@ export const SHARE_URL = "wordgirl.net";
  * moment. Most cards want components/ShareButton, which wraps this.
  */
 export function useShare(text: string): {
-  share: () => void;
+  /** Resolves true only if the result actually left — see below. */
+  share: () => Promise<boolean>;
   copied: boolean;
   failed: boolean;
 } {
@@ -23,24 +24,35 @@ export function useShare(text: string): {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const share = useCallback(async () => {
+  /**
+   * Returns whether the result actually went anywhere. Both failure modes
+   * here are silent to the caller otherwise: dismissing the native sheet
+   * is a "changed my mind" that this deliberately swallows, and the
+   * clipboard path can refuse outright. A caller that counts shares must
+   * be able to tell those apart from a share that happened, or it counts
+   * the tap instead of the share.
+   */
+  const share = useCallback(async (): Promise<boolean> => {
     if (navigator.share) {
       try {
         await navigator.share({ text });
+        return true;
       } catch {
         // Dismissing the share sheet is a "changed my mind".
+        return false;
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 1500);
+      return true;
     } catch {
       setFailed(true);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setFailed(false), 2000);
+      return false;
     }
   }, [text]);
 
