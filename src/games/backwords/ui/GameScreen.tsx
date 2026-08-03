@@ -38,15 +38,16 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-/** The streak `DailyOutro` shows — this game's own, read at the finish. */
-const outroStreak = async (today: string) =>
-  displayStreak(await loadStats(), today);
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
 import { isStraddle } from "../engine/types";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
 import { dragPoint } from "./dragPoint";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 
 function buildShareText(
   rows: number,

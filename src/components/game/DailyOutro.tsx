@@ -62,7 +62,10 @@ export function DailyOutro({
   if (open === null) return null;
 
   return (
-    <div className="flex flex-col items-center gap-1 pt-1 text-sm">
+    // text-center, not just items-center: the game list wraps to a second
+    // line on a phone, and centring the BOX leaves the wrapped line ragged
+    // against everything else on the card.
+    <div className="flex flex-col items-center gap-1 pt-1 text-center text-sm">
       {streak > 1 && (
         <p className="font-semibold text-ink">{streak}-day streak</p>
       )}

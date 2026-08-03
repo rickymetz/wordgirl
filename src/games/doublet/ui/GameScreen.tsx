@@ -26,9 +26,6 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-/** The streak `DailyOutro` shows — this game's own, read at the finish. */
-const outroStreak = async (today: string) =>
-  displayStreak(await loadStats(), today);
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
@@ -36,6 +33,10 @@ import { TutorialDone } from "../../../components/game/TutorialDone";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 
 const DIFF_LABELS: Record<Difficulty, string> = {
   easy: "Easy",

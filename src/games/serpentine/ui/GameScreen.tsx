@@ -25,9 +25,6 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-/** The streak `DailyOutro` shows — this game's own, read at the finish. */
-const outroStreak = async (today: string) =>
-  displayStreak(await loadStats(), today);
 import { SnakeGrid } from "./SnakeGrid";
 import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
@@ -40,6 +37,10 @@ import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 
 function buildShareText(
   puzzle: { path: { row: number; col: number }[]; text: string },

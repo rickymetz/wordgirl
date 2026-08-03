@@ -42,9 +42,6 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-/** The streak `DailyOutro` shows — this game's own, read at the finish. */
-const outroStreak = async (today: string) =>
-  displayStreak(await loadStats(), today);
 import {
   hintTarget,
   letterAt,
@@ -59,6 +56,10 @@ import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
 import { ProgressBar } from "./ProgressBar";
 import { WordsPanel } from "./WordsPanel";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 
 function buildShareText(
   found: number,

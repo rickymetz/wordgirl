@@ -39,9 +39,6 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-/** The streak `DailyOutro` shows — this game's own, read at the finish. */
-const outroStreak = async (today: string) =>
-  displayStreak(await loadStats(), today);
 import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
@@ -53,6 +50,10 @@ import {
   polygonBottomGap,
   regularPolygonClipPath,
 } from "./polygonPath";
+
+/** The streak `DailyOutro` shows — this game's own, read at the finish. */
+const outroStreak = async (today: string) =>
+  displayStreak(await loadStats(), today);
 
 function buildShareText(
   state: { found: string[]; revealed: Record<string, number[]> },
