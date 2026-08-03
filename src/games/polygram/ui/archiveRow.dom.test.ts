@@ -17,7 +17,7 @@ const day = (over: Partial<ArchivedDay> = {}): ArchivedDay => ({
 });
 
 describe("archive row status", () => {
-  it("reports the sweep against the day's word total", () => {
+  it("reports the required words found against what the day asked for", () => {
     expect(rowStatus(day()).text).toBe("3/3");
   });
 
@@ -33,7 +33,7 @@ describe("archive row status", () => {
     );
   });
 
-  it("counts alone on a day banked before the total was stored", () => {
+  it("counts alone on a day banked before the required total was stored", () => {
     expect(rowStatus(day({ requiredWords: undefined })).text).toBe(
       "Solved · 3 words",
     );
