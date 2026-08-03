@@ -32,8 +32,8 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
 - The word list shows blanks for unfound words **in alphabetical order**
   — where a blank sits between found words is itself a gentle hint. (A
   letter-reveal hint system exists in the engine but is hidden for now.)
-- Points per word + rank titles: Beginner → Good → Great → Amazing →
-  Genius → **Geometer**.
+- No score: a day's result is the words found out of every word the
+  puzzle held, required and bonus.
 - One **daily puzzle** (same for everyone, deterministic from the date)
   plus unlimited **practice** puzzles.
 
@@ -214,7 +214,7 @@ npm run preview    # serve the production build locally
 - **Two-tier dictionary** — `dictionary.txt` holds *required* words
   (common: top-12k by frequency) plus *bonus* words (rarer: 12k–30k,
   prefixed with `+`). Required words gate level clears and receive
-  hints; bonus words only add points. Saves from an older
+  hints; bonus words are optional finds. Saves from an older
   `DICT_VERSION` are kept as historical archive records, and that day
   restarts fresh when replayed.
 

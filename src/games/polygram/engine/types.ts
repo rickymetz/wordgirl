@@ -11,8 +11,8 @@ export interface Puzzle {
   levels: LevelSpec[];
   /** Size of the final polygon with at least one valid word. */
   maxLevel: number;
-  /** Total points available with no hints used. */
-  maxScore: number;
+  /** Every word on offer, required and bonus, across all levels. */
+  totalWords: number;
 }
 
 export interface LevelSpec {
@@ -25,8 +25,8 @@ export interface LevelSpec {
    */
   words: string[];
   /**
-   * Rarer same-length words worth extra points — never required, never
-   * hinted, invisible until found.
+   * Rarer same-length words — never required, never hinted, invisible
+   * until found. There for the sweep.
    */
   bonusWords: string[];
 }

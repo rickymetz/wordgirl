@@ -36,7 +36,7 @@ The rule is not abstract — the source file records every bump and its reason. 
 
 | Version | Change |
 |---------|--------|
-| v2 | Two tiers: common REQUIRED words gate advancement; rarer BONUS words score extra. |
+| v2 | Two tiers: common REQUIRED words gate advancement; rarer BONUS words are optional finds. |
 | v3 | Puzzle staples (ode, …) enter the required tier whatever their frequency; mild words leave the blocklist. |
 | v4 | The Crosshatch generator never fully locks a line. Generator behavior counts as derivation, not only word lists. |
 | v5 | Crosshatch progress counts distinct words, not full frames. The band and the save shape changed with it. |

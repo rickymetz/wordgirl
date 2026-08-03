@@ -82,7 +82,6 @@ describe("stats recording", () => {
       currentStreak: 4,
       bestStreak: 4,
       lastSolvedDate: "2026-07-06",
-      bestRank: null,
       totalWords: 40,
     };
     expect(displayStreak(base, "2026-07-06")).toBe(4); // solved today
@@ -200,7 +199,6 @@ describe("stats recording", () => {
     const stats = await loadStats();
     expect(stats.played).toBe(3);
     expect(stats.totalWords).toBe(0); // missing field gets its default
-    expect(stats.bestRank).toBeNull();
   });
 });
 

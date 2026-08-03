@@ -48,7 +48,6 @@ export interface CrosshatchStats {
   currentStreak: number;
   bestStreak: number;
   lastSolvedDate: string | null;
-  bestRank: string | null;
   totalWords: number;
 }
 
@@ -58,7 +57,6 @@ const EMPTY_STATS: CrosshatchStats = {
   currentStreak: 0,
   bestStreak: 0,
   lastSolvedDate: null,
-  bestRank: null,
   totalWords: 0,
 };
 

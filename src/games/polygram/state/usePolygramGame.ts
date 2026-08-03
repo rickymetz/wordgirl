@@ -4,8 +4,6 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
-import { levelBonus } from "../engine/scoring";
-import type { Puzzle } from "../engine/types";
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
@@ -45,33 +43,19 @@ function normalizeRevealed(
 
 /**
  * Saves from before auto-submit can hold fully-revealed words that were
- * never typed — count them as found at the floor score, including any
- * level-clear bonus their completion earns.
+ * never typed — count them as found.
  */
 function migrateAutoSubmit(
-  puzzle: Puzzle,
   foundWords: string[],
   revealed: Record<string, number[]>,
-  score: number,
-): { found: string[]; score: number } {
+): string[] {
   const found = [...foundWords];
-  const autoAdded: string[] = [];
   for (const [word, positions] of Object.entries(revealed)) {
     if (positions.length >= word.length && !found.includes(word)) {
       found.push(word);
-      autoAdded.push(word);
-      score += 1;
     }
   }
-  for (const level of puzzle.levels) {
-    if (
-      autoAdded.some((w) => w.length === level.size) &&
-      level.words.every((w) => found.includes(w))
-    ) {
-      score += levelBonus(level.size);
-    }
-  }
-  return { found, score };
+  return found;
 }
 
 export function usePolygramGame(mode: GameMode) {
@@ -146,7 +130,6 @@ export function usePolygramGame(mode: GameMode) {
       puzzleKey: pKey,
       foundWords: s.found,
       revealed: s.revealed,
-      score: s.score,
       skippedLevels: s.skippedLevels,
       completed: s.phase === "done",
       solved: s.phase === "done",
@@ -155,8 +138,8 @@ export function usePolygramGame(mode: GameMode) {
         solvedHour: solvedHourRef.current,
       }),
       ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
-      // The day's ceiling, so Stats can say what share of it was taken.
-      maxScore: puzzle.maxScore,
+      // The day's ceiling, so Stats can say what share of it was swept.
+      totalWords: puzzle.totalWords,
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -184,17 +167,10 @@ export function usePolygramGame(mode: GameMode) {
                 ? saved.sessions
                 : saved.sessions + 1;
           const revealed = normalizeRevealed(saved.revealed);
-          const { found, score } = migrateAutoSubmit(
-            puzzle,
-            saved.foundWords,
-            revealed,
-            saved.score,
-          );
           dispatch({
             type: "hydrate",
-            found,
+            found: migrateAutoSubmit(saved.foundWords, revealed),
             revealed,
-            score,
             skippedLevels: saved.skippedLevels ?? [],
           });
         } else {
@@ -253,7 +229,7 @@ export function usePolygramGame(mode: GameMode) {
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.found, state.revealed, state.score, state.phase, state.skippedLevels]);
+  }, [persisted, dateKey, state.found, state.revealed, state.phase, state.skippedLevels]);
 
   // Track analytics solve event (all modes, once per session).
   const solveTrackedRef = useRef(false);
@@ -292,11 +268,11 @@ export function usePolygramGame(mode: GameMode) {
     completedRef.current = true;
     void recordDailyCompleted(
       dateKey,
-      state.score,
+      state.found.length,
       mode.kind === "daily",
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.phase, state.score, puzzle]);
+  }, [persisted, dateKey, state.phase, state.found, puzzle]);
 
   // Stop ALL further persistence for this mount (replay reset).
   const abandonSession = () => {

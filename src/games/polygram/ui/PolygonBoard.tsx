@@ -98,20 +98,19 @@ export function PolygonBoard({
           onTap={onSubmit}
         />
       </div>
-      {/* Floating score pop on a correct submit. */}
+      {/* Floating pop naming the word that just landed. */}
       <AnimatePresence>
         {state.lastResult?.type === "correct" && (
           <motion.span
             key={state.lastResult.nonce}
-            className="pointer-events-none absolute top-1/2 left-1/2 font-game text-xl font-bold text-good"
+            className="pointer-events-none absolute top-1/2 left-1/2 font-game text-base font-bold whitespace-nowrap text-good uppercase"
             initial={{ opacity: 1, x: "-50%", y: "-140%" }}
             animate={{ opacity: 0, y: "-260%" }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1.1, ease: "easeOut" }}
           >
-            +{state.lastResult.points}
+            {state.lastResult.word}
             {state.lastResult.bonus && " ✦"}
-            {state.phase !== "playing" && " · bonus!"}
           </motion.span>
         )}
       </AnimatePresence>

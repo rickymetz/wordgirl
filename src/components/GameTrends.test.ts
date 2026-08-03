@@ -121,17 +121,23 @@ describe("polygram's new metrics", () => {
   const solved = (fields: Partial<PolygramDay>) =>
     day<PolygramDay>({ solved: true, completed: true, ...fields });
 
-  it("reports score against the day's own ceiling", () => {
-    // The reason this exists: the same 300 points is a near sweep on one
+  it("reports words found against the day's own ceiling", () => {
+    // The reason this exists: the same 12 words is a near sweep on one
     // board and half a game on another.
     const share = metric(polygram, "share");
-    expect(share.value(solved({ score: 300, maxScore: 340 }))).toBeCloseTo(88.2, 1);
-    expect(share.value(solved({ score: 300, maxScore: 610 }))).toBeCloseTo(49.2, 1);
+    const found = (n: number) =>
+      Array.from({ length: n }, (_, i) => `w${i}`);
+    expect(
+      share.value(solved({ foundWords: found(12), totalWords: 14 })),
+    ).toBeCloseTo(85.7, 1);
+    expect(
+      share.value(solved({ foundWords: found(12), totalWords: 25 })),
+    ).toBeCloseTo(48, 1);
   });
 
   it("gaps a day banked before the ceiling was stored", () => {
     const share = metric(polygram, "share");
-    expect(share.value(solved({ score: 300 }))).toBeNull();
+    expect(share.value(solved({ foundWords: ["cat", "cart"] }))).toBeNull();
   });
 
   it("counts levels skipped, and knows nothing from a save without them", () => {

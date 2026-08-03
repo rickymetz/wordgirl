@@ -13,7 +13,6 @@ export interface DailyProgress extends DailyBase {
   foundWords: string[];
   /** word -> hint-revealed letter positions (older saves stored counts). */
   revealed: Record<string, number[] | number>;
-  score: number;
   /** Level indices the player skipped (gate met via bonus words). */
   skippedLevels?: number[];
   /** Legacy field name for `solved` — kept for backward compat. */
@@ -26,15 +25,15 @@ export interface DailyProgress extends DailyBase {
    */
   solvedHour?: number;
   /**
-   * Every point this day's puzzle had on offer.
+   * Every word this day's puzzle had on offer, required and bonus.
    *
-   * Score alone cannot be compared across days — the ceiling moves with
-   * the letter set, so 300 on a 340-point board is a near sweep and on a
-   * 610-point one is half a game. Stored rather than recomputed because
-   * the stats page would otherwise have to regenerate every archived
-   * puzzle, dictionary and all, to divide by it.
+   * A raw find count cannot be compared across days — the ceiling moves
+   * with the letter set, so 12 words is a near sweep of one board and
+   * half of another. Stored rather than recomputed because the stats
+   * page would otherwise have to regenerate every archived puzzle,
+   * dictionary and all, to divide by it.
    */
-  maxScore?: number;
+  totalWords?: number;
   /**
    * Opens of this day while unfinished. Absent means unknowable — a day
    * banked before the counter shipped, never backfilled, because a
@@ -48,8 +47,8 @@ export interface PolygramStats extends StreakStats {
   completed: number;
   /** Legacy alias for StreakStats.lastSolvedDate. */
   lastCompletedDate: string | null;
-  bestRank: string | null;
-  totalScore: number;
+  /** Lifetime words found on solved days. Accrues from the day it shipped. */
+  totalWords: number;
 }
 
 const emptyStats: PolygramStats = {
@@ -60,8 +59,7 @@ const emptyStats: PolygramStats = {
   bestStreak: 0,
   lastSolvedDate: null,
   lastCompletedDate: null,
-  bestRank: null,
-  totalScore: 0,
+  totalWords: 0,
 };
 
 /**
@@ -92,8 +90,6 @@ const daily = createDailyPersistence<DailyProgress, PolygramStats>({
     normalizeDayFields(saved);
     return (
       Array.isArray(saved.foundWords) &&
-      typeof saved.score === "number" &&
-      Number.isFinite(saved.score) &&
       saved.revealed !== null &&
       typeof saved.revealed === "object"
     );
@@ -171,7 +167,6 @@ export async function resetDailyForReplay(
     ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     foundWords: [],
     revealed: {},
-    score: 0,
     skippedLevels: [],
     completed: false,
     solved: false,
@@ -182,7 +177,7 @@ export async function resetDailyForReplay(
 
 export function recordDailyCompleted(
   dateKey: string,
-  score: number,
+  wordsFound: number,
   allowGrace = true,
 ): Promise<PolygramStats> {
   return daily.updateStats((raw) => {
@@ -195,7 +190,7 @@ export function recordDailyCompleted(
       ...stats,
       solved: stats.solved + 1,
       completed: stats.solved + 1,
-      totalScore: stats.totalScore + score,
+      totalWords: stats.totalWords + wordsFound,
       ...streak,
       lastCompletedDate: streak.lastSolvedDate ?? stats.lastCompletedDate,
     };

@@ -33,12 +33,6 @@ export const config: GameTrendsConfig<ArchivedDay> = {
   loadAllDays: loadAllDailyProgress,
   metrics: [
     {
-      key: "score",
-      label: "Score",
-      value: (d) => (d.score > 0 ? d.score : null),
-      format: (v) => `${Math.round(v)}`,
-    },
-    {
       // Level N's words are exactly N letters, so the deepest level
       // reached is the longest word found — derivable from any save.
       key: "level",
@@ -57,15 +51,15 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     {
-      // Score alone is not comparable across days: the ceiling moves with
-      // the letter set, so 300 on a 340-point board is a near sweep and on
-      // a 610-point one is half a game. Days banked before `maxScore` was
-      // stored have no denominator and chart as gaps.
+      // A raw find count is not comparable across days: the ceiling moves
+      // with the letter set, so 12 words is a near sweep of one board and
+      // half of another. Days banked before `totalWords` was stored have
+      // no denominator and chart as gaps.
       key: "share",
-      label: "Share of possible",
+      label: "Share of words",
       value: (d) =>
-        d.maxScore && d.maxScore > 0 && d.score > 0
-          ? (d.score / d.maxScore) * 100
+        d.totalWords && d.totalWords > 0 && d.foundWords.length > 0
+          ? (d.foundWords.length / d.totalWords) * 100
           : null,
       format: (v) => `${Math.round(v)}%`,
     },
