@@ -7,6 +7,7 @@ import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/dat
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint } from "../../../lib/analytics";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
@@ -407,7 +408,10 @@ export function GameScreen({
                          active:scale-95 touch-manipulation select-none
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => dispatch({ type: "revealHint", dict })}
+              onClick={() => {
+                trackHint("doublet");
+                dispatch({ type: "revealHint", dict });
+              }}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
@@ -415,7 +419,10 @@ export function GameScreen({
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("doublet");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >

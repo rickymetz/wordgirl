@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence } from "motion/react";
 import { ModalDialog } from "./ModalDialog";
+import { trackTutorialAccepted, trackTutorialOffered } from "../lib/analytics";
 
 /**
  * The one-time offer of a game's tutorial, shown the first time a player
@@ -34,7 +35,13 @@ export function TutorialPrompt({
     if (!enabled) return;
     let live = true;
     void loadSeen().then((seen) => {
-      if (live && !seen) setOpen(true);
+      if (!live || seen) return;
+      setOpen(true);
+      // Counted where it is SHOWN, not where it is mounted: the component
+      // mounts on every daily and asks storage whether the offer has been
+      // made. Only this branch is a player actually being offered it, so
+      // only this branch is the denominator for `tutorial-accepted`.
+      trackTutorialOffered(gameId);
     });
     return () => {
       live = false;
@@ -66,7 +73,10 @@ export function TutorialPrompt({
             <Link
               to={`/games/${gameId}/tutorial`}
               data-autofocus
-              onClick={() => void markSeen()}
+              onClick={() => {
+                trackTutorialAccepted(gameId);
+                void markSeen();
+              }}
               className="rounded-full bg-accent py-2.5 text-center font-semibold text-surface active:scale-95"
             >
               Play the tutorial

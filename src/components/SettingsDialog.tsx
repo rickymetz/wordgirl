@@ -11,12 +11,40 @@ import {
   type ThemePref,
 } from "../lib/settings";
 import { checkForUpdates } from "../lib/swUpdate";
+import { trackSetting } from "../lib/analytics";
 
 const THEMES: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
   { value: "system", label: "System", Icon: Monitor },
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark", label: "Dark", Icon: Moon },
 ];
+
+/**
+ * Report a setting the player just changed.
+ *
+ * Compares before against after rather than reading the patch, so a tap
+ * that re-selects the value already showing reports nothing — the radios
+ * are always tappable, and a no-op is not a decision. Text size goes out
+ * as its LABEL: `setting:text:huge` reads on a dashboard where
+ * `setting:text:112.5` does not.
+ */
+function reportChange(before: Settings, after: Settings) {
+  if (before.theme !== after.theme) {
+    trackSetting({ key: "theme", value: after.theme });
+  }
+  if (before.fontScale !== after.fontScale) {
+    const label = FONT_SCALES.find((f) => f.value === after.fontScale)?.label;
+    if (label) {
+      trackSetting({
+        key: "text",
+        value: label.toLowerCase() as "small" | "default" | "large" | "huge",
+      });
+    }
+  }
+  if (before.font !== after.font) {
+    trackSetting({ key: "font", value: after.font });
+  }
+}
 
 /**
  * Display settings + app utilities, as a bottom sheet — thumb-reach on
@@ -30,6 +58,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
     const next = { ...settings, ...patch };
     setSettings(next);
     saveSettings(next);
+    reportChange(settings, next);
   };
 
   return (

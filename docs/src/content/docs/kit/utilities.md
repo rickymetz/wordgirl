@@ -44,7 +44,29 @@ The settings are the theme and the text size. The themes are system, light, and 
 
 ## Other functions
 
-- `analytics.ts` sends events to Fathom. The events are solved, share, practice, started, archive play, stats day, bonus word, and swept. Each event is a name and nothing else. No event carries a date, a word, or a puzzle. Fathom does not load when the app is offline, so every count here is lower than the truth. Compare one event with another event. Do not compare an event with a real number of players.
+- `analytics.ts` sends events to Fathom. Each event is a name and nothing
+  else, so it stays a count on a dashboard rather than a trace of anybody's
+  play. Pageviews are not here — the script tag runs with `data-spa="auto"`
+  and counts routes for us.
+  - **Playing**: started, solved, share, practice, archive play.
+  - **The tutorial funnel**: offered, accepted, started, finished. There is
+    no abandoned event on purpose — it would have to fire on unmount, which
+    a closed tab never does. Abandonment is started minus finished.
+  - **Friction**: hint, replay, coach (the "?" sheet), skip level. Hint
+    fires where a letter is spent, not where the button is tapped, so a
+    declined confirmation counts nothing.
+  - **Completion**: bonus word, and swept for a board finished with every
+    word found. The tutorial never sends swept — its puzzle has no bonus
+    tier, so finishing it is a sweep by construction.
+  - **Reading the stats**: stats day, sent once a visit when a player
+    reads a single day out of the charts.
+  - **Display settings**: theme, text size, and font, as
+    `setting:font:accessible`. App-level, so no game prefix, and they fire
+    on a change rather than on a re-pick of the value already showing.
+  - Game actions carry the game id (`serpentine:hint`); settings do not.
+  - Offline play sends nothing — Fathom's script is not there, and queuing
+    play locally to send later is the tracking this analytics choice avoids.
+    So compare events with events, never with how many people played.
 - `swUpdate.ts` contains `checkForUpdates()` for the settings dialog. Refer to [PWA and offline operation](/docs/architecture/pwa-offline/).
 - `useStorageBroken()` becomes true after a storage error.
 
