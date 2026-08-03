@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { markTutorialSeen } from "../state/persistence";
+import { trackTutorialStarted } from "../../../lib/analytics";
 import { GameScreen } from "./GameScreen";
 
 /**
@@ -11,6 +12,9 @@ import { GameScreen } from "./GameScreen";
 export default function TutorialPage() {
   useEffect(() => {
     void markTutorialSeen();
+    // Every route in lands here — the first-visit prompt, the hub bento
+    // tile, and the coach sheet's link — so this counts them all.
+    trackTutorialStarted("crosshatch");
   }, []);
   const [runId, setRunId] = useState(0);
   return (

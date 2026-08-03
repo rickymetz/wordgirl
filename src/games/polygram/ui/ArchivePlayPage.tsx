@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useParams } from "react-router-dom";
-import { trackArchivePlay } from "../../../lib/analytics";
+import { trackArchivePlay, trackReplay } from "../../../lib/analytics";
 import { localDateKey } from "../../../lib/date";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
 import { GameScreen } from "./GameScreen";
@@ -22,6 +22,7 @@ export default function ArchivePlayPage() {
       key={`${dateKey}:${runId}`}
       mode={{ kind: "archive", dateKey }}
       onReplay={async () => {
+        trackReplay("polygram");
         // Wipe the day's progress (stats stay counted) and remount.
         await resetDailyForReplay(dateKey);
         setRunId((n) => n + 1);

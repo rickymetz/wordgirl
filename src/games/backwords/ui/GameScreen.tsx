@@ -17,6 +17,7 @@ import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "..
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint } from "../../../lib/analytics";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner, TUTORIAL_BANNER_H } from "../../../components/game/TutorialBanner";
@@ -272,7 +273,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          active:scale-95 touch-manipulation select-none
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => dispatch({ type: "revealHint" })}
+              onClick={() => {
+                trackHint("backwords");
+                dispatch({ type: "revealHint" });
+              }}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
@@ -280,7 +284,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("backwords");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >

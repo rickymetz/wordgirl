@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { trackTutorialFinished } from "../../lib/analytics";
 
 /**
  * The tutorial's finish card, standing in for a game's usual results
@@ -29,7 +30,10 @@ export function TutorialDone({
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     cardRef.current?.focus({ preventScroll: true });
-  }, []);
+    // This card IS the end of the script — it only renders once the board
+    // is solved — so its mount is the one honest place to count a finish.
+    trackTutorialFinished(gameId);
+  }, [gameId]);
 
   return (
     <div

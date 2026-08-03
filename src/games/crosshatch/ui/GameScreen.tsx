@@ -18,6 +18,7 @@ import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "..
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
@@ -154,6 +155,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
     );
     const candidates = fresh.length > 0 ? fresh : unrevealed;
     if (candidates.length === 0) return;
+    // Counted HERE, where a letter is actually spent — not on the button.
+    // Two things go wrong on the button: the first hint of a day opens a
+    // confirmation, so declining still counted one, and the words panel
+    // has its own Hint that reaches this by another route and counted
+    // nothing. Both entry points pass through here, and only when a
+    // letter is really revealed.
+    trackHint("crosshatch");
     dispatch({
       type: "revealHint",
       word: target,
@@ -420,7 +428,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("crosshatch");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >

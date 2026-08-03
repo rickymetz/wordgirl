@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { trackCoach, trackHint } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
@@ -202,7 +203,11 @@ export function GameScreen({
                   state.cells.length,
                   current,
                 );
+                // After the early return, not before it: with every cell
+                // already hinted there is nothing left to reveal, and a
+                // tap that spends nothing is not a hint.
                 if (idx === null) return;
+                trackHint("serpentine");
                 const next = new Set(current);
                 next.add(idx);
                 hintedRef.current = next;
@@ -216,7 +221,10 @@ export function GameScreen({
           )}
           <button
             type="button"
-            onClick={() => setCoachOpen(true)}
+            onClick={() => {
+              trackCoach("serpentine");
+              setCoachOpen(true);
+            }}
             aria-label="how to play"
             className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
           >
