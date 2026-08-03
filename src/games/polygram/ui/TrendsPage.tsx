@@ -51,19 +51,6 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     {
-      // A raw find count is not comparable across days: the ceiling moves
-      // with the letter set, so 12 words is a near sweep of one board and
-      // half of another. Days banked before `totalWords` was stored have
-      // no denominator and chart as gaps.
-      key: "share",
-      label: "Share of words",
-      value: (d) =>
-        d.totalWords && d.totalWords > 0 && d.foundWords.length > 0
-          ? (d.foundWords.length / d.totalWords) * 100
-          : null,
-      format: (v) => `${Math.round(v)}%`,
-    },
-    {
       key: "words",
       label: "Words found",
       value: (d) => (d.foundWords.length > 0 ? d.foundWords.length : null),

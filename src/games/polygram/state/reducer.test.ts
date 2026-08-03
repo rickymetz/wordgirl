@@ -19,7 +19,9 @@ const puzzle: Puzzle = {
     { size: 4, words: ["abba"], bonusWords: [] },
   ],
   maxLevel: 4,
-  totalWords: 4, // three at the triangle (two required + one bonus), one square
+  // What the puzzle ASKS for: bad, dab, abba. The bonus word abb is
+  // texture and deliberately not part of the total.
+  requiredWords: 3,
 };
 
 function play(state: GameState, ...actions: GameAction[]): GameState {
@@ -112,8 +114,9 @@ describe("gameReducer", () => {
       ...type("abba"), { type: "submit" },
     );
     expect(s.phase).toBe("done");
-    // A perfect sweep: every word the puzzle had, bonus tier included.
-    expect(s.found).toHaveLength(puzzle.totalWords);
+    // Every required word, plus the bonus one that is not counted in
+    // `requiredWords` — three asked for, four found.
+    expect(s.found).toHaveLength(puzzle.requiredWords + 1);
   });
 
   it("hints reveal a chosen letter of the first unsolved word", () => {

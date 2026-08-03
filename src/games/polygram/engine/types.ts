@@ -11,8 +11,9 @@ export interface Puzzle {
   levels: LevelSpec[];
   /** Size of the final polygon with at least one valid word. */
   maxLevel: number;
-  /** Every word on offer, required and bonus, across all levels. */
-  totalWords: number;
+  /** The words the puzzle ASKS for — required tier only. The bonus
+   *  tier is unbounded texture and is never a denominator. */
+  requiredWords: number;
 }
 
 export interface LevelSpec {

@@ -40,6 +40,7 @@ import {
 } from "../state/persistence";
 
 import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
+import { bonusFound } from "../engine/completion";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
 import { FoundWordsBar } from "./FoundWordsBar";
@@ -92,6 +93,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   const storageBroken = useStorageBroken();
   const done = state.phase === "done";
   const { showConfetti, showResults } = useSolveTransition(done, hydratedAsSolved);
+
+  // The result counts the REQUIRED tier, which is what the puzzle asked
+  // for — normally all of it, and less when a level was skipped. Bonus
+  // finds are reported beside it with no denominator, because the tier
+  // is unbounded (142 words on an average board) and was never a target.
+  const bonusCount = bonusFound(state.puzzle.levels, state.found);
+  const requiredFound = state.found.length - bonusCount;
 
   // The tutorial's running instruction. Only ever moves forward.
   const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
@@ -506,7 +514,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               </p>
             )}
             <p className="text-sm text-ink-soft">
-              {state.found.length} of {state.puzzle.totalWords} words · {POLYGON_NAMES[state.puzzle.maxLevel]} reached
+              {requiredFound} of {state.puzzle.requiredWords} words
+              {bonusCount > 0 && ` · ${bonusCount} bonus`} ·{" "}
+              {POLYGON_NAMES[state.puzzle.maxLevel]} reached
             </p>
             {Object.keys(state.revealed).length > 0 && (
               <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">

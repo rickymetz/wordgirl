@@ -11,19 +11,19 @@ const day = (over: Partial<ArchivedDay> = {}): ArchivedDay => ({
   completed: true,
   solved: true,
   elapsedMs: 5000,
-  totalWords: 4,
+  requiredWords: 3,
   stale: false,
   ...over,
 });
 
 describe("archive row status", () => {
-  it("reports the sweep against the day's word total", () => {
-    expect(rowStatus(day()).text).toBe("3/4");
+  it("reports the required words found against what the day asked for", () => {
+    expect(rowStatus(day()).text).toBe("3/3");
   });
 
   it("marks a hinted day", () => {
     expect(rowStatus(day({ revealed: { bad: [0] } })).text).toBe(
-      "3/4 · used hint",
+      "3/3 · used hint",
     );
   });
 
@@ -33,8 +33,8 @@ describe("archive row status", () => {
     );
   });
 
-  it("counts alone on a day banked before the total was stored", () => {
-    expect(rowStatus(day({ totalWords: undefined })).text).toBe(
+  it("counts alone on a day banked before the required total was stored", () => {
+    expect(rowStatus(day({ requiredWords: undefined })).text).toBe(
       "Solved · 3 words",
     );
   });

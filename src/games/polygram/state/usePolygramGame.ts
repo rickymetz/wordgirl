@@ -3,7 +3,6 @@ import {
   trackBonusWord,
   trackSolved,
   trackStarted,
-  trackSwept,
 } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
@@ -143,8 +142,9 @@ export function usePolygramGame(mode: GameMode) {
         solvedHour: solvedHourRef.current,
       }),
       ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
-      // The day's ceiling, so Stats can say what share of it was swept.
-      totalWords: puzzle.totalWords,
+      // What the day asked for, so the archive can state a result
+      // against it. NOT the bonus tier — see engine/completion.ts.
+      requiredWords: puzzle.requiredWords,
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -236,23 +236,19 @@ export function usePolygramGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.found, state.revealed, state.phase, state.skippedLevels]);
 
-  // Track analytics solve event (all modes, once per session). A board
-  // finished having found every word it held — bonus tier included — is
-  // the completionist ceiling, and worth counting apart from a solve.
-  // NOT from the tutorial, whose hand-picked puzzle has no bonus tier at
-  // all: finishing it is a full sweep by construction, so counting it
-  // would report the ceiling being reached every time anyone was taught
-  // the game.
+  // Track analytics solve event (all modes, once per session).
+  //
+  // There is no "swept" event any more. It counted a board finished with
+  // every bonus word found, which was only ever going to fire for a
+  // player who held back the last required word on purpose — and now
+  // that bonus words are texture rather than a target, sweeping is not a
+  // thing the game asks for, so counting it measures nothing.
   const solveTrackedRef = useRef(false);
   useEffect(() => {
     if (state.phase === "done" && !solveTrackedRef.current && !hydratedAsSolvedRef.current) {
       solveTrackedRef.current = true;
       trackSolved("polygram");
-      if (mode.kind !== "tutorial" && state.found.length >= puzzle.totalWords) {
-        trackSwept("polygram");
-      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
   /**
