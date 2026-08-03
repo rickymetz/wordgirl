@@ -31,10 +31,17 @@ interface Day {
   hour?: number;
 }
 
-/** Three consecutive days ending today, so they sit inside the window. */
+/**
+ * Three consecutive recent days, safely inside the 30-day window.
+ *
+ * Deliberately NOT ending on today: these are built once at module load
+ * while the component asks for today's date at render, so a run that
+ * straddles midnight would have them disagree. A few days back, every
+ * fixture date stays in the window on either side of the rollover.
+ */
 function recentDates(): string[] {
   const t = new Date();
-  return [2, 1, 0].map((back) => {
+  return [4, 3, 2].map((back) => {
     const d = new Date(t.getFullYear(), t.getMonth(), t.getDate() - back);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
