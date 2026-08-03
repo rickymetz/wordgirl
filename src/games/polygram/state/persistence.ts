@@ -18,6 +18,13 @@ export interface DailyProgress extends DailyBase {
   skippedLevels?: number[];
   /** Legacy field name for `solved` — kept for backward compat. */
   completed: boolean;
+  /**
+   * Local hour 0–23 the day was completed, for the Stats page's
+   * "When you solve". Optional and only stamped on the session that
+   * finished it, so every day banked before this shipped stays absent
+   * and charts as nothing rather than as midnight.
+   */
+  solvedHour?: number;
 }
 
 export interface PolygramStats extends StreakStats {

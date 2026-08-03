@@ -108,6 +108,7 @@ export function usePolygramGame(mode: GameMode) {
   // Stats already counted (completed earlier OR this is a replay run) →
   // don't record completion again.
   const statsRecordedRef = useRef(false);
+  const solvedHourRef = useRef<number | null>(null);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -147,6 +148,9 @@ export function usePolygramGame(mode: GameMode) {
       completed: s.phase === "done",
       solved: s.phase === "done",
       elapsedMs: clock.currentElapsedMs(),
+      ...(solvedHourRef.current !== null && {
+        solvedHour: solvedHourRef.current,
+      }),
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -166,6 +170,7 @@ export function usePolygramGame(mode: GameMode) {
             saved.completed || saved.statsRecorded === true;
           clock.hydrate(saved.elapsedMs ?? 0, saved.completed);
           if (saved.completed) hydratedAsSolvedRef.current = true;
+          solvedHourRef.current = saved.solvedHour ?? null;
           const revealed = normalizeRevealed(saved.revealed);
           const { found, score } = migrateAutoSubmit(
             puzzle,
@@ -242,6 +247,20 @@ export function usePolygramGame(mode: GameMode) {
       solveTrackedRef.current = true;
       trackSolved("polygram");
     }
+  }, [state.phase]);
+
+  /**
+   * The local hour the day was finished. `??=` so a day reopened later
+   * keeps the hour it was actually solved at, and only a solve that
+   * happened in THIS session stamps one — a day restored from storage
+   * sets the ref from the save instead (see hydration), so re-opening an
+   * old day at breakfast cannot move it there.
+   *
+   * Runs before the persist effect below, so the finishing save carries it.
+   */
+  useEffect(() => {
+    if (state.phase !== "done" || hydratedAsSolvedRef.current) return;
+    solvedHourRef.current ??= new Date().getHours();
   }, [state.phase]);
 
   // Record completion (stats; streak only if it's today) exactly once.

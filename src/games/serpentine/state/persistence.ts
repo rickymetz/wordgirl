@@ -21,8 +21,14 @@ export interface ArchivedDay {
   dateKey: string;
   solved: boolean;
   stale: boolean;
+  /** Summed across the day's solved boards — see `solvedCount`. */
   elapsedMs: number;
+  /** Furthest traced on any board, solved or not (archive progress). */
   cellCount: number;
+  /** Letters in the longest board SOLVED, or null if none was. */
+  solvedCellCount: number | null;
+  /** How many of the day's two boards were solved (0–2). */
+  solvedCount: number;
   foundWords: string[];
   solvedHour: number | null;
   hints: number | null;
@@ -128,6 +134,16 @@ export async function loadAllDailyProgress(): Promise<
       cellCount: started
         ? Math.max(...saves.map((s) => s.cells.length))
         : 0,
+      // The longest phrase actually SOLVED that day. cellCount above is
+      // the furthest the player traced on any board, solved or not, which
+      // the archive wants (it measures progress) and the stats page must
+      // not have: a part-traced Poem would report a puzzle length that was
+      // never completed on a day the Haiku alone was solved.
+      solvedCellCount:
+        solvedSaves.length > 0
+          ? Math.max(...solvedSaves.map((s) => s.cells.length))
+          : null,
+      solvedCount: solvedSaves.length,
       foundWords: solvedSaves.map((s) => s.puzzleId),
       solvedHour: solvedSaves.length > 0
         ? solvedSaves[0].solvedHour ?? null

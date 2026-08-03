@@ -1,4 +1,8 @@
-import { GameTrends, type GameTrendsConfig } from "../../../components/GameTrends";
+import {
+  GameTrends,
+  solvedCounter,
+  type GameTrendsConfig,
+} from "../../../components/GameTrends";
 import { formatDuration } from "../../../lib/date";
 import {
   ARCHIVE_EPOCH,
@@ -6,14 +10,23 @@ import {
   type ArchivedDay,
 } from "../state/persistence";
 
-// Older saves stored per-word COUNTS; newer store position arrays.
+/**
+ * Older saves stored per-word COUNTS; newer store position arrays.
+ *
+ * Undefined rather than 0 when the field is missing, so such a day charts
+ * as a gap. `validDay` rejects those saves today, which makes this arm
+ * unreachable — it is here so that relaxing the guard (crosshatch's admits
+ * them) cannot quietly start charting hint-free days nobody played.
+ */
 const hintLetters = (d: ArchivedDay) =>
-  Object.values(d.revealed ?? {}).reduce<number>(
-    (a, p) => a + (typeof p === "number" ? p : p.length),
-    0,
-  );
+  d.revealed === undefined
+    ? undefined
+    : Object.values(d.revealed).reduce<number>(
+        (a, p) => a + (typeof p === "number" ? p : p.length),
+        0,
+      );
 
-const config: GameTrendsConfig<ArchivedDay> = {
+export const config: GameTrendsConfig<ArchivedDay> = {
   gameId: "polygram",
   accent: 3,
   epoch: ARCHIVE_EPOCH,
@@ -43,13 +56,16 @@ const config: GameTrendsConfig<ArchivedDay> = {
       format: formatDuration,
       lowerIsBetter: true,
     },
-    {
-      key: "hints",
-      label: "Hint letters",
-      value: (d) => (d.completed ? hintLetters(d) : null),
+    solvedCounter<ArchivedDay>("hints", "Hint letters", hintLetters, {
       lowerIsBetter: true,
-    },
+    }),
   ],
+  // Accrues from the day this shipped: days banked before then carry no
+  // hour and are simply absent from the histogram.
+  hours: {
+    label: "When you solve",
+    value: (d) => (d.completed ? (d.solvedHour ?? null) : null),
+  },
 };
 
 /** Play data over time — the archive's sibling page. */

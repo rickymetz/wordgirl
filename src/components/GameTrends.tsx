@@ -98,8 +98,19 @@ export function GameTrends<Day extends { dateKey: string }>({
 
       {days && (
         <div className="grid grid-cols-2 gap-x-5 gap-y-8">
-          {config.metrics.map((m) => (
-            <MetricChart key={m.key} metric={m} days={days} dates={from} />
+          {config.metrics.map((m, i) => (
+            <MetricChart
+              key={m.key}
+              metric={m}
+              days={days}
+              dates={from}
+              // The lone last chart of an odd set gets the full width. Its
+              // viewBox widens to match, so the marks stay the size every
+              // other sparkline draws them — stretching a fixed viewBox
+              // instead would scale the dots and labels to twice everyone
+              // else's, which is not a wider chart but a different one.
+              wide={i === config.metrics.length - 1 && i % 2 === 0}
+            />
           ))}
         </div>
       )}
@@ -112,8 +123,12 @@ export function GameTrends<Day extends { dateKey: string }>({
             from.filter((d) => days[d] && m.value(days[d]) !== null).length <
             2,
         ) && (
-          <p className="pt-2 text-sm text-ink-soft">
-            Play a few days and the trends fill in.
+          // Said as a fact about the charts above rather than an
+          // instruction: with one day played they DO draw, a single dot
+          // each, and telling someone to "play a few days" under a chart
+          // they can already see reads as though it had not noticed them.
+          <p className="pt-6 text-sm text-ink-soft">
+            One day so far — the lines join up as you play.
           </p>
         )}
     </div>
@@ -139,10 +154,13 @@ function MetricChart<Day extends { dateKey: string }>({
   metric,
   days,
   dates,
+  wide = false,
 }: {
   metric: TrendMetric<Day>;
   days: Record<string, Day>;
   dates: string[];
+  /** Draws across both grid columns — see the call site. */
+  wide?: boolean;
 }) {
   // The picked day is remembered by DATE, not index — indices shift
   // when the window slides past midnight, and a stale date simply
@@ -161,6 +179,17 @@ function MetricChart<Day extends { dateKey: string }>({
   const minV = Math.min(...values);
   const best = metric.lowerIsBetter ? minV : maxV;
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+  /**
+   * "Best" is worth its half of the summary line only while it
+   * distinguishes a day. On a counter with a floor — rotations,
+   * take-backs, hints, rejected words — "Best 0" is true again the moment
+   * any clean day happens, and then it never moves: half the line spent
+   * on a constant. Where the best value is the common case, the latest
+   * day goes there instead, which always has something to say.
+   */
+  const bestIsCommon =
+    values.filter((v) => v === best).length > values.length / 2;
 
   // The drawing fills its container: trim the window's EMPTY edges
   // (days before the first play / after the last) and stretch what
@@ -182,7 +211,10 @@ function MetricChart<Day extends { dateKey: string }>({
   // Sparkline geometry, sized for a HALF-width grid cell: dots on
   // played days, thin segments joining CONSECUTIVE days only,
   // headroom above and below for the direct min/max labels.
-  const W = 168;
+  // Both are rendered w-full, so a viewBox twice as wide inside a cell
+  // twice as wide puts every mark on screen at the same size — the extra
+  // room buys resolution along the line, not bigger dots.
+  const W = wide ? 356 : 168;
   const H = 64;
   const TOP = 14;
   const BOTTOM = 14;
@@ -215,31 +247,74 @@ function MetricChart<Day extends { dateKey: string }>({
     setPicked((cur) => (cur === key ? null : key));
   };
 
+  /**
+   * The same reading by keyboard. Tapping a day was pointer-only, so the
+   * per-day values simply did not exist for anyone using a keyboard —
+   * the summary in the aria-label was all they could reach. Arrows step
+   * played days (skipping the gaps, since only played days have values),
+   * Home/End jump to the ends, Escape puts the readout back.
+   */
+  const step = (delta: number) => {
+    const at = pickedIdx === null ? -1 : dataIdx.indexOf(pickedIdx);
+    // From nothing, step in from the latest day — the one a player is
+    // most likely to want, and where the eye already is.
+    const next =
+      at === -1
+        ? dataIdx.length - 1
+        : Math.min(dataIdx.length - 1, Math.max(0, at + delta));
+    setPicked(drawn[dataIdx[next]].dateKey);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (e.key === "ArrowRight") step(1);
+    else if (e.key === "ArrowLeft") step(-1);
+    else if (e.key === "Home") setPicked(drawn[dataIdx[0]].dateKey);
+    else if (e.key === "End") setPicked(drawn[latest].dateKey);
+    else if (e.key === "Escape") setPicked(null);
+    else return;
+    e.preventDefault();
+  };
+
   return (
-    <section className="flex min-w-0 flex-col">
+    <section className={`flex min-w-0 flex-col ${wide ? "col-span-2" : ""}`}>
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
       <p className="pt-0.5 text-xs text-ink-soft">
         {pickedPoint
           ? `${shortDate(pickedPoint.dateKey)} · ${fmt(pickedPoint.v!)}`
-          : `Best ${fmt(best)} · Avg ${fmt(avg)}`}
+          : bestIsCommon
+            ? `Latest ${fmt(drawn[latest].v!)} · Avg ${fmt(avg)}`
+            : `Best ${fmt(best)} · Avg ${fmt(avg)}`}
       </p>
       <svg
         viewBox={`0 0 ${W} ${H + 8}`}
-        className="mt-auto w-full touch-manipulation select-none"
+        className="mt-auto w-full touch-manipulation select-none outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+        // A figure a keyboard can walk, so it takes a tab stop and says
+        // what the arrows do. The picked day rides the label rather than a
+        // live region: this IS the element focus is on, so a screen reader
+        // re-reads it as the selection moves.
         role="img"
-        aria-label={`${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}.`}
+        tabIndex={0}
+        aria-label={
+          pickedPoint
+            ? `${metric.label}: ${shortDate(pickedPoint.dateKey)}, ${fmt(pickedPoint.v!)}. Arrow keys to move between days.`
+            : `${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}. Arrow keys to read a day.`
+        }
         onPointerDown={pickNearest}
+        onKeyDown={onKeyDown}
       >
-        {/* Range-frame: the only scaffold, spanning exactly the
-            played days. */}
-        <line
-          x1={x(dataIdx[0])}
-          x2={x(latest)}
-          y1={H}
-          y2={H}
-          className="stroke-line"
-          strokeWidth={1}
-        />
+        {/* Range-frame: the only scaffold, spanning exactly the played
+            days. Dropped when every day shares one value — a frame states
+            the range the data covers, and with no range it is just a rule
+            stranded below a flat line, reading as another chart's axis. */}
+        {maxV !== minV && (
+          <line
+            x1={x(dataIdx[0])}
+            x2={x(latest)}
+            y1={H}
+            y2={H}
+            className="stroke-line"
+            strokeWidth={1}
+          />
+        )}
         {segments.map((d, i) => (
           <path
             key={i}
