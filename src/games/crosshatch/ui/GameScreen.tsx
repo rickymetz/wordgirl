@@ -155,6 +155,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
     );
     const candidates = fresh.length > 0 ? fresh : unrevealed;
     if (candidates.length === 0) return;
+    // Counted HERE, where a letter is actually spent — not on the button.
+    // Two things go wrong on the button: the first hint of a day opens a
+    // confirmation, so declining still counted one, and the words panel
+    // has its own Hint that reaches this by another route and counted
+    // nothing. Both entry points pass through here, and only when a
+    // letter is really revealed.
+    trackHint("crosshatch");
     dispatch({
       type: "revealHint",
       word: target,
@@ -411,7 +418,6 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
-                trackHint("crosshatch");
                 setWordsOpen(true);
                 requestHint();
               }}

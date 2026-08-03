@@ -147,6 +147,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       .map((_, i) => i)
       .filter((i) => !already.includes(i));
     if (candidates.length === 0) return;
+    // Counted HERE, where a letter is actually spent — not on the button.
+    // Two things go wrong on the button: the first hint of a day opens a
+    // confirmation, so declining still counted one, and the words panel
+    // has its own Hint that reaches this by another route and counted
+    // nothing. Both entry points pass through here, and only when a
+    // letter is really revealed.
+    trackHint("polygram");
     dispatch({
       type: "revealHint",
       word: target,
@@ -309,7 +316,6 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
-                trackHint("polygram");
                 setWordsOpen(true);
                 requestHint();
               }}
