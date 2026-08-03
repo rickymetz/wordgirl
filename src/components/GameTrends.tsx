@@ -1,6 +1,7 @@
-import { useEffect, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "./HomeLink";
+import { trackStatsDay } from "../lib/analytics";
 import { dateKeyRange, localDateKey } from "../lib/date";
 
 /**
@@ -74,6 +75,32 @@ export function GameTrends<Day extends { dateKey: string }>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.gameId]);
 
+  /**
+   * The day being read, shared by every sparkline on the page.
+   *
+   * It lives up here rather than in each chart because the question a
+   * player asks is about a DAY, not a metric: picking Tuesday on the
+   * solve-time line and having to hunt for Tuesday again on every other
+   * line to see what else happened is the whole comparison done by hand.
+   * One pick, and the page reads out that day everywhere it has one.
+   *
+   * By date, not index — the window slides at midnight, and a date that
+   * has fallen off simply stops matching instead of quietly denoting some
+   * other day.
+   */
+  const [picked, setPicked] = useState<string | null>(null);
+  // Counted once a visit, from whichever chart the player reached for.
+  const dayReadRef = useRef(false);
+  // Tapping the day already being read puts the summaries back, from
+  // whichever chart the second tap lands on.
+  const pick = (dateKey: string | null) => {
+    if (!dayReadRef.current) {
+      dayReadRef.current = true;
+      trackStatsDay(config.gameId);
+    }
+    setPicked((cur) => (cur !== null && cur === dateKey ? null : dateKey));
+  };
+
   const today = localDateKey();
   const from = dateKeyRange(config.epoch, today).slice(-WINDOW_DAYS);
 
@@ -98,13 +125,32 @@ export function GameTrends<Day extends { dateKey: string }>({
 
       {days && (
         <div className="grid grid-cols-2 gap-x-5 gap-y-8">
-          {config.metrics.map((m) => (
-            <MetricChart key={m.key} metric={m} days={days} dates={from} />
+          {config.metrics.map((m, i) => (
+            <MetricChart
+              key={m.key}
+              metric={m}
+              days={days}
+              dates={from}
+              // The lone last chart of an odd set gets the full width. Its
+              // viewBox widens to match, so the marks stay the size every
+              // other sparkline draws them — stretching a fixed viewBox
+              // instead would scale the dots and labels to twice everyone
+              // else's, which is not a wider chart but a different one.
+              wide={i === config.metrics.length - 1 && i % 2 === 0}
+              picked={picked}
+              onPick={pick}
+            />
           ))}
         </div>
       )}
       {days && config.hours && (
-        <HourChart metric={config.hours} days={days} dates={from} />
+        <HourChart
+          metric={config.hours}
+          days={days}
+          dates={from}
+          pickedDate={picked}
+          onPickDate={setPicked}
+        />
       )}
       {days &&
         config.metrics.every(
@@ -112,8 +158,12 @@ export function GameTrends<Day extends { dateKey: string }>({
             from.filter((d) => days[d] && m.value(days[d]) !== null).length <
             2,
         ) && (
-          <p className="pt-2 text-sm text-ink-soft">
-            Play a few days and the trends fill in.
+          // Said as a fact about the charts above rather than an
+          // instruction: with one day played they DO draw, a single dot
+          // each, and telling someone to "play a few days" under a chart
+          // they can already see reads as though it had not noticed them.
+          <p className="pt-6 text-sm text-ink-soft">
+            One day so far — the lines join up as you play.
           </p>
         )}
     </div>
@@ -139,15 +189,19 @@ function MetricChart<Day extends { dateKey: string }>({
   metric,
   days,
   dates,
+  wide = false,
+  picked,
+  onPick,
 }: {
   metric: TrendMetric<Day>;
   days: Record<string, Day>;
   dates: string[];
+  /** Draws across both grid columns — see the call site. */
+  wide?: boolean;
+  /** The day the whole page is reading, or null for the summaries. */
+  picked: string | null;
+  onPick: (dateKey: string | null) => void;
 }) {
-  // The picked day is remembered by DATE, not index — indices shift
-  // when the window slides past midnight, and a stale date simply
-  // stops matching instead of silently denoting a different day.
-  const [picked, setPicked] = useState<string | null>(null);
   const fmt = metric.format ?? defaultFormat;
   const points = dates.map((dateKey) => {
     const day = days[dateKey];
@@ -161,6 +215,17 @@ function MetricChart<Day extends { dateKey: string }>({
   const minV = Math.min(...values);
   const best = metric.lowerIsBetter ? minV : maxV;
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+  /**
+   * "Best" is worth its half of the summary line only while it
+   * distinguishes a day. On a counter with a floor — rotations,
+   * take-backs, hints, rejected words — "Best 0" is true again the moment
+   * any clean day happens, and then it never moves: half the line spent
+   * on a constant. Where the best value is the common case, the latest
+   * day goes there instead, which always has something to say.
+   */
+  const bestIsCommon =
+    values.filter((v) => v === best).length > values.length / 2;
 
   // The drawing fills its container: trim the window's EMPTY edges
   // (days before the first play / after the last) and stretch what
@@ -178,11 +243,24 @@ function MetricChart<Day extends { dateKey: string }>({
   const latest = dataIdx[dataIdx.length - 1];
   const pickedIdx = dataIdx.find((i) => drawn[i].dateKey === picked) ?? null;
   const pickedPoint = pickedIdx === null ? null : drawn[pickedIdx];
+  /**
+   * The page's day, on a chart that has no value for it — an unsolved
+   * day on a solved-only metric, or one before this metric shipped.
+   *
+   * It still says the date, with a dash for the value. Falling back to
+   * the summary would leave the chart looking untouched while its
+   * neighbours read out a day, which is exactly the wrong impression:
+   * the day IS selected here, there is simply nothing to report.
+   */
+  const pickedElsewhere = picked !== null && pickedPoint === null;
 
   // Sparkline geometry, sized for a HALF-width grid cell: dots on
   // played days, thin segments joining CONSECUTIVE days only,
   // headroom above and below for the direct min/max labels.
-  const W = 168;
+  // Both are rendered w-full, so a viewBox twice as wide inside a cell
+  // twice as wide puts every mark on screen at the same size — the extra
+  // room buys resolution along the line, not bigger dots.
+  const W = wide ? 356 : 168;
   const H = 64;
   const TOP = 14;
   const BOTTOM = 14;
@@ -211,35 +289,86 @@ function MetricChart<Day extends { dateKey: string }>({
     x(i) < 26 ? "start" : x(i) > W - 26 ? "end" : "middle";
 
   const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
-    const key = drawn[nearestAt(e, W, x, dataIdx)].dateKey;
-    setPicked((cur) => (cur === key ? null : key));
+    onPick(drawn[nearestAt(e, W, x, dataIdx)].dateKey);
+  };
+
+  /**
+   * The same reading by keyboard. Tapping a day was pointer-only, so the
+   * per-day values simply did not exist for anyone using a keyboard —
+   * the summary in the aria-label was all they could reach. Arrows step
+   * played days (skipping the gaps, since only played days have values),
+   * Home/End jump to the ends, Escape puts the readout back.
+   */
+  const step = (delta: number) => {
+    const at = pickedIdx === null ? -1 : dataIdx.indexOf(pickedIdx);
+    // From nothing, step in from the latest day — the one a player is
+    // most likely to want, and where the eye already is.
+    const next =
+      at === -1
+        ? dataIdx.length - 1
+        : Math.min(dataIdx.length - 1, Math.max(0, at + delta));
+    onPick(drawn[dataIdx[next]].dateKey);
+  };
+  const onKeyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+    if (e.key === "ArrowRight") step(1);
+    else if (e.key === "ArrowLeft") step(-1);
+    else if (e.key === "Home") onPick(drawn[dataIdx[0]].dateKey);
+    else if (e.key === "End") onPick(drawn[latest].dateKey);
+    else if (e.key === "Escape") onPick(null);
+    else return;
+    e.preventDefault();
   };
 
   return (
-    <section className="flex min-w-0 flex-col">
+    <section className={`flex min-w-0 flex-col ${wide ? "col-span-2" : ""}`}>
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
-      <p className="pt-0.5 text-xs text-ink-soft">
+      {/* pb, not just pt: the byline reads as a caption on the title, and
+          without a floor under it the line sat as close to the chart's
+          top label as to the heading it belongs to. `mt-auto` on the svg
+          only spaces it where the grid row is taller than this cell, so
+          the separation has to be the byline's own. */}
+      <p className="pt-0.5 pb-2 text-xs text-ink-soft">
         {pickedPoint
           ? `${shortDate(pickedPoint.dateKey)} · ${fmt(pickedPoint.v!)}`
-          : `Best ${fmt(best)} · Avg ${fmt(avg)}`}
+          : pickedElsewhere
+            ? `${shortDate(picked)} · —`
+            : bestIsCommon
+            ? `Latest ${fmt(drawn[latest].v!)} · Avg ${fmt(avg)}`
+            : `Best ${fmt(best)} · Avg ${fmt(avg)}`}
       </p>
       <svg
         viewBox={`0 0 ${W} ${H + 8}`}
-        className="mt-auto w-full touch-manipulation select-none"
+        className="mt-auto w-full touch-manipulation select-none outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+        // A figure a keyboard can walk, so it takes a tab stop and says
+        // what the arrows do. The picked day rides the label rather than a
+        // live region: this IS the element focus is on, so a screen reader
+        // re-reads it as the selection moves.
         role="img"
-        aria-label={`${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}.`}
+        tabIndex={0}
+        aria-label={
+          pickedPoint
+            ? `${metric.label}: ${shortDate(pickedPoint.dateKey)}, ${fmt(pickedPoint.v!)}. Arrow keys to move between days.`
+            : pickedElsewhere
+              ? `${metric.label}: nothing recorded on ${shortDate(picked)}. Arrow keys to move between days.`
+              : `${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}. Arrow keys to read a day.`
+        }
         onPointerDown={pickNearest}
+        onKeyDown={onKeyDown}
       >
-        {/* Range-frame: the only scaffold, spanning exactly the
-            played days. */}
-        <line
-          x1={x(dataIdx[0])}
-          x2={x(latest)}
-          y1={H}
-          y2={H}
-          className="stroke-line"
-          strokeWidth={1}
-        />
+        {/* Range-frame: the only scaffold, spanning exactly the played
+            days. Dropped when every day shares one value — a frame states
+            the range the data covers, and with no range it is just a rule
+            stranded below a flat line, reading as another chart's axis. */}
+        {maxV !== minV && (
+          <line
+            x1={x(dataIdx[0])}
+            x2={x(latest)}
+            y1={H}
+            y2={H}
+            className="stroke-line"
+            strokeWidth={1}
+          />
+        )}
         {segments.map((d, i) => (
           <path
             key={i}
@@ -310,10 +439,15 @@ function HourChart<Day extends { dateKey: string }>({
   metric,
   days,
   dates,
+  pickedDate,
+  onPickDate,
 }: {
   metric: { label: string; value: (day: Day) => number | null };
   days: Record<string, Day>;
   dates: string[];
+  /** The day the sparklines are reading, if any. */
+  pickedDate: string | null;
+  onPickDate: (dateKey: string | null) => void;
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const bins = Array.from({ length: 24 }, () => 0);
@@ -334,13 +468,30 @@ function HourChart<Day extends { dateKey: string }>({
   const barW = 7;
   const x = (h: number) => h * slot + slot / 2;
   const y = (n: number) => H - (n / maxN) * (H - TOP);
+  /**
+   * The hour the picked DAY was solved at, when the sparklines are
+   * reading one. This chart is indexed by hour rather than by date, so it
+   * cannot show the day itself — what it can show is where that day sits
+   * in the distribution, which is the same question asked of this axis.
+   */
+  const dayHour = (() => {
+    if (pickedDate === null) return null;
+    const day = days[pickedDate];
+    const h = day ? metric.value(day) : null;
+    return h !== null && h >= 0 && h < 24 ? Math.floor(h) : null;
+  })();
   // A picked hour whose bin emptied (the window slid) falls back to
   // the peak instead of labeling a bar that no longer exists.
   const pickedLive = picked !== null && bins[picked] > 0 ? picked : null;
-  const labeled = pickedLive ?? peak;
+  const labeled = dayHour ?? pickedLive ?? peak;
   const dayCount = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
   const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
     const h = nearestAt(e, W, x, filled);
+    // One selection at a time: reading an hour is a different question
+    // from reading a day, and leaving a date up on the sparklines while
+    // this chart answers about some other hour would put two readouts on
+    // the page that do not agree.
+    onPickDate(null);
     setPicked((cur) => (cur === h ? null : h));
   };
 
@@ -349,16 +500,26 @@ function HourChart<Day extends { dateKey: string }>({
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-bold">{metric.label}</h2>
         <p className="text-xs text-ink-soft">
-          {pickedLive !== null
-            ? `${fmtHour(pickedLive)} · ${dayCount(bins[pickedLive])}`
-            : `Most often ${fmtHour(peak)}`}
+          {pickedDate !== null
+            ? dayHour !== null
+              ? `${shortDate(pickedDate)} · ${fmtHour(dayHour)}`
+              : `${shortDate(pickedDate)} · —`
+            : pickedLive !== null
+              ? `${fmtHour(pickedLive)} · ${dayCount(bins[pickedLive])}`
+              : `Most often ${fmtHour(peak)}`}
         </p>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H + 18}`}
-        className="mt-1 w-full touch-manipulation select-none"
+        className="mt-3 w-full touch-manipulation select-none"
         role="img"
-        aria-label={`${metric.label}: most solves around ${fmtHour(peak)}.`}
+        aria-label={
+          pickedDate !== null && dayHour !== null
+            ? `${metric.label}: ${shortDate(pickedDate)} solved at ${fmtHour(dayHour)}.`
+            : pickedDate !== null
+              ? `${metric.label}: nothing recorded on ${shortDate(pickedDate)}.`
+              : `${metric.label}: most solves around ${fmtHour(peak)}.`
+        }
         onPointerDown={pickNearest}
       >
         <line

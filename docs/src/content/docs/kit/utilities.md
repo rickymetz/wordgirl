@@ -52,7 +52,14 @@ The settings are the theme and the text size. The themes are system, light, and 
   - **The tutorial funnel**: offered, accepted, started, finished. There is
     no abandoned event on purpose — it would have to fire on unmount, which
     a closed tab never does. Abandonment is started minus finished.
-  - **Friction**: hint, replay, coach (the "?" sheet), skip level.
+  - **Friction**: hint, replay, coach (the "?" sheet), skip level. Hint
+    fires where a letter is spent, not where the button is tapped, so a
+    declined confirmation counts nothing.
+  - **Completion**: bonus word, and swept for a board finished with every
+    word found. The tutorial never sends swept — its puzzle has no bonus
+    tier, so finishing it is a sweep by construction.
+  - **Reading the stats**: stats day, sent once a visit when a player
+    reads a single day out of the charts.
   - **Display settings**: theme, text size, and font, as
     `setting:font:accessible`. App-level, so no game prefix, and they fire
     on a change rather than on a re-pick of the value already showing.

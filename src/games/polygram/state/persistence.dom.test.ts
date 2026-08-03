@@ -16,7 +16,6 @@ const day = (over: Partial<DailyProgress> = {}): DailyProgress => ({
   dictVersion: DICT_VERSION,
   foundWords: [],
   revealed: {},
-  score: 0,
   completed: false,
   solved: false,
   elapsedMs: 0,
@@ -33,28 +32,28 @@ afterEach(() => {
 });
 
 describe("stats recording", () => {
-  it("increments solved/completed and accumulates totalScore", async () => {
+  it("increments solved/completed and accumulates totalWords", async () => {
     const stats = await recordDailyCompleted("2026-07-12", 42);
     expect(stats.solved).toBe(1);
     expect(stats.completed).toBe(1);
-    expect(stats.totalScore).toBe(42);
+    expect(stats.totalWords).toBe(42);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-12");
     expect(stats.lastCompletedDate).toBe("2026-07-12");
   });
 
-  it("accumulates totalScore across completions", async () => {
+  it("accumulates totalWords across completions", async () => {
     await recordDailyCompleted("2026-07-11", 10);
     vi.setSystemTime(new Date(2026, 6, 12, 12, 0, 0));
     const stats = await recordDailyCompleted("2026-07-12", 50);
-    expect(stats.totalScore).toBe(60);
+    expect(stats.totalWords).toBe(60);
   });
 
   it("does not double-count the same dateKey", async () => {
     await recordDailyCompleted("2026-07-12", 42);
     const stats = await recordDailyCompleted("2026-07-12", 99);
     expect(stats.solved).toBe(1);
-    expect(stats.totalScore).toBe(42);
+    expect(stats.totalWords).toBe(42);
   });
 
   it("archive plays (allowGrace=false) don't advance streak", async () => {
@@ -80,13 +79,51 @@ describe("legacy field normalization", () => {
       dictVersion: DICT_VERSION,
       foundWords: ["abc"],
       revealed: {},
-      score: 5,
       completed: true,
       elapsedMs: 1000,
     });
     const loaded = await loadDailyProgress("2026-07-12");
     expect(loaded?.solved).toBe(true);
     expect(loaded?.completed).toBe(true);
+  });
+
+  it("a save banked when the game kept score still loads", async () => {
+    // Every day played before scoring was cut carries a `score` and no
+    // `totalWords`. It is a whole historical record either way: the day
+    // loads, and the archive reads its words rather than its points.
+    await store.set("daily:2026-07-12", {
+      dateKey: "2026-07-12",
+      dictVersion: DICT_VERSION,
+      foundWords: ["bad", "dab"],
+      revealed: { bad: [0] },
+      score: 17,
+      completed: true,
+      solved: true,
+      elapsedMs: 1000,
+    });
+    const loaded = await loadDailyProgress("2026-07-12");
+    expect(loaded?.foundWords).toEqual(["bad", "dab"]);
+    expect(loaded?.solved).toBe(true);
+    expect(loaded?.totalWords).toBeUndefined();
+  });
+
+  it("stats banked with totalScore keep their streak and count", async () => {
+    await store.set("stats", {
+      played: 9,
+      completed: 7,
+      currentStreak: 3,
+      bestStreak: 5,
+      lastCompletedDate: "2026-07-11",
+      totalScore: 1240,
+      bestRank: "Genius",
+    });
+    const stats = await loadStats();
+    expect(stats.played).toBe(9);
+    expect(stats.solved).toBe(7);
+    expect(stats.bestStreak).toBe(5);
+    // The lifetime word count starts here rather than inventing a
+    // history from points that never mapped onto words.
+    expect(stats.totalWords).toBe(0);
   });
 
   it("stats with only completed normalize solved both ways", async () => {
@@ -102,37 +139,42 @@ describe("legacy field normalization", () => {
 describe("multi-tab and version guards", () => {
   it("rejects writes that lose found words from another tab", async () => {
     await saveDailyProgress(
-      day({ foundWords: ["cat", "dog"], score: 10, elapsedMs: 5000 }),
+      day({ foundWords: ["cat", "dog"], elapsedMs: 5000 }),
     );
     // Stale tab tries to write fewer words, missing some the stored tab found
-    await saveDailyProgress(day({ foundWords: ["cat"], score: 5 }));
+    await saveDailyProgress(day({ foundWords: ["cat"] }));
     const loaded = await loadDailyProgress("2026-07-12");
     expect(loaded?.foundWords).toEqual(["cat", "dog"]);
   });
 
   it("a solved save can't be overwritten by unsolved", async () => {
     await saveDailyProgress(
-      day({ completed: true, foundWords: ["cat"], score: 10 }),
+      day({ completed: true, foundWords: ["cat"] }),
     );
-    await saveDailyProgress(day({ foundWords: ["cat"], score: 5 }));
+    await saveDailyProgress(day({ foundWords: ["cat"] }));
     const loaded = await loadDailyProgress("2026-07-12");
     expect(loaded?.solved).toBe(true);
   });
 
   it("older dictVersion can't clobber newer", async () => {
-    await saveDailyProgress(day({ completed: true, score: 10 }));
+    await saveDailyProgress(day({ completed: true, foundWords: ["cat"] }));
     await saveDailyProgress(
-      day({ dictVersion: DICT_VERSION - 1, score: 99, elapsedMs: 5 }),
+      day({
+        completed: true,
+        dictVersion: DICT_VERSION - 1,
+        foundWords: ["zzz"],
+        elapsedMs: 5,
+      }),
     );
     const loaded = await loadDailyProgress("2026-07-12");
     expect(loaded?.dictVersion).toBe(DICT_VERSION);
-    expect(loaded?.score).toBe(10);
+    expect(loaded?.foundWords).toEqual(["cat"]);
   });
 });
 
 describe("archive roll-up", () => {
   it("returns days with stale flag based on dictVersion", async () => {
-    await saveDailyProgress(day({ completed: true, score: 30 }));
+    await saveDailyProgress(day({ completed: true }));
     let days = await loadAllDailyProgress();
     expect(days["2026-07-12"].stale).toBe(false);
 
@@ -150,7 +192,7 @@ describe("archive roll-up", () => {
   });
 
   it("skips malformed saves", async () => {
-    await saveDailyProgress(day({ completed: true, score: 10 }));
+    await saveDailyProgress(day({ completed: true }));
     // Write a malformed entry directly
     await store.set("daily:2026-07-10", {
       dateKey: "2026-07-10",
@@ -174,6 +216,6 @@ describe("streak display", () => {
     const stats = await loadStats();
     expect(stats.completed).toBe(5);
     expect(stats.bestStreak).toBe(0);
-    expect(stats.totalScore).toBe(0);
+    expect(stats.totalWords).toBe(0);
   });
 });

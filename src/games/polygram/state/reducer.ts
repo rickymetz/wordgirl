@@ -1,4 +1,3 @@
-import { levelBonus, wordPoints } from "../engine/scoring";
 import type { Puzzle } from "../engine/types";
 
 export type Phase = "playing" | "levelClear" | "done";
@@ -6,8 +5,7 @@ export type Phase = "playing" | "levelClear" | "done";
 export interface SubmitResult {
   type: "correct" | "duplicate" | "invalid" | "tooShort" | "empty";
   word: string;
-  points?: number;
-  /** The word came from the bonus tier (extra points, never required). */
+  /** The word came from the bonus tier — never required, pure sweep. */
   bonus?: boolean;
   /** Monotonic counter so the UI can re-trigger animations on repeats. */
   nonce: number;
@@ -20,7 +18,6 @@ export interface GameState {
   found: string[];
   /** word -> letter positions revealed via hints. */
   revealed: Record<string, number[]>;
-  score: number;
   /** The word currently being built. */
   current: string;
   phase: Phase;
@@ -41,7 +38,6 @@ export type GameAction =
       type: "hydrate";
       found: string[];
       revealed: Record<string, number[]>;
-      score: number;
       skippedLevels: number[];
     };
 
@@ -51,7 +47,6 @@ export function initialState(puzzle: Puzzle): GameState {
     levelIndex: 0,
     found: [],
     revealed: {},
-    score: 0,
     current: "",
     phase: "playing",
     lastResult: null,
@@ -97,24 +92,21 @@ export function canSkipLevel(state: GameState): boolean {
 }
 
 /**
- * A word entered the found list (typed or fully hint-revealed): score
+ * A word entered the found list (typed or fully hint-revealed): record
  * it, and clear the level when it was the last one.
  */
 function applyFoundWord(
   state: GameState,
   word: string,
-  points: number,
   bonus = false,
 ): GameState {
   const nonce = (state.lastResult?.nonce ?? 0) + 1;
   const found = [...state.found, word];
-  let score = state.score + points;
   let phase: Phase = state.phase;
 
-  // Only REQUIRED words gate the level; bonus finds are pure points.
+  // Only REQUIRED words gate the level; bonus finds never advance it.
   const level = currentLevel(state);
   if (level.words.every((w) => found.includes(w))) {
-    score += levelBonus(level.size);
     phase =
       state.levelIndex === state.puzzle.levels.length - 1
         ? "done"
@@ -124,9 +116,8 @@ function applyFoundWord(
   return {
     ...state,
     found,
-    score,
     phase,
-    lastResult: { type: "correct", word, points, bonus, nonce },
+    lastResult: { type: "correct", word, bonus, nonce },
   };
 }
 
@@ -172,14 +163,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
       if (level.words.includes(word)) {
-        const points = wordPoints(word, (state.revealed[word] ?? []).length);
-        return { ...applyFoundWord(state, word, points), current: "" };
+        return { ...applyFoundWord(state, word), current: "" };
       }
       if (level.bonusWords.includes(word)) {
-        return {
-          ...applyFoundWord(state, word, wordPoints(word), true),
-          current: "",
-        };
+        return { ...applyFoundWord(state, word, true), current: "" };
       }
       return {
         ...state,
@@ -215,10 +202,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           [target]: [...already, action.letterIndex],
         },
       };
-      // Every letter revealed → the word counts as submitted (at the
-      // minimum score), instead of demanding the player retype it.
+      // Every letter revealed → the word counts as submitted, instead
+      // of demanding the player retype what is already on screen.
       if (next.revealed[target].length === target.length) {
-        return applyFoundWord(next, target, wordPoints(target, target.length));
+        return applyFoundWord(next, target);
       }
       return next;
     }
@@ -235,11 +222,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "skipLevel": {
       if (!canSkipLevel(state)) return state;
-      const level = currentLevel(state);
       const isLast = state.levelIndex === state.puzzle.levels.length - 1;
       return {
         ...state,
-        score: state.score + levelBonus(level.size),
         levelIndex: state.levelIndex + 1,
         skippedLevels: [...state.skippedLevels, state.levelIndex],
         phase: isLast ? "done" : "playing",
@@ -272,7 +257,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         found: action.found,
         revealed: action.revealed,
-        score: action.score,
         skippedLevels: action.skippedLevels,
         levelIndex,
         phase,

@@ -106,8 +106,8 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
     [dispatch],
   );
 
-  // No popup between levels — a short beat for the last word's score
-  // pop, then the board morphs into the next polygon.
+  // No popup between levels — a short beat for the last word's pop,
+  // then the board morphs into the next polygon.
   useEffect(() => {
     if (state.phase !== "levelClear") return;
     const timer = setTimeout(advance, 900);
@@ -124,7 +124,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   }, [mode.kind]);
 
   // Daily hints are free to use but marked: the first one warns that the
-  // day's score will carry a "used hint" indicator.
+  // day's result will carry a "used hint" indicator.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const hintUsed = Object.keys(state.revealed).length > 0;
   // Tapping an unsolved word in the list aims the next hint at it.
@@ -248,7 +248,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       (w) => !state.found.includes(w),
     ).length;
     const messages: Record<string, string> = {
-      correct: `${r.word.toUpperCase()} — ${r.bonus ? "bonus word! " : "correct, "}${r.points} points. ${remaining} words left.`,
+      correct: `${r.word.toUpperCase()} — ${r.bonus ? "bonus word!" : "correct."} ${remaining} words left.`,
       duplicate: "Already found.",
       invalid: "Not in word list.",
       tooShort: `Too short — ${level.size} letter words.`,
@@ -498,7 +498,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               </p>
             )}
             <p className="text-sm text-ink-soft">
-              {state.score} of {state.puzzle.maxScore} points · {POLYGON_NAMES[state.puzzle.maxLevel]} reached
+              {state.found.length} of {state.puzzle.totalWords} words · {POLYGON_NAMES[state.puzzle.maxLevel]} reached
             </p>
             {Object.keys(state.revealed).length > 0 && (
               <span className="rounded-full border border-line px-3 py-1 text-xs font-semibold text-ink-soft">
@@ -632,11 +632,11 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 title: "Bonus words",
                 body: (
                   <>
-                    Less common words score{" "}
+                    Rarer words count as{" "}
                     <Key>
                       <span className="text-accent">✦</span> bonus
                     </Key>{" "}
-                    points. Find enough and you can{" "}
+                    finds — never required. Find enough and you can{" "}
                     <Key>hold to skip the level</Key> — or keep hunting.
                   </>
                 ),

@@ -10,10 +10,21 @@ import {
   type ArchivedDay,
 } from "../state/persistence";
 
+/**
+ * Hint letters, or undefined for a save that predates the field.
+ *
+ * `validDay` admits a save with no `revealed` at all, and folding that to
+ * 0 charted a hint-free day the player never had — a best-ever mark on a
+ * lower-is-better line, and an average dragged toward zero by days that
+ * hold no hint data whatsoever. `solvedCounter` turns undefined into the
+ * gap it should always have been.
+ */
 const hintLetters = (d: ArchivedDay) =>
-  Object.values(d.revealed ?? {}).reduce((a, p) => a + p.length, 0);
+  d.revealed === undefined
+    ? undefined
+    : Object.values(d.revealed).reduce((a, p) => a + p.length, 0);
 
-const config: GameTrendsConfig<ArchivedDay> = {
+export const config: GameTrendsConfig<ArchivedDay> = {
   gameId: "crosshatch",
   accent: "crosshatch",
   epoch: ARCHIVE_EPOCH,
@@ -31,12 +42,9 @@ const config: GameTrendsConfig<ArchivedDay> = {
       label: "Words found",
       value: (d) => (d.foundWords.length > 0 ? d.foundWords.length : null),
     },
-    {
-      key: "hints",
-      label: "Hint letters",
-      value: (d) => (d.solved ? hintLetters(d) : null),
+    solvedCounter<ArchivedDay>("hints", "Hint letters", hintLetters, {
       lowerIsBetter: true,
-    },
+    }),
     solvedCounter<ArchivedDay>(
       "invalids",
       "Rejected words",

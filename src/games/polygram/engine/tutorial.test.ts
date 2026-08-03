@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { enumerateWords, parseDictionary } from "../../../lib/words/dictionary";
-import { maxScore } from "./scoring";
+import { totalWords } from "./completion";
 import {
   TUTORIAL_LETTERS,
   TUTORIAL_PUZZLE,
@@ -22,7 +22,7 @@ describe("the tutorial puzzle", () => {
     expect(TUTORIAL_PUZZLE.maxLevel).toBe(4);
     // letters[0..2] ring the triangle; letters[3] debuts at the square.
     expect(TUTORIAL_PUZZLE.letters).toHaveLength(4);
-    expect(TUTORIAL_PUZZLE.maxScore).toBe(maxScore(TUTORIAL_PUZZLE.levels));
+    expect(TUTORIAL_PUZZLE.totalWords).toBe(totalWords(TUTORIAL_PUZZLE.levels));
   });
 
   it("lists EXACTLY the words its letters can spell, per level", () => {

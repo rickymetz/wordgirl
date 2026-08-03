@@ -18,11 +18,11 @@ Polygram is a word game. You start with a triangle of three letters. You make wo
 2. Make a word that has the same number of letters as the polygon. You can use each letter more than one time.
 3. Find all the necessary words to go to the next level.
 
-Bonus words are unusual words from the rarer dictionary tier. They increase your score. They are not required for the next level, but they help in one more way: when your core finds plus bonus finds reach the level's word count, the game offers a skip to the next level.
+Bonus words are unusual words from the rarer dictionary tier. They are not required for the next level. They are there for players who want to sweep the board, and they help in one more way: when your core finds plus bonus finds reach the level's word count, the game offers a skip to the next level.
 
-If you cannot find a word, you can show a hint letter. Each hint letter divides the points for that word by two. The minimum is one point.
+If you cannot find a word, you can show a hint letter. A day that used a hint says so on its result and in the archive.
 
-Your score for a word is the number of its letters. Each level that you complete gives bonus points. The bonus is the number of letters in the level. The maximum score includes all necessary words and all bonus words without hints.
+The game keeps no score. Your result is the number of words you found out of every word the puzzle had, necessary and bonus.
 
 ## How the game makes a puzzle
 
@@ -58,16 +58,6 @@ $$
 $$
 
 Here $m_w$ is the mask of the word. $m_p$ is the mask of the puzzle letters. Thus the test for one word takes constant time. The search for a full level is one scan of one length group. The code is in `src/lib/words/dictionary.ts`.
-
-### The hint formula
-
-Each hint letter divides the points for a word by two. The result cannot go below one point:
-
-$$
-\text{points}(w, h) = \max\!\left(1,\; \left\lfloor \frac{|w|}{2^{h}} \right\rfloor \right)
-$$
-
-Here $|w|$ is the number of letters in the word. $h$ is the number of hint letters.
 
 ### The search method
 
