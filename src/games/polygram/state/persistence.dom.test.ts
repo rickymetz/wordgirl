@@ -87,6 +87,45 @@ describe("legacy field normalization", () => {
     expect(loaded?.completed).toBe(true);
   });
 
+  it("a save banked when the game kept score still loads", async () => {
+    // Every day played before scoring was cut carries a `score` and no
+    // `totalWords`. It is a whole historical record either way: the day
+    // loads, and the archive reads its words rather than its points.
+    await store.set("daily:2026-07-12", {
+      dateKey: "2026-07-12",
+      dictVersion: DICT_VERSION,
+      foundWords: ["bad", "dab"],
+      revealed: { bad: [0] },
+      score: 17,
+      completed: true,
+      solved: true,
+      elapsedMs: 1000,
+    });
+    const loaded = await loadDailyProgress("2026-07-12");
+    expect(loaded?.foundWords).toEqual(["bad", "dab"]);
+    expect(loaded?.solved).toBe(true);
+    expect(loaded?.totalWords).toBeUndefined();
+  });
+
+  it("stats banked with totalScore keep their streak and count", async () => {
+    await store.set("stats", {
+      played: 9,
+      completed: 7,
+      currentStreak: 3,
+      bestStreak: 5,
+      lastCompletedDate: "2026-07-11",
+      totalScore: 1240,
+      bestRank: "Genius",
+    });
+    const stats = await loadStats();
+    expect(stats.played).toBe(9);
+    expect(stats.solved).toBe(7);
+    expect(stats.bestStreak).toBe(5);
+    // The lifetime word count starts here rather than inventing a
+    // history from points that never mapped onto words.
+    expect(stats.totalWords).toBe(0);
+  });
+
   it("stats with only completed normalize solved both ways", async () => {
     await store.set("stats", { completed: 3, lastCompletedDate: "2026-07-10" });
     const stats = await loadStats();
