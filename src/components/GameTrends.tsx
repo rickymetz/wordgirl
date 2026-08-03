@@ -1,6 +1,7 @@
-import { useEffect, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "./HomeLink";
+import { trackStatsDay } from "../lib/analytics";
 import { dateKeyRange, localDateKey } from "../lib/date";
 
 /**
@@ -88,10 +89,17 @@ export function GameTrends<Day extends { dateKey: string }>({
    * other day.
    */
   const [picked, setPicked] = useState<string | null>(null);
+  // Counted once a visit, from whichever chart the player reached for.
+  const dayReadRef = useRef(false);
   // Tapping the day already being read puts the summaries back, from
   // whichever chart the second tap lands on.
-  const pick = (dateKey: string | null) =>
+  const pick = (dateKey: string | null) => {
+    if (!dayReadRef.current) {
+      dayReadRef.current = true;
+      trackStatsDay(config.gameId);
+    }
     setPicked((cur) => (cur !== null && cur === dateKey ? null : dateKey));
+  };
 
   const today = localDateKey();
   const from = dateKeyRange(config.epoch, today).slice(-WINDOW_DAYS);

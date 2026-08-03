@@ -142,6 +142,24 @@ describe("picking a day reads it on every chart", () => {
     expect(readouts()[2]).toMatch(/· 9pm$/);
   });
 
+  it("counts the readout once a visit, however many days are read", async () => {
+    // The analytics question is whether anyone reads a day out of the
+    // charts at all. Counting every tap would answer a different one
+    // badly: one player scrubbing a line would outweigh fifty who
+    // tapped once.
+    const fired: string[] = [];
+    (window as Window & { fathom?: { trackEvent: (n: string) => void } }).fathom =
+      { trackEvent: (n) => fired.push(n) };
+    await render();
+    expect(fired).toEqual([]);
+    press(charts()[0], "Home");
+    press(charts()[0], "ArrowRight");
+    press(charts()[1], "End");
+    press(charts()[0], "Escape");
+    expect(fired).toEqual(["test:stats-day"]);
+    delete (window as Window & { fathom?: unknown }).fathom;
+  });
+
   it("tells a screen reader which day it is now reading", async () => {
     await render();
     press(charts()[0], "Home");

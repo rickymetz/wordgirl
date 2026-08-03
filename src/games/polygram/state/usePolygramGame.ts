@@ -1,5 +1,10 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { trackStarted, trackSolved } from "../../../lib/analytics";
+import {
+  trackBonusWord,
+  trackSolved,
+  trackStarted,
+  trackSwept,
+} from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
@@ -231,14 +236,34 @@ export function usePolygramGame(mode: GameMode) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.found, state.revealed, state.phase, state.skippedLevels]);
 
-  // Track analytics solve event (all modes, once per session).
+  // Track analytics solve event (all modes, once per session). A board
+  // finished having found every word it held — bonus tier included — is
+  // the completionist ceiling, and worth counting apart from a solve.
+  // NOT from the tutorial, whose hand-picked puzzle has no bonus tier at
+  // all: finishing it is a full sweep by construction, so counting it
+  // would report the ceiling being reached every time anyone was taught
+  // the game.
   const solveTrackedRef = useRef(false);
   useEffect(() => {
     if (state.phase === "done" && !solveTrackedRef.current && !hydratedAsSolvedRef.current) {
       solveTrackedRef.current = true;
       trackSolved("polygram");
+      if (mode.kind !== "tutorial" && state.found.length >= puzzle.totalWords) {
+        trackSwept("polygram");
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
+
+  /**
+   * A bonus word landed. Reads `lastResult`, which only a live submit
+   * sets — hydration clears it — so reopening a solved day cannot
+   * re-count the words it was finished with.
+   */
+  useEffect(() => {
+    const r = state.lastResult;
+    if (r?.type === "correct" && r.bonus) trackBonusWord("polygram");
+  }, [state.lastResult]);
 
   /**
    * The local hour the day was finished. `??=` so a day reopened later

@@ -44,7 +44,7 @@ The settings are the theme and the text size. The themes are system, light, and 
 
 ## Other functions
 
-- `analytics.ts` sends events to Fathom. The events are solved, share, practice, started, and archive play.
+- `analytics.ts` sends events to Fathom. The events are solved, share, practice, started, archive play, stats day, bonus word, and swept. Each event is a name and nothing else. No event carries a date, a word, or a puzzle. Fathom does not load when the app is offline, so every count here is lower than the truth. Compare one event with another event. Do not compare an event with a real number of players.
 - `swUpdate.ts` contains `checkForUpdates()` for the settings dialog. Refer to [PWA and offline operation](/docs/architecture/pwa-offline/).
 - `useStorageBroken()` becomes true after a storage error.
 
