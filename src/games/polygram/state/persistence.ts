@@ -25,15 +25,16 @@ export interface DailyProgress extends DailyBase {
    */
   solvedHour?: number;
   /**
-   * Every word this day's puzzle had on offer, required and bonus.
+   * The words this day ASKED for — its required tier.
    *
-   * A raw find count cannot be compared across days — the ceiling moves
-   * with the letter set, so 12 words is a near sweep of one board and
-   * half of another. Stored rather than recomputed because the stats
-   * page would otherwise have to regenerate every archived puzzle,
-   * dictionary and all, to divide by it.
+   * Deliberately a new field rather than a redefinition of the old
+   * `totalWords`, which briefly meant required PLUS bonus. A save from
+   * those hours holds a number up to 100x larger, and silently reusing
+   * the name would have made those days read as near-total failures.
+   * Nothing reads `totalWords` now, so such a save falls back to
+   * reporting its count alone, which is what it can honestly say.
    */
-  totalWords?: number;
+  requiredWords?: number;
   /**
    * Opens of this day while unfinished. Absent means unknowable — a day
    * banked before the counter shipped, never backfilled, because a

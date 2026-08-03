@@ -1,7 +1,12 @@
 # Polygram's bonus tier: what completion could mean
 
-Working notes for the problem the six-persona review surfaced. Nothing
-here is implemented — this branch is for deciding, not doing.
+> **DECIDED: bonus words are texture.** Option 0 below is implemented on
+> this branch and is the whole fix. Problem 1 — the tier closing behind
+> the player — deliberately stays open, because a tier with no total to
+> chase costs nothing to miss. Options 1 to 4 are kept as the record of
+> what was weighed.
+
+Working notes for the problem the six-persona review surfaced.
 
 ## The short version
 
@@ -150,34 +155,42 @@ list.
   ceiling is invisible until after the solve. This is option 0 with the
   discouragement added back.
 
-## What I would do
+## What was decided, and what it cost
 
-**Option 0 now, as a hotfix**, because the shipped line is wrong on
-typical boards today and every day it stays is a day players are told
-they half-failed a puzzle they solved.
+**Texture. Option 0, and nothing else.**
 
-**Then option 3 if bonus words are meant to be a real completionist
-target** — it is the only one that makes completion both achievable and
-comparable across days, and it is the only one that makes `polygram:swept`
-worth having collected. It needs the accept-versus-count split thought
-through, and a `DICT_VERSION` bump timed so it does not collide with
-in-flight saves.
+Shipped on this branch:
 
-**Option 1 only if the polygon UI gets rethought anyway.** It is the
-purest answer to problem 1 and the most expensive.
+- `requiredWords(levels)` replaces `totalWords`, counting the required
+  tier only. `Puzzle.requiredWords`, and a new `DailyProgress.requiredWords`
+  save field.
+- The result line reads `15 of 15 words · 1 bonus · Heptagon reached` —
+  the denominator is what the puzzle asked for, and bonus finds sit
+  beside it with no ceiling implied.
+- Archive rows read against the required tier; a save without the field
+  reports its count alone.
+- The "Share of words" chart is gone. A share needs a denominator and
+  there is no longer a defensible one.
+- `polygram:swept` is gone. It measured completing something the game
+  does not ask for. `polygram:bonus-word` stays — worth knowing whether
+  rare words still land at all once nothing rewards them.
 
-I would not do option 2 alone: it warns about a door without making what
-is behind it worth opening.
+**The save field is renamed, not redefined.** `totalWords` briefly meant
+required *plus* bonus, and a save written during those hours holds a
+number up to 100x larger. Reusing the name would have made those days
+read as near-total failures forever. Nothing reads `totalWords` now, so
+such a day falls back to reporting its word count alone — which is what
+it can honestly say.
 
-## Open question for you
+**Problem 1 is deliberately left alone.** A closing door only matters if
+something behind it was worth having. With no total to complete, missing
+a level's rare words costs a player nothing they can see, so warning
+them, or reopening levels, would add friction to protect a score that no
+longer exists.
 
-Which is bonus words' actual job?
-
-- *Texture* — a pleasant surprise when a rare word lands, never counted.
-  Then option 0 is the whole fix and problem 1 does not need solving.
-- *A second objective* — something a player can set out to complete.
-  Then the tier has to be small enough to finish and open long enough to
-  try, which is option 3, probably plus option 1.
-
-The answer decides everything else, and it is a product call rather than
-a code one.
+**What this gives up.** There is now no achievement in Polygram beyond
+solving the day — no reason for a strong player to keep going once the
+required tier falls. If that turns out to matter, option 3 is the way
+back, and `polygram:bonus-word` is the measurement that would tell you:
+if rare words stop landing entirely, the tier is decoration nobody sees
+and the generator should stop paying to enumerate it.

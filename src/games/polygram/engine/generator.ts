@@ -1,7 +1,7 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { DICT_VERSION, enumerateWords } from "../../../lib/words/dictionary";
-import { totalWords } from "./completion";
+import { requiredWords } from "./completion";
 import type { LevelSpec, Puzzle } from "./types";
 
 /**
@@ -110,9 +110,9 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
 
     // The band is on the REQUIRED words — what the day demands. The
     // bonus tier is optional and does not count against it.
-    const requiredWords = levels.reduce((n, l) => n + l.words.length, 0);
+    const required = requiredWords(levels);
     const maxLevel = levels[levels.length - 1].size;
-    if (maxLevel < MIN_MAX_LEVEL || requiredWords > MAX_TOTAL_WORDS) continue;
+    if (maxLevel < MIN_MAX_LEVEL || required > MAX_TOTAL_WORDS) continue;
 
     for (const level of levels) level.bonusWords.sort();
 
@@ -122,7 +122,7 @@ export function generatePuzzle(dict: Dictionary, seed: string): Puzzle {
       letters,
       levels,
       maxLevel,
-      totalWords: totalWords(levels),
+      requiredWords: requiredWords(levels),
     };
   }
 

@@ -76,7 +76,7 @@ describe("generatePuzzle", () => {
         }
       }
       expect(total).toBeLessThanOrEqual(MAX_TOTAL_WORDS);
-      expect(puzzle.totalWords).toBeGreaterThan(0);
+      expect(puzzle.requiredWords).toBeGreaterThan(0);
     }
     // Whole sweep should be fast — generation must feel instant on device.
     expect(Date.now() - start).toBeLessThan(15_000);

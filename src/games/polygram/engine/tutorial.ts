@@ -1,5 +1,5 @@
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { totalWords } from "./completion";
+import { requiredWords } from "./completion";
 import type { LevelSpec, Puzzle } from "./types";
 
 /**
@@ -35,7 +35,7 @@ export const TUTORIAL_PUZZLE: Puzzle = {
   letters: TUTORIAL_LETTERS,
   levels: TUTORIAL_LEVELS,
   maxLevel: 4,
-  totalWords: totalWords(TUTORIAL_LEVELS),
+  requiredWords: requiredWords(TUTORIAL_LEVELS),
 };
 
 /**
