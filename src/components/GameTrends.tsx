@@ -314,7 +314,12 @@ function MetricChart<Day extends { dateKey: string }>({
   return (
     <section className={`flex min-w-0 flex-col ${wide ? "col-span-2" : ""}`}>
       <h2 className="text-sm leading-tight font-bold">{metric.label}</h2>
-      <p className="pt-0.5 text-xs text-ink-soft">
+      {/* pb, not just pt: the byline reads as a caption on the title, and
+          without a floor under it the line sat as close to the chart's
+          top label as to the heading it belongs to. `mt-auto` on the svg
+          only spaces it where the grid row is taller than this cell, so
+          the separation has to be the byline's own. */}
+      <p className="pt-0.5 pb-2 text-xs text-ink-soft">
         {pickedPoint
           ? `${shortDate(pickedPoint.dateKey)} · ${fmt(pickedPoint.v!)}`
           : pickedElsewhere
@@ -498,7 +503,7 @@ function HourChart<Day extends { dateKey: string }>({
       </div>
       <svg
         viewBox={`0 0 ${W} ${H + 18}`}
-        className="mt-1 w-full touch-manipulation select-none"
+        className="mt-3 w-full touch-manipulation select-none"
         role="img"
         aria-label={
           pickedDate !== null && dayHour !== null
