@@ -109,6 +109,9 @@ export function usePolygramGame(mode: GameMode) {
   // don't record completion again.
   const statsRecordedRef = useRef(false);
   const solvedHourRef = useRef<number | null>(null);
+  // Opens of this day while unfinished ("sessions to finish"); null =
+  // unknowable (banked before the counter shipped — never backfill).
+  const sessionsRef = useRef<number | null>(null);
   // Latest state, for saves triggered outside the React render cycle.
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -151,6 +154,9 @@ export function usePolygramGame(mode: GameMode) {
       ...(solvedHourRef.current !== null && {
         solvedHour: solvedHourRef.current,
       }),
+      ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
+      // The day's ceiling, so Stats can say what share of it was taken.
+      maxScore: puzzle.maxScore,
       // Preserve the replay marker across saves.
       ...(statsRecordedRef.current && { statsRecorded: true }),
     });
@@ -171,6 +177,12 @@ export function usePolygramGame(mode: GameMode) {
           clock.hydrate(saved.elapsedMs ?? 0, saved.completed);
           if (saved.completed) hydratedAsSolvedRef.current = true;
           solvedHourRef.current = saved.solvedHour ?? null;
+          sessionsRef.current =
+            saved.sessions === undefined
+              ? null
+              : saved.completed
+                ? saved.sessions
+                : saved.sessions + 1;
           const revealed = normalizeRevealed(saved.revealed);
           const { found, score } = migrateAutoSubmit(
             puzzle,
@@ -196,11 +208,14 @@ export function usePolygramGame(mode: GameMode) {
             staleRecordRef.current = true;
             statsRecordedRef.current =
               stale.completed || stale.statsRecorded === true;
+            // A fresh run replaces the stale record when play begins.
+            sessionsRef.current = 1;
             hydratedRef.current = true;
             return;
           }
           void recordDailyStarted();
           trackStarted("polygram");
+          sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
           hydratedRef.current = true;

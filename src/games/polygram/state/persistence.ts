@@ -25,6 +25,22 @@ export interface DailyProgress extends DailyBase {
    * and charts as nothing rather than as midnight.
    */
   solvedHour?: number;
+  /**
+   * Every point this day's puzzle had on offer.
+   *
+   * Score alone cannot be compared across days — the ceiling moves with
+   * the letter set, so 300 on a 340-point board is a near sweep and on a
+   * 610-point one is half a game. Stored rather than recomputed because
+   * the stats page would otherwise have to regenerate every archived
+   * puzzle, dictionary and all, to divide by it.
+   */
+  maxScore?: number;
+  /**
+   * Opens of this day while unfinished. Absent means unknowable — a day
+   * banked before the counter shipped, never backfilled, because a
+   * partial count is as much of a lie as a zero.
+   */
+  sessions?: number;
 }
 
 export interface PolygramStats extends StreakStats {

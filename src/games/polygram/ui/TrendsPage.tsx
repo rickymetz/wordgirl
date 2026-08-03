@@ -56,9 +56,44 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       format: formatDuration,
       lowerIsBetter: true,
     },
+    {
+      // Score alone is not comparable across days: the ceiling moves with
+      // the letter set, so 300 on a 340-point board is a near sweep and on
+      // a 610-point one is half a game. Days banked before `maxScore` was
+      // stored have no denominator and chart as gaps.
+      key: "share",
+      label: "Share of possible",
+      value: (d) =>
+        d.maxScore && d.maxScore > 0 && d.score > 0
+          ? (d.score / d.maxScore) * 100
+          : null,
+      format: (v) => `${Math.round(v)}%`,
+    },
+    {
+      key: "words",
+      label: "Words found",
+      value: (d) => (d.foundWords.length > 0 ? d.foundWords.length : null),
+      format: (v) => `${Math.round(v)}`,
+    },
     solvedCounter<ArchivedDay>("hints", "Hint letters", hintLetters, {
       lowerIsBetter: true,
     }),
+    // Already in every save and never charted until now: the levels a
+    // player gave up on is the plainest read there is on which days won.
+    // `?.length` rather than `?? 0` — a save from before skipping existed
+    // knows of no levels skipped, which is not the same as none.
+    solvedCounter<ArchivedDay>(
+      "skipped",
+      "Levels skipped",
+      (d) => d.skippedLevels?.length,
+      { lowerIsBetter: true },
+    ),
+    solvedCounter<ArchivedDay>(
+      "sessions",
+      "Sessions to finish",
+      (d) => d.sessions,
+      { lowerIsBetter: true },
+    ),
   ],
   // Accrues from the day this shipped: days banked before then carry no
   // hour and are simply absent from the histogram.

@@ -117,6 +117,46 @@ describe("serpentine reports the day it actually solved", () => {
   });
 });
 
+describe("polygram's new metrics", () => {
+  const solved = (fields: Partial<PolygramDay>) =>
+    day<PolygramDay>({ solved: true, completed: true, ...fields });
+
+  it("reports score against the day's own ceiling", () => {
+    // The reason this exists: the same 300 points is a near sweep on one
+    // board and half a game on another.
+    const share = metric(polygram, "share");
+    expect(share.value(solved({ score: 300, maxScore: 340 }))).toBeCloseTo(88.2, 1);
+    expect(share.value(solved({ score: 300, maxScore: 610 }))).toBeCloseTo(49.2, 1);
+  });
+
+  it("gaps a day banked before the ceiling was stored", () => {
+    const share = metric(polygram, "share");
+    expect(share.value(solved({ score: 300 }))).toBeNull();
+  });
+
+  it("counts levels skipped, and knows nothing from a save without them", () => {
+    const skipped = metric(polygram, "skipped");
+    expect(skipped.lowerIsBetter).toBe(true);
+    expect(skipped.value(solved({ skippedLevels: [3, 5] }))).toBe(2);
+    // A day that skipped none says so...
+    expect(skipped.value(solved({ skippedLevels: [] }))).toBe(0);
+    // ...and one from before the field existed says nothing at all.
+    expect(skipped.value(solved({}))).toBeNull();
+  });
+
+  it("counts words found on any day that found some", () => {
+    const words = metric(polygram, "words");
+    expect(words.value(solved({ foundWords: ["cat", "cart"] }))).toBe(2);
+    expect(words.value(solved({ foundWords: [] }))).toBeNull();
+  });
+
+  it("counts sessions, gapping the days that predate the counter", () => {
+    const sessions = metric(polygram, "sessions");
+    expect(sessions.value(solved({ sessions: 3 }))).toBe(3);
+    expect(sessions.value(solved({}))).toBeNull();
+  });
+});
+
 describe("every game charts an hour histogram", () => {
   it("including polygram, which had none", () => {
     // The checklist asks each game for it; polygram was the one without a
