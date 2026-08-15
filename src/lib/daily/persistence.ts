@@ -98,6 +98,22 @@ export function createDailyPersistence<
     return saved;
   }
 
+  /**
+   * The save for a board whatever version wrote it — the RECORD, not
+   * resumable progress.
+   *
+   * "Did you finish that board on that date" is a question about
+   * history, and history does not un-happen when a dictionary bumps.
+   * `loadDay` is the wrong tool for it: with no puzzleKey to compare it
+   * falls back to `dictVersion === DICT_VERSION`, so after any game's
+   * bump a perfectly good sibling save reads as ABSENT — which would
+   * stop a day ever completing (losing the streak) and let `played`
+   * count the same date twice.
+   */
+  async function loadDayRecord(subKey: string): Promise<Day | null> {
+    return readDay(subKey);
+  }
+
   /** A save from an OLDER dictionary, kept as a historical record. */
   async function loadStaleDay(
     subKey: string,
@@ -132,6 +148,26 @@ export function createDailyPersistence<
       }
     }
     await store.set(key, progress);
+  }
+
+  /**
+   * Every saved day, grouped by date — the first step of every archive
+   * roll-up. Games with one board a day get single-entry groups; the
+   * multi-board games (crosshatch's two, doublet's three, serpentine's
+   * two) get one entry per board, which is exactly what their listings
+   * need to merge.
+   *
+   * A save with no dateKey is skipped rather than filed under
+   * `undefined`: only serpentine's copy of this loop guarded for it, and
+   * a corrupt save should not invent a row in the calendar.
+   */
+  async function loadDaysByDate(): Promise<Record<string, Day[]>> {
+    const byDate: Record<string, Day[]> = {};
+    for (const key of await store.keys("daily:")) {
+      const saved = validShape(await store.get<Day>(key));
+      if (saved?.dateKey) (byDate[saved.dateKey] ??= []).push(saved);
+    }
+    return byDate;
   }
 
   /** Serialize read-modify-write stats updates across async callers. */
@@ -188,6 +224,8 @@ export function createDailyPersistence<
     validShape,
     loadDay,
     loadStaleDay,
+    loadDayRecord,
+    loadDaysByDate,
     saveDay,
     loadStats,
     updateStats,
@@ -197,6 +235,69 @@ export function createDailyPersistence<
     loadTutorialSeen,
     markTutorialSeen,
   };
+}
+
+/**
+ * Is every board of the date OTHER than this one already solved?
+ *
+ * The multi-board games all need this at the same moment — the instant
+ * a board is solved, to decide whether the DAY is done and the streak
+ * moves. It asks about the others and takes the calling board as solved
+ * by construction, because that board's own save may not have reached
+ * storage yet: it is written by a different effect, and racing it would
+ * lose a streak at random.
+ */
+export async function everyOtherBoardSolved<B extends string>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<{ solved: boolean } | null>,
+): Promise<boolean> {
+  const others = await loadOtherBoards(boards, current, load);
+  return others.every((save) => save?.solved === true);
+}
+
+/**
+ * Is this the FIRST board of its date to be opened — i.e. does opening
+ * it start a new day?
+ *
+ * `played` counts days, so the second board of a date opened later must
+ * not count again. The caller has already established that THIS board
+ * has no save; this asks about the date's others.
+ */
+export async function isFirstBoardOfDay<B extends string>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<unknown | null>,
+): Promise<boolean> {
+  const others = await loadOtherBoards(boards, current, load);
+  return others.every((save) => save === null);
+}
+
+function loadOtherBoards<B extends string, D>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<D | null>,
+): Promise<(D | null)[]> {
+  return Promise.all(boards.filter((b) => b !== current).map(load));
+}
+
+/**
+ * A counter summed across a date's boards, or null when ANY of them
+ * predates the counter. The rule the multi-board games share: a partial
+ * sum presented as the day's total is as fake as a zero, so a day
+ * mixing tracked and untracked saves charts as a GAP.
+ */
+export function sumAcrossBoards<Day>(
+  saves: readonly Day[],
+  read: (save: Day) => number | undefined,
+): number | null {
+  let total = 0;
+  for (const save of saves) {
+    const value = read(save);
+    if (value === undefined) return null;
+    total += value;
+  }
+  return total;
 }
 
 /**

@@ -1,12 +1,14 @@
 import {
   createDailyPersistence,
   displayStreak as _displayStreak,
+  everyOtherBoardSolved,
+  isFirstBoardOfDay,
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
 import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { Cell, Difficulty, PuzzleDef } from "../engine/types";
+import { DIFFICULTIES, type Cell, type Difficulty, type PuzzleDef } from "../engine/types";
 
 export interface DayProgress extends DailyBase {
   dateKey: string;
@@ -87,6 +89,49 @@ export function loadDailyProgress(
   return daily.loadDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 }
 
+/**
+ * Is the rest of the date's boards solved — i.e. does solving THIS one
+ * finish the day? The streak belongs to the day, which is both boards,
+ * matching what the hub card has always called "done". It used to
+ * advance on whichever board was solved first, so a player who only
+ * ever did the haiku kept a streak the card never called finished.
+ */
+export function otherBoardsSolved(
+  dateKey: string,
+  difficulty: Difficulty,
+): Promise<boolean> {
+  return everyOtherBoardSolved(DIFFICULTIES, difficulty, (d) =>
+    boardRecord(dateKey, d),
+  );
+}
+
+/** The RECORD of a board on a date, whatever version wrote it — the
+ * day-completion questions here are about history, not resumability
+ * (see loadDayRecord). */
+function boardRecord(dateKey: string, difficulty: Difficulty) {
+  return daily.loadDayRecord(`${difficulty}:${dateKey}`);
+}
+
+/**
+ * Call when a board of a new daily is first opened. `played` counts
+ * DAYS, not boards — the two boards of one date are one day's play — so
+ * the other board opened later must not count again.
+ *
+ * Returns whether the day was counted, so the analytics `started` event
+ * can fire on exactly the same condition instead of once per board.
+ */
+export async function recordDailyStarted(
+  dateKey: string,
+  difficulty: Difficulty,
+): Promise<boolean> {
+  const first = await isFirstBoardOfDay(DIFFICULTIES, difficulty, (d) =>
+    boardRecord(dateKey, d),
+  );
+  if (!first) return false;
+  await daily.recordStarted();
+  return true;
+}
+
 export function loadStaleDailyProgress(
   difficulty: Difficulty,
   dateKey: string,
@@ -115,20 +160,19 @@ export function hasProgress(
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  const byDate: Record<string, DayProgress[]> = {};
-  for (const key of await store.keys("daily:")) {
-    const saved = validShape(await store.get<DayProgress>(key));
-    if (saved && saved.dateKey) {
-      (byDate[saved.dateKey] ??= []).push(saved);
-    }
-  }
+  // Two boards a day, so a date's saves arrive as a group of one or two.
+  const byDate = await daily.loadDaysByDate();
   const out: Record<string, ArchivedDay> = {};
   for (const [dateKey, saves] of Object.entries(byDate)) {
     const solvedSaves = saves.filter((s) => s.solved);
     const started = saves.some(hasProgress);
     out[dateKey] = {
       dateKey,
-      solved: solvedSaves.length > 0,
+      // The DAY, not any board of it — the same rule the hub card, the
+      // streak and Doublet's archive use. This said "any board solved",
+      // so the calendar called a haiku-only date finished while every
+      // other surface said it wasn't.
+      solved: solvedSaves.length === DIFFICULTIES.length,
       stale: saves.some((s) => !s.puzzleKey && (s.dictVersion ?? 0) !== DICT_VERSION),
       elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
       cellCount: started

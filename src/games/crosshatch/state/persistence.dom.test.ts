@@ -1,13 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   displayStreak,
+  isDaySolved,
   loadAllDailyProgress,
   loadDailyProgress,
   loadStaleDailyProgress,
   loadStats,
   recordDailySolved,
+  recordDailyStarted,
   recordWordsProgress,
+  resetDailyForReplay,
   saveDailyProgress,
+  type DailyProgress,
 } from "./persistence";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 
@@ -24,7 +28,7 @@ afterEach(() => {
 
 describe("stats recording", () => {
   it("a solve records stats correctly", async () => {
-    await recordDailySolved("2026-07-06", 14);
+    await recordDailySolved("2026-07-06", "normal", 14);
     const stats = await loadStats();
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(1);
@@ -34,42 +38,43 @@ describe("stats recording", () => {
   it("solving just after midnight still counts the session's day", async () => {
     // dateKey froze at mount before midnight; the clock is now past it.
     vi.setSystemTime(new Date(2026, 6, 7, 0, 0, 30));
-    const stats = await recordDailySolved("2026-07-06", 12);
+    const stats = await recordDailySolved("2026-07-06", "normal", 12);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06");
     // The next evening's solve continues the streak.
     vi.setSystemTime(new Date(2026, 6, 7, 21, 0, 0));
-    const next = await recordDailySolved("2026-07-07", 15);
+    const next = await recordDailySolved("2026-07-07", "normal", 15);
     expect(next.currentStreak).toBe(2);
   });
 
   it("solving an old archive day counts totals but not the streak", async () => {
-    await recordDailySolved("2026-07-06", 14);
-    const stats = await recordDailySolved("2026-07-01", 10);
+    await recordDailySolved("2026-07-06", "normal", 14);
+    const stats = await recordDailySolved("2026-07-01", "normal", 10);
     expect(stats.solved).toBe(2);
     expect(stats.totalWords).toBe(24);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-06"); // never moves back
   });
 
-  it("re-recording the same day is a no-op", async () => {
-    await recordDailySolved("2026-07-06", 14);
-    const stats = await recordDailySolved("2026-07-06", 14);
+  it("a day counts once however many times its boards report in", async () => {
+    await recordDailySolved("2026-07-06", "normal", 14);
+    const stats = await recordDailySolved("2026-07-06", "normal", 14);
     expect(stats.solved).toBe(1);
+    expect(stats.currentStreak).toBe(1);
   });
 
   it("an archive play of yesterday never borrows the grace day", async () => {
     // It's 2026-07-07; deliberately playing 07-06 from the archive
     // (allowGrace=false) counts totals but must not move the streak.
     vi.setSystemTime(new Date(2026, 6, 7, 12, 0, 0));
-    const stats = await recordDailySolved("2026-07-06", 10, false);
+    const stats = await recordDailySolved("2026-07-06", "normal", 10, false);
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(0);
     expect(stats.lastSolvedDate).toBeNull();
   });
 
   it("post-solve words credit the lifetime total", async () => {
-    await recordDailySolved("2026-07-06", 9);
+    await recordDailySolved("2026-07-06", "normal", 9);
     await recordWordsProgress(2);
     const stats = await loadStats();
     expect(stats.totalWords).toBe(11);
@@ -132,8 +137,8 @@ describe("stats recording", () => {
       solved: true,
       elapsedMs: 5000,
     });
-    expect(await loadDailyProgress("2026-07-06", "new-key")).toBeNull();
-    const record = await loadStaleDailyProgress("2026-07-06", "new-key");
+    expect(await loadDailyProgress("2026-07-06", "normal", "new-key")).toBeNull();
+    const record = await loadStaleDailyProgress("2026-07-06", "normal", "new-key");
     expect(record?.foundWords).toEqual(["kagu", "habu"]);
     expect(record?.solved).toBe(true);
   });
@@ -199,6 +204,196 @@ describe("stats recording", () => {
     const stats = await loadStats();
     expect(stats.played).toBe(3);
     expect(stats.totalWords).toBe(0); // missing field gets its default
+  });
+});
+
+describe("two boards a day", () => {
+  const HARD_DAY = "2026-08-20"; // on or after HARD_EPOCH
+  const save = (over: Partial<DailyProgress> & { dateKey: string }) =>
+    saveDailyProgress({
+      dictVersion: DICT_VERSION,
+      foundWords: [],
+      grid: {},
+      revealed: {},
+      solved: false,
+      elapsedMs: 0,
+      ...over,
+    });
+
+  it("keeps the two boards' saves apart", async () => {
+    await save({ dateKey: HARD_DAY, level: "normal", foundWords: ["out"] });
+    await save({ dateKey: HARD_DAY, level: "hard", foundWords: ["ounce"] });
+    expect((await loadDailyProgress(HARD_DAY, "normal"))?.foundWords).toEqual(["out"]);
+    expect((await loadDailyProgress(HARD_DAY, "hard"))?.foundWords).toEqual(["ounce"]);
+  });
+
+  it("stores the normal board under the bare dateKey it always used", async () => {
+    // Prefixing it would orphan every save already on a player's device.
+    await save({ dateKey: HARD_DAY, level: "normal", foundWords: ["out"] });
+    expect(
+      localStorage.getItem(`wg:v1:local:crosshatch:daily:${HARD_DAY}`),
+    ).not.toBeNull();
+  });
+
+  it("reads a pre-hard-board save, which carries no level, as normal", async () => {
+    localStorage.setItem(
+      "wg:v1:local:crosshatch:daily:2026-07-06",
+      JSON.stringify({
+        dateKey: "2026-07-06",
+        dictVersion: DICT_VERSION,
+        foundWords: ["out"],
+        grid: {},
+        revealed: {},
+        solved: true,
+        elapsedMs: 5000,
+      }),
+    );
+    expect((await loadDailyProgress("2026-07-06", "normal"))?.solved).toBe(true);
+  });
+
+  it("reads any non-hard level as the normal board", async () => {
+    // The board was briefly called "standard". A save carrying that —
+    // or any level this build doesn't know — must resolve to the normal
+    // board rather than route to a key nothing reads, which would be
+    // indistinguishable from lost progress.
+    localStorage.setItem(
+      `wg:v1:local:crosshatch:daily:${HARD_DAY}`,
+      JSON.stringify({
+        dateKey: HARD_DAY,
+        level: "standard",
+        dictVersion: DICT_VERSION,
+        foundWords: ["out"],
+        grid: {},
+        revealed: {},
+        solved: true,
+        elapsedMs: 5000,
+      }),
+    );
+    expect((await loadDailyProgress(HARD_DAY, "normal"))?.solved).toBe(true);
+  });
+
+  it("a version bump never un-finishes a board of the day", async () => {
+    // The day-completion questions are about HISTORY. Asking them
+    // through loadDailyProgress answered them with a version test — and
+    // with no puzzleKey to compare, ANY game's DICT_VERSION bump made a
+    // good sibling save read as absent. The day would then never
+    // complete (losing the streak) and `played` would count the date
+    // twice.
+    await save({
+      dateKey: HARD_DAY,
+      level: "hard",
+      solved: true,
+      dictVersion: DICT_VERSION - 1,
+    });
+    await save({ dateKey: HARD_DAY, level: "normal", solved: true });
+    expect(await isDaySolved(HARD_DAY)).toBe(true);
+
+    const stats = await recordDailySolved(HARD_DAY, "normal", 10);
+    expect(stats.solved).toBe(1);
+    // ...and the date does not count as a second play.
+    expect(await recordDailyStarted(HARD_DAY, "normal")).toBe(false);
+  });
+
+  it("needs both boards before the day is solved", async () => {
+    await save({ dateKey: HARD_DAY, level: "normal", solved: true });
+    expect(await isDaySolved(HARD_DAY)).toBe(false);
+    await save({ dateKey: HARD_DAY, level: "hard", solved: true });
+    expect(await isDaySolved(HARD_DAY)).toBe(true);
+  });
+
+  it("leaves days before the hard board one-board days, for good", async () => {
+    // The guarantee that protects history: a day finished before the
+    // hard board existed must not become unsolved — or break a streak —
+    // because a second board was invented afterwards.
+    await save({ dateKey: "2026-07-06", solved: true });
+    expect(await isDaySolved("2026-07-06")).toBe(true);
+    const days = await loadAllDailyProgress();
+    expect(days["2026-07-06"].boards).toBe(1);
+    expect(days["2026-07-06"].solved).toBe(true);
+  });
+
+  it("moves the streak only when the day's second board lands", async () => {
+    vi.setSystemTime(new Date(2026, 7, 20, 12, 0, 0)); // 2026-08-20
+    await save({ dateKey: HARD_DAY, level: "normal", solved: true });
+    let stats = await recordDailySolved(HARD_DAY, "normal", 12);
+    expect(stats.solved).toBe(0); // one board is not a day
+    expect(stats.currentStreak).toBe(0);
+    expect(stats.totalWords).toBe(12); // but the words are the player's
+
+    await save({ dateKey: HARD_DAY, level: "hard", solved: true });
+    stats = await recordDailySolved(HARD_DAY, "hard", 15);
+    expect(stats.solved).toBe(1);
+    expect(stats.currentStreak).toBe(1);
+    expect(stats.totalWords).toBe(27);
+  });
+
+  it("counts a two-board date as one play, not two", async () => {
+    vi.setSystemTime(new Date(2026, 7, 20, 12, 0, 0));
+    expect(await recordDailyStarted(HARD_DAY, "normal")).toBe(true);
+    await save({ dateKey: HARD_DAY, level: "normal", foundWords: ["out"] });
+    // Opening the hard board later is the same day's play. The return
+    // value gates the analytics event, so it has to say so too — the
+    // stat and the event must not drift apart again.
+    expect(await recordDailyStarted(HARD_DAY, "hard")).toBe(false);
+    expect((await loadStats()).played).toBe(1);
+  });
+
+  it("rolls both boards up into one archive day", async () => {
+    await save({
+      dateKey: HARD_DAY,
+      level: "normal",
+      foundWords: ["out", "tin"],
+      revealed: { out: [0] },
+      totalWords: 12,
+      elapsedMs: 5000,
+      invalids: 1,
+      sessions: 1,
+      solved: true,
+    });
+    await save({
+      dateKey: HARD_DAY,
+      level: "hard",
+      foundWords: ["ounce"],
+      revealed: {},
+      totalWords: 15,
+      elapsedMs: 7000,
+      invalids: 2,
+      sessions: 1,
+      solved: false,
+    });
+    const day = (await loadAllDailyProgress())[HARD_DAY];
+    expect(day.boards).toBe(2);
+    expect(day.solvedCount).toBe(1);
+    expect(day.solved).toBe(false); // the hard board is still standing
+    expect(day.foundWords).toHaveLength(3);
+    expect(day.totalWords).toBe(27);
+    expect(day.elapsedMs).toBe(12000);
+    expect(day.hintLetters).toBe(1);
+    expect(day.invalids).toBe(3);
+  });
+
+  it("charts a gap when only one board carries a counter", async () => {
+    // A partial sum presented as the day's total is as fake as a zero.
+    await save({
+      dateKey: HARD_DAY,
+      level: "normal",
+      solved: true,
+      invalids: 2,
+      sessions: 1,
+    });
+    await save({ dateKey: HARD_DAY, level: "hard", solved: true }); // no counters
+    const day = (await loadAllDailyProgress())[HARD_DAY];
+    expect(day.invalids).toBeNull();
+    expect(day.sessions).toBeNull();
+    expect(day.solved).toBe(true);
+  });
+
+  it("replaying one board leaves the other alone", async () => {
+    await save({ dateKey: HARD_DAY, level: "normal", foundWords: ["out"], solved: true });
+    await save({ dateKey: HARD_DAY, level: "hard", foundWords: ["ounce"], solved: true });
+    await resetDailyForReplay(HARD_DAY, "hard");
+    expect((await loadDailyProgress(HARD_DAY, "normal"))?.foundWords).toEqual(["out"]);
+    expect((await loadDailyProgress(HARD_DAY, "hard"))?.foundWords).toEqual([]);
   });
 });
 

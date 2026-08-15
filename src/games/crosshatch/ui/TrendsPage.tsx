@@ -11,18 +11,18 @@ import {
 } from "../state/persistence";
 
 /**
- * Hint letters, or undefined for a save that predates the field.
+ * The day's counters come pre-summed across its boards, as `null` when
+ * any board's save predates the counter — a partial sum presented as a
+ * day's total is as fake as a zero. `solvedCounter` speaks `undefined`
+ * for that gap, so this is the one translation between them.
  *
- * `validDay` admits a save with no `revealed` at all, and folding that to
- * 0 charted a hint-free day the player never had — a best-ever mark on a
- * lower-is-better line, and an average dragged toward zero by days that
- * hold no hint data whatsoever. `solvedCounter` turns undefined into the
- * gap it should always have been.
+ * The distinction that has to survive: a save with NO `revealed` field
+ * is unknown (a gap), while an empty one is a day that recorded hints
+ * and used none (a real 0). The roll-up keeps them apart; folding them
+ * together would draw a hint-free day the player never had — best-ever
+ * on a lower-is-better line, and an average dragged toward zero.
  */
-const hintLetters = (d: ArchivedDay) =>
-  d.revealed === undefined
-    ? undefined
-    : Object.values(d.revealed).reduce((a, p) => a + p.length, 0);
+const gap = (n: number | null) => n ?? undefined;
 
 export const config: GameTrendsConfig<ArchivedDay> = {
   gameId: "crosshatch",
@@ -32,6 +32,9 @@ export const config: GameTrendsConfig<ArchivedDay> = {
   metrics: [
     {
       key: "time",
+      // Both boards' time, and only for a day where both were solved —
+      // half a day's play charted against whole ones would read as a
+      // personal best that never happened.
       label: "Solve time",
       value: (d) => (d.solved && !d.stale ? d.elapsedMs : null),
       format: formatDuration,
@@ -42,19 +45,22 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       label: "Words found",
       value: (d) => (d.foundWords.length > 0 ? d.foundWords.length : null),
     },
-    solvedCounter<ArchivedDay>("hints", "Hint letters", hintLetters, {
-      lowerIsBetter: true,
-    }),
+    solvedCounter<ArchivedDay>(
+      "hints",
+      "Hint letters",
+      (d) => gap(d.hintLetters),
+      { lowerIsBetter: true },
+    ),
     solvedCounter<ArchivedDay>(
       "invalids",
       "Rejected words",
-      (d) => d.invalids,
+      (d) => gap(d.invalids),
       { lowerIsBetter: true },
     ),
     solvedCounter<ArchivedDay>(
       "sessions",
       "Sessions to solve",
-      (d) => d.sessions,
+      (d) => gap(d.sessions),
       { lowerIsBetter: true },
     ),
   ],

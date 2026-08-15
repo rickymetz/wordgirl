@@ -3,7 +3,8 @@ import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { dailySeed, generateCrosshatch } from "../engine/generator";
+import { dailySeed, generateCrosshatch, parseLevel } from "../engine/generator";
+import type { Level } from "../engine/types";
 import { tutorialPuzzle } from "../engine/tutorial";
 import { isSolved, uniqueWords } from "../engine/scoring";
 import {
@@ -18,8 +19,8 @@ import {
 import { gameReducer, initialState, type GameState } from "./reducer";
 
 export type GameMode =
-  | { kind: "daily"; dateKey: string }
-  | { kind: "archive"; dateKey: string }
+  | { kind: "daily"; dateKey: string; level: Level }
+  | { kind: "archive"; dateKey: string; level: Level }
   | { kind: "practice"; seed: string }
   | { kind: "tutorial" };
 
@@ -28,14 +29,22 @@ function isPersisted(mode: GameMode): boolean {
   return mode.kind === "daily" || mode.kind === "archive";
 }
 
+/** The board a mode plays. Practice carries its level in the seed; the
+ * tutorial only ever teaches the normal board. */
+function levelOfMode(mode: GameMode): Level {
+  if (mode.kind === "daily" || mode.kind === "archive") return mode.level;
+  return mode.kind === "practice" ? parseLevel(mode.seed) : "normal";
+}
+
 export function useCrosshatchGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date and
   // remount on rollover) — it must never drift mid-session.
   const persisted = isPersisted(mode);
   const dateKey =
     mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : "";
+  const level = levelOfMode(mode);
   const seed = persisted
-    ? dailySeed(dateKey)
+    ? dailySeed(dateKey, level)
     : mode.kind === "practice"
       ? mode.seed
       : "tutorial";
@@ -98,6 +107,7 @@ export function useCrosshatchGame(mode: GameMode) {
     }
     void saveDailyProgress({
       dateKey,
+      level,
       dictVersion: DICT_VERSION,
       puzzleKey: pKey,
       foundWords: s.found,
@@ -122,7 +132,9 @@ export function useCrosshatchGame(mode: GameMode) {
       if (!persisted) return;
       persistNow(stateRef.current);
     },
-    resetKey: dateKey,
+    // Two boards a day: the clock must reset when the player switches
+    // between them, not only when the date rolls.
+    resetKey: `${dateKey}:${level}`,
   });
 
   // Hydrate from storage once. StrictMode-safe: no run-once ref — the
@@ -132,7 +144,7 @@ export function useCrosshatchGame(mode: GameMode) {
     let cancelled = false;
     (async () => {
       try {
-        const saved = await loadDailyProgress(dateKey, pKey);
+        const saved = await loadDailyProgress(dateKey, level, pKey);
         if (cancelled) return;
         if (saved) {
           alreadySolvedRef.current = saved.solved;
@@ -169,7 +181,7 @@ export function useCrosshatchGame(mode: GameMode) {
           // A save from an older dictionary is a historical record: the
           // day restarts fresh but was already counted as played — don't
           // re-count, and leave the record in place until play begins.
-          const stale = await loadStaleDailyProgress(dateKey, pKey);
+          const stale = await loadStaleDailyProgress(dateKey, level, pKey);
           if (cancelled) return;
           if (stale) {
             staleRecordRef.current = true;
@@ -180,8 +192,11 @@ export function useCrosshatchGame(mode: GameMode) {
             hydratedRef.current = true;
             return;
           }
-          void recordDailyStarted();
-          trackStarted("crosshatch");
+          // Fires only when the DAY was counted, never once per board:
+          // the event and the `played` stat have to mean the same thing.
+          void recordDailyStarted(dateKey, level).then((counted) => {
+            if (counted) trackStarted("crosshatch");
+          });
           sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
@@ -257,6 +272,7 @@ export function useCrosshatchGame(mode: GameMode) {
       creditedRef.current = state.found.length;
       void recordDailySolved(
         dateKey,
+        level,
         state.found.length,
         mode.kind === "daily",
       );

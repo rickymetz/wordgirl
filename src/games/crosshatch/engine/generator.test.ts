@@ -9,9 +9,10 @@ import {
   dailySeed,
   enumerateCombos,
   generateCrosshatch,
+  parseLevel,
 } from "./generator";
 import type { Shape } from "./types";
-import { cellKey, comboKey, slotCells } from "./types";
+import { cellKey, comboKey, LEVELS, slotCells } from "./types";
 
 const rawDict = readFileSync(
   new URL("../../../lib/words/dictionary.txt", import.meta.url),
@@ -102,19 +103,26 @@ describe("generateCrosshatch", () => {
     for (let i = 0; i < 120; i++) {
       const date = new Date(2026, 6, 6 + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const words = new Set(generateCrosshatch(dict, dailySeed(key)).combos.flat());
-      const bonus = [...words].filter((w) => bonusWords.has(w));
-      expect(bonus, `${key}: bonus-tier words required`).toEqual([]);
+      for (const level of LEVELS) {
+        const words = new Set(
+          generateCrosshatch(dict, dailySeed(key, level)).combos.flat(),
+        );
+        const bonus = [...words].filter((w) => bonusWords.has(w));
+        expect(bonus, `${key} ${level}: bonus-tier words required`).toEqual([]);
+      }
     }
   }, 60_000);
 
-  it("sweep over 200 consecutive dates: all constraints hold", () => {
+  it.each(LEVELS)(
+    "%s: sweep over 200 consecutive dates, all constraints hold",
+    (level) => {
     const start = Date.now();
     for (let i = 0; i < 200; i++) {
       const date = new Date(2026, 0, 1 + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const puzzle = generateCrosshatch(dict, dailySeed(key));
+      const puzzle = generateCrosshatch(dict, dailySeed(key, level));
       const { shape, givens, combos } = puzzle;
+      expect(puzzle.level).toBe(level);
 
       // Distinct-word count in band; combos unique.
       const wordCount = new Set(combos.flat()).size;
@@ -170,5 +178,29 @@ describe("generateCrosshatch", () => {
     }
     // Generation happens on-device at load — the sweep must stay quick.
     expect(Date.now() - start).toBeLessThan(30_000);
-  }, 60_000);
+    },
+    60_000,
+  );
+
+  it("the two boards of a date are different puzzles", () => {
+    for (const key of ["2026-08-15", "2026-09-01", "2026-12-25"]) {
+      const std = generateCrosshatch(dict, dailySeed(key, "normal"));
+      const hard = generateCrosshatch(dict, dailySeed(key, "hard"));
+      expect(puzzleKey([std.givens, std.combos])).not.toBe(
+        puzzleKey([hard.givens, hard.combos]),
+      );
+      // And the hard one is the harder one: five-letter lines showing
+      // a smaller share of themselves than the normal board's.
+      for (const slot of hard.shape.slots) expect(slot.len).toBe(5);
+    }
+  });
+
+  it("a seed with no level is the normal board", () => {
+    // Every save and every archived day was written against this seed
+    // string; parsing it as anything else would rewrite history.
+    expect(dailySeed("2026-08-20")).toBe("daily:2026-08-20");
+    expect(parseLevel("daily:2026-08-20")).toBe("normal");
+    expect(parseLevel("daily:hard:2026-08-20")).toBe("hard");
+    expect(generateCrosshatch(dict, "daily:2026-08-20").level).toBe("normal");
+  });
 });

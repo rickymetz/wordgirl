@@ -7,6 +7,7 @@ import {
   CircleCheck,
   CircleHelp,
   CornerDownLeft,
+  Layers,
   Lightbulb,
   ListChecks,
   Lock,
@@ -36,6 +37,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
   displayStreak,
+  isDaySolved,
   loadDailyProgress,
   loadStats,
   loadTutorialSeen,
@@ -50,8 +52,8 @@ import {
   slotWord,
   unfoundWords,
 } from "../state/reducer";
-import type { Slot } from "../engine/types";
-import { cellKey, slotCells } from "../engine/types";
+import type { Level, Slot } from "../engine/types";
+import { cellKey, LEVEL_LABEL, LEVELS, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
 import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
@@ -68,18 +70,30 @@ function buildShareText(
   hints: number,
   dateKey: string,
   elapsedMs: number,
+  level: Level,
 ): string {
   const date = formatShareDate(dateKey);
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
     `🧺 Crosshatch — ${date}`,
-    `${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${LEVEL_LABEL[level]} · ${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
 
+/** Height the board budget gives up to the pill row, px at default text
+ * size: a 24px pill plus its air, less the 6px the title row gives back
+ * by closing up above it. The grid's CHROME_H was measured without the
+ * row, so without this it would come out of the page rather than out of
+ * the board. */
+const LEVEL_PILLS_H = 26;
+
 interface Props {
   mode: GameMode;
+  /** Daily/archive: the board on screen and how to switch boards. Absent
+   * on dates that carry only the normal board. */
+  level?: Level;
+  onLevelChange?: (level: Level) => void;
   onNewPuzzle?: () => void;
   /** Tutorial: replay the script from step one. */
   onRestartTutorial?: () => void;
@@ -87,7 +101,12 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onRestartTutorial }: Props) {
+export function GameScreen({
+  mode,
+  level,
+  onLevelChange,
+  onRestartTutorial,
+}: Props) {
   const {
     state,
     dispatch,
@@ -114,13 +133,36 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   const [wordsOpen, setWordsOpen] = useState(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
+  // "Unsolved" means the DAY — a player who has finished the normal
+  // board but not the hard one still has today's puzzle to play.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
   useEffect(() => {
     if (mode.kind !== "practice") return;
-    void loadDailyProgress(localDateKey()).then((saved) =>
-      setDailySolved(saved?.solved ?? false),
-    );
+    void isDaySolved(localDateKey()).then(setDailySolved);
   }, [mode.kind]);
+
+  // The date's OTHER board, so a finished board can hand the player on
+  // to the one still standing between them and the day.
+  const [otherBoardSolved, setOtherBoardSolved] = useState<boolean | null>(
+    null,
+  );
+  const otherLevel: Level | null =
+    level === undefined ? null : level === "normal" ? "hard" : "normal";
+  // The date on screen — NOT localDateKey(). They agree on the daily
+  // only until midnight passes with the app open, and an archive play
+  // is some other date entirely.
+  const boardDateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : null;
+  useEffect(() => {
+    // Archive dates carry two boards too, and a finished board there
+    // needs the same tick and the same way over.
+    if (boardDateKey === null || otherLevel === null) return;
+    void loadDailyProgress(boardDateKey, otherLevel).then((saved) =>
+      setOtherBoardSolved(saved?.solved ?? false),
+    );
+    // Re-checked when this board solves: the player may have done the
+    // other one first, in which case the day is finished here.
+  }, [boardDateKey, otherLevel, state.solved]);
 
   // Daily hints are free to use but marked: the first one warns that
   // the day's result will carry a hint count.
@@ -427,7 +469,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         </span>
       </header>
 
-      <div className="flex items-baseline gap-2.5 pb-3">
+      {/* The pill row belongs to the title, so it closes up under it —
+          which also buys back the height the row costs. */}
+      <div
+        className={`flex items-baseline gap-2.5 ${
+          level !== undefined && onLevelChange ? "pb-1.5" : "pb-3"
+        }`}
+      >
         <h1 className="text-2xl font-bold tracking-tight">Crosshatch</h1>
         {/* The game's mark: a little hatch. */}
         <svg
@@ -461,6 +509,45 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           </span>
         )}
       </div>
+
+      {/* Board pills, on their own line under the title — the same place
+          Serpentine puts haiku/poem. The row is kept tight (and folded
+          into the grid's height budget below) because at the Huge text
+          setting the grid is already down on its 34px touch floor and
+          can give nothing back to pay for it. */}
+      {level !== undefined && onLevelChange && (
+        <div
+          className="flex gap-1 pb-2 [@media(max-height:720px)]:pb-1"
+          role="group"
+          aria-label="Board"
+        >
+          {LEVELS.map((l) => {
+            const solved =
+              l === level ? state.solved : (otherBoardSolved ?? false);
+            return (
+              <button
+                key={l}
+                aria-pressed={l === level}
+                className={[
+                  "relative rounded-full px-3.5 py-1 text-sm font-semibold",
+                  "touch-manipulation select-none transition-colors",
+                  // Small pills, so the 44px touch target comes from an
+                  // invisible expansion rather than padding.
+                  "after:absolute after:-inset-x-1 after:-inset-y-2.5",
+                  l === level
+                    ? "bg-accent text-surface"
+                    : "bg-surface-tint text-ink-soft",
+                ].join(" ")}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => onLevelChange(l)}
+              >
+                {LEVEL_LABEL[l]}
+                {solved ? " ✓" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isTutorial && (
         <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
@@ -499,7 +586,10 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               has moved on from browsing to playing. */}
           <GridBoard
             state={state}
-            reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
+            reservedH={
+              (isTutorial ? TUTORIAL_BANNER_H : 0) +
+              (level !== undefined && onLevelChange ? LEVEL_PILLS_H : 0)
+            }
             onFocus={(row, col) => {
               setWordsOpen(false);
               dispatch({ type: "focusCell", row, col });
@@ -537,7 +627,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">Solved</p>
+            <p className="text-lg font-bold text-ink">
+              {level !== undefined ? `${LEVEL_LABEL[level]} solved` : "Solved"}
+            </p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(solvedElapsedMs)}
@@ -547,6 +639,20 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               {state.found.length}/{total} words
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
+            {/* One board down, one to go: the day only counts when both
+                are solved, so say so and offer the way over. */}
+            {otherLevel !== null &&
+              onLevelChange &&
+              otherBoardSolved === false && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => onLevelChange(otherLevel)}
+                  className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-surface active:scale-95"
+                >
+                  Play the {LEVEL_LABEL[otherLevel]} board
+                </button>
+              )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               mode.dateKey &&
               solvedElapsedMs !== null && (
@@ -557,11 +663,15 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                   hintCount,
                   mode.dateKey,
                   solvedElapsedMs,
+                  puzzle.level,
                 )}
                 gameId="crosshatch"
               />
             )}
-            {isDaily && (
+            {/* The streak belongs to the DAY, and the day needs both
+                boards — showing it after the first would report a streak
+                the player hasn't earned yet. */}
+            {isDaily && (otherLevel === null || otherBoardSolved) && (
               <DailyOutro gameId="crosshatch" loadStreak={outroStreak} />
             )}
           </motion.div>
@@ -715,15 +825,34 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               },
               {
                 Icon: Target,
-                title: "Solve the day",
+                title: "Solve the board",
                 body: (
                   <>
-                    Find <Key>every word</Key> to solve the day.{" "}
+                    Find <Key>every word</Key> to solve the board.{" "}
                     <Key>Your words</Key> lists them as ?-blanks — tap one,
                     then Hint, to reveal its next letter.
                   </>
                 ),
               },
+              // Only worth saying where there IS a second board: on a
+              // pre-HARD_EPOCH archive date the day is one board, and
+              // promising two would be a lie.
+              ...(level !== undefined
+                ? [
+                    {
+                      Icon: Layers,
+                      title: "Two boards",
+                      body: (
+                        <>
+                          Each day has a <Key>Normal</Key> board and a{" "}
+                          <Key>Hard</Key> board — same puzzle idea, longer
+                          lines and fewer letters given. Solve{" "}
+                          <Key>both</Key> to finish the day.
+                        </>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         )}

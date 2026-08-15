@@ -1,5 +1,8 @@
 export type Difficulty = "haiku" | "poem";
 
+/** The two boards a day carries, in board order. */
+export const DIFFICULTIES: Difficulty[] = ["haiku", "poem"];
+
 export const MAX_ROWS = 8;
 export const MAX_COLS = 10;
 

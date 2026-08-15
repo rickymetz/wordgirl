@@ -14,8 +14,13 @@ import {
 /** The archive row's play-state line. Exported for its test. */
 export function rowStatus(day: ArchivedDay): { text: string; done: boolean } {
   if (!day.solved) {
+    // A two-board date says which half is standing; a one-board date
+    // (anything before HARD_EPOCH) reads exactly as it always has.
     return {
-      text: `In progress · ${day.foundWords.length} words`,
+      text:
+        day.boards > 1
+          ? `${day.solvedCount}/${day.boards} boards · ${day.foundWords.length} words`
+          : `In progress · ${day.foundWords.length} words`,
       done: false,
     };
   }
@@ -33,7 +38,7 @@ export function rowStatus(day: ArchivedDay): { text: string; done: boolean } {
   }
   return {
     text: `${day.foundWords.length}/${day.totalWords}${
-      Object.keys(day.revealed ?? {}).length > 0 ? " · used hint" : ""
+      (day.hintLetters ?? 0) > 0 ? " · used hint" : ""
     }`,
     done: true,
   };

@@ -48,8 +48,21 @@ The field `puzzleKey` is a deterministic fingerprint of the puzzle for a given d
 - `saveDay(progress, opts?)` — writes a day save, with the guards below.
 - `loadStats()` and `updateStats(fn)` — the statistics blob. Loads merge over `emptyStats`, so new fields ship safely. Updates go through an internal lock, one at a time.
 - `recordStarted(dateKey)` — counts a played day one time.
+- `loadDaysByDate()` — every saved day, grouped by date. This is the first step of every archive roll-up. A game with one board a day gets groups of one; the multi-board games get one entry per board, which is what their listings merge. A save with no `dateKey` is skipped.
 - `loadCoachSeen()` and `markCoachSeen()` — the instructions-seen flag.
 - `store` and `validShape` — the raw store and the shared shape check, for game-specific extras.
+
+### The multi-board rules
+
+Three games give the player more than one board a day: Crosshatch (2), Serpentine (2), Doublet (3). **The day is the unit.** `played`, `solved` and the streak all count days, not boards, in every game. Three shared helpers hold that rule so it cannot drift apart again:
+
+- `isFirstBoardOfDay(boards, current, load)` — does opening this board start a new day? Gates `played`, and the analytics `started` event fires on the same answer.
+- `everyOtherBoardSolved(boards, current, load)` — does solving this board finish the day? Gates `solved` and the streak.
+- `sumAcrossBoards(saves, read)` — a counter summed across a date's boards, or `null` when any board predates it. A partial sum presented as a day's total is as fake as a zero, so a mixed day charts as a gap.
+
+Both of the first two ask about the OTHER boards and take the calling board as solved or present by construction. That board's own save is written by a different effect, and racing it would drop a streak at random.
+
+One historical wrinkle: Doublet and Serpentine counted `played` and `solved` per BOARD until this rule landed, so totals from before it are larger than the days they represent. Crosshatch is unaffected — every Crosshatch day before its Hard board had exactly one board.
 
 ### The save guards, and the failures they prevent
 

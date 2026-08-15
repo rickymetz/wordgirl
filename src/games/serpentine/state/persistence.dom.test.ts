@@ -7,6 +7,8 @@ import {
   loadDailyProgress,
   loadStaleDailyProgress,
   loadStats,
+  otherBoardsSolved,
+  recordDailyStarted,
   saveDailyProgress,
   updateStats,
   store,
@@ -128,6 +130,48 @@ describe("stats recording", () => {
   });
 });
 
+describe("the day is both boards", () => {
+  it("reports whether solving this board finishes the day", async () => {
+    // What gates the streak: it used to advance on whichever board was
+    // solved first, so a player who only ever did the haiku kept a
+    // streak the hub card never called finished.
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(false);
+
+    await saveDailyProgress(day("poem", { solved: true }));
+    // The poem is done, so finishing the haiku finishes the day...
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(true);
+    // ...but finishing the poem alone does not, with no haiku saved.
+    expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(false);
+
+    await saveDailyProgress(day("haiku", { solved: true }));
+    expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(true);
+  });
+
+  it("calls the archive day done only when BOTH boards are", async () => {
+    // The calendar, the hub card and the streak have to agree. This
+    // said "any board solved", so a haiku-only date showed as finished
+    // in the archive while every other surface said it was not.
+    await saveDailyProgress(day("haiku", { solved: true, cells: [{ row: 0, col: 0 }] }));
+    expect((await loadAllDailyProgress())["2026-07-12"].solved).toBe(false);
+    await saveDailyProgress(day("poem", { solved: true, cells: [{ row: 0, col: 0 }] }));
+    expect((await loadAllDailyProgress())["2026-07-12"].solved).toBe(true);
+  });
+
+  it("counts a date as one play however many boards you open", async () => {
+    expect(await recordDailyStarted("2026-07-12", "haiku")).toBe(true);
+    await saveDailyProgress(day("haiku"));
+    // The poem opened later is the same day's play. The return value
+    // gates the analytics event, so it has to say so too.
+    expect(await recordDailyStarted("2026-07-12", "poem")).toBe(false);
+    expect((await loadStats()).played).toBe(1);
+  });
+
+  it("does not count a started-but-unsolved sibling", async () => {
+    await saveDailyProgress(day("poem", { cells: [{ row: 0, col: 0 }] }));
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(false);
+  });
+});
+
 describe("archive roll-up", () => {
   it("merges haiku and poem under their DATE key", async () => {
     await saveDailyProgress(
@@ -146,7 +190,10 @@ describe("archive roll-up", () => {
     const days = await loadAllDailyProgress();
     expect(Object.keys(days)).toEqual(["2026-07-12"]);
     const rolled = days["2026-07-12"];
-    expect(rolled.solved).toBe(true);
+    // The haiku is solved and the poem is not, so the DAY is not — the
+    // rule the hub card and the streak use. This asserted `true` while
+    // the roll-up meant "any board solved".
+    expect(rolled.solved).toBe(false);
     expect(rolled.elapsedMs).toBe(45_000);
     expect(rolled.cellCount).toBe(2);
     expect(rolled.foundWords).toEqual(["h001"]);

@@ -1,5 +1,8 @@
 export type Difficulty = "easy" | "medium" | "hard";
 
+/** The three boards a day carries, in board order. */
+export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+
 export type SlotDir = "across" | "down";
 
 export interface Cell {

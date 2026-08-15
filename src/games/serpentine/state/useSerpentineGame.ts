@@ -12,9 +12,10 @@ import { gameReducer, initialState, isStartState, type GameState } from "./reduc
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
+  otherBoardsSolved,
   saveDailyProgress,
   serpentinePuzzleKey,
-  recordStarted,
+  recordDailyStarted,
   updateStats,
   type DayProgress,
   type SerpentineStats,
@@ -109,8 +110,12 @@ export function useSerpentineGame(mode: GameMode) {
           staleRecordRef.current = true;
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
         } else {
-          void recordStarted();
-          trackStarted("serpentine");
+          // `played` counts DAYS: the date's other board opening later
+          // is the same day's play. The analytics event fires on the
+          // same condition, so the two can't drift apart.
+          void recordDailyStarted(dateKey, difficulty).then((counted) => {
+            if (counted) trackStarted("serpentine");
+          });
         }
         hydrated.current = true;
       } else {
@@ -179,18 +184,24 @@ export function useSerpentineGame(mode: GameMode) {
         elapsedMs: elapsed,
         statsRecorded: true,
         solvedHour: new Date().getHours(),
-      } as DayProgress).then(() => {
+      } as DayProgress).then(async () => {
         const isDaily = mode.kind === "daily";
+        // The streak belongs to the DAY, and a day is both boards — the
+        // rule the hub card has always used for "done".
+        const dayComplete = await otherBoardsSolved(dateKey, difficulty);
         void updateStats((s: SerpentineStats) => {
         const bestKey =
           difficulty === "haiku" ? "bestTimeHaiku" : "bestTimePoem";
         const bestTime = s[bestKey];
         return {
           ...s,
-          solved: s.solved + 1,
+          // Best time is per BOARD — it is that board's record. `solved`
+          // and the streak count DAYS, and a day is both boards.
           [bestKey]:
             bestTime === null || elapsed < bestTime ? elapsed : bestTime,
-          ...streakAdvance(s, dateKey, isDaily),
+          ...(dayComplete && s.lastSolvedDate !== dateKey
+            ? { solved: s.solved + 1, ...streakAdvance(s, dateKey, isDaily) }
+            : {}),
         };
       });
       });

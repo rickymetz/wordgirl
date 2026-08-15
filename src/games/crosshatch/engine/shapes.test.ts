@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { SHAPES } from "./shapes";
+import { HARD_SHAPES, SHAPES } from "./shapes";
 import { cellKey, slotCells } from "./types";
 
-describe("shape library", () => {
+/** Both libraries obey the shared rules; the hard one adds its own. */
+const LIBRARIES = [
+  { name: "normal", shapes: SHAPES },
+  { name: "hard", shapes: HARD_SHAPES },
+];
+const ALL = LIBRARIES.flatMap((l) => l.shapes);
+
+describe.each(LIBRARIES)("shape library: $name", ({ shapes: SHAPES }) => {
   it("every shape: 3-5 slots of len 3-5, inside a 5x5 grid", () => {
     for (const shape of SHAPES) {
       expect(shape.slots.length).toBeGreaterThanOrEqual(3);
@@ -58,5 +65,27 @@ describe("shape library", () => {
 
   it("shape ids are unique (seeds pick by index, names by id)", () => {
     expect(new Set(SHAPES.map((s) => s.id)).size).toBe(SHAPES.length);
+  });
+});
+
+describe("the hard library", () => {
+  it("runs every line at five letters", () => {
+    // The whole point of the board: longer lines showing a smaller
+    // share of themselves. A shorter line here would be an easy one.
+    for (const shape of HARD_SHAPES) {
+      for (const slot of shape.slots) {
+        expect(slot.len, `${shape.id} has a ${slot.len}-letter line`).toBe(5);
+      }
+    }
+  });
+
+  it("crosses more than the normal library does", () => {
+    for (const shape of HARD_SHAPES) {
+      expect(shape.slots.length, shape.id).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("shares no id with the normal library", () => {
+    expect(new Set(ALL.map((s) => s.id)).size).toBe(ALL.length);
   });
 });
