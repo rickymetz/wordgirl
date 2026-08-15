@@ -147,6 +147,16 @@ describe("the day is both boards", () => {
     expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(true);
   });
 
+  it("calls the archive day done only when BOTH boards are", async () => {
+    // The calendar, the hub card and the streak have to agree. This
+    // said "any board solved", so a haiku-only date showed as finished
+    // in the archive while every other surface said it was not.
+    await saveDailyProgress(day("haiku", { solved: true, cells: [{ row: 0, col: 0 }] }));
+    expect((await loadAllDailyProgress())["2026-07-12"].solved).toBe(false);
+    await saveDailyProgress(day("poem", { solved: true, cells: [{ row: 0, col: 0 }] }));
+    expect((await loadAllDailyProgress())["2026-07-12"].solved).toBe(true);
+  });
+
   it("counts a date as one play however many boards you open", async () => {
     expect(await recordDailyStarted("2026-07-12", "haiku")).toBe(true);
     await saveDailyProgress(day("haiku"));
@@ -180,7 +190,10 @@ describe("archive roll-up", () => {
     const days = await loadAllDailyProgress();
     expect(Object.keys(days)).toEqual(["2026-07-12"]);
     const rolled = days["2026-07-12"];
-    expect(rolled.solved).toBe(true);
+    // The haiku is solved and the poem is not, so the DAY is not — the
+    // rule the hub card and the streak use. This asserted `true` while
+    // the roll-up meant "any board solved".
+    expect(rolled.solved).toBe(false);
     expect(rolled.elapsedMs).toBe(45_000);
     expect(rolled.cellCount).toBe(2);
     expect(rolled.foundWords).toEqual(["h001"]);

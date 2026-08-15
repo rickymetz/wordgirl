@@ -272,6 +272,28 @@ describe("two boards a day", () => {
     expect((await loadDailyProgress(HARD_DAY, "normal"))?.solved).toBe(true);
   });
 
+  it("a version bump never un-finishes a board of the day", async () => {
+    // The day-completion questions are about HISTORY. Asking them
+    // through loadDailyProgress answered them with a version test — and
+    // with no puzzleKey to compare, ANY game's DICT_VERSION bump made a
+    // good sibling save read as absent. The day would then never
+    // complete (losing the streak) and `played` would count the date
+    // twice.
+    await save({
+      dateKey: HARD_DAY,
+      level: "hard",
+      solved: true,
+      dictVersion: DICT_VERSION - 1,
+    });
+    await save({ dateKey: HARD_DAY, level: "normal", solved: true });
+    expect(await isDaySolved(HARD_DAY)).toBe(true);
+
+    const stats = await recordDailySolved(HARD_DAY, "normal", 10);
+    expect(stats.solved).toBe(1);
+    // ...and the date does not count as a second play.
+    expect(await recordDailyStarted(HARD_DAY, "normal")).toBe(false);
+  });
+
   it("needs both boards before the day is solved", async () => {
     await save({ dateKey: HARD_DAY, level: "normal", solved: true });
     expect(await isDaySolved(HARD_DAY)).toBe(false);

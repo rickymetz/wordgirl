@@ -101,8 +101,15 @@ export function otherBoardsSolved(
   difficulty: Difficulty,
 ): Promise<boolean> {
   return everyOtherBoardSolved(DIFFICULTIES, difficulty, (d) =>
-    loadDailyProgress(d, dateKey),
+    boardRecord(dateKey, d),
   );
+}
+
+/** The RECORD of a board on a date, whatever version wrote it — the
+ * day-completion questions here are about history, not resumability
+ * (see loadDayRecord). */
+function boardRecord(dateKey: string, difficulty: Difficulty) {
+  return daily.loadDayRecord(`${difficulty}:${dateKey}`);
 }
 
 /**
@@ -118,7 +125,7 @@ export async function recordDailyStarted(
   difficulty: Difficulty,
 ): Promise<boolean> {
   const first = await isFirstBoardOfDay(DIFFICULTIES, difficulty, (d) =>
-    loadDailyProgress(d, dateKey),
+    boardRecord(dateKey, d),
   );
   if (!first) return false;
   await daily.recordStarted();
@@ -161,7 +168,11 @@ export async function loadAllDailyProgress(): Promise<
     const started = saves.some(hasProgress);
     out[dateKey] = {
       dateKey,
-      solved: solvedSaves.length > 0,
+      // The DAY, not any board of it — the same rule the hub card, the
+      // streak and Doublet's archive use. This said "any board solved",
+      // so the calendar called a haiku-only date finished while every
+      // other surface said it wasn't.
+      solved: solvedSaves.length === DIFFICULTIES.length,
       stale: saves.some((s) => !s.puzzleKey && (s.dictVersion ?? 0) !== DICT_VERSION),
       elapsedMs: solvedSaves.reduce((a, s) => a + s.elapsedMs, 0),
       cellCount: started

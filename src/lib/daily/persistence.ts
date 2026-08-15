@@ -98,6 +98,22 @@ export function createDailyPersistence<
     return saved;
   }
 
+  /**
+   * The save for a board whatever version wrote it — the RECORD, not
+   * resumable progress.
+   *
+   * "Did you finish that board on that date" is a question about
+   * history, and history does not un-happen when a dictionary bumps.
+   * `loadDay` is the wrong tool for it: with no puzzleKey to compare it
+   * falls back to `dictVersion === DICT_VERSION`, so after any game's
+   * bump a perfectly good sibling save reads as ABSENT — which would
+   * stop a day ever completing (losing the streak) and let `played`
+   * count the same date twice.
+   */
+  async function loadDayRecord(subKey: string): Promise<Day | null> {
+    return readDay(subKey);
+  }
+
   /** A save from an OLDER dictionary, kept as a historical record. */
   async function loadStaleDay(
     subKey: string,
@@ -208,6 +224,7 @@ export function createDailyPersistence<
     validShape,
     loadDay,
     loadStaleDay,
+    loadDayRecord,
     loadDaysByDate,
     saveDay,
     loadStats,

@@ -96,11 +96,11 @@ export const SHAPES: Shape[] = [
  *
  * Why five letters everywhere rather than a bigger grid: the difficulty
  * a player feels is the share of a line already showing. Normal runs
- * 4.0-letter lines with 2.14 givens on them (54% visible); these run at
- * 48% on lines a letter and a half longer, which makes each word harder
- * to find without making the day longer to finish. A 6x6 would push
- * further still, but its sixth row overflows the height budget at the
- * Huge text setting.
+ * 3.8-letter lines with 52% of their letters already given; these run
+ * at 43% on five-letter lines, which makes each word harder to find
+ * without making the day longer to finish (both measured over 120
+ * days). A 6x6 would push further still, but its sixth row overflows
+ * the height budget at the Huge text setting.
  *
  * A SEPARATE ARRAY, never appended to SHAPES: daily seeds index that
  * one by position, so adding to it would reshuffle every archived day.

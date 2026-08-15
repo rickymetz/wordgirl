@@ -73,6 +73,12 @@ export const loadStaleDailyProgress = (
   currentPuzzleKey?: string,
 ) => base.loadStaleDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
 export const saveDailyProgress = base.saveDay;
+
+/** The RECORD of a board on a date, whatever version wrote it — the
+ * day-completion questions below are about history, not resumability
+ * (see loadDayRecord). */
+const boardRecord = (dateKey: string, difficulty: Difficulty) =>
+  base.loadDayRecord(`${difficulty}:${dateKey}`);
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const { loadTutorialSeen, markTutorialSeen } = base;
 /**
@@ -88,7 +94,7 @@ export async function recordDailyStarted(
   difficulty: Difficulty,
 ): Promise<boolean> {
   const first = await isFirstBoardOfDay(DIFFICULTIES, difficulty, (d) =>
-    loadDailyProgress(dateKey, d),
+    boardRecord(dateKey, d),
   );
   if (!first) return false;
   await base.recordStarted();
@@ -207,7 +213,7 @@ export async function recordDailySolved(
   const dayComplete = await everyOtherBoardSolved(
     DIFFICULTIES,
     difficulty,
-    (d) => loadDailyProgress(dateKey, d),
+    (d) => boardRecord(dateKey, d),
   );
   return base.updateStats((stats) => ({
     ...stats,

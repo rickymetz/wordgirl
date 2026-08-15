@@ -58,7 +58,7 @@ A small crossword frame with many right answers:
 - **Two boards a day**, and the day counts when both are solved:
   **Normal** (3–5 lines of 3–5 letters) and **Hard** (4–5 lines, every
   one of them five letters, on denser skeletons). Same-sized word list,
-  less of each line showing — 43% given against Normal's 54%, so the
+  less of each line showing — 43% given against Normal's 52%, so the
   words are harder to find rather than more numerous.
 - **3–5 intersecting lines**, each locked to a few given letters. Type
   freely into the rest.

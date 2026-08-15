@@ -127,9 +127,15 @@ export const ARCHIVE_EPOCH = "2026-07-06";
  * So this gates the hard board's EXISTENCE, not just its scoring: the
  * archive offers a hard board from here forward and nowhere earlier,
  * which is also the only version a player can reason about ("the hard
- * board started on the 15th").
+ * board started on the 16th").
+ *
+ * It is the day AFTER this shipped, deliberately. Set to the ship date,
+ * it would catch the players who had already finished that day's one
+ * board before the deploy landed and flip their finished day back to
+ * "1/2 boards" — the exact retroactive un-finishing the rest of this
+ * comment exists to prevent.
  */
-export const HARD_EPOCH = "2026-08-15";
+export const HARD_EPOCH = "2026-08-16";
 
 /** Boards a date carries, in board order. */
 export function levelsFor(dateKey: string): Level[] {
@@ -174,11 +180,20 @@ export function loadStaleDailyProgress(
   return base.loadStaleDay(subKey(dateKey, level), currentPuzzleKey);
 }
 
+/**
+ * The RECORD of a board on a date — whatever version wrote it. The
+ * questions below ("is the day finished", "was this date opened") are
+ * about history, so they must not be answered by a version test: see
+ * loadDayRecord.
+ */
+const boardRecord = (dateKey: string, level: Level) =>
+  base.loadDayRecord(subKey(dateKey, level));
+
 /** Is every board this date carries solved? The day is the unit of
  * progress: both boards, or the one board a pre-HARD_EPOCH day has. */
 export async function isDaySolved(dateKey: string): Promise<boolean> {
   const boards = await Promise.all(
-    levelsFor(dateKey).map((level) => loadDailyProgress(dateKey, level)),
+    levelsFor(dateKey).map((level) => boardRecord(dateKey, level)),
   );
   return boards.every((b) => b?.solved === true);
 }
@@ -314,7 +329,7 @@ export async function recordDailyStarted(
   level: Level = "normal",
 ): Promise<boolean> {
   const first = await isFirstBoardOfDay(levelsFor(dateKey), level, (l) =>
-    loadDailyProgress(dateKey, l),
+    boardRecord(dateKey, l),
   );
   if (!first) return false;
   await base.recordStarted();
@@ -345,7 +360,7 @@ export async function recordDailySolved(
   const dayComplete = await everyOtherBoardSolved(
     levelsFor(dateKey),
     level,
-    (l) => loadDailyProgress(dateKey, l),
+    (l) => boardRecord(dateKey, l),
   );
   return base.updateStats((stats) => ({
     ...stats,

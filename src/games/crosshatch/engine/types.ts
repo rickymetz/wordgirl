@@ -5,8 +5,8 @@ export type SlotDir = "across" | "down";
  * mixed 3-5 letter lines on the shapes in SHAPES. `hard` runs every
  * line at five letters on denser skeletons, so the same-sized word
  * list is harder to find rather than longer: measured across 30 days,
- * normal shows 54% of each line's letters as givens against hard's
- * 48%, on lines a letter and a half longer.
+ * normal gives away 52% of its letters against hard's 43%, on lines a
+ * letter longer (measured over 120 days).
  *
  * ORDER MATTERS NOWHERE, but the STRING does — it is part of the seed
  * and of every storage key. `normal` must keep producing the seed
