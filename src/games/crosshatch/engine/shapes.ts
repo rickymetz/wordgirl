@@ -92,10 +92,10 @@ export const SHAPES: Shape[] = [
 /**
  * The HARD board's skeletons: every line five letters, more of them,
  * and more crossings between them — still inside the same 5x5 grid, so
- * the board is no harder to tap than the standard one.
+ * the board is no harder to tap than the normal one.
  *
  * Why five letters everywhere rather than a bigger grid: the difficulty
- * a player feels is the share of a line already showing. Standard runs
+ * a player feels is the share of a line already showing. Normal runs
  * 4.0-letter lines with 2.14 givens on them (54% visible); these run at
  * 48% on lines a letter and a half longer, which makes each word harder
  * to find without making the day longer to finish. A 6x6 would push

@@ -52,9 +52,9 @@ export function tutorialPuzzle(dict: Dictionary): CrosshatchPuzzle {
   return {
     seed: "tutorial",
     dictVersion: DICT_VERSION,
-    // The tutorial teaches the standard board; the hard one adds no
+    // The tutorial teaches the normal board; the hard one adds no
     // rule to learn, only longer lines.
-    level: "standard",
+    level: "normal",
     shape: TUTORIAL_SHAPE,
     rows,
     cols,

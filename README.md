@@ -56,9 +56,9 @@ Inspired by NYT Spelling Bee, with escalating polygon levels:
 A small crossword frame with many right answers:
 
 - **Two boards a day**, and the day counts when both are solved:
-  **Standard** (3–5 lines of 3–5 letters) and **Hard** (4–5 lines, every
+  **Normal** (3–5 lines of 3–5 letters) and **Hard** (4–5 lines, every
   one of them five letters, on denser skeletons). Same-sized word list,
-  less of each line showing — 43% given against Standard's 54%, so the
+  less of each line showing — 43% given against Normal's 54%, so the
   words are harder to find rather than more numerous.
 - **3–5 intersecting lines**, each locked to a few given letters. Type
   freely into the rest.
@@ -66,9 +66,10 @@ A small crossword frame with many right answers:
   submit — every **new word** in a valid grid counts. Change lines and
   keep hunting.
 - The daily generator enumerates **every** valid filling and accepts
-  days with 10–22 distinct words (no single line hoarding more than 8).
-- Finding **most of the words solves the day** (~90%, always with a
-  couple words of slack); 100% is the perfect sweep.
+  days with 10–22 distinct words (no single line hoarding more than 8),
+  per board.
+- **Every word solves the board** — the ~90% threshold went in #67, and
+  a board is not done until its list is empty.
 - Chips under the grid judge each line's current word: ❌ doesn't work
   there, grey ✓ counted already, ✅ a new word.
 - The words panel lists the whole day as **?-blanks** (like Polygram);

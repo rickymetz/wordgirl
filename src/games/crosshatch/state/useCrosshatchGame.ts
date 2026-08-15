@@ -30,10 +30,10 @@ function isPersisted(mode: GameMode): boolean {
 }
 
 /** The board a mode plays. Practice carries its level in the seed; the
- * tutorial only ever teaches the standard board. */
+ * tutorial only ever teaches the normal board. */
 function levelOfMode(mode: GameMode): Level {
   if (mode.kind === "daily" || mode.kind === "archive") return mode.level;
-  return mode.kind === "practice" ? parseLevel(mode.seed) : "standard";
+  return mode.kind === "practice" ? parseLevel(mode.seed) : "normal";
 }
 
 export function useCrosshatchGame(mode: GameMode) {
@@ -192,8 +192,11 @@ export function useCrosshatchGame(mode: GameMode) {
             hydratedRef.current = true;
             return;
           }
-          void recordDailyStarted(dateKey, level);
-          trackStarted("crosshatch");
+          // Fires only when the DAY was counted, never once per board:
+          // the event and the `played` stat have to mean the same thing.
+          void recordDailyStarted(dateKey, level).then((counted) => {
+            if (counted) trackStarted("crosshatch");
+          });
           sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".

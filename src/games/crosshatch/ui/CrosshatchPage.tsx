@@ -8,8 +8,8 @@ export default function CrosshatchPage() {
   // The mounted date. Crossing midnight with the app open (or resuming
   // an iOS PWA on a new day) must remount onto the new puzzle.
   const [dateKey, setDateKey] = useState(() => localDateKey());
-  // The day opens on the standard board — the one every day has had.
-  const [level, setLevel] = useState<Level>("standard");
+  // The day opens on the normal board — the one every day has had.
+  const [level, setLevel] = useState<Level>("normal");
 
   useEffect(() => {
     const check = () => {
@@ -30,7 +30,7 @@ export default function CrosshatchPage() {
   return (
     <GameScreen
       key={`${dateKey}:${level}`}
-      mode={{ kind: "daily", dateKey, level: twoBoards ? level : "standard" }}
+      mode={{ kind: "daily", dateKey, level: twoBoards ? level : "normal" }}
       level={twoBoards ? level : undefined}
       onLevelChange={twoBoards ? setLevel : undefined}
     />

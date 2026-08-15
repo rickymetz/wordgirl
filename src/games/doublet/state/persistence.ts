@@ -2,6 +2,7 @@ import {
   createDailyPersistence,
   displayStreak,
   streakAdvance,
+  sumAcrossBoards,
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
@@ -117,15 +118,11 @@ const COUNTER_KEYS = [
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  // Group the per-difficulty saves by date first: counters only chart
-  // when EVERY one of the date's boards carries them — a day mixing
-  // pre-tracking and tracked saves would otherwise present a partial
-  // sum as the day's total (as fake as a zero), so it stays a gap.
-  const byDate: Record<string, DailyProgress[]> = {};
-  for (const key of await base.store.keys("daily:")) {
-    const saved = base.validShape(await base.store.get<DailyProgress>(key));
-    if (saved) (byDate[saved.dateKey] ??= []).push(saved);
-  }
+  // Grouped by date: counters only chart when EVERY one of the date's
+  // boards carries them — a day mixing pre-tracking and tracked saves
+  // would otherwise present a partial sum as the day's total (as fake
+  // as a zero), so it stays a gap. See sumAcrossBoards.
+  const byDate = await base.loadDaysByDate();
   const out: Record<string, ArchivedDay> = {};
   for (const [dateKey, saves] of Object.entries(byDate)) {
     const day: ArchivedDay = {
@@ -146,9 +143,7 @@ export async function loadAllDailyProgress(): Promise<
       foundWords: saves.flatMap((s) => s.foundWords ?? []),
     };
     for (const k of COUNTER_KEYS) {
-      if (saves.every((s) => s[k] !== undefined)) {
-        day[k] = saves.reduce((a, s) => a + s[k]!, 0);
-      }
+      day[k] = sumAcrossBoards(saves, (s) => s[k]);
     }
     out[dateKey] = day;
   }

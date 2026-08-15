@@ -10,6 +10,8 @@ This page explains the parts of WordGirl around the puzzles: streaks, the other 
 A streak is your count of daily puzzles solved on consecutive days.
 
 - A solve advances your streak when you solve today's daily puzzle.
+- Some games give you more than one board a day: Crosshatch has a Normal and a Hard board, Serpentine has a haiku and a poem, and Doublet has three sizes. A game's hub card shows the day finished only when you have solved **every** one of its boards.
+- The streak rule differs between them today. Crosshatch needs both of its boards before the streak advances. In Doublet and Serpentine, the first board you solve advances it.
 - There is a margin after midnight: in the short time after the date changes, a solve of yesterday's puzzle still counts. A slow evening game does not break your streak at 12:01.
 - If a day passes with no solve, your streak shows zero again. Your best streak stays in your statistics.
 - Archive plays never advance a streak. Only the daily puzzle counts.

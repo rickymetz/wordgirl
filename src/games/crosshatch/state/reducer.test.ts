@@ -19,7 +19,7 @@ import {
 const puzzle: CrosshatchPuzzle = {
   seed: "test",
   dictVersion: 2,
-  level: "standard",
+  level: "normal",
   shape: {
     id: "test-cross",
     slots: [

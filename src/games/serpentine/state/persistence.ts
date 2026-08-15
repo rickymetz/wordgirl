@@ -115,13 +115,8 @@ export function hasProgress(
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  const byDate: Record<string, DayProgress[]> = {};
-  for (const key of await store.keys("daily:")) {
-    const saved = validShape(await store.get<DayProgress>(key));
-    if (saved && saved.dateKey) {
-      (byDate[saved.dateKey] ??= []).push(saved);
-    }
-  }
+  // Two boards a day, so a date's saves arrive as a group of one or two.
+  const byDate = await daily.loadDaysByDate();
   const out: Record<string, ArchivedDay> = {};
   for (const [dateKey, saves] of Object.entries(byDate)) {
     const solvedSaves = saves.filter((s) => s.solved);

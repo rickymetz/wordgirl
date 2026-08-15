@@ -8,7 +8,7 @@ import { GameScreen } from "./GameScreen";
 export default function PracticePage() {
   // Practice offers both boards too — switching draws a fresh puzzle of
   // the new kind (PracticeShell's resetKey does that).
-  const [level, setLevel] = useState<Level>("standard");
+  const [level, setLevel] = useState<Level>("normal");
   return (
     <PracticeShell
       gameId="crosshatch"

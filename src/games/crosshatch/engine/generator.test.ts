@@ -184,23 +184,23 @@ describe("generateCrosshatch", () => {
 
   it("the two boards of a date are different puzzles", () => {
     for (const key of ["2026-08-15", "2026-09-01", "2026-12-25"]) {
-      const std = generateCrosshatch(dict, dailySeed(key, "standard"));
+      const std = generateCrosshatch(dict, dailySeed(key, "normal"));
       const hard = generateCrosshatch(dict, dailySeed(key, "hard"));
       expect(puzzleKey([std.givens, std.combos])).not.toBe(
         puzzleKey([hard.givens, hard.combos]),
       );
       // And the hard one is the harder one: five-letter lines showing
-      // a smaller share of themselves than the standard board's.
+      // a smaller share of themselves than the normal board's.
       for (const slot of hard.shape.slots) expect(slot.len).toBe(5);
     }
   });
 
-  it("a seed with no level is the standard board", () => {
+  it("a seed with no level is the normal board", () => {
     // Every save and every archived day was written against this seed
     // string; parsing it as anything else would rewrite history.
     expect(dailySeed("2026-08-20")).toBe("daily:2026-08-20");
-    expect(parseLevel("daily:2026-08-20")).toBe("standard");
+    expect(parseLevel("daily:2026-08-20")).toBe("normal");
     expect(parseLevel("daily:hard:2026-08-20")).toBe("hard");
-    expect(generateCrosshatch(dict, "daily:2026-08-20").level).toBe("standard");
+    expect(generateCrosshatch(dict, "daily:2026-08-20").level).toBe("normal");
   });
 });

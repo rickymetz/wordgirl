@@ -134,6 +134,26 @@ export function createDailyPersistence<
     await store.set(key, progress);
   }
 
+  /**
+   * Every saved day, grouped by date — the first step of every archive
+   * roll-up. Games with one board a day get single-entry groups; the
+   * multi-board games (crosshatch's two, doublet's three, serpentine's
+   * two) get one entry per board, which is exactly what their listings
+   * need to merge.
+   *
+   * A save with no dateKey is skipped rather than filed under
+   * `undefined`: only serpentine's copy of this loop guarded for it, and
+   * a corrupt save should not invent a row in the calendar.
+   */
+  async function loadDaysByDate(): Promise<Record<string, Day[]>> {
+    const byDate: Record<string, Day[]> = {};
+    for (const key of await store.keys("daily:")) {
+      const saved = validShape(await store.get<Day>(key));
+      if (saved?.dateKey) (byDate[saved.dateKey] ??= []).push(saved);
+    }
+    return byDate;
+  }
+
   /** Serialize read-modify-write stats updates across async callers. */
   let statsLock: Promise<unknown> = Promise.resolve();
   function serialized<T>(fn: () => Promise<T>): Promise<T> {
@@ -188,6 +208,7 @@ export function createDailyPersistence<
     validShape,
     loadDay,
     loadStaleDay,
+    loadDaysByDate,
     saveDay,
     loadStats,
     updateStats,
@@ -197,6 +218,25 @@ export function createDailyPersistence<
     loadTutorialSeen,
     markTutorialSeen,
   };
+}
+
+/**
+ * A counter summed across a date's boards, or null when ANY of them
+ * predates the counter. The rule the multi-board games share: a partial
+ * sum presented as the day's total is as fake as a zero, so a day
+ * mixing tracked and untracked saves charts as a GAP.
+ */
+export function sumAcrossBoards<Day>(
+  saves: readonly Day[],
+  read: (save: Day) => number | undefined,
+): number | null {
+  let total = 0;
+  for (const save of saves) {
+    const value = read(save);
+    if (value === undefined) return null;
+    total += value;
+  }
+  return total;
 }
 
 /**

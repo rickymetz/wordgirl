@@ -7,6 +7,7 @@ import {
   CircleCheck,
   CircleHelp,
   CornerDownLeft,
+  Layers,
   Lightbulb,
   ListChecks,
   Lock,
@@ -90,7 +91,7 @@ const LEVEL_PILLS_H = 26;
 interface Props {
   mode: GameMode;
   /** Daily/archive: the board on screen and how to switch boards. Absent
-   * on dates that carry only the standard board. */
+   * on dates that carry only the normal board. */
   level?: Level;
   onLevelChange?: (level: Level) => void;
   onNewPuzzle?: () => void;
@@ -132,7 +133,7 @@ export function GameScreen({
   const [wordsOpen, setWordsOpen] = useState(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
-  // "Unsolved" means the DAY — a player who has finished the standard
+  // "Unsolved" means the DAY — a player who has finished the normal
   // board but not the hard one still has today's puzzle to play.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
   useEffect(() => {
@@ -146,15 +147,22 @@ export function GameScreen({
     null,
   );
   const otherLevel: Level | null =
-    level === undefined ? null : level === "standard" ? "hard" : "standard";
+    level === undefined ? null : level === "normal" ? "hard" : "normal";
+  // The date on screen — NOT localDateKey(). They agree on the daily
+  // only until midnight passes with the app open, and an archive play
+  // is some other date entirely.
+  const boardDateKey =
+    mode.kind === "daily" || mode.kind === "archive" ? mode.dateKey : null;
   useEffect(() => {
-    if (!isDaily || otherLevel === null) return;
-    void loadDailyProgress(localDateKey(), otherLevel).then((saved) =>
+    // Archive dates carry two boards too, and a finished board there
+    // needs the same tick and the same way over.
+    if (boardDateKey === null || otherLevel === null) return;
+    void loadDailyProgress(boardDateKey, otherLevel).then((saved) =>
       setOtherBoardSolved(saved?.solved ?? false),
     );
     // Re-checked when this board solves: the player may have done the
     // other one first, in which case the day is finished here.
-  }, [isDaily, otherLevel, state.solved]);
+  }, [boardDateKey, otherLevel, state.solved]);
 
   // Daily hints are free to use but marked: the first one warns that
   // the day's result will carry a hint count.
@@ -817,15 +825,34 @@ export function GameScreen({
               },
               {
                 Icon: Target,
-                title: "Solve the day",
+                title: "Solve the board",
                 body: (
                   <>
-                    Find <Key>every word</Key> to solve the day.{" "}
+                    Find <Key>every word</Key> to solve the board.{" "}
                     <Key>Your words</Key> lists them as ?-blanks — tap one,
                     then Hint, to reveal its next letter.
                   </>
                 ),
               },
+              // Only worth saying where there IS a second board: on a
+              // pre-HARD_EPOCH archive date the day is one board, and
+              // promising two would be a lie.
+              ...(level !== undefined
+                ? [
+                    {
+                      Icon: Layers,
+                      title: "Two boards",
+                      body: (
+                        <>
+                          Each day has a <Key>Normal</Key> board and a{" "}
+                          <Key>Hard</Key> board — same puzzle idea, longer
+                          lines and fewer letters given. Solve{" "}
+                          <Key>both</Key> to finish the day.
+                        </>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         )}

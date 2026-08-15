@@ -13,13 +13,13 @@ export default function ArchivePlayPage() {
   // Which board of that date is on screen. Held here rather than inside
   // renderScreen so the replay reset — which the shell owns — wipes the
   // board the player is actually looking at.
-  const [level, setLevel] = useState<Level>("standard");
+  const [level, setLevel] = useState<Level>("normal");
   return (
     <ArchivePlayShell
       gameId="crosshatch"
       epoch={ARCHIVE_EPOCH}
       resetForReplay={(dateKey) =>
-        resetDailyForReplay(dateKey, hasHardBoard(dateKey) ? level : "standard")
+        resetDailyForReplay(dateKey, hasHardBoard(dateKey) ? level : "normal")
       }
       renderScreen={(dateKey, runId, replay) => {
         const twoBoards = hasHardBoard(dateKey);
@@ -29,7 +29,7 @@ export default function ArchivePlayPage() {
             mode={{
               kind: "archive",
               dateKey,
-              level: twoBoards ? level : "standard",
+              level: twoBoards ? level : "normal",
             }}
             level={twoBoards ? level : undefined}
             onLevelChange={twoBoards ? setLevel : undefined}

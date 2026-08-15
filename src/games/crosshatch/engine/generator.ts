@@ -26,19 +26,19 @@ const MAX_ATTEMPTS = 300;
 const MAX_EXTRA_GIVENS = 6;
 
 /**
- * Seeds carry the level, and the STANDARD board's seed is exactly what
+ * Seeds carry the level, and the NORMAL board's seed is exactly what
  * it was before the hard board existed — every archived day has to keep
  * regenerating into the same puzzle it was solved on.
  */
-export function dailySeed(dateKey: string, level: Level = "standard"): string {
-  return level === "standard" ? `daily:${dateKey}` : `daily:${level}:${dateKey}`;
+export function dailySeed(dateKey: string, level: Level = "normal"): string {
+  return level === "normal" ? `daily:${dateKey}` : `daily:${level}:${dateKey}`;
 }
 
 export function practiceSeed(
   random: string,
-  level: Level = "standard",
+  level: Level = "normal",
 ): string {
-  return level === "standard"
+  return level === "normal"
     ? `practice:${random}`
     : `practice:${level}:${random}`;
 }
@@ -46,7 +46,7 @@ export function practiceSeed(
 /** The level a seed encodes. Seed segments are colon-free, so a `hard`
  * segment can only have come from the prefix above. */
 export function parseLevel(seed: string): Level {
-  return seed.split(":").includes("hard") ? "hard" : "standard";
+  return seed.split(":").includes("hard") ? "hard" : "normal";
 }
 
 export function gridSize(shape: Shape): { rows: number; cols: number } {

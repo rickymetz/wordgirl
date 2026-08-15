@@ -1,25 +1,25 @@
 export type SlotDir = "across" | "down";
 
 /**
- * The two boards a day carries. `standard` is the original game —
+ * The two boards a day carries. `normal` is the original game —
  * mixed 3-5 letter lines on the shapes in SHAPES. `hard` runs every
  * line at five letters on denser skeletons, so the same-sized word
  * list is harder to find rather than longer: measured across 30 days,
- * standard shows 54% of each line's letters as givens against hard's
+ * normal shows 54% of each line's letters as givens against hard's
  * 48%, on lines a letter and a half longer.
  *
  * ORDER MATTERS NOWHERE, but the STRING does — it is part of the seed
- * and of every storage key. `standard` must keep producing the seed
+ * and of every storage key. `normal` must keep producing the seed
  * `daily:<dateKey>` it always has, or every archived day regenerates
  * into a different puzzle.
  */
-export type Level = "standard" | "hard";
+export type Level = "normal" | "hard";
 
-export const LEVELS: Level[] = ["standard", "hard"];
+export const LEVELS: Level[] = ["normal", "hard"];
 
 /** Player-facing board name. */
 export const LEVEL_LABEL: Record<Level, string> = {
-  standard: "Standard",
+  normal: "Normal",
   hard: "Hard",
 };
 

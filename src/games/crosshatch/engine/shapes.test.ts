@@ -4,7 +4,7 @@ import { cellKey, slotCells } from "./types";
 
 /** Both libraries obey the shared rules; the hard one adds its own. */
 const LIBRARIES = [
-  { name: "standard", shapes: SHAPES },
+  { name: "normal", shapes: SHAPES },
   { name: "hard", shapes: HARD_SHAPES },
 ];
 const ALL = LIBRARIES.flatMap((l) => l.shapes);
@@ -79,13 +79,13 @@ describe("the hard library", () => {
     }
   });
 
-  it("crosses more than the standard library does", () => {
+  it("crosses more than the normal library does", () => {
     for (const shape of HARD_SHAPES) {
       expect(shape.slots.length, shape.id).toBeGreaterThanOrEqual(4);
     }
   });
 
-  it("shares no id with the standard library", () => {
+  it("shares no id with the normal library", () => {
     expect(new Set(ALL.map((s) => s.id)).size).toBe(ALL.length);
   });
 });
