@@ -8,7 +8,10 @@
  *
  * Pageviews are not our business — the script tag in index.html runs with
  * `data-spa="auto"`, so route changes are counted for us. These are the
- * things a pageview cannot see.
+ * things a pageview cannot see. One catch worth knowing before you touch
+ * the CSP in netlify.toml: a pageview is an IMAGE PIXEL and these events
+ * are not, so `img-src` and `connect-src` must BOTH allow the Fathom CDN.
+ * Drop one and half the dashboard silently reads zero.
  *
  * OFFLINE: the app plays offline; Fathom's script does not load there, so
  * `window.fathom` is undefined and the event is dropped. That is the right
