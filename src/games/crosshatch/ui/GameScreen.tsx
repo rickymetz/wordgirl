@@ -80,6 +80,13 @@ function buildShareText(
   ].join("\n");
 }
 
+/** Height the board budget gives up to the pill row, px at default text
+ * size: a 24px pill plus its air, less the 6px the title row gives back
+ * by closing up above it. The grid's CHROME_H was measured without the
+ * row, so without this it would come out of the page rather than out of
+ * the board. */
+const LEVEL_PILLS_H = 26;
+
 interface Props {
   mode: GameMode;
   /** Daily/archive: the board on screen and how to switch boards. Absent
@@ -454,15 +461,14 @@ export function GameScreen({
         </span>
       </header>
 
-      {/* Wraps, so the pills drop to their own line rather than push the
-          board off the side: a page that scrolls sideways puts cells out
-          of reach entirely, where a little vertical scroll — which this
-          screen already has at Huge text on a short phone — does not.
-          At every other text size they share the title's line for free. */}
-      <div className="flex flex-wrap items-baseline gap-x-2.5 pb-3">
-        <h1 className="shrink-0 text-2xl font-bold tracking-tight">
-          Crosshatch
-        </h1>
+      {/* The pill row belongs to the title, so it closes up under it —
+          which also buys back the height the row costs. */}
+      <div
+        className={`flex items-baseline gap-2.5 ${
+          level !== undefined && onLevelChange ? "pb-1.5" : "pb-3"
+        }`}
+      >
+        <h1 className="text-2xl font-bold tracking-tight">Crosshatch</h1>
         {/* The game's mark: a little hatch. */}
         <svg
           role="img"
@@ -494,46 +500,46 @@ export function GameScreen({
             tutorial
           </span>
         )}
-
-        {/* Board pills, riding the title row rather than a band of their
-            own. At the Huge text setting the grid is already down on its
-            34px touch floor and can give nothing back, so a separate row
-            here is 55px straight onto the page height — enough to put a
-            390x844 phone into a scroll it doesn't have today. */}
-        {level !== undefined && onLevelChange && (
-          <span
-            className="ml-auto flex shrink-0 gap-1 self-center"
-            role="group"
-            aria-label="Board"
-          >
-            {LEVELS.map((l) => {
-              const solved =
-                l === level ? state.solved : (otherBoardSolved ?? false);
-              return (
-                <button
-                  key={l}
-                  aria-pressed={l === level}
-                  className={[
-                    "relative rounded-full px-3 py-1 text-xs font-semibold",
-                    "touch-manipulation select-none transition-colors",
-                    // The pills are small, so the 44px touch target comes
-                    // from an invisible expansion rather than padding.
-                    "after:absolute after:-inset-x-1 after:-inset-y-2.5",
-                    l === level
-                      ? "bg-accent text-surface"
-                      : "bg-surface-tint text-ink-soft",
-                  ].join(" ")}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => onLevelChange(l)}
-                >
-                  {LEVEL_LABEL[l]}
-                  {solved ? " ✓" : ""}
-                </button>
-              );
-            })}
-          </span>
-        )}
       </div>
+
+      {/* Board pills, on their own line under the title — the same place
+          Serpentine puts haiku/poem. The row is kept tight (and folded
+          into the grid's height budget below) because at the Huge text
+          setting the grid is already down on its 34px touch floor and
+          can give nothing back to pay for it. */}
+      {level !== undefined && onLevelChange && (
+        <div
+          className="flex gap-1 pb-2 [@media(max-height:720px)]:pb-1"
+          role="group"
+          aria-label="Board"
+        >
+          {LEVELS.map((l) => {
+            const solved =
+              l === level ? state.solved : (otherBoardSolved ?? false);
+            return (
+              <button
+                key={l}
+                aria-pressed={l === level}
+                className={[
+                  "relative rounded-full px-3.5 py-1 text-sm font-semibold",
+                  "touch-manipulation select-none transition-colors",
+                  // Small pills, so the 44px touch target comes from an
+                  // invisible expansion rather than padding.
+                  "after:absolute after:-inset-x-1 after:-inset-y-2.5",
+                  l === level
+                    ? "bg-accent text-surface"
+                    : "bg-surface-tint text-ink-soft",
+                ].join(" ")}
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => onLevelChange(l)}
+              >
+                {LEVEL_LABEL[l]}
+                {solved ? " ✓" : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isTutorial && (
         <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />
@@ -572,7 +578,10 @@ export function GameScreen({
               has moved on from browsing to playing. */}
           <GridBoard
             state={state}
-            reservedH={isTutorial ? TUTORIAL_BANNER_H : 0}
+            reservedH={
+              (isTutorial ? TUTORIAL_BANNER_H : 0) +
+              (level !== undefined && onLevelChange ? LEVEL_PILLS_H : 0)
+            }
             onFocus={(row, col) => {
               setWordsOpen(false);
               dispatch({ type: "focusCell", row, col });
