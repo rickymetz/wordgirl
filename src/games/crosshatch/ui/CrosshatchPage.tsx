@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { localDateKey } from "../../../lib/date";
+import type { Level } from "../engine/types";
+import { hasHardBoard } from "../state/persistence";
 import { GameScreen } from "./GameScreen";
 
 export default function CrosshatchPage() {
   // The mounted date. Crossing midnight with the app open (or resuming
   // an iOS PWA on a new day) must remount onto the new puzzle.
   const [dateKey, setDateKey] = useState(() => localDateKey());
+  // The day opens on the standard board — the one every day has had.
+  const [level, setLevel] = useState<Level>("standard");
 
   useEffect(() => {
     const check = () => {
@@ -20,5 +24,15 @@ export default function CrosshatchPage() {
     };
   }, [dateKey]);
 
-  return <GameScreen key={dateKey} mode={{ kind: "daily", dateKey }} />;
+  // Remount per board: every hook in the screen freezes its date and
+  // puzzle at mount, and the clock resets with them.
+  const twoBoards = hasHardBoard(dateKey);
+  return (
+    <GameScreen
+      key={`${dateKey}:${level}`}
+      mode={{ kind: "daily", dateKey, level: twoBoards ? level : "standard" }}
+      level={twoBoards ? level : undefined}
+      onLevelChange={twoBoards ? setLevel : undefined}
+    />
+  );
 }

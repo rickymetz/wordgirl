@@ -5,10 +5,14 @@ import {
 } from "../../../lib/daily/persistence";
 import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { CrosshatchPuzzle } from "../engine/types";
+import type { CrosshatchPuzzle, Level } from "../engine/types";
 
 export interface DailyProgress {
   dateKey: string;
+  /** Which board this save is. ABSENT on every save written before the
+   * hard board shipped — those are all standard, and `levelOf` is the
+   * only place that assumption lives. */
+  level?: Level;
   dictVersion: number;
   /** Deterministic fingerprint of the puzzle — survives unrelated
    * DICT_VERSION bumps. Legacy saves lack this field. */
@@ -60,9 +64,22 @@ const EMPTY_STATS: CrosshatchStats = {
   totalWords: 0,
 };
 
+/** A save's board, defaulting the pre-hard-board saves to standard. */
+export const levelOf = (day: DailyProgress): Level => day.level ?? "standard";
+
+/**
+ * Storage sub-key for a board. The STANDARD board keeps the bare
+ * dateKey it has always used — prefixing it would orphan every save on
+ * every player's device — so only the hard board carries a prefix.
+ */
+function subKey(dateKey: string, level: Level): string {
+  return level === "standard" ? dateKey : `${level}:${dateKey}`;
+}
+
 const base = createDailyPersistence<DailyProgress, CrosshatchStats>({
   gameId: "crosshatch",
   emptyStats: EMPTY_STATS,
+  dayKey: (day) => subKey(day.dateKey, levelOf(day)),
   validDay: (s) =>
     Array.isArray(s.foundWords) &&
     s.grid !== null &&
@@ -91,6 +108,28 @@ export function crosshatchPuzzleKey(puzzle: CrosshatchPuzzle): string {
 export const ARCHIVE_EPOCH = "2026-07-06";
 
 /**
+ * The first date that has a HARD board. Days before it are one-board
+ * days, for good: a player who solved 2026-07-20 finished everything
+ * that date had, and a second board invented afterwards must not
+ * retroactively turn that day — or the streak it fed — unsolved.
+ *
+ * So this gates the hard board's EXISTENCE, not just its scoring: the
+ * archive offers a hard board from here forward and nowhere earlier,
+ * which is also the only version a player can reason about ("the hard
+ * board started on the 15th").
+ */
+export const HARD_EPOCH = "2026-08-15";
+
+/** Boards a date carries, in board order. */
+export function levelsFor(dateKey: string): Level[] {
+  return dateKey >= HARD_EPOCH ? ["standard", "hard"] : ["standard"];
+}
+
+export function hasHardBoard(dateKey: string): boolean {
+  return dateKey >= HARD_EPOCH;
+}
+
+/**
  * DICT_VERSION at which crosshatch's own puzzle derivation last
  * changed (v17: generate from the required tier). Every save below it
  * describes a puzzle that no longer exists for its date. The archive
@@ -113,47 +152,131 @@ function validShape(saved: DailyProgress | null): DailyProgress | null {
  */
 export function loadDailyProgress(
   dateKey: string,
+  level: Level = "standard",
   currentPuzzleKey?: string,
 ): Promise<DailyProgress | null> {
-  return base.loadDay(dateKey, currentPuzzleKey);
+  return base.loadDay(subKey(dateKey, level), currentPuzzleKey);
 }
 
 /** A save from an older/different puzzle, kept as a historical record. */
 export function loadStaleDailyProgress(
   dateKey: string,
+  level: Level = "standard",
   currentPuzzleKey?: string,
 ): Promise<DailyProgress | null> {
-  return base.loadStaleDay(dateKey, currentPuzzleKey);
+  return base.loadStaleDay(subKey(dateKey, level), currentPuzzleKey);
 }
 
-export interface ArchivedDay extends DailyProgress {
-  /** True when the save's provenance is unverifiable — a legacy record
-   * with no puzzleKey, written against an older dictionary. Values
-   * derived from it (solve time) aren't safe to chart. */
+/** Is every board this date carries solved? The day is the unit of
+ * progress: both boards, or the one board a pre-HARD_EPOCH day has. */
+export async function isDaySolved(dateKey: string): Promise<boolean> {
+  const boards = await Promise.all(
+    levelsFor(dateKey).map((level) => loadDailyProgress(dateKey, level)),
+  );
+  return boards.every((b) => b?.solved === true);
+}
+
+/**
+ * A DATE's roll-up across its boards — GameArchive and GameTrends both
+ * look days up by plain dateKey, so the per-board saves merge here.
+ */
+export interface ArchivedDay {
+  dateKey: string;
+  /** Boards this date carries (1 before HARD_EPOCH, 2 after). */
+  boards: number;
+  /** Boards solved (0-2) and boards with any progress on them. */
+  solvedCount: number;
+  startedCount: number;
+  /** The DAY is solved when every board it carries is. */
+  solved: boolean;
+  /** Every board's finds, merged — GameArchive's played contract. */
+  foundWords: string[];
+  /** The day's word total across boards, or undefined when any board's
+   * save predates the field (a partial total would mis-rank the day). */
+  totalWords?: number;
+  /** Active time summed across boards. */
+  elapsedMs: number;
+  /** True when any board's save is a legacy record with no puzzleKey. */
   stale: boolean;
-  /** True when the date's puzzle has been regenerated since (v17 moved
-   * generation to the required tier). The record itself is accurate —
-   * the words just belong to a puzzle that no longer exists, so the
-   * archive says so and a replay starts fresh. */
+  /** True when any board's puzzle has been regenerated since. */
   retired: boolean;
+  /** Counters summed across boards — null when ANY board's save
+   * predates the counter, since a partial sum presented as the day's
+   * total is as fake as a zero (a legacy day charts as a GAP). */
+  hintLetters: number | null;
+  invalids: number | null;
+  sessions: number | null;
+  /** An hour one of the day's boards was solved at. */
+  solvedHour: number | null;
 }
 
-/** Every saved daily, keyed by date — drives the archive listing. */
+/** Counters that sum across a date's boards, and where they come from.
+ * One list drives the null-init, the sum, and the gap rule. */
+const COUNTERS: Record<
+  "hintLetters" | "invalids" | "sessions",
+  (s: DailyProgress) => number | undefined
+> = {
+  hintLetters: (s) =>
+    s.revealed === undefined
+      ? undefined
+      : Object.values(s.revealed).reduce((a, p) => a + p.length, 0),
+  invalids: (s) => s.invalids,
+  sessions: (s) => s.sessions,
+};
+
+/** Every saved daily, rolled up by date — drives the archive listing. */
 export async function loadAllDailyProgress(): Promise<
   Record<string, ArchivedDay>
 > {
-  const out: Record<string, ArchivedDay> = {};
+  const byDate: Record<string, DailyProgress[]> = {};
   for (const key of await store.keys("daily:")) {
     const saved = validShape(await store.get<DailyProgress>(key));
-    if (saved) {
-      out[saved.dateKey] = {
-        ...saved,
-        stale: !saved.puzzleKey && saved.dictVersion !== DICT_VERSION,
-        retired: saved.dictVersion < GENERATOR_VERSION,
-      };
+    if (saved) (byDate[saved.dateKey] ??= []).push(saved);
+  }
+  const out: Record<string, ArchivedDay> = {};
+  for (const [dateKey, saves] of Object.entries(byDate)) {
+    const boards = levelsFor(dateKey);
+    const day: ArchivedDay = {
+      dateKey,
+      boards: boards.length,
+      solvedCount: saves.filter((s) => s.solved).length,
+      startedCount: saves.filter(
+        (s) => s.solved || s.foundWords.length > 0 || hasReveals(s),
+      ).length,
+      // Every board the DATE carries must be solved — not merely every
+      // board that happens to have a save, or a day whose hard board
+      // was never opened would read as finished.
+      solved: boards.every((level) =>
+        saves.some((s) => levelOf(s) === level && s.solved),
+      ),
+      foundWords: saves.flatMap((s) => s.foundWords),
+      totalWords: saves.every((s) => s.totalWords !== undefined)
+        ? saves.reduce((a, s) => a + s.totalWords!, 0)
+        : undefined,
+      elapsedMs: saves.reduce((a, s) => a + s.elapsedMs, 0),
+      stale: saves.some((s) => !s.puzzleKey && s.dictVersion !== DICT_VERSION),
+      retired: saves.some((s) => s.dictVersion < GENERATOR_VERSION),
+      hintLetters: null,
+      invalids: null,
+      sessions: null,
+      solvedHour:
+        saves.map((s) => s.solvedHour).find((h) => h !== undefined) ?? null,
+    };
+    for (const [key, read] of Object.entries(COUNTERS) as [
+      keyof typeof COUNTERS,
+      (s: DailyProgress) => number | undefined,
+    ][]) {
+      if (saves.every((s) => read(s) !== undefined)) {
+        day[key] = saves.reduce((a, s) => a + read(s)!, 0);
+      }
     }
+    out[dateKey] = day;
   }
   return out;
+}
+
+function hasReveals(s: DailyProgress): boolean {
+  return Object.keys(s.revealed ?? {}).length > 0;
 }
 
 export function saveDailyProgress(progress: DailyProgress) {
@@ -165,10 +288,12 @@ export function saveDailyProgress(progress: DailyProgress) {
  * run from a deliberate reset. */
 export async function resetDailyForReplay(
   dateKey: string,
+  level: Level = "standard",
   currentPuzzleKey?: string,
 ) {
-  await store.set(`daily:${dateKey}`, {
+  await store.set(`daily:${subKey(dateKey, level)}`, {
     dateKey,
+    level,
     dictVersion: DICT_VERSION,
     ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     foundWords: [],
@@ -186,8 +311,25 @@ export const { loadTutorialSeen, markTutorialSeen } = base;
 
 export const loadStats = base.loadStats;
 
-/** Call once when a new daily puzzle is first opened. */
-export const recordDailyStarted = base.recordStarted;
+/**
+ * Call when a board of a new daily is first opened. `played` counts
+ * DAYS, not boards — it always has, and the two boards of one date are
+ * one day's play — so the second board of a date opened later must not
+ * increment it again. The caller has already established that THIS
+ * board has no save; this checks the date's others.
+ */
+export async function recordDailyStarted(
+  dateKey: string,
+  level: Level = "standard",
+): Promise<CrosshatchStats> {
+  const siblings = await Promise.all(
+    levelsFor(dateKey)
+      .filter((l) => l !== level)
+      .map((l) => loadDailyProgress(dateKey, l)),
+  );
+  if (siblings.some((s) => s !== null)) return loadStats();
+  return base.recordStarted();
+}
 
 /**
  * Call once when a daily puzzle reaches the solve threshold. Only
@@ -196,22 +338,38 @@ export const recordDailyStarted = base.recordStarted;
  * never moves BACKWARD (westward timezone travel would otherwise reset
  * a streak).
  */
-export function recordDailySolved(
+export async function recordDailySolved(
   dateKey: string,
+  level: Level,
   wordsFound: number,
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it to move the streak.
   allowGrace = true,
 ): Promise<CrosshatchStats> {
-  return base.updateStats((stats) => {
-    if (stats.lastSolvedDate === dateKey) return stats; // already recorded
-    return {
-      ...stats,
-      solved: stats.solved + 1,
-      totalWords: stats.totalWords + wordsFound,
-      ...streakAdvance(stats, dateKey, allowGrace),
-    };
-  });
+  // `solved` and the streak count DAYS — they always have — and a day
+  // now needs every board it carries. The board that just solved may
+  // not have reached storage yet (its save is written by a separate
+  // effect), so ask about the date's OTHER boards and take this one as
+  // solved by construction. Before HARD_EPOCH there are no others, and
+  // the day completes exactly as it always did.
+  const others = await Promise.all(
+    levelsFor(dateKey)
+      .filter((l) => l !== level)
+      .map((l) => loadDailyProgress(dateKey, l)),
+  );
+  const dayComplete = others.every((b) => b?.solved === true);
+  return base.updateStats((stats) => ({
+    ...stats,
+    // Words are the player's own tally: every board's finds count as
+    // they're found, whether or not the day is finished.
+    totalWords: stats.totalWords + wordsFound,
+    ...(dayComplete && stats.lastSolvedDate !== dateKey
+      ? {
+          solved: stats.solved + 1,
+          ...streakAdvance(stats, dateKey, allowGrace),
+        }
+      : {}),
+  }));
 }
 
 /** Words found AFTER the solve was recorded still count toward the

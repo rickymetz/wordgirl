@@ -1,8 +1,8 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { SHAPES } from "./shapes";
-import type { Combo, CrosshatchPuzzle, Shape, Slot } from "./types";
+import { shapesFor } from "./shapes";
+import type { Combo, CrosshatchPuzzle, Level, Shape, Slot } from "./types";
 import { cellKey, slotCells } from "./types";
 
 /**
@@ -25,12 +25,28 @@ const MAX_FIXED_SLOTS = 1;
 const MAX_ATTEMPTS = 300;
 const MAX_EXTRA_GIVENS = 6;
 
-export function dailySeed(dateKey: string): string {
-  return `daily:${dateKey}`;
+/**
+ * Seeds carry the level, and the STANDARD board's seed is exactly what
+ * it was before the hard board existed — every archived day has to keep
+ * regenerating into the same puzzle it was solved on.
+ */
+export function dailySeed(dateKey: string, level: Level = "standard"): string {
+  return level === "standard" ? `daily:${dateKey}` : `daily:${level}:${dateKey}`;
 }
 
-export function practiceSeed(random: string): string {
-  return `practice:${random}`;
+export function practiceSeed(
+  random: string,
+  level: Level = "standard",
+): string {
+  return level === "standard"
+    ? `practice:${random}`
+    : `practice:${level}:${random}`;
+}
+
+/** The level a seed encodes. Seed segments are colon-free, so a `hard`
+ * segment can only have come from the prefix above. */
+export function parseLevel(seed: string): Level {
+  return seed.split(":").includes("hard") ? "hard" : "standard";
 }
 
 export function gridSize(shape: Shape): { rows: number; cols: number } {
@@ -58,9 +74,11 @@ export function generateCrosshatch(
 ): CrosshatchPuzzle {
   const rand = seededRandom(`crosshatch:v1:${seed}`);
   const index = buildLetterIndex(dict);
+  const level = parseLevel(seed);
+  const shapes = shapesFor(level);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const shape = SHAPES[Math.floor(rand() * SHAPES.length)];
+    const shape = shapes[Math.floor(rand() * shapes.length)];
     const solution = solveRandomFill(shape, dict, rand, index);
     if (!solution) continue;
 
@@ -138,6 +156,7 @@ export function generateCrosshatch(
       return {
         seed,
         dictVersion: DICT_VERSION,
+        level,
         shape,
         rows,
         cols,

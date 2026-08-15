@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { isDaySolved } from "./state/persistence";
 import { CrosshatchPreview } from "./ui/CrosshatchPreview";
 import { CrosshatchStatus } from "./ui/CrosshatchStatus";
 
@@ -11,8 +11,8 @@ export const crosshatch: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: CrosshatchPreview,
   Status: CrosshatchStatus,
-  solvedToday: async (today) =>
-    (await loadDailyProgress(today))?.solved === true,
+  // Two boards a day; the game is done when both are solved.
+  solvedToday: (today) => isDaySolved(today),
   Page: lazy(() => import("./ui/CrosshatchPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

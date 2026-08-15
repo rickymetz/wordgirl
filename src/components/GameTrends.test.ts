@@ -30,18 +30,22 @@ describe("a metric whose field is missing charts a gap, not a zero", () => {
   // `revealed`, and folding that to 0 drew a hint-free day the player
   // never had — best-ever on a lower-is-better line, and an average
   // pulled toward zero by days holding no hint data at all.
-  it("crosshatch: a solved day with no `revealed` is null", () => {
+  it("crosshatch: a solved day with no hint data is null", () => {
+    // The roll-up hands the page `null` when any of the day's boards
+    // saved before the counter shipped.
     const hints = metric(crosshatch, "hints");
     expect(hints.lowerIsBetter).toBe(true);
-    expect(hints.value(day<CrosshatchDay>({ solved: true }))).toBeNull();
+    expect(
+      hints.value(day<CrosshatchDay>({ solved: true, hintLetters: null })),
+    ).toBeNull();
   });
 
   it("crosshatch: a genuine hint-free day is still 0, not a gap", () => {
-    // The distinction the fix has to preserve: an empty object is a day
-    // that recorded hints and used none. Only an ABSENT field is unknown.
+    // The distinction the fix has to preserve: 0 is a day that recorded
+    // hints and used none. Only ABSENT data is unknown.
     const hints = metric(crosshatch, "hints");
-    expect(hints.value(day<CrosshatchDay>({ solved: true, revealed: {} }))).toBe(0);
-    expect(hints.value(day<CrosshatchDay>({ solved: true, revealed: { fort: [0, 1] } }))).toBe(2);
+    expect(hints.value(day<CrosshatchDay>({ solved: true, hintLetters: 0 }))).toBe(0);
+    expect(hints.value(day<CrosshatchDay>({ solved: true, hintLetters: 2 }))).toBe(2);
   });
 
   it("polygram: the same, and it still counts legacy number counts", () => {
@@ -58,7 +62,7 @@ describe("a metric whose field is missing charts a gap, not a zero", () => {
 
   it("neither charts an unsolved day", () => {
     expect(
-      metric(crosshatch, "hints").value(day<CrosshatchDay>({ solved: false, revealed: {} })),
+      metric(crosshatch, "hints").value(day<CrosshatchDay>({ solved: false, hintLetters: 0 })),
     ).toBeNull();
     expect(
       metric(polygram, "hints").value(

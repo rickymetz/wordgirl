@@ -36,6 +36,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
   displayStreak,
+  isDaySolved,
   loadDailyProgress,
   loadStats,
   loadTutorialSeen,
@@ -50,8 +51,8 @@ import {
   slotWord,
   unfoundWords,
 } from "../state/reducer";
-import type { Slot } from "../engine/types";
-import { cellKey, slotCells } from "../engine/types";
+import type { Level, Slot } from "../engine/types";
+import { cellKey, LEVEL_LABEL, LEVELS, slotCells } from "../engine/types";
 import { GridBoard } from "./GridBoard";
 import { Keyboard } from "./Keyboard";
 import { SlotChips } from "./SlotChips";
@@ -68,18 +69,23 @@ function buildShareText(
   hints: number,
   dateKey: string,
   elapsedMs: number,
+  level: Level,
 ): string {
   const date = formatShareDate(dateKey);
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
   return [
     `🧺 Crosshatch — ${date}`,
-    `${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${LEVEL_LABEL[level]} · ${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
 
 interface Props {
   mode: GameMode;
+  /** Daily/archive: the board on screen and how to switch boards. Absent
+   * on dates that carry only the standard board. */
+  level?: Level;
+  onLevelChange?: (level: Level) => void;
   onNewPuzzle?: () => void;
   /** Tutorial: replay the script from step one. */
   onRestartTutorial?: () => void;
@@ -87,7 +93,12 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onRestartTutorial }: Props) {
+export function GameScreen({
+  mode,
+  level,
+  onLevelChange,
+  onRestartTutorial,
+}: Props) {
   const {
     state,
     dispatch,
@@ -114,13 +125,29 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   const [wordsOpen, setWordsOpen] = useState(false);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
+  // "Unsolved" means the DAY — a player who has finished the standard
+  // board but not the hard one still has today's puzzle to play.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
   useEffect(() => {
     if (mode.kind !== "practice") return;
-    void loadDailyProgress(localDateKey()).then((saved) =>
-      setDailySolved(saved?.solved ?? false),
-    );
+    void isDaySolved(localDateKey()).then(setDailySolved);
   }, [mode.kind]);
+
+  // The date's OTHER board, so a finished board can hand the player on
+  // to the one still standing between them and the day.
+  const [otherBoardSolved, setOtherBoardSolved] = useState<boolean | null>(
+    null,
+  );
+  const otherLevel: Level | null =
+    level === undefined ? null : level === "standard" ? "hard" : "standard";
+  useEffect(() => {
+    if (!isDaily || otherLevel === null) return;
+    void loadDailyProgress(localDateKey(), otherLevel).then((saved) =>
+      setOtherBoardSolved(saved?.solved ?? false),
+    );
+    // Re-checked when this board solves: the player may have done the
+    // other one first, in which case the day is finished here.
+  }, [isDaily, otherLevel, state.solved]);
 
   // Daily hints are free to use but marked: the first one warns that
   // the day's result will carry a hint count.
@@ -427,8 +454,15 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         </span>
       </header>
 
-      <div className="flex items-baseline gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Crosshatch</h1>
+      {/* Wraps, so the pills drop to their own line rather than push the
+          board off the side: a page that scrolls sideways puts cells out
+          of reach entirely, where a little vertical scroll — which this
+          screen already has at Huge text on a short phone — does not.
+          At every other text size they share the title's line for free. */}
+      <div className="flex flex-wrap items-baseline gap-x-2.5 pb-3">
+        <h1 className="shrink-0 text-2xl font-bold tracking-tight">
+          Crosshatch
+        </h1>
         {/* The game's mark: a little hatch. */}
         <svg
           role="img"
@@ -458,6 +492,45 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         {isTutorial && (
           <span className="text-base font-semibold text-ink-soft">
             tutorial
+          </span>
+        )}
+
+        {/* Board pills, riding the title row rather than a band of their
+            own. At the Huge text setting the grid is already down on its
+            34px touch floor and can give nothing back, so a separate row
+            here is 55px straight onto the page height — enough to put a
+            390x844 phone into a scroll it doesn't have today. */}
+        {level !== undefined && onLevelChange && (
+          <span
+            className="ml-auto flex shrink-0 gap-1 self-center"
+            role="group"
+            aria-label="Board"
+          >
+            {LEVELS.map((l) => {
+              const solved =
+                l === level ? state.solved : (otherBoardSolved ?? false);
+              return (
+                <button
+                  key={l}
+                  aria-pressed={l === level}
+                  className={[
+                    "relative rounded-full px-3 py-1 text-xs font-semibold",
+                    "touch-manipulation select-none transition-colors",
+                    // The pills are small, so the 44px touch target comes
+                    // from an invisible expansion rather than padding.
+                    "after:absolute after:-inset-x-1 after:-inset-y-2.5",
+                    l === level
+                      ? "bg-accent text-surface"
+                      : "bg-surface-tint text-ink-soft",
+                  ].join(" ")}
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => onLevelChange(l)}
+                >
+                  {LEVEL_LABEL[l]}
+                  {solved ? " ✓" : ""}
+                </button>
+              );
+            })}
           </span>
         )}
       </div>
@@ -537,7 +610,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">Solved</p>
+            <p className="text-lg font-bold text-ink">
+              {level !== undefined ? `${LEVEL_LABEL[level]} solved` : "Solved"}
+            </p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
                 {formatDuration(solvedElapsedMs)}
@@ -547,6 +622,20 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               {state.found.length}/{total} words
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
+            {/* One board down, one to go: the day only counts when both
+                are solved, so say so and offer the way over. */}
+            {otherLevel !== null &&
+              onLevelChange &&
+              otherBoardSolved === false && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => onLevelChange(otherLevel)}
+                  className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-surface active:scale-95"
+                >
+                  Play the {LEVEL_LABEL[otherLevel]} board
+                </button>
+              )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               mode.dateKey &&
               solvedElapsedMs !== null && (
@@ -557,11 +646,15 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                   hintCount,
                   mode.dateKey,
                   solvedElapsedMs,
+                  puzzle.level,
                 )}
                 gameId="crosshatch"
               />
             )}
-            {isDaily && (
+            {/* The streak belongs to the DAY, and the day needs both
+                boards — showing it after the first would report a streak
+                the player hasn't earned yet. */}
+            {isDaily && (otherLevel === null || otherBoardSolved) && (
               <DailyOutro gameId="crosshatch" loadStreak={outroStreak} />
             )}
           </motion.div>
