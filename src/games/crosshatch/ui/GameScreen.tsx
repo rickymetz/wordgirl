@@ -43,6 +43,7 @@ import {
 } from "../state/persistence";
 
 import {
+  hintLetterIndex,
   hintTarget,
   letterAt,
   slotsAt,
@@ -132,8 +133,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       setHintTargetWord(null);
     }
   }, [hintTargetWord, state.found]);
-  // Reveal a RANDOM still-hidden letter of the (chosen or default) word.
-  const revealRandomLetter = () => {
+  // Reveal the next still-hidden letter of the (chosen or default)
+  // word — leftmost first, so hints build a prefix.
+  const revealNextLetter = () => {
     const chosen =
       hintTargetWord &&
       unfoundWords(state).includes(hintTargetWord) &&
@@ -142,27 +144,8 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         : undefined;
     const target = chosen ?? hintTarget(state);
     if (!target) return;
-    const already = state.revealed[target] ?? [];
-    const unrevealed = [...target]
-      .map((_, i) => i)
-      .filter((i) => !already.includes(i));
-    // Don't burn a hint on a letter the board already shows: skip
-    // positions that are a GIVEN in every line this word can occupy.
-    const slotIdxs = puzzle.shape.slots
-      .map((_, si) => si)
-      .filter((si) => puzzle.combos.some((c) => c[si] === target));
-    const fresh = unrevealed.filter(
-      (i) =>
-        !(
-          slotIdxs.length > 0 &&
-          slotIdxs.every((si) => {
-            const c = slotCells(puzzle.shape.slots[si])[i];
-            return !!puzzle.givens[cellKey(c.row, c.col)];
-          })
-        ),
-    );
-    const candidates = fresh.length > 0 ? fresh : unrevealed;
-    if (candidates.length === 0) return;
+    const letterIndex = hintLetterIndex(state, target);
+    if (letterIndex === null) return;
     // Counted HERE, where a letter is actually spent — not on the button.
     // Two things go wrong on the button: the first hint of a day opens a
     // confirmation, so declining still counted one, and the words panel
@@ -170,22 +153,18 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
     // nothing. Both entry points pass through here, and only when a
     // letter is really revealed.
     trackHint("crosshatch");
-    dispatch({
-      type: "revealHint",
-      word: target,
-      letterIndex: candidates[Math.floor(Math.random() * candidates.length)],
-    });
+    dispatch({ type: "revealHint", word: target, letterIndex });
   };
   const requestHint = () => {
     if ((mode.kind === "daily" || mode.kind === "archive") && !hintUsed) {
       setHintWarningOpen(true);
     } else {
-      revealRandomLetter();
+      revealNextLetter();
     }
   };
   const confirmHint = () => {
     setHintWarningOpen(false);
-    revealRandomLetter();
+    revealNextLetter();
   };
 
   const focusSlot = (slot: Slot) => {
@@ -640,8 +619,8 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Use a hint?
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
-              A letter of an unfound word will be revealed in your word
-              list, and today's result will note{" "}
+              The next hidden letter of an unfound word will be revealed
+              in your word list, and today's result will note{" "}
               <span className="font-semibold text-ink">
                 how many hints you used
               </span>
@@ -741,7 +720,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                   <>
                     Find <Key>every word</Key> to solve the day.{" "}
                     <Key>Your words</Key> lists them as ?-blanks — tap one,
-                    then Hint, to reveal a letter.
+                    then Hint, to reveal its next letter.
                   </>
                 ),
               },

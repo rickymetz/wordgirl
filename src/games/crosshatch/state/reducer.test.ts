@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CrosshatchPuzzle } from "../engine/types";
 import {
   gameReducer,
+  hintLetterIndex,
   hintTarget,
   initialState,
   letterAt,
@@ -184,6 +185,29 @@ describe("submit", () => {
     // A found word can't be aimed at — falls back to the default.
     s = gameReducer(s, { type: "revealHint", word: "dud", letterIndex: 0 });
     expect(s.revealed.bad).toEqual([1, 0]);
+  });
+
+  it("hints work from the left, skipping letters the board already shows", () => {
+    // 'dab' sits on the down slot, which has no givens: straight prefix.
+    let s = initialState(puzzle);
+    const takeHint = (word: string) => {
+      const letterIndex = hintLetterIndex(s, word);
+      expect(letterIndex).not.toBeNull();
+      s = gameReducer(s, { type: "revealHint", word, letterIndex: letterIndex! });
+      return letterIndex;
+    };
+    expect(takeHint("dab")).toBe(0);
+    expect(takeHint("dab")).toBe(1);
+    expect(takeHint("dab")).toBe(2);
+    // 'bad' starts on the given 'b' at (1,0) — a letter already on the
+    // board, so the hints start at position 1 and only fall back to 0
+    // when nothing else is hidden.
+    s = initialState(puzzle);
+    expect(takeHint("bad")).toBe(1);
+    expect(takeHint("bad")).toBe(2);
+    expect(takeHint("bad")).toBe(0);
+    // Fully revealed: nothing left to spend a hint on.
+    expect(hintLetterIndex(s, "bad")).toBeNull();
   });
 
   it("counts word-level rejections for trends, not incomplete grids", () => {
