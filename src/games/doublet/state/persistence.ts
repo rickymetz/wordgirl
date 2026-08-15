@@ -1,6 +1,7 @@
 import {
   createDailyPersistence,
   displayStreak,
+  everyOtherBoardSolved,
   streakAdvance,
   sumAcrossBoards,
   type DailyBase,
@@ -8,10 +9,11 @@ import {
 } from "../../../lib/daily/persistence";
 import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type {
-  Difficulty,
-  DoubletPuzzle,
-  PlacedDomino,
+import {
+  DIFFICULTIES,
+  type Difficulty,
+  type DoubletPuzzle,
+  type PlacedDomino,
 } from "../engine/types";
 
 export interface DailyProgress extends DailyBase {
@@ -171,16 +173,28 @@ export async function resetDailyForReplay(
 /**
  * Call once per solved BOARD (the hook's statsRecorded marker guards
  * replays and re-opens): `solved` counts boards, matching `played`
- * from recordDailyStarted. The STREAK is per-day — streakAdvance
- * ignores a dateKey that already advanced it.
+ * from recordDailyStarted. The STREAK counts DAYS, and a day is every
+ * board — see below.
  */
-export function recordDailySolved(
+export async function recordDailySolved(
   dateKey: string,
+  difficulty: Difficulty,
   allowGrace = true,
 ): Promise<DoubletStats> {
+  // The STREAK belongs to the day, and the day is all three boards —
+  // the same rule the hub card has always used for "done". It used to
+  // advance on whichever board you solved first, so a player who only
+  // ever played easy kept a streak the card never called finished.
+  const dayComplete = await everyOtherBoardSolved(
+    DIFFICULTIES,
+    difficulty,
+    (d) => loadDailyProgress(dateKey, d),
+  );
   return base.updateStats((stats) => ({
     ...stats,
+    // `solved` still counts BOARDS, matching `played` from
+    // recordDailyStarted — only the streak moved to the day.
     solved: stats.solved + 1,
-    ...streakAdvance(stats, dateKey, allowGrace),
+    ...(dayComplete ? streakAdvance(stats, dateKey, allowGrace) : {}),
   }));
 }

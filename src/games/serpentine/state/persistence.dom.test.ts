@@ -7,6 +7,7 @@ import {
   loadDailyProgress,
   loadStaleDailyProgress,
   loadStats,
+  otherBoardsSolved,
   saveDailyProgress,
   updateStats,
   store,
@@ -125,6 +126,29 @@ describe("stats recording", () => {
     const stats = await loadStats();
     expect(stats.bestTimeHaiku).toBe(20_000);
     expect(stats.bestTimePoem).toBeNull();
+  });
+});
+
+describe("the day is both boards", () => {
+  it("reports whether solving this board finishes the day", async () => {
+    // What gates the streak: it used to advance on whichever board was
+    // solved first, so a player who only ever did the haiku kept a
+    // streak the hub card never called finished.
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(false);
+
+    await saveDailyProgress(day("poem", { solved: true }));
+    // The poem is done, so finishing the haiku finishes the day...
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(true);
+    // ...but finishing the poem alone does not, with no haiku saved.
+    expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(false);
+
+    await saveDailyProgress(day("haiku", { solved: true }));
+    expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(true);
+  });
+
+  it("does not count a started-but-unsolved sibling", async () => {
+    await saveDailyProgress(day("poem", { cells: [{ row: 0, col: 0 }] }));
+    expect(await otherBoardsSolved("2026-07-12", "haiku")).toBe(false);
   });
 });
 

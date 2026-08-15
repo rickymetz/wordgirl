@@ -35,23 +35,50 @@ afterEach(() => {
 });
 
 describe("stats recording", () => {
-  it("every board solved counts, but the streak advances once a day", async () => {
-    await recordDailySolved("2026-07-12");
-    await recordDailySolved("2026-07-12");
-    const stats = await recordDailySolved("2026-07-12");
+  /** Mark a board of a date solved on disk (what the game does before
+   * it reports the solve). */
+  const solveBoard = (difficulty: Difficulty, dateKey = "2026-07-12") =>
+    saveDailyProgress(day(difficulty, { dateKey, solved: true }));
+
+  /** All three boards of a date solved on disk. */
+  const solveDay = async (dateKey = "2026-07-12") => {
+    for (const d of ["easy", "medium", "hard"] as Difficulty[]) {
+      await solveBoard(d, dateKey);
+    }
+  };
+
+  it("counts every board, but holds the streak until the day is done", async () => {
+    // The rule Crosshatch uses, and the one the hub card has always
+    // used for "done": a day is all of its boards. It used to advance
+    // on whichever board was solved first, so a player who only ever
+    // played easy kept a streak the card never called finished.
+    await solveBoard("easy");
+    let stats = await recordDailySolved("2026-07-12", "easy");
+    expect(stats.solved).toBe(1);
+    expect(stats.currentStreak).toBe(0); // two boards still standing
+
+    await solveBoard("medium");
+    stats = await recordDailySolved("2026-07-12", "medium");
+    expect(stats.solved).toBe(2);
+    expect(stats.currentStreak).toBe(0);
+
+    await solveBoard("hard");
+    stats = await recordDailySolved("2026-07-12", "hard");
     expect(stats.solved).toBe(3);
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-12");
-    // Next day's first board continues the streak.
+
+    // The next day needs all three again before it continues.
     vi.setSystemTime(new Date(2026, 6, 13, 12, 0, 0));
-    const next = await recordDailySolved("2026-07-13");
-    expect(next.solved).toBe(4);
+    await solveDay("2026-07-13");
+    const next = await recordDailySolved("2026-07-13", "hard");
     expect(next.currentStreak).toBe(2);
   });
 
   it("an archive play of yesterday never borrows the grace day", async () => {
     vi.setSystemTime(new Date(2026, 6, 13, 12, 0, 0));
-    const stats = await recordDailySolved("2026-07-12", false);
+    await solveDay();
+    const stats = await recordDailySolved("2026-07-12", "hard", false);
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(0);
     expect(stats.lastSolvedDate).toBeNull();
@@ -59,13 +86,15 @@ describe("stats recording", () => {
 
   it("solving just after midnight still counts the session's day", async () => {
     vi.setSystemTime(new Date(2026, 6, 13, 0, 0, 30));
-    const stats = await recordDailySolved("2026-07-12");
+    await solveDay();
+    const stats = await recordDailySolved("2026-07-12", "hard");
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-12");
   });
 
   it("a lapsed streak displays as zero without a write", async () => {
-    await recordDailySolved("2026-07-12");
+    await solveDay();
+    await recordDailySolved("2026-07-12", "hard");
     expect(displayStreak(await loadStats(), "2026-07-13")).toBe(1); // grace
     expect(displayStreak(await loadStats(), "2026-07-15")).toBe(0); // lapsed
   });

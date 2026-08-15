@@ -1,12 +1,13 @@
 import {
   createDailyPersistence,
   displayStreak as _displayStreak,
+  everyOtherBoardSolved,
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
 import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { Cell, Difficulty, PuzzleDef } from "../engine/types";
+import { DIFFICULTIES, type Cell, type Difficulty, type PuzzleDef } from "../engine/types";
 
 export interface DayProgress extends DailyBase {
   dateKey: string;
@@ -85,6 +86,22 @@ export function loadDailyProgress(
   currentPuzzleKey?: string,
 ): Promise<DayProgress | null> {
   return daily.loadDay(`${difficulty}:${dateKey}`, currentPuzzleKey);
+}
+
+/**
+ * Is the rest of the date's boards solved — i.e. does solving THIS one
+ * finish the day? The streak belongs to the day, which is both boards,
+ * matching what the hub card has always called "done". It used to
+ * advance on whichever board was solved first, so a player who only
+ * ever did the haiku kept a streak the card never called finished.
+ */
+export function otherBoardsSolved(
+  dateKey: string,
+  difficulty: Difficulty,
+): Promise<boolean> {
+  return everyOtherBoardSolved(DIFFICULTIES, difficulty, (d) =>
+    loadDailyProgress(d, dateKey),
+  );
 }
 
 export function loadStaleDailyProgress(

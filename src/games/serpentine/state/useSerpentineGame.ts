@@ -12,6 +12,7 @@ import { gameReducer, initialState, isStartState, type GameState } from "./reduc
 import {
   loadDailyProgress,
   loadStaleDailyProgress,
+  otherBoardsSolved,
   saveDailyProgress,
   serpentinePuzzleKey,
   recordStarted,
@@ -179,18 +180,22 @@ export function useSerpentineGame(mode: GameMode) {
         elapsedMs: elapsed,
         statsRecorded: true,
         solvedHour: new Date().getHours(),
-      } as DayProgress).then(() => {
+      } as DayProgress).then(async () => {
         const isDaily = mode.kind === "daily";
+        // The streak belongs to the DAY, and a day is both boards — the
+        // rule the hub card has always used for "done".
+        const dayComplete = await otherBoardsSolved(dateKey, difficulty);
         void updateStats((s: SerpentineStats) => {
         const bestKey =
           difficulty === "haiku" ? "bestTimeHaiku" : "bestTimePoem";
         const bestTime = s[bestKey];
         return {
           ...s,
+          // Boards, matching `played` — only the streak counts days.
           solved: s.solved + 1,
           [bestKey]:
             bestTime === null || elapsed < bestTime ? elapsed : bestTime,
-          ...streakAdvance(s, dateKey, isDaily),
+          ...(dayComplete ? streakAdvance(s, dateKey, isDaily) : {}),
         };
       });
       });

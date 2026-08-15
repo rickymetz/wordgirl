@@ -221,6 +221,27 @@ export function createDailyPersistence<
 }
 
 /**
+ * Is every board of the date OTHER than this one already solved?
+ *
+ * The multi-board games all need this at the same moment — the instant
+ * a board is solved, to decide whether the DAY is done and the streak
+ * moves. It asks about the others and takes the calling board as solved
+ * by construction, because that board's own save may not have reached
+ * storage yet: it is written by a different effect, and racing it would
+ * lose a streak at random.
+ */
+export async function everyOtherBoardSolved<B extends string>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<{ solved: boolean } | null>,
+): Promise<boolean> {
+  const others = await Promise.all(
+    boards.filter((b) => b !== current).map(load),
+  );
+  return others.every((save) => save?.solved === true);
+}
+
+/**
  * A counter summed across a date's boards, or null when ANY of them
  * predates the counter. The rule the multi-board games share: a partial
  * sum presented as the day's total is as fake as a zero, so a day

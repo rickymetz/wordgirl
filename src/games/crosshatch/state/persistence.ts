@@ -1,6 +1,7 @@
 import {
   createDailyPersistence,
   displayStreak,
+  everyOtherBoardSolved,
   streakAdvance,
   sumAcrossBoards,
 } from "../../../lib/daily/persistence";
@@ -342,12 +343,11 @@ export async function recordDailySolved(
   // effect), so ask about the date's OTHER boards and take this one as
   // solved by construction. Before HARD_EPOCH there are no others, and
   // the day completes exactly as it always did.
-  const others = await Promise.all(
-    levelsFor(dateKey)
-      .filter((l) => l !== level)
-      .map((l) => loadDailyProgress(dateKey, l)),
+  const dayComplete = await everyOtherBoardSolved(
+    levelsFor(dateKey),
+    level,
+    (l) => loadDailyProgress(dateKey, l),
   );
-  const dayComplete = others.every((b) => b?.solved === true);
   return base.updateStats((stats) => ({
     ...stats,
     // Words are the player's own tally: every board's finds count as

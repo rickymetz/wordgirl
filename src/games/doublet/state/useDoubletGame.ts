@@ -201,7 +201,7 @@ export function useDoubletGame(mode: GameMode) {
     if (!recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
       statsRecordedRef.current = true;
-      void recordDailySolved(dateKey, mode.kind === "daily");
+      void recordDailySolved(dateKey, mode.difficulty, mode.kind === "daily");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.solved]);
