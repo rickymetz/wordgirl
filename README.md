@@ -67,7 +67,8 @@ A small crossword frame with many right answers:
 - Chips under the grid judge each line's current word: ❌ doesn't work
   there, grey ✓ counted already, ✅ a new word.
 - The words panel lists the whole day as **?-blanks** (like Polygram);
-  blanks are tappable to aim **hints**, which reveal random letters —
+  blanks are tappable to aim **hints**, which reveal letters from the
+  left —
   the first daily hint warns that the share text will carry a 🫣 count.
 - Daily + practice + a replayable archive, same as Polygram.
 

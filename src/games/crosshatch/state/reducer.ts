@@ -94,6 +94,41 @@ export function hintTarget(state: GameState): string | null {
   return unfoundWords(state)[0] ?? null;
 }
 
+/**
+ * The position the next hint on `word` should reveal: the leftmost
+ * still-hidden letter, so repeated hints fill the word from the left
+ * and read as a growing prefix rather than a scatter.
+ *
+ * One position is passed over: a letter the board ALREADY shows as a
+ * given in every line the word can occupy teaches nothing, so it is
+ * skipped while any other position is hidden, and only taken when
+ * nothing else is left. Returns null when the word is fully revealed.
+ */
+export function hintLetterIndex(
+  state: GameState,
+  word: string,
+): number | null {
+  const already = state.revealed[word] ?? [];
+  const unrevealed = [...word]
+    .map((_, i) => i)
+    .filter((i) => !already.includes(i));
+  if (unrevealed.length === 0) return null;
+  const slotIdxs = state.puzzle.shape.slots
+    .map((_, si) => si)
+    .filter((si) => state.puzzle.combos.some((c) => c[si] === word));
+  const fresh = unrevealed.filter(
+    (i) =>
+      !(
+        slotIdxs.length > 0 &&
+        slotIdxs.every((si) => {
+          const c = slotCells(state.puzzle.shape.slots[si])[i];
+          return !!state.puzzle.givens[cellKey(c.row, c.col)];
+        })
+      ),
+  );
+  return (fresh.length > 0 ? fresh : unrevealed)[0];
+}
+
 /** The letter shown at a cell: a locked given or the typed letter. */
 export function letterAt(
   state: GameState,
