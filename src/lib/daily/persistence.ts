@@ -235,10 +235,33 @@ export async function everyOtherBoardSolved<B extends string>(
   current: B,
   load: (board: B) => Promise<{ solved: boolean } | null>,
 ): Promise<boolean> {
-  const others = await Promise.all(
-    boards.filter((b) => b !== current).map(load),
-  );
+  const others = await loadOtherBoards(boards, current, load);
   return others.every((save) => save?.solved === true);
+}
+
+/**
+ * Is this the FIRST board of its date to be opened — i.e. does opening
+ * it start a new day?
+ *
+ * `played` counts days, so the second board of a date opened later must
+ * not count again. The caller has already established that THIS board
+ * has no save; this asks about the date's others.
+ */
+export async function isFirstBoardOfDay<B extends string>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<unknown | null>,
+): Promise<boolean> {
+  const others = await loadOtherBoards(boards, current, load);
+  return others.every((save) => save === null);
+}
+
+function loadOtherBoards<B extends string, D>(
+  boards: readonly B[],
+  current: B,
+  load: (board: B) => Promise<D | null>,
+): Promise<(D | null)[]> {
+  return Promise.all(boards.filter((b) => b !== current).map(load));
 }
 
 /**

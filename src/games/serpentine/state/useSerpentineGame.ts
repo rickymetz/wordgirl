@@ -15,7 +15,7 @@ import {
   otherBoardsSolved,
   saveDailyProgress,
   serpentinePuzzleKey,
-  recordStarted,
+  recordDailyStarted,
   updateStats,
   type DayProgress,
   type SerpentineStats,
@@ -110,8 +110,12 @@ export function useSerpentineGame(mode: GameMode) {
           staleRecordRef.current = true;
           statsRecorded.current = stale.solved || stale.statsRecorded === true;
         } else {
-          void recordStarted();
-          trackStarted("serpentine");
+          // `played` counts DAYS: the date's other board opening later
+          // is the same day's play. The analytics event fires on the
+          // same condition, so the two can't drift apart.
+          void recordDailyStarted(dateKey, difficulty).then((counted) => {
+            if (counted) trackStarted("serpentine");
+          });
         }
         hydrated.current = true;
       } else {
@@ -191,11 +195,13 @@ export function useSerpentineGame(mode: GameMode) {
         const bestTime = s[bestKey];
         return {
           ...s,
-          // Boards, matching `played` — only the streak counts days.
-          solved: s.solved + 1,
+          // Best time is per BOARD — it is that board's record. `solved`
+          // and the streak count DAYS, and a day is both boards.
           [bestKey]:
             bestTime === null || elapsed < bestTime ? elapsed : bestTime,
-          ...(dayComplete ? streakAdvance(s, dateKey, isDaily) : {}),
+          ...(dayComplete && s.lastSolvedDate !== dateKey
+            ? { solved: s.solved + 1, ...streakAdvance(s, dateKey, isDaily) }
+            : {}),
         };
       });
       });

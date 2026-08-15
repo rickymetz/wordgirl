@@ -2,6 +2,7 @@ import {
   createDailyPersistence,
   displayStreak,
   everyOtherBoardSolved,
+  isFirstBoardOfDay,
   streakAdvance,
   sumAcrossBoards,
 } from "../../../lib/daily/persistence";
@@ -312,12 +313,10 @@ export async function recordDailyStarted(
   dateKey: string,
   level: Level = "normal",
 ): Promise<boolean> {
-  const siblings = await Promise.all(
-    levelsFor(dateKey)
-      .filter((l) => l !== level)
-      .map((l) => loadDailyProgress(dateKey, l)),
+  const first = await isFirstBoardOfDay(levelsFor(dateKey), level, (l) =>
+    loadDailyProgress(dateKey, l),
   );
-  if (siblings.some((s) => s !== null)) return false;
+  if (!first) return false;
   await base.recordStarted();
   return true;
 }

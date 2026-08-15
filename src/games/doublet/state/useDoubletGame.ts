@@ -151,8 +151,11 @@ export function useDoubletGame(mode: GameMode) {
             hydratedRef.current = true;
             return;
           }
-          void recordDailyStarted();
-          trackStarted("doublet");
+          // Fires only when the DAY was counted, never once per board:
+          // the event and the `played` stat have to mean the same thing.
+          void recordDailyStarted(dateKey, mode.difficulty).then((counted) => {
+            if (counted) trackStarted("doublet");
+          });
           sessionsRef.current = 1;
           hydratedRef.current = true;
           persistNow(stateRef.current);

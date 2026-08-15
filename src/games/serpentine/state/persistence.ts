@@ -2,6 +2,7 @@ import {
   createDailyPersistence,
   displayStreak as _displayStreak,
   everyOtherBoardSolved,
+  isFirstBoardOfDay,
   type DailyBase,
   type StreakStats,
 } from "../../../lib/daily/persistence";
@@ -102,6 +103,26 @@ export function otherBoardsSolved(
   return everyOtherBoardSolved(DIFFICULTIES, difficulty, (d) =>
     loadDailyProgress(d, dateKey),
   );
+}
+
+/**
+ * Call when a board of a new daily is first opened. `played` counts
+ * DAYS, not boards — the two boards of one date are one day's play — so
+ * the other board opened later must not count again.
+ *
+ * Returns whether the day was counted, so the analytics `started` event
+ * can fire on exactly the same condition instead of once per board.
+ */
+export async function recordDailyStarted(
+  dateKey: string,
+  difficulty: Difficulty,
+): Promise<boolean> {
+  const first = await isFirstBoardOfDay(DIFFICULTIES, difficulty, (d) =>
+    loadDailyProgress(d, dateKey),
+  );
+  if (!first) return false;
+  await daily.recordStarted();
+  return true;
 }
 
 export function loadStaleDailyProgress(

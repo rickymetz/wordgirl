@@ -7,6 +7,7 @@ import {
   loadDailyProgress,
   loadStats,
   recordDailySolved,
+  recordDailyStarted,
   saveDailyProgress,
   type DailyProgress,
 } from "./persistence";
@@ -47,24 +48,24 @@ describe("stats recording", () => {
     }
   };
 
-  it("counts every board, but holds the streak until the day is done", async () => {
-    // The rule Crosshatch uses, and the one the hub card has always
-    // used for "done": a day is all of its boards. It used to advance
-    // on whichever board was solved first, so a player who only ever
-    // played easy kept a streak the card never called finished.
+  it("counts the DAY, once all three boards are done", async () => {
+    // `solved` and the streak both count days — the unit `played` uses,
+    // and the one the hub card has always used for "done". Both used to
+    // move on whichever board was solved first, so a player who only
+    // ever played easy kept a streak the card never called finished.
     await solveBoard("easy");
     let stats = await recordDailySolved("2026-07-12", "easy");
-    expect(stats.solved).toBe(1);
+    expect(stats.solved).toBe(0);
     expect(stats.currentStreak).toBe(0); // two boards still standing
 
     await solveBoard("medium");
     stats = await recordDailySolved("2026-07-12", "medium");
-    expect(stats.solved).toBe(2);
+    expect(stats.solved).toBe(0);
     expect(stats.currentStreak).toBe(0);
 
     await solveBoard("hard");
     stats = await recordDailySolved("2026-07-12", "hard");
-    expect(stats.solved).toBe(3);
+    expect(stats.solved).toBe(1); // the DAY, not three boards
     expect(stats.currentStreak).toBe(1);
     expect(stats.lastSolvedDate).toBe("2026-07-12");
 
@@ -73,6 +74,17 @@ describe("stats recording", () => {
     await solveDay("2026-07-13");
     const next = await recordDailySolved("2026-07-13", "hard");
     expect(next.currentStreak).toBe(2);
+  });
+
+  it("counts a date as one play however many boards you open", async () => {
+    expect(await recordDailyStarted("2026-07-12", "easy")).toBe(true);
+    await saveDailyProgress(day("easy"));
+    // Opening medium later is the same day's play. The return value
+    // gates the analytics event, so it has to say so too.
+    expect(await recordDailyStarted("2026-07-12", "medium")).toBe(false);
+    await saveDailyProgress(day("medium"));
+    expect(await recordDailyStarted("2026-07-12", "hard")).toBe(false);
+    expect((await loadStats()).played).toBe(1);
   });
 
   it("an archive play of yesterday never borrows the grace day", async () => {

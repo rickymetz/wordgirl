@@ -8,6 +8,7 @@ import {
   loadStaleDailyProgress,
   loadStats,
   otherBoardsSolved,
+  recordDailyStarted,
   saveDailyProgress,
   updateStats,
   store,
@@ -144,6 +145,15 @@ describe("the day is both boards", () => {
 
     await saveDailyProgress(day("haiku", { solved: true }));
     expect(await otherBoardsSolved("2026-07-12", "poem")).toBe(true);
+  });
+
+  it("counts a date as one play however many boards you open", async () => {
+    expect(await recordDailyStarted("2026-07-12", "haiku")).toBe(true);
+    await saveDailyProgress(day("haiku"));
+    // The poem opened later is the same day's play. The return value
+    // gates the analytics event, so it has to say so too.
+    expect(await recordDailyStarted("2026-07-12", "poem")).toBe(false);
+    expect((await loadStats()).played).toBe(1);
   });
 
   it("does not count a started-but-unsolved sibling", async () => {

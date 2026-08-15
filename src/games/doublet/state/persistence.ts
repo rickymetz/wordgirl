@@ -2,6 +2,7 @@ import {
   createDailyPersistence,
   displayStreak,
   everyOtherBoardSolved,
+  isFirstBoardOfDay,
   streakAdvance,
   sumAcrossBoards,
   type DailyBase,
@@ -74,7 +75,25 @@ export const loadStaleDailyProgress = (
 export const saveDailyProgress = base.saveDay;
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const { loadTutorialSeen, markTutorialSeen } = base;
-export const recordDailyStarted = base.recordStarted;
+/**
+ * Call when a board of a new daily is first opened. `played` counts
+ * DAYS, not boards — the three boards of one date are one day's play —
+ * so the second board of a date opened later must not count again.
+ *
+ * Returns whether the day was counted, so the analytics `started` event
+ * can fire on exactly the same condition instead of once per board.
+ */
+export async function recordDailyStarted(
+  dateKey: string,
+  difficulty: Difficulty,
+): Promise<boolean> {
+  const first = await isFirstBoardOfDay(DIFFICULTIES, difficulty, (d) =>
+    loadDailyProgress(dateKey, d),
+  );
+  if (!first) return false;
+  await base.recordStarted();
+  return true;
+}
 export { displayStreak };
 
 /**
@@ -172,9 +191,9 @@ export async function resetDailyForReplay(
 
 /**
  * Call once per solved BOARD (the hook's statsRecorded marker guards
- * replays and re-opens): `solved` counts boards, matching `played`
- * from recordDailyStarted. The STREAK counts DAYS, and a day is every
- * board — see below.
+ * replays and re-opens). `solved` and the streak both count DAYS, and a
+ * day is every one of its boards — the rule the hub card has always
+ * used for "done".
  */
 export async function recordDailySolved(
   dateKey: string,
@@ -192,9 +211,12 @@ export async function recordDailySolved(
   );
   return base.updateStats((stats) => ({
     ...stats,
-    // `solved` still counts BOARDS, matching `played` from
-    // recordDailyStarted — only the streak moved to the day.
-    solved: stats.solved + 1,
-    ...(dayComplete ? streakAdvance(stats, dateKey, allowGrace) : {}),
+    // `solved` counts DAYS, like `played` — a day is all three boards.
+    ...(dayComplete && stats.lastSolvedDate !== dateKey
+      ? {
+          solved: stats.solved + 1,
+          ...streakAdvance(stats, dateKey, allowGrace),
+        }
+      : {}),
   }));
 }
