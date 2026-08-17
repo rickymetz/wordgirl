@@ -35,6 +35,23 @@ export function HubPage() {
           <GameCard key={game.id} game={game} />
         ))}
       </main>
+      {/* The only route into the legal pages. Kept off the game screens
+          on purpose — they are the one place with a height budget, and a
+          link nobody needs mid-puzzle is not worth spending it on. */}
+      {/* `-my-3 py-3` is the touch floor, not decoration: the labels are
+          20px of line box, and the padding lifts the tap target to 44
+          while the negative margin keeps the footer the height it looks. */}
+      <footer className="flex justify-center gap-6 pt-10 text-sm text-ink-soft">
+        <Link
+          to="/privacy"
+          className="-my-3 py-3 underline underline-offset-2"
+        >
+          Privacy
+        </Link>
+        <Link to="/terms" className="-my-3 py-3 underline underline-offset-2">
+          Terms
+        </Link>
+      </footer>
       <AnimatePresence>
         {settingsOpen && (
           <SettingsDialog onClose={() => setSettingsOpen(false)} />
