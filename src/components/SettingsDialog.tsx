@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { Monitor, Moon, RefreshCw, Sun, X } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
+import { BackupRows } from "./BackupRows";
 import {
   FONT_SCALES,
   FONTS,
@@ -132,6 +133,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             value={settings.font}
             onChange={(font) => update({ font })}
           />
+          <BackupRows />
           <UpdateRow />
         </div>
       </div>
