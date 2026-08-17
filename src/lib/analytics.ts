@@ -136,6 +136,25 @@ export function trackSetting({ key, value }: SettingEvent) {
   track(`setting:${key}:${value}`);
 }
 
+// --- Backing up progress --------------------------------------------
+//
+// App-level, so no game prefix. The pair answers one question a
+// device-local game cannot otherwise ask: whether anybody actually uses
+// the escape hatch from "your streak lives on one device". A restore
+// count far below the export count is the expected shape — most backups
+// are insurance that never gets claimed — but a restore count of zero
+// over months would mean the feature is a comfort blanket, not a tool.
+
+/** A backup file was generated and handed to the browser. */
+export function trackBackupExport() {
+  track("backup:export");
+}
+
+/** A backup was accepted and written over local progress. */
+export function trackBackupRestore() {
+  track("backup:restore");
+}
+
 // --- What the stats work and the score cut added --------------------
 
 /**

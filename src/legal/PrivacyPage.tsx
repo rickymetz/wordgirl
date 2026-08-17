@@ -40,6 +40,12 @@ export function PrivacyPage() {
           clearing site data erases it, and it does not follow you to
           another device or another browser.
         </P>
+        <P>
+          Settings offers a backup, which writes that same data to a file
+          you keep. The file is produced in your browser and saved
+          wherever you choose — it is never uploaded, and we never see it.
+          Where it goes afterwards is entirely up to you.
+        </P>
       </Section>
 
       <Section heading="Cookies">
@@ -60,6 +66,7 @@ export function PrivacyPage() {
             "which page was visited, and the site that linked you here",
             "rough technical details — browser, operating system, and country",
             "named actions inside a game, such as starting a puzzle, solving one, taking a hint, or tapping share",
+            "named actions outside a game: changing a display setting, and saving or restoring a backup",
           ]}
         />
         <P>

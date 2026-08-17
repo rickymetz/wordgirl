@@ -18,13 +18,23 @@ export function ModalDialog({
 }) {
   const ref = useModalFocus<HTMLDivElement>(true);
 
+  // Capture phase, and the event stops here. A ModalDialog can open ON TOP
+  // of a BottomSheet (Settings → restore a backup), and the sheet listens
+  // for Escape on window too — in the bubble phase, and registered first
+  // because it mounted first. Without this, one Escape would dismiss both:
+  // the confirmation AND the sheet behind it. Capturing at window runs
+  // before any bubble-phase window listener, so stopping propagation here
+  // makes Escape belong to the topmost dialog, which is what a player
+  // means by it.
   useEffect(() => {
     if (!onClose) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      onClose();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
 
   return (
