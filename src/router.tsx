@@ -12,6 +12,15 @@ const DictionaryPage = lazy(() =>
   })),
 );
 
+// Lazy for the same reason the dictionary is: prose nobody opens mid-game
+// has no business in the bundle that has to boot the hub.
+const PrivacyPage = lazy(() =>
+  import("./legal/PrivacyPage").then((m) => ({ default: m.PrivacyPage })),
+);
+const TermsPage = lazy(() =>
+  import("./legal/TermsPage").then((m) => ({ default: m.TermsPage })),
+);
+
 function lazyPage(Page: React.ComponentType) {
   return (
     <Suspense
@@ -56,6 +65,8 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <HubPage /> },
       { path: "/dictionary", element: lazyPage(DictionaryPage) },
+      { path: "/privacy", element: lazyPage(PrivacyPage) },
+      { path: "/terms", element: lazyPage(TermsPage) },
       ...gameRoutes,
       { path: "*", element: <Navigate to="/" replace /> },
     ],
