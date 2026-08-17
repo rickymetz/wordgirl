@@ -28,6 +28,7 @@ export function BackupPrompt() {
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -42,7 +43,10 @@ export function BackupPrompt() {
       // Counted where it is SHOWN, so it can be the denominator for the
       // export event — the same reasoning as `tutorial-offered`.
       trackBackupReminder();
-    })();
+      // Staying silent is the right failure: a browser that cannot be
+      // read cannot be backed up either, and an error card on the hub
+      // would be noise about a feature the player never asked for.
+    })().catch(() => {});
     return () => {
       live = false;
     };
@@ -50,17 +54,30 @@ export function BackupPrompt() {
 
   if (!open) return null;
 
+  // Mirrors BackupRows: a failed save has to SAY so. Without the catch a
+  // rejection from `void save()` is an unhandled rejection and the tap
+  // looks like a dead button, which is the worst way to learn your
+  // backup did not happen.
   const save = async () => {
-    const backup = await createBackup();
-    downloadJson(backup, backupFilename());
-    await recordBackupSaved();
-    trackBackupExport();
-    setSaved(true);
+    try {
+      const backup = await createBackup();
+      downloadJson(backup, backupFilename());
+      await recordBackupSaved();
+      trackBackupExport();
+      setSaved(true);
+    } catch {
+      setFailed(true);
+    }
   };
 
   const dismiss = async () => {
     setOpen(false);
-    await snoozeReminder();
+    // A snooze that fails to persist only costs one extra prompt later.
+    try {
+      await snoozeReminder();
+    } catch {
+      /* ignored */
+    }
   };
 
   return (
@@ -89,6 +106,11 @@ export function BackupPrompt() {
           </>
         )}
       </p>
+      {failed && (
+        <p role="status" className="pt-2 text-sm font-medium text-ink">
+          Couldn't save the backup. You can try again from Settings.
+        </p>
+      )}
       {/* py-3, not py-2.5: at this font size 2.5 measures 40px, under the
           44px touch floor. Measured against the real build, not guessed. */}
       {!saved && (

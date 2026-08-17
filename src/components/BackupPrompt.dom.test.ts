@@ -126,3 +126,26 @@ describe("BackupPrompt", () => {
     expect(container.textContent).toBe("");
   });
 });
+
+describe("when saving fails", () => {
+  it("says so instead of looking like a dead button", async () => {
+    seedDays(30);
+    await mount();
+    // The one failure a player can actually hit: the browser refuses to
+    // hand over a file. Without a catch this is an unhandled rejection
+    // and the card just sits there.
+    HTMLAnchorElement.prototype.click = function () {
+      throw new Error("download blocked");
+    };
+    await act(async () => {
+      button("Save a backup").click();
+    });
+    await flush();
+    expect(container.textContent).toContain("Couldn't save the backup");
+    expect(container.textContent).not.toContain("Backup saved");
+    // And nothing was recorded, so the offer returns rather than being
+    // silently marked done.
+    expect(localStorage.getItem(STATE_KEY)).toBeNull();
+    expect(sent).not.toContain("backup:export");
+  });
+});
