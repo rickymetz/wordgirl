@@ -101,7 +101,7 @@ export function TermsPage() {
 
       <Section heading="Liability">
         <P>
-          To the fullest extent the law allows, WordGirl and its author are
+          To the fullest extent the law allows, WordGirl and Rick Metzger are
           not liable for any loss arising from your use of the game,
           including lost progress or lost streaks.
         </P>

@@ -247,7 +247,7 @@ is not granted.
 That makes this *source-available* rather than open source in the OSI
 sense, with the costs that carries; [NOTICE.md](NOTICE.md) explains the
 trade, and also covers what the licence does **not** reach — the WordGirl
-and game names, the logos and the press-kit art all stay with the author.
+and game names, the logos and the press-kit art all stay with Rick Metzger.
 Fork freely, just rename before you publish.
 
 [NOTICE.md](NOTICE.md) also credits the word-list sources and flags the

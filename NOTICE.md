@@ -19,7 +19,7 @@ the "fork freely, don't sell it" rule.
 The name **WordGirl**, the names of the individual games (Polygram,
 Crosshatch, Backwords, Doublet, Serpentine), the logos, the icons under
 `public/icons/`, and the artwork under `public/teasers/` and `presskit/`
-are **not** licensed. They remain the property of the author.
+are **not** licensed. They remain the property of Rick Metzger.
 
 A fork is welcome; a fork wearing this game's name is not. Rename before
 you publish, so nobody has to guess which one is the original.
