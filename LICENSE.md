@@ -1,4 +1,4 @@
-Required Notice: Copyright (c) 2026 rickymetz (https://wordgirl.net)
+Required Notice: Copyright (c) 2026 Rick Metzger (https://wordgirl.net)
 
 # PolyForm Noncommercial License 1.0.0
 
