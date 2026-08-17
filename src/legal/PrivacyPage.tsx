@@ -66,7 +66,7 @@ export function PrivacyPage() {
             "which page was visited, and the site that linked you here",
             "rough technical details — browser, operating system, and country",
             "named actions inside a game, such as starting a puzzle, solving one, taking a hint, or tapping share",
-            "named actions outside a game: changing a display setting, and saving or restoring a backup",
+            "named app-level events: changing a display setting, saving or restoring a backup, and being shown the backup reminder",
           ]}
         />
         <P>
