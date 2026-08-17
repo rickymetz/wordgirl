@@ -11,6 +11,7 @@ import {
   type Backup,
 } from "../lib/backup";
 import { downloadJson, readFileText } from "../lib/backupFile";
+import { recordBackupSaved } from "../lib/backupReminder";
 import { trackBackupExport, trackBackupRestore } from "../lib/analytics";
 
 /**
@@ -35,6 +36,9 @@ export function BackupRows() {
     try {
       const backup = await createBackup();
       downloadJson(backup, backupFilename());
+      // Recorded so the hub's reminder respects a save made here and
+      // stays quiet, rather than asking again the next time you visit.
+      await recordBackupSaved();
       trackBackupExport();
       setStatus("Backup saved");
     } catch {
@@ -174,13 +178,14 @@ function ConfirmRestore({
         backup is lost, including days played since it was made. Save a
         backup first if you are not sure.
       </p>
+      {/* py-3 clears the 44px touch floor; py-2.5 measures 40. */}
       <div className="flex gap-2.5 pt-5">
         <button
           type="button"
           data-autofocus
           onClick={onCancel}
           disabled={busy}
-          className="flex-1 rounded-full bg-tile py-2.5 text-sm font-semibold active:scale-95 disabled:opacity-60"
+          className="flex-1 rounded-full bg-tile py-3 text-sm font-semibold active:scale-95 disabled:opacity-60"
         >
           Cancel
         </button>
@@ -188,7 +193,7 @@ function ConfirmRestore({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="flex-1 rounded-full bg-accent py-2.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-60"
+          className="flex-1 rounded-full bg-accent py-3 text-sm font-semibold text-surface active:scale-95 disabled:opacity-60"
         >
           Replace and reload
         </button>

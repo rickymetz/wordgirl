@@ -155,6 +155,18 @@ export function trackBackupRestore() {
   track("backup:restore");
 }
 
+/**
+ * The hub offered a backup — the denominator for `backup:export`.
+ *
+ * Fires where the card is SHOWN, not where it mounts: the component
+ * mounts on every hub visit and asks storage whether the offer is due.
+ * Only the shown branch is a player actually being asked, which is the
+ * same reasoning as `tutorial-offered`.
+ */
+export function trackBackupReminder() {
+  track("backup:reminder");
+}
+
 // --- What the stats work and the score cut added --------------------
 
 /**

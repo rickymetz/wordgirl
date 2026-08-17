@@ -6,6 +6,7 @@ import { BookOpen, Settings } from "lucide-react";
 import { games } from "../games/registry";
 import { SettingsDialog } from "../components/SettingsDialog";
 import { GameCard } from "./GameCard";
+import { BackupPrompt } from "../components/BackupPrompt";
 
 export function HubPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -35,6 +36,7 @@ export function HubPage() {
           <GameCard key={game.id} game={game} />
         ))}
       </main>
+      <BackupPrompt />
       {/* The only route into the legal pages. Kept off the game screens
           on purpose — they are the one place with a height budget, and a
           link nobody needs mid-puzzle is not worth spending it on. */}
