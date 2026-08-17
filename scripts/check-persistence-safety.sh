@@ -59,7 +59,11 @@ dict_version_files=()
 if [ -n "$changed_files" ]; then
   while IFS= read -r f; do
     # Documentation and this script itself mention DICT_VERSION without affecting saves.
-    [[ "$f" == docs/* || "$f" == scripts/check-persistence-safety.sh ]] && continue
+    # Any *.md counts as documentation: markdown never executes, so it cannot
+    # move a dictVersion. Without this, editing an unrelated section of a
+    # README that happens to MENTION DICT_VERSION fires the checklist, and a
+    # gate that cries wolf is a gate people learn to skip.
+    [[ "$f" == docs/* || "$f" == *.md || "$f" == scripts/check-persistence-safety.sh ]] && continue
     [ -n "$f" ] && dict_version_files+=("$f")
   done < <(echo "$changed_files" | xargs grep -l 'DICT_VERSION' 2>/dev/null || true)
 fi
