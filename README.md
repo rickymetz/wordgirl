@@ -236,3 +236,20 @@ npm run preview    # serve the production build locally
 
 Pushes to `main` deploy via Netlify (`netlify.toml`: build `npm run
 build`, publish `dist/`, SPA redirect included).
+
+## Licence
+
+Source code is under the **[PolyForm Noncommercial 1.0.0](LICENSE.md)**
+licence: fork it, change it, run it, publish your changes — for any
+noncommercial purpose. Selling it, or folding it into something you sell,
+is not granted.
+
+That makes this *source-available* rather than open source in the OSI
+sense, with the costs that carries; [NOTICE.md](NOTICE.md) explains the
+trade, and also covers what the licence does **not** reach — the WordGirl
+and game names, the logos and the press-kit art all stay with the author.
+Fork freely, just rename before you publish.
+
+[NOTICE.md](NOTICE.md) also credits the word-list sources and flags the
+one thing a fork should change before deploying: the Fathom `data-site`
+in `index.html`, which otherwise reports into this site's dashboard.

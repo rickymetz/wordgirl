@@ -24,10 +24,43 @@ export function TermsPage() {
         <Bullets
           items={[
             "attacking, overloading, or attempting to break the site",
-            "scraping it in bulk or republishing it as your own",
+            "scraping it in bulk, or passing this site off as your own",
             "charging other people for access to it",
           ]}
         />
+      </Section>
+
+      <Section heading="Source code">
+        <P>
+          WordGirl is source-available: the code is public, and you may
+          fork it, change it and publish your version for any
+          noncommercial purpose. Selling it, or folding it into something
+          you sell, is not granted. The WordGirl and game names, the logos
+          and the artwork are not covered — rename your fork before you
+          publish it.
+        </P>
+        <P>
+          The full terms are in the repository, as{" "}
+          <a
+            href="https://github.com/rickymetz/wordgirl/blob/main/LICENSE.md"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            LICENSE.md
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://github.com/rickymetz/wordgirl/blob/main/NOTICE.md"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-ink underline underline-offset-2"
+          >
+            NOTICE.md
+          </a>
+          . Where this page and the licence differ, the licence governs the
+          code.
+        </P>
       </Section>
 
       <Section heading="No guarantee of availability">
