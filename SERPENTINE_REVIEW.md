@@ -19,7 +19,7 @@ unsolved in-progress save. The shared persistence layer only guards
 progress is silently destroyed.
 
 Every sibling game sets `hydrated.current = true` **inside** the async
-callback, after the load completes. Backwords even has a comment:
+callback, after the load completes. Pierglass even has a comment:
 *"hydratedRef flips only AFTER hydration completes."*
 
 **Scenario:** Player places cells without solving, closes tab. On reopen,
@@ -176,7 +176,7 @@ logic (`statsLock`, `validShape`, `saveDailyProgress` multi-tab guard,
 
 ### HIGH: Three games still duplicate active-time clock
 
-Only backwords and serpentine use the shared `useDailyClock`. Polygram,
+Only pierglass and serpentine use the shared `useDailyClock`. Polygram,
 crosshatch, and doublet each inline ~30 lines of identical
 visibility/pagehide/bank/flush logic.
 

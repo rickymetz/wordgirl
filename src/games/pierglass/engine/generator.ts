@@ -26,11 +26,11 @@ const MAX_ATTEMPTS = 400;
 
 // v2: bank band reduced to 8-12 (repetition tuning, pre-release).
 export function dailySeed(dateKey: string): string {
-  return `backwords:v2:daily:${dateKey}`;
+  return `pierglass:v2:daily:${dateKey}`;
 }
 
 export function practiceSeed(random: string): string {
-  return `backwords:v2:practice:${random}`;
+  return `pierglass:v2:practice:${random}`;
 }
 
 /**
@@ -134,7 +134,7 @@ function attempt(
   return { bank, seedRows: seed.map((i) => i.place), solutions, rowCounts };
 }
 
-export function generateBackwords(
+export function generatePierglass(
   dict: Dictionary,
   seed: string,
   // Callers that already built the lexicon (the game hook memoizes it)
@@ -154,7 +154,7 @@ export function generateBackwords(
     fallback ??= c; // meets the ≥2 band; keep looking for ≥3
   }
   if (fallback) return toPuzzle(seed, fallback, items);
-  throw new Error(`backwords generator exhausted attempts for ${seed}`);
+  throw new Error(`pierglass generator exhausted attempts for ${seed}`);
 }
 
 function toPuzzle(seed: string, c: Candidate, items: RowDef[]): Puzzle {

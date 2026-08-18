@@ -6,7 +6,7 @@ import {
 } from "../state/persistence";
 
 /** Hub-card status: today's date plus play state (shared GameStatus). */
-export function BackwordsStatus() {
+export function PierglassStatus() {
   return (
     <GameStatus
       loadState={async (today) => {

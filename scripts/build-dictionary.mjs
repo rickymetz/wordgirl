@@ -66,7 +66,7 @@ const BLOCKLIST = new Set([
   // REQUIRES them (they're in ENABLE, but nobody thinks of them).
   "mel", "del", "sal", "mae", "kat", "goa", "lakhs", "riley", "sally",
   "donna", "jones", "sonny", "monte",
-  // More of the same, surfaced by backwords: its mirror rows CELEBRATE
+  // More of the same, surfaced by pierglass: its mirror rows CELEBRATE
   // both readings, so junk reversals (eat|tae, man|nam, bed|deb,
   // map|pam, sit|tis) and name-palindromes (ana) teach non-words.
   "tae", "nam", "deb", "pam", "tis", "ana",
@@ -81,7 +81,7 @@ const REQUIRED_ALLOWLIST = new Set([
   "munch", "stomp", "stung", "stout", "stoop", "ore", "bog", "oar",
   "eel", "elm", "imp", "orb", "urn", "yolk", "mime", "ewe", "husk",
   "stoic",
-  // Mirror-word staples: backwords rows need BOTH readings in the
+  // Mirror-word staples: pierglass rows need BOTH readings in the
   // required tier, and these reversals are words players expect.
   "dab",
 ]);

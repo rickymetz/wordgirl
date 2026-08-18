@@ -11,8 +11,8 @@ import {
 } from "../state/persistence";
 
 const config: GameTrendsConfig<ArchivedDay> = {
-  gameId: "backwords",
-  accent: "backwords",
+  gameId: "pierglass",
+  accent: "pierglass",
   epoch: ARCHIVE_EPOCH,
   loadAllDays: loadAllDailyProgress,
   metrics: [

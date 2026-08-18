@@ -11,7 +11,7 @@ arguments:
 
 Scaffold a new game called `<id>` with all required folders, files, and registrations.
 
-Before starting, read `CLAUDE.md` for the full house rules. Read an existing game (backwords or crosshatch) as a reference for every pattern below.
+Before starting, read `CLAUDE.md` for the full house rules. Read an existing game (pierglass or crosshatch) as a reference for every pattern below.
 
 ## 1. Create folder structure
 
@@ -49,7 +49,7 @@ Puzzle and cell types for this game. Export the puzzle shape (e.g. `Puzzle`, `Ce
 - Test win/lose detection if applicable.
 
 ### `state/persistence.ts`
-Use `createDailyPersistence` from `src/lib/daily/persistence`. Follow the exact pattern from backwords or crosshatch persistence. Export:
+Use `createDailyPersistence` from `src/lib/daily/persistence`. Follow the exact pattern from pierglass or crosshatch persistence. Export:
 - `DailyProgress extends DailyBase` — the per-day save shape.
 - Stats type `extends StreakStats` — cumulative stats shape.
 - `loadDailyProgress(dateKey)` / `loadStaleDailyProgress(dateKey)` — load with stale fallback for hydration.
@@ -82,13 +82,13 @@ The main game hook. Follow the existing game hooks exactly:
 Main game page. Wrap the outermost element with `data-level={accentLevel}` so accent tokens resolve. Lazy-exported as the default export for code splitting.
 
 ### `ui/ArchivePage.tsx`
-Render the shared `GameArchive` component with a `GameArchiveConfig`. This should be ~30 lines of config — never hand-roll archive layout. See backwords or crosshatch `ArchivePage` for the exact config shape.
+Render the shared `GameArchive` component with a `GameArchiveConfig`. This should be ~30 lines of config — never hand-roll archive layout. See pierglass or crosshatch `ArchivePage` for the exact config shape.
 
 ### `ui/TrendsPage.tsx`
 Render the shared `GameTrends` component with a config. Route it at `stats` with a "Stats" secondary action.
 
 ### `ui/<Id>Preview.tsx`
-Bento preview for the hub card. Use `Tile` with `mini` sizing (`tileClasses("tile", true)`). Keep it small and decorative — see `BackwordsPreview` for the idiom.
+Bento preview for the hub card. Use `Tile` with `mini` sizing (`tileClasses("tile", true)`). Keep it small and decorative — see `PierglassPreview` for the idiom.
 
 ### `ui/<Id>Status.tsx` (optional)
 Hub-card status line using `GameStatus`. Pass `loadState`/`loadStreak` loaders.
@@ -96,7 +96,7 @@ Hub-card status line using `GameStatus`. Pass `loadState`/`loadStreak` loaders.
 ## 5. Create the game index
 
 ### `index.ts`
-Export the `GameDefinition` object. Follow the backwords `index.ts` pattern exactly:
+Export the `GameDefinition` object. Follow the pierglass `index.ts` pattern exactly:
 - `id`, `name`, `tagline`, `themeColor: "var(--color-accent)"`.
 - `Preview` and optionally `Status` (eagerly imported).
 - `Page` via `lazy(() => import("./ui/<Id>Page"))`.

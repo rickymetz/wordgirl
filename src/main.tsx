@@ -3,8 +3,14 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import { applySettings, loadSettings } from "./lib/settings";
+import { migrateRenamedGames } from "./lib/storage/renames";
 import { setSWRegistration } from "./lib/swUpdate";
 import "./index.css";
+
+// A renamed game's saves must move BEFORE any hook hydrates, or the
+// first render reads an empty namespace and writes a fresh save over a
+// streak. Synchronous and first, for that reason.
+migrateRenamedGames();
 
 // Theme override + text size must land before first paint.
 applySettings(loadSettings());

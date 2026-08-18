@@ -74,6 +74,6 @@ The settings are the theme and the text size. The themes are system, light, and 
 
 Some patterns stay in one game. Copy them from that game:
 
-- Drag and drop: `src/games/backwords/ui/dragPoint.ts` and the board components.
+- Drag and drop: `src/games/pierglass/ui/dragPoint.ts` and the board components.
 - Dominoes with two cells: `src/games/doublet/ui/DominoTray.tsx`.
 - Polygon shape animation: `src/games/polygram/ui/`.

@@ -4,9 +4,9 @@
 import GameGlyph from "./GameGlyph.astro";
 
 const { id, entry } = Astro.locals.starlightRoute;
-const match = id.match(/^games\/(polygram|crosshatch|backwords|doublet|serpentine)/);
+const match = id.match(/^games\/(polygram|crosshatch|pierglass|doublet|serpentine)/);
 const game = match?.[1] as
-  | "polygram" | "crosshatch" | "backwords" | "doublet" | "serpentine"
+  | "polygram" | "crosshatch" | "pierglass" | "doublet" | "serpentine"
   | undefined;
 ---
 

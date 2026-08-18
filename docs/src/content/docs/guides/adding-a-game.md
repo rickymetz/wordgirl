@@ -64,7 +64,7 @@ Use `GameStatus` with two load functions. One function gives the state text. One
 
 ## Step 9: Make the hub preview
 
-Make a small preview component for the hub card. Use `Tile` with the `mini` option. Refer to `BackwordsPreview` for the pattern.
+Make a small preview component for the hub card. Use `Tile` with the `mini` option. Refer to `PierglassPreview` for the pattern.
 
 ## Step 10: Make the instructions sheet
 

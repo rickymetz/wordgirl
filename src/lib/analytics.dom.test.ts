@@ -95,7 +95,7 @@ describe("when Fathom is not there", () => {
 
   it("does not send anything a person could be recognised by", () => {
     // Fathom is the cookieless choice; keep the payload a bare name.
-    trackSolved("backwords");
+    trackSolved("pierglass");
     trackSetting({ key: "theme", value: "light" });
     for (const event of sent) {
       expect(event).toMatch(/^[a-z-]+:[a-z-]+(:[a-z-]+)?$/);

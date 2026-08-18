@@ -14,13 +14,13 @@ const SLOT = TILE + 4; // middle slot: tile + 2px inset each side
 const LEFT = TILE * 3 + 4; // fits WAS (3 tiles + gaps)
 const LINE_X = LEFT + SLOT / 2;
 
-export function BackwordsPreview() {
+export function PierglassPreview() {
   return (
     <div className="relative flex flex-col gap-[3px] pt-1" aria-hidden>
       {/* The glass pane, its left edge on the mirror line. */}
       <div
         className="absolute inset-y-[-4px] right-[-6px] rounded-lg"
-        style={{ left: LINE_X, background: "var(--backwords-glass)" }}
+        style={{ left: LINE_X, background: "var(--pierglass-glass)" }}
       />
       {/* One continuous line, like the board's. */}
       <div

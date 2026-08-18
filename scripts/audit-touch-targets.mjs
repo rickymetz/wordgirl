@@ -23,7 +23,9 @@
 
 import { chromium } from "/home/user/wordgirl/node_modules/playwright-core/index.mjs";
 
-const BASE = "http://localhost:4173";
+// Port is overridable so the audit can point at whatever preview is up:
+//   node scripts/audit-touch-targets.mjs http://localhost:4174
+const BASE = process.argv[2] || process.env.AUDIT_BASE || "http://localhost:4173";
 const MIN = 44;
 
 // Hit-test rather than measure the box: the house allows an invisible
@@ -70,7 +72,7 @@ const SCREENS = [
   { name: "privacy", path: "/privacy" },
   { name: "terms", path: "/terms" },
 ];
-for (const g of ["polygram", "crosshatch", "backwords", "doublet", "serpentine"]) {
+for (const g of ["polygram", "crosshatch", "pierglass", "doublet", "serpentine"]) {
   SCREENS.push({ name: `${g}`, path: `/games/${g}` });
   SCREENS.push({ name: `${g}+coach`, path: `/games/${g}`, act: async (p) => {
     const b = p.locator('button[aria-label*="how to play" i], button[aria-label*="help" i]').first();
@@ -83,6 +85,7 @@ for (const g of ["polygram", "crosshatch", "backwords", "doublet", "serpentine"]
 
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
 const findings = new Map();
+const skipped = [];
 for (const s of SCREENS) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
@@ -100,7 +103,7 @@ for (const s of SCREENS) {
       findings.get(key).screens.push(s.name);
     }
   } catch (e) {
-    console.log(`  (skipped ${s.name}: ${String(e).split("\n")[0].slice(0, 70)})`);
+    skipped.push(`${s.name}: ${String(e).split("\n")[0].slice(0, 80)}`);
   }
   await ctx.close();
 }
@@ -140,6 +143,15 @@ const show = (rows, title) => {
   }
 };
 
+if (skipped.length) {
+  console.log(`\n=== ${skipped.length} SCREENS COULD NOT BE AUDITED ===\n`);
+  for (const s of skipped) console.log(`  ${s}`);
+  console.log(`\nA screen that never loaded was audited of nothing. Reporting`);
+  console.log(`"0 undersized" for it would be a false green, so this exits 1.`);
+  console.log(`Is the preview server up, and on the right port?`);
+  process.exitCode = 1;
+}
+
 show(undersized, `UNDERSIZED (box under ${MIN}px) — fix these`);
 console.log(`\n(${keyboard.length} Crosshatch keyboard keys excluded by design — see the header)`);
 if (process.argv.includes("--all")) {
@@ -147,4 +159,4 @@ if (process.argv.includes("--all")) {
 } else {
   console.log(`\n(${obstructed.length} obstructed-but-large-enough elements hidden; pass --all to list them)`);
 }
-process.exitCode = undersized.length > 0 ? 1 : 0;
+if (undersized.length > 0) process.exitCode = 1;

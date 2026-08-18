@@ -122,6 +122,21 @@
   to = "https://rickymetz.github.io/wordgirl/:splat"
   status = 200
 
+# Backwords became Pierglass. 301 rather than 302: the old path is gone
+# for good, and shared links and search results should follow it across.
+# The splat form carries deep links — /games/backwords/archive/2026-08-01
+# lands on the same day under the new name. Both must sit ABOVE the SPA
+# catch-all, which would otherwise answer them with the app shell.
+[[redirects]]
+  from = "/games/backwords"
+  to = "/games/pierglass"
+  status = 301
+
+[[redirects]]
+  from = "/games/backwords/*"
+  to = "/games/pierglass/:splat"
+  status = 301
+
 # SPA catch-all — must come AFTER the bot blockers and the docs proxy
 [[redirects]]
   from = "/*"

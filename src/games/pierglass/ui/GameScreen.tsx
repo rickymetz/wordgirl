@@ -29,7 +29,7 @@ import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
-import { useBackwordsGame, type GameMode } from "../state/useBackwordsGame";
+import { usePierglassGame, type GameMode } from "../state/usePierglassGame";
 import {
   displayStreak,
   loadDailyProgress,
@@ -62,7 +62,7 @@ function buildShareText(
   // so the count alone compared nothing between two players' results.
   const parPart = rows <= parRows ? "⭐️ par" : `par ${parRows}`;
   return [
-    `🪞 Backwords — ${date}`,
+    `🪞 Pierglass — ${date}`,
     `${rows} rows · ${parPart} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
@@ -79,7 +79,7 @@ interface Props {
 
 export function GameScreen({ mode, onRestartTutorial }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
-    useBackwordsGame(mode);
+    usePierglassGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
 
@@ -251,13 +251,13 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
 
   return (
     <div
-      data-level="backwords"
+      data-level="pierglass"
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-6 md:max-w-2xl [@media(max-height:720px)]:pb-3"
     >
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
           <Link
-            to="/games/backwords/archive"
+            to="/games/pierglass/archive"
             className="text-sm font-semibold text-ink-soft"
           >
             ← Archive
@@ -268,7 +268,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         <span className="flex items-center gap-2">
           {mode.kind === "practice" && dailySolved === false && (
             <Link
-              to="/games/backwords"
+              to="/games/pierglass"
               className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
             >
               New daily puzzle
@@ -282,7 +282,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
-                trackHint("backwords");
+                trackHint("pierglass");
                 dispatch({ type: "revealHint" });
               }}
             >
@@ -293,7 +293,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           <button
             type="button"
             onClick={() => {
-              trackCoach("backwords");
+              trackCoach("pierglass");
               setCoachOpen(true);
             }}
             aria-label="how to play"
@@ -305,11 +305,11 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </header>
 
       <div className="flex items-baseline gap-2.5 pb-3">
-        <h1 className="font-game text-2xl font-normal tracking-tight">Backwords</h1>
+        <h1 className="font-game text-2xl font-normal tracking-tight">Pierglass</h1>
         {/* The game's mark: a letter meeting its reflection. */}
         <svg
           role="img"
-          aria-label="backwords"
+          aria-label="pierglass"
           width="20"
           height="20"
           viewBox="0 0 20 20"
@@ -387,7 +387,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
             animate={{ opacity: 1, y: 0 }}
           >
             <TutorialDone
-              gameId="backwords"
+              gameId="pierglass"
               recap={TUTORIAL_RECAP}
               onRestart={onRestartTutorial}
             />
@@ -431,11 +431,11 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                   solvedElapsedMs,
                   state.hints,
                 )}
-                gameId="backwords"
+                gameId="pierglass"
               />
             )}
             {isDaily && (
-              <DailyOutro gameId="backwords" loadStreak={outroStreak} />
+              <DailyOutro gameId="pierglass" loadStreak={outroStreak} />
             )}
           </motion.div>
         ) : !state.solved ? (
@@ -492,7 +492,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         {coachOpen && (
           <CoachSheet
             onClose={closeCoach}
-            tutorialTo={isTutorial ? undefined : "/games/backwords/tutorial"}
+            tutorialTo={isTutorial ? undefined : "/games/pierglass/tutorial"}
             rules={[
               {
                 Icon: Type,
@@ -575,8 +575,8 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
 
       <TutorialPrompt
         enabled={isDaily}
-        gameId="backwords"
-        gameName="Backwords"
+        gameId="pierglass"
+        gameName="Pierglass"
         loadSeen={loadTutorialSeen}
         markSeen={markTutorialSeen}
       />

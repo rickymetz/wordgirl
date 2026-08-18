@@ -12,10 +12,10 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
-import { dailySeed, generateBackwords } from "../engine/generator";
+import { dailySeed, generatePierglass } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
-  backwordsPuzzleKey,
+  pierglassPuzzleKey,
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
@@ -42,7 +42,7 @@ function isPersisted(mode: GameMode): boolean {
   return mode.kind === "daily" || mode.kind === "archive";
 }
 
-export function useBackwordsGame(mode: GameMode) {
+export function usePierglassGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date
   // and remount on rollover) — it must never drift mid-session.
   const persisted = isPersisted(mode);
@@ -65,10 +65,10 @@ export function useBackwordsGame(mode: GameMode) {
     () =>
       mode.kind === "tutorial"
         ? TUTORIAL_PUZZLE
-        : generateBackwords(dict, seed, items),
+        : generatePierglass(dict, seed, items),
     [dict, seed, items, mode.kind],
   );
-  const pKey = useMemo(() => backwordsPuzzleKey(puzzle.bank), [puzzle]);
+  const pKey = useMemo(() => pierglassPuzzleKey(puzzle.bank), [puzzle]);
   const [state, rawDispatch] = useReducer(
     gameReducer,
     { puzzle, lexicon, words, isWord: dict.has },
@@ -217,7 +217,7 @@ export function useBackwordsGame(mode: GameMode) {
             return;
           }
           void recordDailyStarted();
-          trackStarted("backwords");
+          trackStarted("pierglass");
           sessionsRef.current = 1;
           // Write the initial save immediately so re-opening an
           // untouched day never counts as another "play".
@@ -242,7 +242,7 @@ export function useBackwordsGame(mode: GameMode) {
   useEffect(() => {
     if (state.solved && !solveTrackedRef.current && !hydratedSolvedRef.current) {
       solveTrackedRef.current = true;
-      trackSolved("backwords");
+      trackSolved("pierglass");
     }
   }, [state.solved]);
 

@@ -16,10 +16,10 @@
  * v7: blocklist subtitle name-junk, allowlist everyday concrete words,
  * and cap any one crosshatch line's share of a day's words.
  * v8: allowlist mirror-word staples (dab) into the required tier so
- * their reversal pairs (bad|dab) play in backwords.
+ * their reversal pairs (bad|dab) play in pierglass.
  * v9: blocklist junk reversals and name-palindromes (tae, nam, deb,
- * pam, tis, ana) that backwords' mirror rows would teach as words.
- * v10: backwords palindrome prefix aliases — the shadowed even
+ * pam, tis, ana) that pierglass' mirror rows would teach as words.
+ * v10: pierglass palindrome prefix aliases — the shadowed even
  * palindromes (poop, peep) join the item pool, changing puzzle
  * derivation without a dictionary.txt change.
  * v11: full ENABLE coverage — every valid Scrabble word (3–10 chars)
@@ -40,9 +40,9 @@
  * bonus-tier ENABLE obscurities were two thirds of a day's list.
  * Every crosshatch puzzle changes; saved days before v17 are records,
  * not resumable progress.
- * v18: backwords admits a hand-picked list of everyday bonus-tier
+ * v18: pierglass admits a hand-picked list of everyday bonus-tier
  * words (MIRROR_WORDS) whose reversals are also words — its playable
- * lexicon goes 110 rows -> 178, and every backwords puzzle changes.
+ * lexicon goes 110 rows -> 178, and every pierglass puzzle changes.
  * No dictionary.txt change and no other game is affected, so their
  * saved days match on puzzleKey and survive the bump.
  * v19: serpentine's path may no longer cross itself, so every board is

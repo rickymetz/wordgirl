@@ -42,14 +42,14 @@ The rule is not abstract — the source file records every bump and its reason. 
 | v5 | Crosshatch progress counts distinct words, not full frames. The band and the save shape changed with it. |
 | v6 | Buckets keep frequency order; Polygram sorts its own display lists. |
 | v7 | Subtitle name-junk blocked; everyday concrete words added; a cap on one Crosshatch line's share of a day. |
-| v8 | Mirror-word staples (dab) enter the required tier, so pairs like bad and dab play in Backwords. |
-| v9 | Junk reversals and name-palindromes (tae, nam, deb, …) blocked — Backwords must not teach non-words. |
-| v10 | Backwords palindrome prefix aliases: shadowed even palindromes (poop, peep) join the pool. |
+| v8 | Mirror-word staples (dab) enter the required tier, so pairs like bad and dab play in Pierglass. |
+| v9 | Junk reversals and name-palindromes (tae, nam, deb, …) blocked — Pierglass must not teach non-words. |
+| v10 | Pierglass palindrome prefix aliases: shadowed even palindromes (poop, peep) join the pool. |
 | v11 | Full Scrabble coverage: every valid word of 3 to 10 letters is now present; the rest become bonus words. |
 | v13 | doze, ooze, skied, misdeed, missive move to the required tier — players expect them. |
 | v14 | Crosshatch accepts bonus words; Polygram removes its per-level bonus cap. |
 | v15 | The 20-cell hard Doublet boards leave — their uniqueness verification froze mobile browsers. |
 | v16 | The Doublet e5 board becomes a staircase. The old T-bar had checkerboard colors 4/2 — no domino tiling existed, and every attempt that drew it failed. |
 | v17 | Crosshatch generates from the required tier only, so no day demands a rare word. |
-| v18 | Backwords gets a bigger vocabulary and a target worth missing. |
+| v18 | Pierglass gets a bigger vocabulary and a target worth missing. |
 | v19 | Serpentine paths never cross themselves, so every board is re-laid. |

@@ -43,7 +43,7 @@ beforeEach(() => {
   state = initialState({ puzzle, lexicon, words, isWord });
 });
 
-describe("backwords reducer", () => {
+describe("pierglass reducer", () => {
   it("moves letters bank -> row -> bank", () => {
     run(...type("was"));
     expect(state.current).toBe("was");

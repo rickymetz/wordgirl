@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import * as polygramEngine from "../../games/polygram/engine/tutorial";
 import * as crosshatchEngine from "../../games/crosshatch/engine/tutorial";
-import * as backwordsEngine from "../../games/backwords/engine/tutorial";
+import * as pierglassEngine from "../../games/pierglass/engine/tutorial";
 import * as doubletEngine from "../../games/doublet/engine/tutorial";
 import * as serpentineEngine from "../../games/serpentine/engine/tutorial";
 
 import { TUTORIAL_STEPS as polygramSteps } from "../../games/polygram/ui/tutorialSteps";
 import { TUTORIAL_STEPS as crosshatchSteps } from "../../games/crosshatch/ui/tutorialSteps";
-import { TUTORIAL_STEPS as backwordsSteps } from "../../games/backwords/ui/tutorialSteps";
+import { TUTORIAL_STEPS as pierglassSteps } from "../../games/pierglass/ui/tutorialSteps";
 import { TUTORIAL_STEPS as doubletSteps } from "../../games/doublet/ui/tutorialSteps";
 import { TUTORIAL_STEPS as serpentineSteps } from "../../games/serpentine/ui/tutorialSteps";
 
@@ -24,7 +24,7 @@ import { TUTORIAL_STEPS as serpentineSteps } from "../../games/serpentine/ui/tut
 const GAMES = [
   { name: "polygram", count: polygramEngine.TUTORIAL_STEP_COUNT, steps: polygramSteps },
   { name: "crosshatch", count: crosshatchEngine.TUTORIAL_STEP_COUNT, steps: crosshatchSteps },
-  { name: "backwords", count: backwordsEngine.TUTORIAL_STEP_COUNT, steps: backwordsSteps },
+  { name: "pierglass", count: pierglassEngine.TUTORIAL_STEP_COUNT, steps: pierglassSteps },
   { name: "doublet", count: doubletEngine.TUTORIAL_STEP_COUNT, steps: doubletSteps },
   { name: "serpentine", count: serpentineEngine.TUTORIAL_STEP_COUNT, steps: serpentineSteps },
 ];

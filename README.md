@@ -88,10 +88,10 @@ A small crossword frame with many right answers:
 
 <sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
 
-### Backwords
+### Pierglass
 
 <p align="center">
-  <img src="public/teasers/backwords.png" alt="Backwords screenshot" width="300" />
+  <img src="public/teasers/pierglass.png" alt="Pierglass screenshot" width="300" />
 </p>
 
 A race against a hidden clock, played into a mirror:
@@ -112,10 +112,10 @@ A race against a hidden clock, played into a mirror:
 - Daily + practice + a replayable archive, same as the others.
 
 
-<a href="docs/tutorials.md#backwords">
+<a href="docs/tutorials.md#pierglass">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/backwords-strip-dark.png">
-    <img alt="Backwords tutorial, step by step" src="docs/tutorials/backwords-strip-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/pierglass-strip-dark.png">
+    <img alt="Pierglass tutorial, step by step" src="docs/tutorials/pierglass-strip-light.png">
   </picture>
 </a>
 

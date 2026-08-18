@@ -34,7 +34,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `loadState`/`loadStreak` loaders (~15 lines per game).
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
-  `Tile mini` (see `BackwordsPreview` for the idiom).
+  `Tile mini` (see `PierglassPreview` for the idiom).
 - `GameTrends` — the stats-over-time page from a config: per-metric
   single-series Tufte SPARKLINES in the game's accent (validated: the
   four accents FAIL as a categorical set, so never chart games against
@@ -54,7 +54,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `CHROME_H` via the `reservedH` prop, or the tutorial overflows at the
   Huge text setting — `PolygonBoard`, `GridBoard`, `MirrorBoard` and
   doublet's `Board` all do. Watch for a `min-h-*` FLOOR on the board too:
-  it outranks the budget, and on Backwords it — not `CHROME_H` — was what
+  it outranks the budget, and on Pierglass it — not `CHROME_H` — was what
   pushed the rack off a 375×667 screen at Huge, so `MirrorBoard` drops to
   `min-h-40` in tutorial mode. Re-measure rather than assume: the check is
   every viewport × Huge text, and the budget is what tells you which group
@@ -130,7 +130,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   bump it whenever puzzle derivation changes).
 
 **Reference implementations** (game-specific, copy the pattern)
-- Drag: `backwords/ui/dragPoint.ts` (`dragPoint`, `dragCancelled`,
+- Drag: `pierglass/ui/dragPoint.ts` (`dragPoint`, `dragCancelled`,
   `overBoard`) + the LetterBank/MirrorBoard wiring — pointer-fallback,
   cancel-aborts, tap-vs-drag guard, live-ghost via direct DOM writes
   (never setState per drag frame).
@@ -186,7 +186,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   else the pairing appears (docs, marketing). Share strings are the one
   exception: they LEAD with the game's emoji, so the first character in
   a pasted result identifies the game (🐍 Serpentine, 👯‍♂️ Doublet,
-  🔻 Polygram, 🪞 Backwords, 🧺 Crosshatch).
+  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in. That holds only in the DEFAULT
@@ -204,11 +204,11 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   to the setting. The `-house`/`-access` tokens exist so Settings can
   preview each option in its own face; nothing else should read them.
 - A game RULE must never depend on letterforms, because the face is now a
-  setting. Backwords' ✦ ("a real mirror would render this") is the one
+  setting. Pierglass' ✦ ("a real mirror would render this") is the one
   that does, and it does not survive the swap — Lexend's Y is not
   symmetric. It stays keyed to the default face because `glyphRows` is a
   banked lifetime stat, and a per-face rule would make one solve count two
-  ways; see the KNOWN GAP note in `backwords/engine/lexicon.ts` before
+  ways; see the KNOWN GAP note in `pierglass/engine/lexicon.ts` before
   touching it. Don't add another: if a new rule leans on a glyph's shape,
   it has to hold in BOTH faces or not be a rule.
 

@@ -33,7 +33,7 @@ export default defineConfig({
           items: [
             { label: "Polygram", slug: "games/polygram" },
             { label: "Crosshatch", slug: "games/crosshatch" },
-            { label: "Backwords", slug: "games/backwords" },
+            { label: "Pierglass", slug: "games/pierglass" },
             { label: "Doublet", slug: "games/doublet" },
             { label: "Serpentine", slug: "games/serpentine" },
             { label: "How daily puzzles work", slug: "games/daily-puzzles" },
