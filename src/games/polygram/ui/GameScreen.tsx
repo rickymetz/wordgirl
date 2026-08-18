@@ -319,7 +319,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           {mode.kind === "practice" && dailyDone === false && (
             <Link
               to="/games/polygram"
-              className="text-sm font-semibold text-accent"
+              className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
             >
               New daily puzzle
             </Link>

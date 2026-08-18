@@ -253,6 +253,17 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   margin padding is fine). `touch-manipulation` + `select-none` on
   game surfaces; `onPointerDown={(e) => e.preventDefault()}` on
   game-surface buttons so taps never steal focus from the grid.
+  This one DRIFTS, because nothing about a class list says how many
+  pixels it is: `py-2.5` is 44px next to `text-sm` and 40px next to
+  `text-xs`, and three games had an `after:-inset-1` on the "?" that two
+  had quietly lost. Run `node scripts/audit-touch-targets.mjs` against a
+  preview build rather than reading class names — it hit-tests every
+  control on every screen, which is also the only way to catch an
+  `::after` that is the right size but CLIPPED by a scrolling ancestor
+  (the dictionary's bookmark button was exactly that). Two standing
+  exceptions: Crosshatch's keyboard keys are ~30px wide because ten of
+  them cannot be 44px on a 390px screen, and a control behind an open
+  sheet fails the hit test by design.
 - Sheets (settings, how-to-play) use `components/BottomSheet` /
   `CoachSheet` inside `<AnimatePresence>`. Centered confirmations use
   `components/ModalDialog`. All dialogs get focus containment via

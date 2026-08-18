@@ -269,7 +269,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
           {mode.kind === "practice" && dailySolved === false && (
             <Link
               to="/games/backwords"
-              className="text-sm font-semibold text-accent"
+              className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
             >
               New daily puzzle
             </Link>
@@ -450,7 +450,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => dispatch({ type: "clearRow" })}
-                className="-my-3 touch-manipulation px-3 py-3 text-xs font-semibold text-ink-soft"
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft"
               >
                 Clear row
               </button>

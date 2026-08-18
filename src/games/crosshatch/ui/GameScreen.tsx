@@ -434,7 +434,7 @@ export function GameScreen({
           {mode.kind === "practice" && dailySolved === false && (
             <Link
               to="/games/crosshatch"
-              className="text-sm font-semibold text-accent"
+              className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
             >
               New daily puzzle
             </Link>
@@ -690,7 +690,7 @@ export function GameScreen({
                   setWordsOpen(false);
                   dispatch({ type: "clearEntry" });
                 }}
-                className="-my-3 px-3 py-3 text-xs font-semibold text-ink-soft"
+                className="-my-3.5 px-3 py-3.5 text-xs font-semibold text-ink-soft"
               >
                 Clear grid
               </button>
