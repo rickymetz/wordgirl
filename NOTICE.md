@@ -17,7 +17,7 @@ the "fork freely, don't sell it" rule.
 ## What the licence does not cover
 
 The name **WordGirl**, the names of the individual games (Polygram,
-Crosshatch, Backwords, Doublet, Serpentine), the logos, the icons under
+Crosshatch, Pierglass, Doublet, Serpentine), the logos, the icons under
 `public/icons/`, and the artwork under `public/teasers/` and `presskit/`
 are **not** licensed. They remain the property of Rick Metzger.
 

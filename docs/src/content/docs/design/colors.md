@@ -26,7 +26,7 @@ Each game has one accent key. The key is in `GameDefinition.accentLevel`. Set `d
 - `--color-accent-soft` is a mix of 27 percent accent and surface.
 - `--color-surface-tint` is a mix of 6 percent accent (light mode) or 13 percent (dark mode) and surface-raised.
 
-The number keys 3 to 10 are the Polygram level colors. The name keys are `crosshatch` (teal), `backwords` (fuchsia), `doublet` (amber), `serpentine` (lime), and `neutral` (black and white). The root accent is neutral black and white. The hub and the settings have no color accent. Each game surface sets its own `data-level`. The game surfaces are the game screen, the archive, the practice mode, and the stats.
+The number keys 3 to 10 are the Polygram level colors. The name keys are `crosshatch` (teal), `pierglass` (fuchsia), `doublet` (amber), `serpentine` (lime), and `neutral` (black and white). The root accent is neutral black and white. The hub and the settings have no color accent. Each game surface sets its own `data-level`. The game surfaces are the game screen, the archive, the practice mode, and the stats.
 
 ## Contrast rules
 

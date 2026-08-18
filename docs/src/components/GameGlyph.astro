@@ -3,7 +3,7 @@
 // (Polygram's live clip-path polygon becomes a static hexagon).
 // All draw in currentColor so they inherit the in-scope accent.
 interface Props {
-  game: "polygram" | "crosshatch" | "backwords" | "doublet" | "serpentine";
+  game: "polygram" | "crosshatch" | "pierglass" | "doublet" | "serpentine";
   size?: number;
 }
 const { game, size = 20 } = Astro.props;
@@ -27,7 +27,7 @@ const { game, size = 20 } = Astro.props;
     </g>
   </svg>
 )}
-{game === "backwords" && (
+{game === "pierglass" && (
   <svg role="img" aria-hidden="true" width={size} height={size} viewBox="0 0 20 20">
     <g fill="currentColor">
       <rect x="9.25" y="2.5" width="1.5" height="15" rx="0.75" />

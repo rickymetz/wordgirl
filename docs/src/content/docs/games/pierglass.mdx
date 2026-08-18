@@ -1,16 +1,16 @@
 ---
-title: Backwords
+title: Pierglass
 description: Put letters against a mirror. The mirror shows the remaining letters. This page also tells you how the game makes each puzzle.
 ---
 
 <style>{`:root { --wg-accent: light-dark(#a21caf, #e879f9); }`}</style>
 
 import { Image } from 'astro:assets';
-import teaser from '../../../assets/backwords.png';
+import teaser from '../../../assets/pierglass.png';
 
-<Image src={teaser} alt="Backwords — letter tiles placed against a mirror" width={480} />
+<Image src={teaser} alt="Pierglass — letter tiles placed against a mirror" width={480} />
 
-Backwords is a mirror game. The game gives you a set of letters. You put letters on the left side of a mirror. The mirror shows the other letters. The day is complete when you use all the letters.
+Pierglass is a mirror game. The game gives you a set of letters. You put letters on the left side of a mirror. The mirror shows the other letters. The day is complete when you use all the letters.
 
 ## How to play
 
@@ -43,7 +43,7 @@ The generator makes the puzzle in these steps:
 
    The generator prefers three solutions or more. The maximum is 400 tries.
 
-The puzzle contains only the letter set and some data about the solutions. When you play, the game examines your rows with the word list and simple letter counts. The code is in `src/games/backwords/engine/lexicon.ts` and `generator.ts`.
+The puzzle contains only the letter set and some data about the solutions. When you play, the game examines your rows with the word list and simple letter counts. The code is in `src/games/pierglass/engine/lexicon.ts` and `generator.ts`.
 
 ## The mathematics
 

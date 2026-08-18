@@ -28,7 +28,7 @@ export interface DailyProgress extends DailyBase {
   solvedHour?: number;
 }
 
-export interface BackwordsStats extends StreakStats {
+export interface PierglassStats extends StreakStats {
   /** Fastest daily solve. */
   bestTimeMs: number | null;
   /** Lifetime ✦ rows — placements a real mirror would render. */
@@ -37,7 +37,7 @@ export interface BackwordsStats extends StreakStats {
   parSolves: number;
 }
 
-const EMPTY_STATS: BackwordsStats = {
+const EMPTY_STATS: PierglassStats = {
   played: 0,
   solved: 0,
   currentStreak: 0,
@@ -51,8 +51,8 @@ const EMPTY_STATS: BackwordsStats = {
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-07-10";
 
-const base = createDailyPersistence<DailyProgress, BackwordsStats>({
-  gameId: "backwords",
+const base = createDailyPersistence<DailyProgress, PierglassStats>({
+  gameId: "pierglass",
   emptyStats: EMPTY_STATS,
   validDay: (s) =>
     Array.isArray(s.rows) && s.rows.every((r) => typeof r === "string"),
@@ -70,10 +70,10 @@ const base = createDailyPersistence<DailyProgress, BackwordsStats>({
       (progress.sessions ?? 0) >= (stored.sessions ?? 0)),
 });
 
-/** Deterministic fingerprint of a Backwords puzzle — the rows array
+/** Deterministic fingerprint of a Pierglass puzzle — the rows array
  * IS the puzzle identity, so an unrelated DICT_VERSION bump won't
  * invalidate saved progress when the actual puzzle hasn't changed. */
-export function backwordsPuzzleKey(rows: string[]): string {
+export function pierglassPuzzleKey(rows: string[]): string {
   return makePuzzleKey(rows);
 }
 
@@ -157,7 +157,7 @@ export function recordDailySolved(
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it.
   allowGrace = true,
-): Promise<BackwordsStats> {
+): Promise<PierglassStats> {
   return base.updateStats((stats) => {
     if (stats.lastSolvedDate === dateKey) return stats; // already recorded
     return {

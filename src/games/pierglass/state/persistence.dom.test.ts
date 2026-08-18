@@ -192,7 +192,7 @@ describe("multi-tab guard", () => {
 describe("save hygiene", () => {
   it("stats merge over defaults so new fields survive old saves", async () => {
     localStorage.setItem(
-      "wg:v1:local:backwords:stats",
+      "wg:v1:local:pierglass:stats",
       JSON.stringify({ played: 4, solved: 3 }),
     );
     const stats = await loadStats();
@@ -203,7 +203,7 @@ describe("save hygiene", () => {
 
   it("a malformed day save loads as null instead of crashing", async () => {
     localStorage.setItem(
-      "wg:v1:local:backwords:daily:2026-07-06",
+      "wg:v1:local:pierglass:daily:2026-07-06",
       JSON.stringify({ dateKey: "2026-07-06", rows: "oops" }),
     );
     expect(await loadDailyProgress("2026-07-06")).toBeNull();

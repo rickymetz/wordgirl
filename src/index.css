@@ -137,13 +137,13 @@
 /* Crosshatch has its own palette key — Tiffany teal. */
 [data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
 
-/* Backwords' palette key — fuchsia, clearly its own game beside
+/* Pierglass' palette key — fuchsia, clearly its own game beside
    Polygram red and Crosshatch teal. */
-[data-level="backwords"] {
+[data-level="pierglass"] {
   --color-accent: light-dark(#a21caf, #e879f9);
   /* The mirror's glass: one gradient for the board pane AND the hub
      card's miniature, so a tint tweak lands everywhere at once. */
-  --backwords-glass: linear-gradient(
+  --pierglass-glass: linear-gradient(
     105deg,
     color-mix(in oklab, var(--color-accent) 18%, var(--color-surface)) 0%,
     color-mix(in oklab, var(--color-accent) 7%, var(--color-surface)) 42%,

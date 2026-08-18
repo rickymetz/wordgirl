@@ -6,7 +6,7 @@ import { GameScreen } from "./GameScreen";
 export default function TutorialPage() {
   return (
     <TutorialShell
-      gameId="backwords"
+      gameId="pierglass"
       markSeen={markTutorialSeen}
       renderScreen={(runId, restart) => (
         <GameScreen

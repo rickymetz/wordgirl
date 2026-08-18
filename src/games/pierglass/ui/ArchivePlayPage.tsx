@@ -2,11 +2,11 @@ import { ArchivePlayShell } from "../../../components/game/pageShells";
 import { ARCHIVE_EPOCH, resetDailyForReplay } from "../state/persistence";
 import { GameScreen } from "./GameScreen";
 
-/** Plays a past daily puzzle: /games/backwords/archive/:dateKey */
+/** Plays a past daily puzzle: /games/pierglass/archive/:dateKey */
 export default function ArchivePlayPage() {
   return (
     <ArchivePlayShell
-      gameId="backwords"
+      gameId="pierglass"
       epoch={ARCHIVE_EPOCH}
       resetForReplay={(dateKey) => resetDailyForReplay(dateKey)}
       renderScreen={(dateKey, runId, replay) => (

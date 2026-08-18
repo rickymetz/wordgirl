@@ -63,7 +63,7 @@ const sortLetters = (w: string) => [...w].sort().join("");
  * row shows both.
  *
  * Every entry is already in the dictionary's bonus tier — this promotes
- * them for backwords, not globally, since "its reversal is a word" is a
+ * them for pierglass, not globally, since "its reversal is a word" is a
  * daft reason to reshape the other four games' vocabulary.
  * `lexicon.test.ts` asserts each one still parses as a word, so a
  * dictionary change can't leave a typo here playing as real.
@@ -89,7 +89,7 @@ export const MIRROR_WORDS: readonly string[] = [
   "reviver", "rotator",
 ];
 
-/** The words backwords plays with: the common tier plus MIRROR_WORDS. */
+/** The words pierglass plays with: the common tier plus MIRROR_WORDS. */
 export function commonWords(dict: Dictionary): Set<string> {
   const common = new Set<string>();
   for (const bucket of dict.required.buckets.values()) {

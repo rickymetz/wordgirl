@@ -47,7 +47,7 @@ export function createDailyPersistence<
    * prefixes the difficulty). Must match what loadDay is called with. */
   dayKey?: (day: Day) => string;
   /** Optional extra veto for UNSOLVED writes over an existing save of
-   * the same dictVersion (backwords: a non-owning tab may only refresh
+   * the same dictVersion (pierglass: a non-owning tab may only refresh
    * a save whose rows it agrees with). Return false to skip the write. */
   allowUnsolvedWrite?: (
     stored: Day,

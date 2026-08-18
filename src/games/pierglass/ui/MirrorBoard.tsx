@@ -101,12 +101,12 @@ export function MirrorBoard({
       ].join(" ")}
     >
       {/* The glass: a filled pane behind the reflections, with a
-          diagonal sheen — the shared --backwords-glass token, so it
+          diagonal sheen — the shared --pierglass-glass token, so it
           re-tints per theme and matches the hub card. */}
       <div
         aria-hidden
         className="absolute inset-y-0 right-0 left-1/2 rounded-r-2xl"
-        style={{ background: "var(--backwords-glass)" }}
+        style={{ background: "var(--pierglass-glass)" }}
       />
       {/* The pane's edge — the line tiles press up against. */}
       <div

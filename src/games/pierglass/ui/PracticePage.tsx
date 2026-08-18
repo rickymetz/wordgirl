@@ -6,7 +6,7 @@ import { GameScreen } from "./GameScreen";
 export default function PracticePage() {
   return (
     <PracticeShell
-      gameId="backwords"
+      gameId="pierglass"
       makeSeed={() => practiceSeed(randomSeed())}
       renderScreen={(seed, newPuzzle) => (
         <GameScreen

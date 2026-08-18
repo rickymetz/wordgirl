@@ -9,12 +9,12 @@ import {
   loadAllDailyProgress,
   loadStats,
   type ArchivedDay,
-  type BackwordsStats,
+  type PierglassStats,
 } from "../state/persistence";
 
-const config: GameArchiveConfig<ArchivedDay, BackwordsStats> = {
-  gameId: "backwords",
-  accent: "backwords",
+const config: GameArchiveConfig<ArchivedDay, PierglassStats> = {
+  gameId: "pierglass",
+  accent: "pierglass",
   epoch: ARCHIVE_EPOCH,
   loadAllDays: loadAllDailyProgress,
   loadStats,

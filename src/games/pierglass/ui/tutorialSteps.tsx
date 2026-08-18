@@ -2,7 +2,7 @@ import { Key } from "../../../components/CoachSheet";
 import type { TutorialStep } from "../../../lib/tutorial/types";
 
 /**
- * The tutorial script. Three rungs, because Backwords has three rules and
+ * The tutorial script. Three rungs, because Pierglass has three rules and
  * the third — that a palindrome is laid HALF-WAY — is the one no player
  * arrives at on their own.
  *

@@ -144,15 +144,15 @@ and submitting again, which is the rule the daily never forces you to discover.
 
 </details>
 
-<a id="backwords"></a>
+<a id="pierglass"></a>
 
-## Backwords ◀▶
+## Pierglass ◀▶
 
 **The puzzle:** five letters that sort to **ADOPT** — 3 steps.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/backwords-strip-dark.png">
-  <img alt="Backwords tutorial, step by step" src="tutorials/backwords-strip-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/pierglass-strip-dark.png">
+  <img alt="Pierglass tutorial, step by step" src="tutorials/pierglass-strip-light.png">
 </picture>
 
 The bank decomposes exactly one way: TOP against the glass (which the
@@ -172,29 +172,29 @@ teaches the part nobody guesses — that you lay only its first half.
 **1 · Lay letters against the glass**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/backwords-1-blank-rack-dark.png">
-  <img alt="Backwords tutorial, Lay letters against the glass" src="tutorials/backwords-1-blank-rack-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/pierglass-1-blank-rack-dark.png">
+  <img alt="Pierglass tutorial, Lay letters against the glass" src="tutorials/pierglass-1-blank-rack-light.png" width="390">
 </picture>
 
 **2 · The reflection is a word too**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/backwords-2-word-staged-dark.png">
-  <img alt="Backwords tutorial, The reflection is a word too" src="tutorials/backwords-2-word-staged-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/pierglass-2-word-staged-dark.png">
+  <img alt="Pierglass tutorial, The reflection is a word too" src="tutorials/pierglass-2-word-staged-light.png" width="390">
 </picture>
 
 **3 · Palindromes need only half**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/backwords-3-pair-placed-dark.png">
-  <img alt="Backwords tutorial, Palindromes need only half" src="tutorials/backwords-3-pair-placed-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/pierglass-3-pair-placed-dark.png">
+  <img alt="Pierglass tutorial, Palindromes need only half" src="tutorials/pierglass-3-pair-placed-light.png" width="390">
 </picture>
 
 **4 · Tutorial complete**
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tutorials/backwords-4-complete-dark.png">
-  <img alt="Backwords tutorial, complete" src="tutorials/backwords-4-complete-light.png" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/pierglass-4-complete-dark.png">
+  <img alt="Pierglass tutorial, complete" src="tutorials/pierglass-4-complete-light.png" width="390">
 </picture>
 
 </details>

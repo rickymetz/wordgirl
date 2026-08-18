@@ -11,7 +11,7 @@ Each generator is a function of two inputs. The inputs are the dictionary and a 
 
 ```
 polygram:v1:daily:2026-07-19
-backwords:v2:daily:2026-07-19
+pierglass:v2:daily:2026-07-19
 serpentine:v2:daily:haiku:2026-07-19
 ```
 
@@ -35,18 +35,18 @@ All five generators operate in the same pattern. The generator makes a random pu
 |------|--------------|---------------|--------------|
 | Polygram | letter growth | 5 levels or more, 35 words maximum, word limits for each level | 300 tries |
 | Crosshatch | slot fill and letter adds | 10 to 22 words, 1 single-word slot maximum | 300 tries |
-| Backwords | random letter set | 2 solutions or more, 2 row counts or more | 400 tries |
+| Pierglass | random letter set | 2 solutions or more, 2 row counts or more | 400 tries |
 | Doublet | word fill and domino cut | only one solution | 200 tries, 500 ms |
 | Serpentine | Warnsdorff path | path through all cells | 200 tries, then a constructed path |
 
-Two games have a guaranteed alternative for a bad seed: Doublet ships its best unverified puzzle, and Serpentine constructs a row-by-row path. The other three games stop with an error if all the tries fail. Their attempt caps are validated instead: generator tests sweep many seeds and make sure that the limits hold with a wide margin. Backwords, for example, measured 0 failures with a maximum of 26 tries over 90 daily puzzles — against a cap of 400.
+Two games have a guaranteed alternative for a bad seed: Doublet ships its best unverified puzzle, and Serpentine constructs a row-by-row path. The other three games stop with an error if all the tries fail. Their attempt caps are validated instead: generator tests sweep many seeds and make sure that the limits hold with a wide margin. Pierglass, for example, measured 0 failures with a maximum of 26 tries over 90 daily puzzles — against a cap of 400.
 
 ## Version numbers
 
 Four games use the dictionary. These games write `DICT_VERSION` into each puzzle and each saved day. The number is 19 at this time (`src/lib/words/dictionary.ts`). The number increases when the puzzle calculation changes. Examples are a word list change, a generator change, or a score change. An old saved day does not agree with a new puzzle. The version number finds this condition. The [dictionary page](/docs/architecture/dictionary/) shows the full version history, each entry with its reason. Serpentine has no dictionary. Its version number is in the seed text.
 
-Because all five games share one `DICT_VERSION`, each game also stores a `puzzleKey` — a deterministic fingerprint of the puzzle's identity data (for example, the Crosshatch givens and combos, or the Backwords word bank). When both a saved day and the current puzzle carry a `puzzleKey`, the staleness check compares those fingerprints instead of `DICT_VERSION`. This isolates games from each other: a version bump that changes only Doublet's generator does not invalidate a Crosshatch save whose actual puzzle is unchanged. Saves from before this feature (without a `puzzleKey`) fall back to the `DICT_VERSION` comparison. Refer to [Data storage and streaks](/docs/architecture/persistence/) for the implementation.
+Because all five games share one `DICT_VERSION`, each game also stores a `puzzleKey` — a deterministic fingerprint of the puzzle's identity data (for example, the Crosshatch givens and combos, or the Pierglass word bank). When both a saved day and the current puzzle carry a `puzzleKey`, the staleness check compares those fingerprints instead of `DICT_VERSION`. This isolates games from each other: a version bump that changes only Doublet's generator does not invalidate a Crosshatch save whose actual puzzle is unchanged. Saves from before this feature (without a `puzzleKey`) fall back to the `DICT_VERSION` comparison. Refer to [Data storage and streaks](/docs/architecture/persistence/) for the implementation.
 
 ## The solution is in the puzzle
 
-Each generator gives the puzzle together with its solution data. Examples are the Crosshatch word sets, the Backwords solution counts, and the Serpentine path. Thus the answer check is fast when you play — the expensive search occurs one time, before you start. The game makes the solution again from the seed. The game does not keep the solution in storage.
+Each generator gives the puzzle together with its solution data. Examples are the Crosshatch word sets, the Pierglass solution counts, and the Serpentine path. Thus the answer check is fast when you play — the expensive search occurs one time, before you start. The game makes the solution again from the seed. The game does not keep the solution in storage.

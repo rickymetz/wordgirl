@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { buildLexicon, lexiconItems, MIRROR_WORDS } from "./lexicon";
-import { dailySeed, generateBackwords, minRows, solveBank } from "./generator";
+import { dailySeed, generatePierglass, minRows, solveBank } from "./generator";
 import { toMultiset } from "./types";
 
 const dict = parseDictionary(
@@ -136,7 +136,7 @@ describe("minRows", () => {
   it("agrees with the full enumeration on generated days", () => {
     for (let day = 1; day <= 20; day++) {
       const key = `2026-09-${String(day).padStart(2, "0")}`;
-      const p = generateBackwords(dict, dailySeed(key), items);
+      const p = generatePierglass(dict, dailySeed(key), items);
       const counts = solveBank(toMultiset(p.bank), items, 400).map(
         (s) => s.length,
       );
@@ -149,10 +149,10 @@ describe("minRows", () => {
   });
 });
 
-describe("generateBackwords", () => {
+describe("generatePierglass", () => {
   it("is deterministic for a given seed", () => {
-    const a = generateBackwords(dict, dailySeed("2026-07-09"));
-    const b = generateBackwords(dict, dailySeed("2026-07-09"));
+    const a = generatePierglass(dict, dailySeed("2026-07-09"));
+    const b = generatePierglass(dict, dailySeed("2026-07-09"));
     expect(a.bank).toEqual(b.bank);
     expect(a.seedRows).toEqual(b.seedRows);
   });
@@ -160,7 +160,7 @@ describe("generateBackwords", () => {
   it("holds the quality bands across a month of dailies", () => {
     for (let day = 1; day <= 31; day++) {
       const key = `2026-08-${String(day).padStart(2, "0")}`;
-      const p = generateBackwords(dict, dailySeed(key));
+      const p = generatePierglass(dict, dailySeed(key));
       expect(p.bank.length).toBeGreaterThanOrEqual(8);
       expect(p.bank.length).toBeLessThanOrEqual(12);
       expect(p.solutionCount).toBeGreaterThanOrEqual(2);

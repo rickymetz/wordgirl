@@ -1,19 +1,19 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
 import { loadDailyProgress } from "./state/persistence";
-import { BackwordsPreview } from "./ui/BackwordsPreview";
-import { BackwordsStatus } from "./ui/BackwordsStatus";
+import { PierglassPreview } from "./ui/PierglassPreview";
+import { PierglassStatus } from "./ui/PierglassStatus";
 
-export const backwords: GameDefinition = {
-  id: "backwords",
-  name: "Backwords",
+export const pierglass: GameDefinition = {
+  id: "pierglass",
+  name: "Pierglass",
   tagline: "Every word, a reflection.",
   themeColor: "var(--color-accent)",
-  Preview: BackwordsPreview,
-  Status: BackwordsStatus,
+  Preview: PierglassPreview,
+  Status: PierglassStatus,
   solvedToday: async (today) =>
     (await loadDailyProgress(today))?.solved === true,
-  Page: lazy(() => import("./ui/BackwordsPage")),
+  Page: lazy(() => import("./ui/PierglassPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
     { path: "practice", Page: lazy(() => import("./ui/PracticePage")) },
@@ -25,7 +25,7 @@ export const backwords: GameDefinition = {
     },
   ],
   // Fuchsia — clearly its own game beside Polygram red, Crosshatch teal.
-  accentLevel: "backwords",
+  accentLevel: "pierglass",
   secondaryActions: [
     { label: "Practice", path: "practice" },
     { label: "Archive", path: "archive" },
