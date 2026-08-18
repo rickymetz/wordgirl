@@ -448,7 +448,7 @@ export function GameScreen({
 
       {/* Title + difficulty */}
       <div className="flex items-baseline gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Doublet</h1>
+        <h1 className="font-game text-2xl font-normal tracking-tight">Doublet</h1>
         <svg role="img" aria-label="doublet" width="20" height="20" viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent">
           <rect x="1" y="5" width="8" height="10" rx="2" fill="none"

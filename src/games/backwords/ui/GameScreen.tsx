@@ -305,7 +305,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </header>
 
       <div className="flex items-baseline gap-2.5 pb-3">
-        <h1 className="text-2xl font-bold tracking-tight">Backwords</h1>
+        <h1 className="font-game text-2xl font-normal tracking-tight">Backwords</h1>
         {/* The game's mark: a letter meeting its reflection. */}
         <svg
           role="img"
