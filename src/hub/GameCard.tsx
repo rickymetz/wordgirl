@@ -18,7 +18,7 @@ export function GameCard({ game }: { game: GameDefinition }) {
         className="flex items-center overflow-hidden rounded-3xl bg-surface-tint px-6 py-6 transition-transform active:scale-[0.98] md:min-w-0 md:flex-1"
       >
         <div className="w-3/4 min-w-0 pr-2">
-          <h2 className="text-2xl font-bold tracking-tight">{game.name}</h2>
+          <h2 className="font-game text-2xl font-normal tracking-tight">{game.name}</h2>
           <p className="mt-0.5 text-sm text-ink-soft">{game.tagline}</p>
           {game.Status && <game.Status />}
         </div>

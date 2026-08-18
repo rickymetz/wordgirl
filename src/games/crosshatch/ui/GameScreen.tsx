@@ -476,7 +476,7 @@ export function GameScreen({
           level !== undefined && onLevelChange ? "pb-1.5" : "pb-3"
         }`}
       >
-        <h1 className="text-2xl font-bold tracking-tight">Crosshatch</h1>
+        <h1 className="font-game text-2xl font-normal tracking-tight">Crosshatch</h1>
         {/* The game's mark: a little hatch. */}
         <svg
           role="img"

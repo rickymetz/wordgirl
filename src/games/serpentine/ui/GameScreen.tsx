@@ -250,7 +250,7 @@ export function GameScreen({
           "tutorial") does not fit beside the title, and an unwrapped row
           pushed it off the right edge. */}
       <div className="flex flex-wrap items-baseline gap-2.5 pb-3 [@media(max-height:720px)]:pb-1">
-        <h1 className="text-2xl font-bold tracking-tight">Serpentine</h1>
+        <h1 className="font-game text-2xl font-normal tracking-tight">Serpentine</h1>
         <svg role="img" aria-label="serpentine" width="20" height="20" viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent">
           <path d="M5 3c0 2 5 3 5 5s-5 3-5 5 5 3 5 5" fill="none"
