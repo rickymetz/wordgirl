@@ -363,13 +363,13 @@ function WordRow({
   return (
     <div
       role="listitem"
-      className="flex items-center gap-3 border-b border-line/50 py-2"
+      className="flex items-center gap-3 border-b border-line/50"
     >
       <a
         href={`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex grow items-center gap-1.5 font-mono text-sm tracking-wide text-ink active:text-accent"
+        className="flex min-h-11 grow items-center gap-1.5 font-mono text-sm tracking-wide text-ink active:text-accent"
       >
         {word}
         <ExternalLink aria-hidden className="h-3 w-3 shrink-0 text-ink-soft/40" />
@@ -387,7 +387,7 @@ function WordRow({
         type="button"
         onClick={() => onToggle(word)}
         aria-label={bookmarked ? `unsave ${word}` : `save ${word}`}
-        className="-m-1.5 p-1.5 active:scale-90"
+        className="-m-1.5 flex h-11 w-11 shrink-0 items-center justify-center active:scale-90"
       >
         <Bookmark
           aria-hidden

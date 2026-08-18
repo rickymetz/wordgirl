@@ -439,7 +439,7 @@ export function GameScreen({
               setCoachOpen(true);
             }}
             aria-label="how to play"
-            className="-m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+            className="relative -m-2 flex h-9 w-9 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-1"
           >
             <CircleHelp aria-hidden className="h-5 w-5" />
           </button>

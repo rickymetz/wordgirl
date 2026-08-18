@@ -50,7 +50,7 @@ export function FoundWordsBar({
         onClick={onToggle}
         aria-label="found words"
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-left"
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-3 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm">
           {recentFirst.length === 0 ? (

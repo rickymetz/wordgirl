@@ -101,7 +101,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
         <HomeLink />
         <Link
           to={`/games/${config.gameId}`}
-          className="text-sm font-semibold text-accent"
+          className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
         >
           Today's puzzle
         </Link>

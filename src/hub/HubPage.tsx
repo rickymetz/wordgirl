@@ -18,7 +18,7 @@ export function HubPage() {
         <Link
           to="/dictionary"
           aria-label="dictionary"
-          className="absolute top-12 left-0 -m-2 flex h-10 w-10 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+          className="absolute top-12 left-0 -m-2 flex h-10 w-10 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-0.5"
         >
           <BookOpen aria-hidden className="h-5 w-5" />
         </Link>
@@ -26,7 +26,7 @@ export function HubPage() {
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="settings"
-          className="absolute top-12 right-0 -m-2 flex h-10 w-10 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90"
+          className="absolute top-12 right-0 -m-2 flex h-10 w-10 items-center justify-center rounded-full p-2 text-ink-soft active:scale-90 after:absolute after:-inset-0.5"
         >
           <Settings aria-hidden className="h-5 w-5" />
         </button>

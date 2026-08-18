@@ -122,7 +122,7 @@ export function GameTrends<Day extends { dateKey: string }>({
         <HomeLink />
         <Link
           to={`/games/${config.gameId}/archive`}
-          className="text-sm font-semibold text-accent"
+          className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
         >
           Archive
         </Link>
