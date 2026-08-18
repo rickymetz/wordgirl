@@ -82,3 +82,34 @@ describe("migrateRenamedGames", () => {
     }
   });
 });
+
+describe("the retired id stays retired", () => {
+  it("is not referenced anywhere in src except this migration", async () => {
+    // A rename is easy to half-undo: someone copies an old file, or a
+    // merge resurrects a path. The migration is the ONLY place the old
+    // id may appear, and it must keep appearing there — deleting it
+    // would strand every save still behind the old prefix.
+    const { readdirSync, readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const SRC = path.join(import.meta.dirname, "..", "..");
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) return walk(full);
+        return /\.tsx?$/.test(e.name) ? [full] : [];
+      });
+    const offenders = walk(SRC).filter(
+      (f) =>
+        !f.includes("renames") &&
+        /backwords/i.test(readFileSync(f, "utf8")),
+    );
+    expect(
+      offenders.map((f) => path.relative(SRC, f)),
+      'The retired id "backwords" reappeared in src. Rename it to pierglass.',
+    ).toEqual([]);
+  });
+
+  it("still carries the rename, so old saves are not stranded", () => {
+    expect(GAME_ID_RENAMES.some(([from]) => from === "backwords")).toBe(true);
+  });
+});
