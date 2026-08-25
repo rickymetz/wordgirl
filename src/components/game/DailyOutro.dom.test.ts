@@ -12,8 +12,8 @@ import type { RoundupEntry } from "../../lib/roundup";
 const state = vi.hoisted(() => ({
   bDone: true,
   entries: {
-    a: { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000 },
-    b: { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000 },
+    a: { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 },
+    b: { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 1 },
   } as Record<string, RoundupEntry | null>,
 }));
 
@@ -24,12 +24,14 @@ vi.mock("../../games/registry", () => ({
       name: "Alpha",
       solvedToday: async () => true,
       roundupEntry: async () => state.entries.a,
+      solvedDates: async () => ["2026-08-25"],
     },
     {
       id: "b",
       name: "Bravo",
       solvedToday: async () => state.bDone,
       roundupEntry: async () => (state.bDone ? state.entries.b : null),
+      solvedDates: async () => (state.bDone ? ["2026-08-25"] : []),
     },
   ],
 }));
@@ -95,8 +97,9 @@ describe("DailyOutro when the day is complete", () => {
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
-        "🔺 Alpha · 5 words · ⏱️ 1:01",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10",
+        "✅ 2/2 · ⏱️ 3:11",
+        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 1",
         "wordgirl.net",
       ].join("\n"),
     );

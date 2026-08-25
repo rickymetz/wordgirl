@@ -9,30 +9,40 @@ import type { RoundupEntry } from "../../lib/roundup";
 
 /**
  * The registry is the only input to the roundup: each game contributes an
- * entry or a null. Mocking it lets us drive the gate (all-or-nothing) and
- * the rendering without standing up five games' persistence — that per-game
- * wiring is exercised where those loaders live. `state` is hoisted so the
- * mock factory and each test read the same mutable cell.
+ * entry (or null), plus the dates it was fully solved (for the streak).
+ * Mocking it drives the gate and the streak without five games'
+ * persistence. `state` is hoisted so the mock factory and each test share
+ * one mutable cell.
  */
 const state = vi.hoisted(() => ({
   a: null as RoundupEntry | null,
   b: null as RoundupEntry | null,
-  /** Whether game "c" even has a loader — the missing-loader branch. */
   cHasLoader: true,
   c: null as RoundupEntry | null,
+  dates: { a: [] as string[], b: [] as string[], c: [] as string[] },
 }));
 
 vi.mock("../../games/registry", () => ({
   games: [
-    { id: "a", name: "Alpha", roundupEntry: async () => state.a },
-    { id: "b", name: "Bravo", roundupEntry: async () => state.b },
+    {
+      id: "a",
+      name: "Alpha",
+      roundupEntry: async () => state.a,
+      solvedDates: async () => state.dates.a,
+    },
+    {
+      id: "b",
+      name: "Bravo",
+      roundupEntry: async () => state.b,
+      solvedDates: async () => state.dates.b,
+    },
     {
       id: "c",
       name: "Charlie",
-      // A game may ship without a loader; the roundup must not appear then.
       get roundupEntry() {
         return state.cHasLoader ? async () => state.c : undefined;
       },
+      solvedDates: async () => state.dates.c,
     },
   ],
 }));
@@ -41,7 +51,7 @@ let container: HTMLDivElement;
 let root: Root;
 let copied: string[];
 
-async function flush(ticks = 6) {
+async function flush(ticks = 8) {
   for (let i = 0; i < ticks; i++) {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
@@ -63,11 +73,11 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
-  state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000 };
-  state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000 };
-  state.c = { emoji: "🟩", name: "Charlie", metric: "8 letters", elapsedMs: 90_000 };
+  state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 };
+  state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 2 };
+  state.c = { emoji: "🟩", name: "Charlie", metric: "8 letters", elapsedMs: 90_000, hints: 0 };
   state.cHasLoader = true;
-  // navigator.share is absent in jsdom, so the button falls to clipboard.
+  state.dates = { a: ["2026-08-25"], b: ["2026-08-25"], c: ["2026-08-25"] };
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
   });
@@ -91,23 +101,38 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("lists each finished game with no emoji in the visible rows", async () => {
+  it("lists each game (stat · time · hints), no emoji in the rows", async () => {
     await mount();
-    expect(container.textContent).toContain("Today's roundup");
+    expect(container.textContent).toContain("Every puzzle done today");
+    expect(container.textContent).toContain("3/3 solved · 4:41");
     expect(container.textContent).toContain("Alpha");
-    expect(container.textContent).toContain("5 words · 1:01");
+    expect(container.textContent).toContain("5 words · 1:01 · no hints");
     expect(container.textContent).toContain("Bravo");
-    expect(container.textContent).toContain("3 rows · 2:10");
+    expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
     expect(container.textContent).toContain("Charlie");
-    expect(container.textContent).toContain("8 letters · 1:30");
-    // Emoji ride the share string only — never the UI.
-    expect(container.textContent).not.toContain("🔺");
-    expect(container.textContent).not.toContain("🟦");
-    expect(container.textContent).not.toContain("🟩");
+    for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
+      expect(container.textContent).not.toContain(glyph);
+    }
   });
 
-  it("shares the whole day: dated header, an emoji line per game, the link", async () => {
+  it("wraps the card in the rainbow gradient border", async () => {
     await mount();
+    const section = container.querySelector<HTMLElement>(
+      '[aria-label="Today\'s roundup"]',
+    )!;
+    expect(section.style.background).toContain("--roundup-rainbow");
+  });
+
+  it("shares the whole day: header, summary, an emoji+hint line per game", async () => {
+    // Give a two-day all-games streak: yesterday complete for every game.
+    state.dates = {
+      a: ["2026-08-25", "2026-08-24"],
+      b: ["2026-08-25", "2026-08-24"],
+      c: ["2026-08-25", "2026-08-24"],
+    };
+    await mount();
+    // Streak shows in the card summary too.
+    expect(container.textContent).toContain("2-day streak");
     const button = [...container.querySelectorAll("button")].find(
       (b) => b.textContent?.trim() === "Share",
     )!;
@@ -119,9 +144,10 @@ describe("DailyRoundup", () => {
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
-        "🔺 Alpha · 5 words · ⏱️ 1:01",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10",
-        "🟩 Charlie · 8 letters · ⏱️ 1:30",
+        "✅ 3/3 · ⏱️ 4:41 · 🔥 2",
+        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 2",
+        "🟩 Charlie · 8 letters · ⏱️ 1:30 · 🤓 0",
         "wordgirl.net",
       ].join("\n"),
     );

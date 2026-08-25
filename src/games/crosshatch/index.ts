@@ -1,6 +1,11 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { isDaySolved, levelsFor, loadDailyProgress } from "./state/persistence";
+import {
+  isDaySolved,
+  levelsFor,
+  loadAllDailyProgress,
+  loadDailyProgress,
+} from "./state/persistence";
 import { CrosshatchPreview } from "./ui/CrosshatchPreview";
 import { CrosshatchStatus } from "./ui/CrosshatchStatus";
 
@@ -22,8 +27,24 @@ export const crosshatch: GameDefinition = {
     // count would undersell a two-board day.
     const words = boards.reduce((n, b) => n + (b?.foundWords.length ?? 0), 0);
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
-    return { emoji: "🧺", name: "Crosshatch", metric: `${words} words`, elapsedMs };
+    const hints = boards.reduce(
+      (n, b) =>
+        n +
+        Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
+      0,
+    );
+    return {
+      emoji: "🧺",
+      name: "Crosshatch",
+      metric: `${words} words`,
+      elapsedMs,
+      hints,
+    };
   },
+  solvedDates: async () =>
+    Object.values(await loadAllDailyProgress())
+      .filter((d) => d.solved)
+      .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/CrosshatchPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

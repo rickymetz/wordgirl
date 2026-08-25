@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
 import { DIFFICULTIES } from "./engine/types";
-import { loadDailyProgress } from "./state/persistence";
+import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
 import { DoubletPreview } from "./ui/DoubletPreview";
 import { DoubletStatus } from "./ui/DoubletStatus";
 
@@ -29,8 +29,19 @@ export const doublet: GameDefinition = {
     // Tiles placed across all three boards, and their summed play time.
     const pieces = boards.reduce((n, b) => n + (b?.placed.length ?? 0), 0);
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
-    return { emoji: "👯‍♂️", name: "Doublet", metric: `${pieces} pieces`, elapsedMs };
+    const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
+    return {
+      emoji: "👯‍♂️",
+      name: "Doublet",
+      metric: `${pieces} pieces`,
+      elapsedMs,
+      hints,
+    };
   },
+  solvedDates: async () =>
+    Object.values(await loadAllDailyProgress())
+      .filter((d) => d.solvedCount === 3)
+      .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

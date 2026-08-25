@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
 import { PolygramPreview } from "./ui/PolygramPreview";
 import { PolygramStatus } from "./ui/PolygramStatus";
 
@@ -16,13 +16,23 @@ export const polygram: GameDefinition = {
   roundupEntry: async (today) => {
     const d = await loadDailyProgress(today);
     if (!d?.completed) return null;
+    // Older saves stored a bare count per word; newer ones a position list.
+    const hints = Object.values(d.revealed).reduce<number>(
+      (n, p) => n + (Array.isArray(p) ? p.length : p),
+      0,
+    );
     return {
       emoji: "🔻",
       name: "Polygram",
       metric: `${d.foundWords.length} words`,
       elapsedMs: d.elapsedMs,
+      hints,
     };
   },
+  solvedDates: async () =>
+    Object.values(await loadAllDailyProgress())
+      .filter((d) => d.completed)
+      .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

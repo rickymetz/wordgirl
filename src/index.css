@@ -121,6 +121,27 @@
   /* Sky, not turquoise: the decagon colors Polygram's completion card,
      which read as Crosshatch's Tiffany teal from across the room. */
   --level-10: light-dark(#075985, #38bdf8); /* sky */
+
+  /* The games with their own palette key, declared on :root beside the
+     numbered levels for the same reason: one source of truth that both
+     the [data-level] rule below AND the cross-game roundup rainbow read
+     via var(), never a second copy of the hex pair. */
+  --level-crosshatch: light-dark(#0c7d84, #3ddbd9); /* Tiffany teal */
+  --level-pierglass: light-dark(#a21caf, #e879f9);  /* fuchsia */
+  --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
+  --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
+
+  /* The five daily games, in registry order, as one sweep — the border
+     of the "every puzzle done" roundup banner. Kept here with the tokens
+     it is built from so a palette tweak carries into it automatically. */
+  --roundup-rainbow: linear-gradient(
+    105deg,
+    var(--level-3),
+    var(--level-crosshatch),
+    var(--level-pierglass),
+    var(--level-doublet),
+    var(--level-serpentine)
+  );
 }
 [data-level="3"] { --color-accent: var(--level-3); }
 [data-level="4"] { --color-accent: var(--level-4); }
@@ -135,12 +156,12 @@
 [data-level="neutral"] { --color-accent: light-dark(#171717, #e5e5e5); }
 
 /* Crosshatch has its own palette key — Tiffany teal. */
-[data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
+[data-level="crosshatch"] { --color-accent: var(--level-crosshatch); }
 
 /* Pierglass' palette key — fuchsia, clearly its own game beside
    Polygram red and Crosshatch teal. */
 [data-level="pierglass"] {
-  --color-accent: light-dark(#a21caf, #e879f9);
+  --color-accent: var(--level-pierglass);
   /* The mirror's glass: one gradient for the board pane AND the hub
      card's miniature, so a tint tweak lands everywhere at once. */
   --pierglass-glass: linear-gradient(
@@ -153,11 +174,11 @@
 }
 
 /* Doublet — warm amber. */
-[data-level="doublet"] { --color-accent: light-dark(#92400e, #fbbf24); }
+[data-level="doublet"] { --color-accent: var(--level-doublet); }
 
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {
-  --color-accent: light-dark(#4d7c0f, #a3e635);
+  --color-accent: var(--level-serpentine);
   --color-accent-trail: light-dark(#6b8f0f, #d4e635);
   --color-on-accent: light-dark(#ffffff, #1a1a2e);
 }

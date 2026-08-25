@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
 import { SerpentinePreview } from "./ui/SerpentinePreview";
 import { SerpentineStatus } from "./ui/SerpentineStatus";
 
@@ -28,8 +28,19 @@ export const serpentine: GameDefinition = {
     // Letters traced across both boards, and their summed play time.
     const letters = boards.reduce((n, b) => n + (b?.cells.length ?? 0), 0);
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
-    return { emoji: "🐍", name: "Serpentine", metric: `${letters} letters`, elapsedMs };
+    const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
+    return {
+      emoji: "🐍",
+      name: "Serpentine",
+      metric: `${letters} letters`,
+      elapsedMs,
+      hints,
+    };
   },
+  solvedDates: async () =>
+    Object.values(await loadAllDailyProgress())
+      .filter((d) => d.solved)
+      .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

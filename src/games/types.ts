@@ -29,6 +29,15 @@ export interface GameDefinition {
    * `name · metric · time` with no emoji (house rule).
    */
   roundupEntry?: (today: string) => Promise<RoundupEntry | null>;
+  /**
+   * Every date this game was FULLY finished (all its boards), for the
+   * cross-game "every puzzle done" streak the roundup shows. Intersecting
+   * these sets across games and counting back from today gives the run of
+   * days the whole set was cleared. Same safe-by-omission stance as the
+   * others: a game without it can never be in the intersection, so the
+   * streak would read 0 until it is added.
+   */
+  solvedDates?: () => Promise<string[]>;
   /** Lazy page component — each game is its own code-split chunk. */
   Page: LazyExoticComponent<ComponentType>;
   /** Extra routes under /games/<id>/, e.g. practice mode. */

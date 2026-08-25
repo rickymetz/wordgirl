@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
 import { PierglassPreview } from "./ui/PierglassPreview";
 import { PierglassStatus } from "./ui/PierglassStatus";
 
@@ -16,21 +16,18 @@ export const pierglass: GameDefinition = {
   roundupEntry: async (today) => {
     const d = await loadDailyProgress(today);
     if (!d?.solved) return null;
-    // Rows against par, the same yardstick the game's own share uses;
-    // the ⭐️ is a share-only flourish, so the roundup states it plainly.
-    const par =
-      d.parRows === undefined
-        ? ""
-        : d.rows.length <= d.parRows
-          ? " · par"
-          : ` · par ${d.parRows}`;
     return {
       emoji: "🪞",
       name: "Pierglass",
-      metric: `${d.rows.length} rows${par}`,
+      metric: `${d.rows.length} rows`,
       elapsedMs: d.elapsedMs,
+      hints: d.hints ?? 0,
     };
   },
+  solvedDates: async () =>
+    Object.values(await loadAllDailyProgress())
+      .filter((d) => d.solved)
+      .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/PierglassPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

@@ -33,16 +33,20 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `GameStatus` — the hub-card date + play-state line; games pass
   `loadState`/`loadStreak` loaders (~15 lines per game).
 - `DailyRoundup` + `useDailyRoundup`/`useRoundupShareText` — the
-  cross-game day summary. Each game supplies a
-  `GameDefinition.roundupEntry(today)` returning
-  `{ emoji, name, metric, elapsedMs }` (or null unless the WHOLE game is
-  done — mirror `solvedToday`, aggregating multi-board days). The card
-  shows only once EVERY game returns an entry, so a game that omits the
-  loader keeps the roundup hidden (safe-by-omission, like
-  `solvedToday`). The emoji rides the SHARE string only; the card renders
-  `name · metric · time` — no emoji in UI chrome. Mounted on the hub
-  (self-hides) and, as a one-pill share, in `DailyOutro`'s all-done
-  branch. Pure share/format helpers live in `lib/roundup.ts`.
+  cross-game "every puzzle done" banner: a rainbow border (all five game
+  accents via `--roundup-rainbow`, the one place the whole palette shows
+  at once) around a neutral card of each game's result plus a Share.
+  Each game supplies `GameDefinition.roundupEntry(today)` returning
+  `{ emoji, name, metric, elapsedMs, hints }` (or null unless the WHOLE
+  game is done — mirror `solvedToday`, aggregating multi-board days) and
+  `solvedDates()` (every fully-finished date, for the all-games streak:
+  intersect the sets, count back from today). The banner shows only once
+  EVERY game returns an entry, so a game that omits `roundupEntry` keeps
+  it hidden (safe-by-omission, like `solvedToday`). Emoji ride the SHARE
+  string only; the card renders `name · metric · time · hints` — no emoji
+  in UI chrome. Mounted on the hub above the cards (self-hides) and, as a
+  one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
+  and streak helpers live in `lib/roundup.ts`.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
@@ -319,9 +323,9 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 5. Clock via `useDailyClock` (never inline)
 6. `ArchivePage` using `GameArchive` component (~30 lines config)
 7. `TrendsPage` using `GameTrends` with `solvedHour` metric
-8. Hub card via `GameStatus`; `roundupEntry` in the registry so the game
-   joins the cross-game `DailyRoundup` (aggregate multi-board days; null
-   until the whole game is done)
+8. Hub card via `GameStatus`; `roundupEntry` + `solvedDates` in the
+   registry so the game joins the cross-game `DailyRoundup` (aggregate
+   multi-board days; `roundupEntry` null until the whole game is done)
 9. Bento preview component using `Tile mini`
 10. Coach sheet via `CoachSheet` (opened by "?" only — never auto)
 11. Share string ending with `SHARE_URL`
@@ -345,8 +349,10 @@ Before merging any game feature, verify:
 - `e.preventDefault()` on game-surface pointer handlers
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `roundupEntry` returns null unless the game is FULLY solved for the day
-  (mirrors `solvedToday`), sums multi-board days, and keeps emoji out of
-  `metric` (UI rows carry no emoji; only the share string does)
+  (mirrors `solvedToday`), sums multi-board days (metric, time AND hints),
+  and keeps emoji out of `metric` (UI rows carry no emoji; only the share
+  string does); `solvedDates` lists every fully-finished date for the
+  all-games streak
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
 - Tutorial mode: no save, no stats, no streak, no hints, no share
 - Tutorial fits with no page scroll at Huge text, at 375px wide and up —
