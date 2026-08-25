@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
+import { build as esbuild } from "esbuild";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CHROMIUM = process.env.PW_CHROMIUM || "/opt/pw-browsers/chromium";
@@ -78,49 +79,75 @@ const GAMES = [
   },
 ];
 
-// Draw a real trail: Serpentine extends the line to any ADJACENT cell (it is
-// checked against the poem only at the end), so a free boustrophedon reads as
-// a player mid-trace — unlike hints, which just reveal scattered letters.
-// Keys go to the focused grid: arrows move a cursor, Enter commits it.
+// Today's real solution path, computed from the game's own engine so the
+// trail follows the CORRECT answer. Populated once before capture; null if
+// the engine could not be evaluated (then traceSerpentine falls back to a
+// free trace). Shape: { path: [{row,col}...], rows, cols }.
+let SERP_SOLUTION = null;
+
+/** Run the serpentine engine in Node (via esbuild) to get the daily path. */
+async function serpentineDailyPath(dateKey) {
+  const entry = `export { getDailyPuzzle } from ${JSON.stringify(join(root, "src/games/serpentine/engine/dailySeed.ts"))};`;
+  const res = await esbuild({
+    stdin: { contents: entry, resolveDir: root, loader: "ts", sourcefile: "og-entry.ts" },
+    bundle: true, format: "esm", platform: "node", target: "es2022", write: false, logLevel: "silent",
+  });
+  const url = "data:text/javascript;base64," + Buffer.from(res.outputFiles[0].text).toString("base64");
+  const mod = await import(url);
+  const p = mod.getDailyPuzzle("haiku", dateKey); // "haiku" is the screen's default difficulty
+  return { path: p.path, rows: p.rows, cols: p.cols };
+}
+
+// Draw the real trail by TAPPING the solution's cells in order — Serpentine
+// extends the line to whatever adjacent cell is tapped, so walking the actual
+// path draws the correct answer part-way. Falls back to a free (non-crossing)
+// boustrophedon if the solution couldn't be computed, so a card is never blank.
 async function traceSerpentine(page) {
   const grid = page.getByRole("grid");
   await grid.waitFor({ timeout: 4000 }).catch(() => {});
   const geo = await page.evaluate(() => {
     const g = document.querySelector('[role="grid"]');
     if (!g) return null;
+    const r = g.getBoundingClientRect();
     const vb = g.querySelector("svg")?.getAttribute("viewBox")?.split(/\s+/).map(Number);
     const circ = g.querySelector("circle"); // the start node
     if (!vb || !circ) return null;
-    g.focus();
     return {
+      left: r.left, top: r.top, width: r.width, height: r.height,
       cols: vb[2], rows: vb[3],
       head: { col: Math.round(+circ.getAttribute("cx") - 0.5), row: Math.round(+circ.getAttribute("cy") - 0.5) },
     };
   });
   if (!geo) return;
-  const { cols, rows, head } = geo;
-  // Trace toward the side/half with the most room so no step clamps at an edge
-  // (a clamped Enter re-taps the tail and would UNDO the line).
-  const vdir = head.row < rows / 2 ? 1 : -1;
-  let hdir = head.col < cols / 2 ? 1 : -1;
-  const moves = [];
-  const cur = { ...head };
-  while (moves.length < 8) {
-    if (cur.col + hdir >= 0 && cur.col + hdir < cols) {
-      cur.col += hdir;
-      moves.push(hdir > 0 ? "ArrowRight" : "ArrowLeft");
-    } else if (cur.row + vdir >= 0 && cur.row + vdir < rows) {
-      cur.row += vdir;
-      hdir = -hdir;
-      moves.push(vdir > 0 ? "ArrowDown" : "ArrowUp");
-    } else {
-      break;
+  const { left, top, width, height, cols, rows, head } = geo;
+  const center = (c) => ({ x: left + (c.col + 0.5) * (width / cols), y: top + (c.row + 0.5) * (height / rows) });
+
+  // Use the real solution only if it matches the rendered board (same grid and
+  // same start cell) — a mismatch means a stale date, so free-trace instead.
+  const sol = SERP_SOLUTION;
+  const matches = sol && sol.rows === rows && sol.cols === cols &&
+    sol.path[0]?.row === head.row && sol.path[0]?.col === head.col;
+
+  let cells;
+  if (matches) {
+    const k = Math.max(4, Math.min(13, sol.path.length - 3)); // partial, never solved
+    cells = sol.path.slice(1, 1 + k);
+  } else {
+    cells = [];
+    const cur = { ...head };
+    let hdir = head.col < cols / 2 ? 1 : -1;
+    const vdir = head.row < rows / 2 ? 1 : -1;
+    while (cells.length < 8) {
+      if (cur.col + hdir >= 0 && cur.col + hdir < cols) cur.col += hdir;
+      else if (cur.row + vdir >= 0 && cur.row + vdir < rows) { cur.row += vdir; hdir = -hdir; }
+      else break;
+      cells.push({ ...cur });
     }
   }
-  for (const m of moves) {
-    await page.keyboard.press(m);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(120);
+  for (const c of cells) {
+    const { x, y } = center(c);
+    await page.mouse.click(x, y);
+    await page.waitForTimeout(110);
   }
 }
 
@@ -187,6 +214,20 @@ function cardHtml({ name, tagline, accent, shotB64 }, fontB64) {
 
 const fontB64 = findFont();
 mkdirSync(join(root, "public/og"), { recursive: true });
+
+// Serpentine's card traces the correct answer: compute today's solution path
+// from the engine. Same local dateKey + "haiku" default as the served app, so
+// it matches what the browser renders. Non-fatal if it fails.
+{
+  const d = new Date();
+  const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  try {
+    SERP_SOLUTION = await serpentineDailyPath(dateKey);
+    console.log(`serpentine solution for ${dateKey}: ${SERP_SOLUTION.path.length} cells`);
+  } catch (e) {
+    console.warn("serpentine solution unavailable, will free-trace:", String(e).split("\n")[0]);
+  }
+}
 
 // Serve the built app for live capture.
 const server = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], {
