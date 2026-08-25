@@ -1,4 +1,5 @@
 import type { ComponentType, LazyExoticComponent } from "react";
+import type { RoundupEntry } from "../lib/roundup";
 
 export interface GameDefinition {
   /** Also the storage namespace and route segment: /games/<id> */
@@ -18,6 +19,16 @@ export interface GameDefinition {
    * game from the list rather than advertising a puzzle already played.
    */
   solvedToday?: (today: string) => Promise<boolean>;
+  /**
+   * Today's result as one entry in the cross-game daily roundup, or null
+   * when the game isn't finished for `today` (mirror `solvedToday`). Read
+   * by `DailyRoundup`, which shows the roundup only once EVERY game
+   * returns an entry — so a game that omits this loader keeps the roundup
+   * from ever appearing, the same safe-by-omission stance `solvedToday`
+   * takes. The emoji rides the SHARE string only; the UI card renders
+   * `name · metric · time` with no emoji (house rule).
+   */
+  roundupEntry?: (today: string) => Promise<RoundupEntry | null>;
   /** Lazy page component — each game is its own code-split chunk. */
   Page: LazyExoticComponent<ComponentType>;
   /** Extra routes under /games/<id>/, e.g. practice mode. */

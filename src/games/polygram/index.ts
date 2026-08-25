@@ -13,6 +13,16 @@ export const polygram: GameDefinition = {
   Status: PolygramStatus,
   solvedToday: async (today) =>
     (await loadDailyProgress(today))?.completed === true,
+  roundupEntry: async (today) => {
+    const d = await loadDailyProgress(today);
+    if (!d?.completed) return null;
+    return {
+      emoji: "🔻",
+      name: "Polygram",
+      metric: `${d.foundWords.length} words`,
+      elapsedMs: d.elapsedMs,
+    };
+  },
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

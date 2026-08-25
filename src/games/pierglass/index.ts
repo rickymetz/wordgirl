@@ -13,6 +13,24 @@ export const pierglass: GameDefinition = {
   Status: PierglassStatus,
   solvedToday: async (today) =>
     (await loadDailyProgress(today))?.solved === true,
+  roundupEntry: async (today) => {
+    const d = await loadDailyProgress(today);
+    if (!d?.solved) return null;
+    // Rows against par, the same yardstick the game's own share uses;
+    // the ⭐️ is a share-only flourish, so the roundup states it plainly.
+    const par =
+      d.parRows === undefined
+        ? ""
+        : d.rows.length <= d.parRows
+          ? " · par"
+          : ` · par ${d.parRows}`;
+    return {
+      emoji: "🪞",
+      name: "Pierglass",
+      metric: `${d.rows.length} rows${par}`,
+      elapsedMs: d.elapsedMs,
+    };
+  },
   Page: lazy(() => import("./ui/PierglassPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

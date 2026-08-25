@@ -19,6 +19,17 @@ export const serpentine: GameDefinition = {
     ]);
     return boards.every((b) => b?.solved === true);
   },
+  roundupEntry: async (today) => {
+    const boards = await Promise.all([
+      loadDailyProgress("haiku", today),
+      loadDailyProgress("poem", today),
+    ]);
+    if (!boards.every((b) => b?.solved === true)) return null;
+    // Letters traced across both boards, and their summed play time.
+    const letters = boards.reduce((n, b) => n + (b?.cells.length ?? 0), 0);
+    const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
+    return { emoji: "🐍", name: "Serpentine", metric: `${letters} letters`, elapsedMs };
+  },
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
