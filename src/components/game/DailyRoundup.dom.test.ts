@@ -189,6 +189,7 @@ describe("DailyRoundup", () => {
       '[aria-label="Today\'s roundup"] ul ul',
     );
     expect(subList?.className).toContain("text-xs");
+    expect(subList?.className).toContain("italic");
   });
 
   const banner = () =>

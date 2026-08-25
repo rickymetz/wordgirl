@@ -158,7 +158,7 @@ export function DailyRoundup({ today }: { today: string }) {
           <div className="text-center">
             {/* font-game is Rubik Mono One, and follows the Font setting to
                 the accessible face automatically. */}
-            <h2 className="text-balance px-6 font-game text-lg leading-[0.75] text-ink">
+            <h2 className="text-balance px-6 font-game text-lg leading-[0.85] text-ink">
               All Puzzles Solved Today
             </h2>
             <p className="pt-1 text-sm text-ink-soft">
@@ -179,7 +179,7 @@ export function DailyRoundup({ today }: { today: string }) {
                       {roundupAggregateDetail(e)}
                     </span>
                   </div>
-                  <ul className="flex flex-col gap-0.5 pl-3 text-xs">
+                  <ul className="flex flex-col gap-0.5 pl-3 text-xs italic">
                     {e.levels.map((lv) => (
                       <li
                         key={lv.label}
