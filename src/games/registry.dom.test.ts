@@ -102,6 +102,7 @@ describe("per-game daily loaders agree", () => {
         expect(entry!.levels?.map((l) => l.label)).toEqual(expectedLevels[game.id]);
         for (const lv of entry!.levels ?? []) {
           expect(lv.value).toEqual(expect.any(Number));
+          expect(lv.hints).toEqual(expect.any(Number));
         }
       } else {
         // Single-board games give a ready metric string, no levels.

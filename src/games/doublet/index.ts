@@ -38,6 +38,7 @@ export const doublet: GameDefinition = {
         label: capitalize(d),
         value: boards[i]!.placed.length,
         elapsedMs: boards[i]!.elapsedMs,
+        hints: boards[i]!.hints ?? 0,
       })),
       elapsedMs,
       hints,

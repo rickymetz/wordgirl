@@ -44,12 +44,16 @@ describe("roundupShareLine", () => {
 });
 
 describe("roundupDetail", () => {
-  it("is metric · time only (no emoji, no name, no per-game hints)", () => {
+  it("is metric · time (no emoji, no name), with no hint tail on a clean solve", () => {
     const detail = roundupDetail(polygram);
     expect(detail).toBe("42 words · 3:21");
     expect(detail).not.toContain("🔻");
     expect(detail).not.toContain("Polygram");
     expect(detail).not.toContain("hint");
+  });
+  it("appends the hint tail when the game used hints", () => {
+    expect(roundupDetail(pierglass)).toBe("6 rows · 2:10 · 2 hints");
+    expect(roundupDetail({ ...pierglass, hints: 1 })).toBe("6 rows · 2:10 · 1 hint");
   });
 });
 
@@ -59,22 +63,32 @@ describe("multi-level details", () => {
     name: "Crosshatch",
     unit: "words",
     elapsedMs: 9 * 60_000,
-    hints: 0,
+    hints: 4,
     levels: [
-      { label: "Normal", value: 12, elapsedMs: 4 * 60_000 },
-      { label: "Hard", value: 13, elapsedMs: 5 * 60_000 },
+      { label: "Normal", value: 12, elapsedMs: 4 * 60_000, hints: 1 },
+      { label: "Hard", value: 13, elapsedMs: 5 * 60_000, hints: 3 },
     ],
   };
-  it("header shows the combined count and the whole game's time", () => {
-    expect(roundupAggregateDetail(crosshatch)).toBe("25 words · 9:00");
+  it("header shows the combined count, the whole game's time, and total hints", () => {
+    expect(roundupAggregateDetail(crosshatch)).toBe("25 words · 9:00 · 4 hints");
   });
-  it("each sub-row shows its own count (with unit) and time", () => {
+  it("each sub-row shows its own count (with unit), time, and hints", () => {
     expect(roundupLevelDetail("words", crosshatch.levels![0])).toBe(
-      "12 words · 4:00",
+      "12 words · 4:00 · 1 hint",
     );
     expect(roundupLevelDetail("words", crosshatch.levels![1])).toBe(
-      "13 words · 5:00",
+      "13 words · 5:00 · 3 hints",
     );
+  });
+  it("omits the hint tail on a clean level or game", () => {
+    expect(
+      roundupLevelDetail("words", {
+        label: "Normal", value: 12, elapsedMs: 4 * 60_000, hints: 0,
+      }),
+    ).toBe("12 words · 4:00");
+    expect(
+      roundupAggregateDetail({ ...crosshatch, hints: 0 }),
+    ).toBe("25 words · 9:00");
   });
   it("still shares as one inline line", () => {
     expect(roundupShareLine(crosshatch)).toBe(

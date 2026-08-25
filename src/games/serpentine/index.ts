@@ -37,6 +37,7 @@ export const serpentine: GameDefinition = {
         label: capitalize(d),
         value: boards[i]!.cells.length,
         elapsedMs: boards[i]!.elapsedMs,
+        hints: boards[i]!.hints ?? 0,
       })),
       elapsedMs,
       hints,

@@ -15,6 +15,7 @@ export interface RoundupLevel {
   label: string; // "Normal", "Easy", "Haiku" …
   value: number; // the count (words/pieces/letters), unit on the entry
   elapsedMs: number;
+  hints: number; // hints used on this level (shown per sub-row)
 }
 
 export interface RoundupEntry {
@@ -67,24 +68,38 @@ export function roundupShareLine(entry: RoundupEntry): string {
   )}`;
 }
 
-/** A single-board game's card detail — metric and time (no emoji, no name;
- *  the name sits beside it). Multi-level games use sub-rows instead. */
+/** The card's hint tail: " · N hint(s)", or "" when none were used — so a
+ *  clean solve stays uncluttered and only the exceptions read as noteworthy.
+ *  UI only (no emoji); the share strings use `hintShare`. */
+function hintDetail(hints: number): string {
+  if (hints <= 0) return "";
+  return ` · ${hints} ${hints === 1 ? "hint" : "hints"}`;
+}
+
+/** A single-board game's card detail — metric, time, and hints (no emoji, no
+ *  name; the name sits beside it). Multi-level games use sub-rows instead. */
 export function roundupDetail(entry: RoundupEntry): string {
-  return `${entry.metric ?? ""} · ${formatDuration(entry.elapsedMs)}`;
+  return `${entry.metric ?? ""} · ${formatDuration(entry.elapsedMs)}${hintDetail(
+    entry.hints,
+  )}`;
 }
 
 /** A multi-level game's per-level sub-row detail: the count with the game's
- *  unit, and the time on that level. */
+ *  unit, the time on that level, and that level's hints. */
 export function roundupLevelDetail(unit: string, level: RoundupLevel): string {
-  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}`;
+  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}${hintDetail(
+    level.hints,
+  )}`;
 }
 
-/** A multi-level game's HEADER-row detail: the levels' combined count and
- *  the whole game's time — the aggregate that sits above the per-level
- *  sub-rows. */
+/** A multi-level game's HEADER-row detail: the levels' combined count, the
+ *  whole game's time, and the whole game's hints — the aggregate that sits
+ *  above the per-level sub-rows. */
 export function roundupAggregateDetail(entry: RoundupEntry): string {
   const total = (entry.levels ?? []).reduce((n, l) => n + l.value, 0);
-  return `${total} ${entry.unit} · ${formatDuration(entry.elapsedMs)}`;
+  return `${total} ${entry.unit} · ${formatDuration(entry.elapsedMs)}${hintDetail(
+    entry.hints,
+  )}`;
 }
 
 /** Active play time summed across every game's day. */

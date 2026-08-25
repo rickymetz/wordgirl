@@ -44,6 +44,10 @@ export const crosshatch: GameDefinition = {
           label: capitalize(level),
           value: boards[i]!.foundWords.length,
           elapsedMs: boards[i]!.elapsedMs,
+          hints: Object.values(boards[i]!.revealed ?? {}).reduce(
+            (m, pos) => m + pos.length,
+            0,
+          ),
         })),
         elapsedMs,
         hints,
