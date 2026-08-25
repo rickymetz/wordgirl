@@ -27,12 +27,55 @@ const BASE = `http://localhost:${PORT}`;
 
 // Dark-theme accent per game (from src/index.css [data-level=...]). The card
 // is always dark, so it takes the dark-mode value of each light-dark() pair.
+// Tap a game's Hint button `n` times to reveal CORRECT progress on the board
+// — no knowledge of the day's solution needed. Each hint is gated by a
+// "Use a hint?" confirm dialog. Used by the board-play games (serpentine,
+// doublet, pierglass) where a hint fills the board itself.
+async function useHints(page, n) {
+  const hint = page.getByRole("button", { name: /^hint/i }).first();
+  const confirm = page.getByRole("button", { name: /^use hint/i }).first();
+  for (let i = 0; i < n; i++) {
+    try {
+      await hint.click({ timeout: 1500 });
+    } catch {
+      break; // hint button exhausted / disabled / gone — keep what we have
+    }
+    // Word games gate a hint behind a "Use a hint?" dialog; path/tile games
+    // apply it immediately. Confirm only if the dialog actually appeared.
+    await confirm.click({ timeout: 800 }).catch(() => {});
+    await page.waitForTimeout(650); // let any dialog close + the board update
+  }
+}
+
+// `prep(page)` leaves each game mid-play so the card reads as an active game
+// rather than a blank start. Word-list games (polygram, crosshatch) show
+// progress in the GRID, so they type on the board rather than using hints
+// (whose reveals live in a panel that would cover the board).
 const GAMES = [
-  { id: "polygram", name: "Polygram", tagline: "Spell your way from triangle to decagon.", accent: "#f87171" },
-  { id: "crosshatch", name: "Crosshatch", tagline: "Every way the words fit.", accent: "#3ddbd9" },
-  { id: "pierglass", name: "Pierglass", tagline: "Every word, a reflection.", accent: "#e879f9" },
-  { id: "doublet", name: "Doublet", tagline: "Place the tiles. Spell the words.", accent: "#fbbf24" },
-  { id: "serpentine", name: "Serpentine", tagline: "One continuous line.", accent: "#a3e635" },
+  {
+    id: "polygram", name: "Polygram", tagline: "Spell your way from triangle to decagon.", accent: "#f87171",
+    prep: async (page) => { await page.keyboard.type("BOR", { delay: 140 }); }, // partial guess, unsubmitted
+  },
+  {
+    id: "crosshatch", name: "Crosshatch", tagline: "Every way the words fit.", accent: "#3ddbd9",
+    prep: async (page) => {
+      // Fill part of the first across word by tapping its on-screen keys.
+      for (const k of ["S", "O"]) await page.getByRole("button", { name: new RegExp(`^${k}$`) }).first().click().catch(() => {});
+    },
+  },
+  {
+    id: "pierglass", name: "Pierglass", tagline: "Every word, a reflection.", accent: "#e879f9",
+    prep: (page) => useHints(page, 1), // a 2-row puzzle; 2 hints would solve it
+
+  },
+  {
+    id: "doublet", name: "Doublet", tagline: "Place the tiles. Spell the words.", accent: "#fbbf24",
+    prep: (page) => useHints(page, 2),
+  },
+  {
+    id: "serpentine", name: "Serpentine", tagline: "One continuous line.", accent: "#a3e635",
+    prep: (page) => useHints(page, 4),
+  },
 ];
 
 // Rubik Mono One (the WordGirl wordmark face), embedded so the card renders
@@ -66,17 +109,17 @@ function cardHtml({ name, tagline, accent, shotB64 }, fontB64) {
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{width:1200px;height:630px}
     .card{width:1200px;height:630px;background:#121116;display:flex;align-items:center;
-      padding:0 84px;gap:64px;overflow:hidden;position:relative}
+      padding:34px 84px;gap:64px;overflow:hidden;position:relative}
     .accent-bar{position:absolute;left:0;top:0;bottom:0;width:14px;background:${accent}}
-    .text{flex:1;min-width:0}
+    .text{flex:1;min-width:0;align-self:stretch;display:flex;flex-direction:column}
+    .main{flex:1;display:flex;flex-direction:column;justify-content:center}
     .name{font-family:"Rubik Mono One",monospace;font-size:104px;line-height:1.0;
       color:${accent};letter-spacing:-2px;text-transform:uppercase;white-space:nowrap}
     .tagline{margin-top:28px;font-family:"Avenir Next","Avenir",ui-rounded,system-ui,sans-serif;
       font-weight:600;font-size:40px;line-height:1.25;color:#e7e5e4;max-width:600px}
-    .foot{margin-top:44px;display:flex;align-items:center;gap:14px;
-      font-family:"Avenir Next",system-ui,sans-serif;font-weight:700;font-size:29px;color:#a8a29e}
-    .dot{width:10px;height:10px;border-radius:50%;background:${accent}}
-    .phone{flex:none;width:288px;height:584px;background:#050506;border-radius:46px;
+    .url{font-family:"Avenir Next","Avenir",ui-rounded,system-ui,sans-serif;
+      font-weight:700;font-size:34px;color:${accent};letter-spacing:.5px}
+    .phone{flex:none;align-self:center;width:288px;height:584px;background:#050506;border-radius:46px;
       padding:13px;box-shadow:0 30px 70px rgba(0,0,0,.55);
       border:1px solid rgba(255,255,255,.10)}
     .screen{width:100%;height:100%;border-radius:34px;overflow:hidden;background:#fff}
@@ -85,9 +128,11 @@ function cardHtml({ name, tagline, accent, shotB64 }, fontB64) {
     <div class="card">
       <div class="accent-bar"></div>
       <div class="text">
-        <div class="name">${name}</div>
-        <div class="tagline">${tagline}</div>
-        <div class="foot"><span class="dot"></span>WordGirl · a new puzzle every day · wordgirl.net</div>
+        <div class="main">
+          <div class="name">${name}</div>
+          <div class="tagline">${tagline}</div>
+        </div>
+        <div class="url">wordgirl.net</div>
       </div>
       <div class="phone"><div class="screen"><img src="data:image/png;base64,${shotB64}"></div></div>
     </div>
@@ -133,7 +178,11 @@ try {
     const shot = await context.newPage();
     await shot.goto(`${BASE}/games/${g.id}`, { waitUntil: "networkidle" });
     await shot.evaluate(() => document.fonts.ready);
-    await shot.waitForTimeout(900); // let the board settle / entrance anims finish
+    await shot.waitForTimeout(700); // let the board settle / entrance anims finish
+    await g.prep(shot); // leave the game mid-play
+    // Close any panel/dialog a prep step may have left open, so the board shows.
+    await shot.keyboard.press("Escape").catch(() => {});
+    await shot.waitForTimeout(500);
     const shotB64 = (await shot.screenshot({ type: "png" })).toString("base64");
     await shot.close();
 
