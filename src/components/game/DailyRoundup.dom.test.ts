@@ -109,14 +109,15 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("lists each game (metric · time · hints), no emoji", async () => {
+  it("lists each game (metric · time · labelled hints) once the day used any, no emoji", async () => {
+    // Bravo used 2 hints, so the day is "some hints used": every game row
+    // shows a labelled count, INCLUDING the clean games' "0 hints".
     await mount();
     expect(container.textContent).toContain("All Puzzles Solved Today");
     // Subtitle still carries the day totals: total time and total hints.
     expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
     expect(container.textContent).toContain("Alpha");
-    // A clean game shows no hint tail; a game that used hints shows its own.
-    expect(container.textContent).toContain("5 words · 1:01");
+    expect(container.textContent).toContain("5 words · 1:01 · 0 hints");
     expect(container.textContent).toContain("Bravo");
     expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
     expect(container.textContent).toContain("Charlie");
@@ -124,6 +125,18 @@ describe("DailyRoundup", () => {
     for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
       expect(container.textContent).not.toContain(glyph);
     }
+  });
+
+  it("keeps rows clean on a hint-free day — only the subtitle's 0 Hints", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    expect(container.textContent).toContain("Total time 4:41 · 0 Hints");
+    // No per-row hint counts anywhere.
+    expect(container.textContent).toContain("5 words · 1:01");
+    expect(container.textContent).not.toContain("0 hints");
+    expect(container.textContent).not.toContain("1 hint");
   });
 
   it("wraps the card in the animated rainbow gradient border", async () => {
@@ -179,11 +192,11 @@ describe("DailyRoundup", () => {
     await mount();
     const txt = container.textContent!;
     expect(txt).toContain("Charlie");
-    expect(txt).toContain("25 words · 9:00 · 4 hints"); // header: combined total + hints
+    expect(txt).toContain("25 words · 9:00 · 4 hints"); // header: labelled total
     expect(txt).toContain("Normal");
-    expect(txt).toContain("12 words · 4:00 · 1 hint"); // sub-row + its hints
+    expect(txt).toContain("12 words · 4:00 · 1"); // sub-row: bare hint number
     expect(txt).toContain("Hard");
-    expect(txt).toContain("13 words · 5:00 · 3 hints");
+    expect(txt).toContain("13 words · 5:00 · 3");
     // The per-level list is the smaller text.
     const subList = container.querySelector(
       '[aria-label="Today\'s roundup"] ul ul',

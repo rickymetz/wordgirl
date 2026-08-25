@@ -44,16 +44,20 @@ describe("roundupShareLine", () => {
 });
 
 describe("roundupDetail", () => {
-  it("is metric · time (no emoji, no name), with no hint tail on a clean solve", () => {
-    const detail = roundupDetail(polygram);
+  it("is metric · time (no emoji, no name), no hint tail on a hint-free day", () => {
+    const detail = roundupDetail(polygram, false);
     expect(detail).toBe("42 words · 3:21");
     expect(detail).not.toContain("🔻");
     expect(detail).not.toContain("Polygram");
     expect(detail).not.toContain("hint");
   });
-  it("appends the hint tail when the game used hints", () => {
-    expect(roundupDetail(pierglass)).toBe("6 rows · 2:10 · 2 hints");
-    expect(roundupDetail({ ...pierglass, hints: 1 })).toBe("6 rows · 2:10 · 1 hint");
+  it("shows the game's labelled count once the day used any hints — 0 included", () => {
+    // A clean game still shows "0 hints" so it reads apart from the users.
+    expect(roundupDetail(polygram, true)).toBe("42 words · 3:21 · 0 hints");
+    expect(roundupDetail(pierglass, true)).toBe("6 rows · 2:10 · 2 hints");
+    expect(roundupDetail({ ...pierglass, hints: 1 }, true)).toBe(
+      "6 rows · 2:10 · 1 hint",
+    );
   });
 });
 
@@ -69,26 +73,24 @@ describe("multi-level details", () => {
       { label: "Hard", value: 13, elapsedMs: 5 * 60_000, hints: 3 },
     ],
   };
-  it("header shows the combined count, the whole game's time, and total hints", () => {
-    expect(roundupAggregateDetail(crosshatch)).toBe("25 words · 9:00 · 4 hints");
-  });
-  it("each sub-row shows its own count (with unit), time, and hints", () => {
-    expect(roundupLevelDetail("words", crosshatch.levels![0])).toBe(
-      "12 words · 4:00 · 1 hint",
-    );
-    expect(roundupLevelDetail("words", crosshatch.levels![1])).toBe(
-      "13 words · 5:00 · 3 hints",
+  it("header shows the combined count, the game's time, and its labelled hint total", () => {
+    expect(roundupAggregateDetail(crosshatch, true)).toBe(
+      "25 words · 9:00 · 4 hints",
     );
   });
-  it("omits the hint tail on a clean level or game", () => {
-    expect(
-      roundupLevelDetail("words", {
-        label: "Normal", value: 12, elapsedMs: 4 * 60_000, hints: 0,
-      }),
-    ).toBe("12 words · 4:00");
-    expect(
-      roundupAggregateDetail({ ...crosshatch, hints: 0 }),
-    ).toBe("25 words · 9:00");
+  it("each sub-row shows its count and time, with a BARE hint number (no label)", () => {
+    expect(roundupLevelDetail("words", crosshatch.levels![0], true)).toBe(
+      "12 words · 4:00 · 1",
+    );
+    expect(roundupLevelDetail("words", crosshatch.levels![1], true)).toBe(
+      "13 words · 5:00 · 3",
+    );
+  });
+  it("omits every hint tail on a hint-free day (show=false)", () => {
+    expect(roundupAggregateDetail(crosshatch, false)).toBe("25 words · 9:00");
+    expect(roundupLevelDetail("words", crosshatch.levels![0], false)).toBe(
+      "12 words · 4:00",
+    );
   });
   it("still shares as one inline line", () => {
     expect(roundupShareLine(crosshatch)).toBe(

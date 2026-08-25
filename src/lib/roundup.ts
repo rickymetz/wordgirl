@@ -68,37 +68,59 @@ export function roundupShareLine(entry: RoundupEntry): string {
   )}`;
 }
 
-/** The card's hint tail: " · N hint(s)", or "" when none were used — so a
- *  clean solve stays uncluttered and only the exceptions read as noteworthy.
- *  UI only (no emoji); the share strings use `hintShare`. */
-function hintDetail(hints: number): string {
-  if (hints <= 0) return "";
+/**
+ * The card's hint tail (UI only, no emoji — the share strings use
+ * `hintShare`). `show` is a whole-DAY decision, not a per-row one: when no
+ * game used a hint all day, every row stays clean and only the subtitle's
+ * "0 Hints" total carries it; once ANY game used one, every game row shows
+ * its count — a "0 hints" telling the clean games apart. `labelled` is true
+ * for game rows ("N hint(s)") and false for level sub-rows, which show a
+ * bare number so the day's word doesn't repeat down the column.
+ */
+function hintTail(hints: number, show: boolean, labelled: boolean): string {
+  if (!show) return "";
+  if (!labelled) return ` · ${hints}`;
   return ` · ${hints} ${hints === 1 ? "hint" : "hints"}`;
 }
 
-/** A single-board game's card detail — metric, time, and hints (no emoji, no
- *  name; the name sits beside it). Multi-level games use sub-rows instead. */
-export function roundupDetail(entry: RoundupEntry): string {
-  return `${entry.metric ?? ""} · ${formatDuration(entry.elapsedMs)}${hintDetail(
+/** A single-board game's card detail — metric, time, and (when the day used
+ *  any hints) this game's labelled hint count. No emoji, no name; the name
+ *  sits beside it. Multi-level games use sub-rows instead. */
+export function roundupDetail(entry: RoundupEntry, showHints: boolean): string {
+  return `${entry.metric ?? ""} · ${formatDuration(entry.elapsedMs)}${hintTail(
     entry.hints,
+    showHints,
+    true,
   )}`;
 }
 
 /** A multi-level game's per-level sub-row detail: the count with the game's
- *  unit, the time on that level, and that level's hints. */
-export function roundupLevelDetail(unit: string, level: RoundupLevel): string {
-  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}${hintDetail(
+ *  unit, the time on that level, and (when the day used any hints) a BARE
+ *  hint number — the "hint" word lives on the game header row above. */
+export function roundupLevelDetail(
+  unit: string,
+  level: RoundupLevel,
+  showHints: boolean,
+): string {
+  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}${hintTail(
     level.hints,
+    showHints,
+    false,
   )}`;
 }
 
 /** A multi-level game's HEADER-row detail: the levels' combined count, the
- *  whole game's time, and the whole game's hints — the aggregate that sits
- *  above the per-level sub-rows. */
-export function roundupAggregateDetail(entry: RoundupEntry): string {
+ *  whole game's time, and (when the day used any hints) the game's labelled
+ *  hint total — the aggregate that sits above the per-level sub-rows. */
+export function roundupAggregateDetail(
+  entry: RoundupEntry,
+  showHints: boolean,
+): string {
   const total = (entry.levels ?? []).reduce((n, l) => n + l.value, 0);
-  return `${total} ${entry.unit} · ${formatDuration(entry.elapsedMs)}${hintDetail(
+  return `${total} ${entry.unit} · ${formatDuration(entry.elapsedMs)}${hintTail(
     entry.hints,
+    showHints,
+    true,
   )}`;
 }
 

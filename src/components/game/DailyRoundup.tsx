@@ -7,6 +7,7 @@ import {
   roundupDetail,
   roundupLevelDetail,
   roundupSummary,
+  roundupTotalHints,
   streakEndingToday,
   type RoundupEntry,
 } from "../../lib/roundup";
@@ -132,6 +133,10 @@ export function DailyRoundup({ today }: { today: string }) {
 
   if (!roundup || dismissed !== false) return null;
   const { entries, streak } = roundup;
+  // A whole-day decision: rows carry per-game/per-level hint counts only
+  // once SOME game used a hint. On a fully clean day the subtitle's
+  // "0 Hints" is the whole story and the rows stay uncluttered.
+  const showHints = roundupTotalHints(entries) > 0;
   return (
     <>
       {celebrate && <ConfettiOverlay />}
@@ -176,7 +181,7 @@ export function DailyRoundup({ today }: { today: string }) {
                       {e.name}
                     </span>
                     <span className="text-right tabular-nums text-ink-soft">
-                      {roundupAggregateDetail(e)}
+                      {roundupAggregateDetail(e, showHints)}
                     </span>
                   </div>
                   <ul className="flex flex-col gap-0.5 pl-3 text-xs italic">
@@ -187,7 +192,7 @@ export function DailyRoundup({ today }: { today: string }) {
                       >
                         <span className="shrink-0 text-ink-soft">{lv.label}</span>
                         <span className="text-right tabular-nums text-ink-soft">
-                          {roundupLevelDetail(e.unit!, lv)}
+                          {roundupLevelDetail(e.unit!, lv, showHints)}
                         </span>
                       </li>
                     ))}
@@ -200,7 +205,7 @@ export function DailyRoundup({ today }: { today: string }) {
                 >
                   <span className="shrink-0 font-semibold text-ink">{e.name}</span>
                   <span className="text-right tabular-nums text-ink-soft">
-                    {roundupDetail(e)}
+                    {roundupDetail(e, showHints)}
                   </span>
                 </li>
               ),
