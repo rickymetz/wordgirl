@@ -158,7 +158,7 @@ export function DailyRoundup({ today }: { today: string }) {
           <div className="text-center">
             {/* font-game is Rubik Mono One, and follows the Font setting to
                 the accessible face automatically. */}
-            <h2 className="text-balance px-6 font-game text-lg text-ink">
+            <h2 className="text-balance px-6 font-game text-lg leading-tight text-ink">
               All Puzzles Solved Today
             </h2>
             <p className="pt-1 text-sm text-ink-soft">
