@@ -45,12 +45,18 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   EVERY game returns an entry, so a game that omits `roundupEntry` keeps
   it hidden (safe-by-omission, like `solvedToday`). Emoji ride the SHARE
   string only; the card renders `name · metric · time` — no emoji in UI
-  chrome, and no per-game hints (total hints ride the summary/share-total
-  line instead). A MULTI-LEVEL game supplies `unit` + `levels[]` rather
+  chrome. HINTS are a whole-DAY decision (`roundupTotalHints(entries) > 0`,
+  passed to the detail/share helpers as `showHints`): on a hint-free day the
+  rows and share lines stay bare and only the subtitle/summary total carries
+  it; once ANY game used a hint, every game row and every share line trails
+  its own count — a clean game shown as `0 hints` (UI) / `🤓 0` (share) so it
+  reads apart. A MULTI-LEVEL game supplies `unit` + `levels[]` rather
   than `metric`: the banner shows a name header with the game's COMBINED
-  total (`sum unit · total time`), then one smaller indented SUB-ROW per
-  level (`label │ value unit · time`, never wraps), while the share keeps
-  ONE inline line per game (`Normal 12 · Hard 13 · ⏱️ time`). Mounted on the hub above the cards (self-hides) and, as a
+  total (`sum unit · total time[ · N hints]`), then one smaller indented,
+  ITALIC sub-row per level (`label │ value · time[ · N]`, never wraps — the
+  unit and the "hint" word live on the header row, so sub-rows stay a tight
+  bare count · time · hint column), while the share keeps ONE inline line per
+  game (`Normal 12 · Hard 13 · ⏱️ time[ · 🫣 N]`). Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`
@@ -371,10 +377,11 @@ Before merging any game feature, verify:
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `roundupEntry` returns null unless the game is FULLY solved for the day
   (mirrors `solvedToday`); a multi-level game gives `unit` + `levels[]`
-  (banner sub-row per level; share one inline line), while time and hints
-  stay summed, and emoji stay out of the UI (rows carry no emoji; only the
-  share
-  string does); `solvedOn(dateKey)` answers the record-based per-date
+  (each level carries its own `hints`; banner sub-row per level, share one
+  inline line), while the game's time and hint total stay summed on the
+  entry, and emoji stay out of the UI (rows carry no emoji — they carry the
+  hint count under the whole-day `showHints` gate; only the share string
+  carries emoji); `solvedOn(dateKey)` answers the record-based per-date
   "fully finished?" the all-games streak walks back through
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
 - Tutorial mode: no save, no stats, no streak, no hints, no share

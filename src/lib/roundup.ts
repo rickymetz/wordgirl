@@ -188,14 +188,15 @@ export function buildRoundupText(
 ): string {
   const total = formatDuration(roundupTotalMs(entries));
   const streakPart = streak > 1 ? ` · 🔥 ${streak}` : "";
+  const totalHints = roundupTotalHints(entries);
   // Same whole-day gate as the banner: per-game hint tails only appear once
   // some game used one; otherwise the summary's total is the whole story.
-  const showHints = roundupTotalHints(entries) > 0;
+  const showHints = totalHints > 0;
   return [
     `WordGirl — ${formatShareDate(dateKey)}`,
     // Whole-day totals: all solved, total time, total hints, then streak.
     `✅ ${entries.length}/${entries.length} · ⏱️ ${total} · ${hintShare(
-      roundupTotalHints(entries),
+      totalHints,
     )}${streakPart}`,
     ...entries.map((e) => roundupShareLine(e, showHints)),
     SHARE_URL,
