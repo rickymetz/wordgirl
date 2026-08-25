@@ -3,7 +3,6 @@ import type { GameDefinition } from "../types";
 import {
   isDaySolved,
   levelsFor,
-  loadAllDailyProgress,
   loadBoardRecord,
 } from "./state/persistence";
 import { CrosshatchPreview } from "./ui/CrosshatchPreview";
@@ -43,10 +42,7 @@ export const crosshatch: GameDefinition = {
       hints,
     };
   },
-  solvedDates: async () =>
-    Object.values(await loadAllDailyProgress())
-      .filter((d) => d.solved)
-      .map((d) => d.dateKey),
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/CrosshatchPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

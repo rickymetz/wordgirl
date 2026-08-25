@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildRoundupText,
-  consecutiveDaysEndingToday,
   roundupDetail,
   roundupShareLine,
   roundupSummary,
   roundupTotalMs,
+  streakEndingToday,
   type RoundupEntry,
 } from "./roundup";
 import { SHARE_URL } from "./share";
@@ -71,14 +71,29 @@ describe("roundupTotalMs / roundupSummary", () => {
   });
 });
 
-describe("consecutiveDaysEndingToday", () => {
-  it("counts today plus each unbroken prior complete day", () => {
-    const set = new Set(["2026-08-24", "2026-08-23", "2026-08-21"]);
-    // today + 24 + 23, then 22 is missing -> stops.
-    expect(consecutiveDaysEndingToday("2026-08-25", set)).toBe(3);
+describe("streakEndingToday", () => {
+  const on = (dates: string[]) => async (d: string) => dates.includes(d);
+
+  it("counts today plus each unbroken prior complete day, stopping at the gap", async () => {
+    // today (unconditional) + 24 + 23, then 22 is missing -> stops.
+    const probe = on(["2026-08-24", "2026-08-23", "2026-08-21"]);
+    await expect(streakEndingToday("2026-08-25", probe)).resolves.toBe(3);
   });
-  it("is 1 for a lone perfect day even with nothing persisted yet", () => {
-    expect(consecutiveDaysEndingToday("2026-08-25", new Set())).toBe(1);
+
+  it("is 1 for a lone perfect day even when nothing earlier is complete", async () => {
+    await expect(streakEndingToday("2026-08-25", on([]))).resolves.toBe(1);
+  });
+
+  it("only probes the days the streak spans, never the whole history", async () => {
+    const probed: string[] = [];
+    const probe = async (d: string) => {
+      probed.push(d);
+      return d === "2026-08-24"; // only yesterday complete
+    };
+    const streak = await streakEndingToday("2026-08-25", probe);
+    expect(streak).toBe(2);
+    // Probed 24 (hit) and 23 (miss -> stop). Never walked further back.
+    expect(probed).toEqual(["2026-08-24", "2026-08-23"]);
   });
 });
 

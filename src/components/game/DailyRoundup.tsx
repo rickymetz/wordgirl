@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { games } from "../../games/registry";
 import {
   buildRoundupText,
-  consecutiveDaysEndingToday,
   roundupDetail,
   roundupSummary,
+  streakEndingToday,
   type RoundupEntry,
 } from "../../lib/roundup";
 import { ShareButton } from "../ShareButton";
@@ -39,30 +39,19 @@ export function useDailyRoundup(today: string): Roundup | null {
       if (!rows.every((r) => r !== null)) return;
       const entries = rows as RoundupEntry[];
 
-      // The streak needs each game's full history; only paid once the day
-      // is complete (this branch), which is at most once per day on the hub.
-      const lists = await Promise.all(
-        games.map((g) =>
-          g.solvedDates ? g.solvedDates().catch(() => []) : Promise.resolve([]),
-        ),
-      );
+      // Walk back from today, stopping at the first day some game didn't
+      // finish — reads only the days the streak spans, not all history.
+      const isCompleteOn = async (dateKey: string) => {
+        const solved = await Promise.all(
+          games.map((g) =>
+            g.solvedOn ? g.solvedOn(dateKey).catch(() => false) : false,
+          ),
+        );
+        return solved.every(Boolean);
+      };
+      const streak = await streakEndingToday(today, isCompleteOn);
       if (cancelled) return;
-      const counts = new Map<string, number>();
-      for (const list of lists) {
-        for (const date of new Set(list)) {
-          counts.set(date, (counts.get(date) ?? 0) + 1);
-        }
-      }
-      // A date counts only when EVERY game finished it.
-      const complete = new Set(
-        [...counts.entries()]
-          .filter(([, n]) => n === games.length)
-          .map(([date]) => date),
-      );
-      setRoundup({
-        entries,
-        streak: consecutiveDaysEndingToday(today, complete),
-      });
+      setRoundup({ entries, streak });
     })();
     return () => {
       cancelled = true;

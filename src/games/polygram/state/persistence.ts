@@ -122,6 +122,13 @@ export const loadStaleDailyProgress = (
   dateKey: string,
   currentPuzzleKey?: string,
 ) => daily.loadStaleDay(dateKey, currentPuzzleKey);
+
+/** Was the day finished on that date — the RECORD, version-insensitive
+ *  (history doesn't un-happen on a dict bump), for the cross-game
+ *  "all games done" streak. */
+export const isDaySolved = async (dateKey: string): Promise<boolean> =>
+  (await daily.loadDayRecord(dateKey))?.solved === true;
+
 export const { loadCoachSeen, markCoachSeen } = daily;
 export const { loadTutorialSeen, markTutorialSeen } = daily;
 

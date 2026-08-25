@@ -112,6 +112,16 @@ function boardRecord(dateKey: string, difficulty: Difficulty) {
   return daily.loadDayRecord(`${difficulty}:${dateKey}`);
 }
 
+/** Were BOTH of the date's boards solved — the RECORD, version-insensitive
+ *  (history doesn't un-happen on a dict bump), for the cross-game
+ *  "all games done" streak. */
+export async function isDaySolved(dateKey: string): Promise<boolean> {
+  const boards = await Promise.all(
+    DIFFICULTIES.map((d) => boardRecord(dateKey, d)),
+  );
+  return boards.every((b) => b?.solved === true);
+}
+
 /**
  * Call when a board of a new daily is first opened. `played` counts
  * DAYS, not boards — the two boards of one date are one day's play — so

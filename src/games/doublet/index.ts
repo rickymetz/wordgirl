@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
 import { DIFFICULTIES } from "./engine/types";
-import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { DoubletPreview } from "./ui/DoubletPreview";
 import { DoubletStatus } from "./ui/DoubletStatus";
 
@@ -38,10 +38,7 @@ export const doublet: GameDefinition = {
       hints,
     };
   },
-  solvedDates: async () =>
-    Object.values(await loadAllDailyProgress())
-      .filter((d) => d.solvedCount === DIFFICULTIES.length)
-      .map((d) => d.dateKey),
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

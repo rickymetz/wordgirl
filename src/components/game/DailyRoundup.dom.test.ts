@@ -28,13 +28,13 @@ vi.mock("../../games/registry", () => ({
       id: "a",
       name: "Alpha",
       roundupEntry: async () => state.a,
-      solvedDates: async () => state.dates.a,
+      solvedOn: async (d: string) => state.dates.a.includes(d),
     },
     {
       id: "b",
       name: "Bravo",
       roundupEntry: async () => state.b,
-      solvedDates: async () => state.dates.b,
+      solvedOn: async (d: string) => state.dates.b.includes(d),
     },
     {
       id: "c",
@@ -42,7 +42,7 @@ vi.mock("../../games/registry", () => ({
       get roundupEntry() {
         return state.cHasLoader ? async () => state.c : undefined;
       },
-      solvedDates: async () => state.dates.c,
+      solvedOn: async (d: string) => state.dates.c.includes(d),
     },
   ],
 }));

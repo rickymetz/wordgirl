@@ -283,12 +283,14 @@ html[data-font="accessible"] [data-glyph] {
 
 /* The roundup banner's living rainbow border: the gradient is drawn at
    twice the width and panned by exactly one width, which loops seamlessly
-   because the two halves are identical (see --roundup-rainbow). The thin
-   3px ring is the only animated layer — its repaint area is tiny. Behind
-   it sits a soft blurred copy of the same gradient (::before) as a STATIC
-   halo: a per-frame blur of a card-sized layer is the one genuinely
-   expensive thing here, so the glow is rasterised once and left still
-   while the edge drifts over it. */
+   because the two halves are identical (see --roundup-rainbow). A soft
+   blurred copy of the same gradient behind it (::before) is the glow —
+   same gradient, same pan, so the halo drifts in lockstep with the edge.
+   Kept an in-box `background-position` pan (not a translating layer),
+   because a layer wide enough to slide would spill past the viewport and
+   the page must never scroll sideways. The reduced-motion block below
+   stops BOTH by name — the one thing that actually freezes an infinite
+   animation. */
 .roundup-rainbow-border {
   position: relative;
   isolation: isolate; /* keep the glow behind the border, above the page */
@@ -303,8 +305,10 @@ html[data-font="accessible"] [data-glyph] {
   z-index: -1;
   border-radius: inherit;
   background-image: var(--roundup-rainbow);
+  background-size: 200% 100%;
   filter: blur(11px);
   opacity: 0.55;
+  animation: roundup-rainbow-pan 3.5s linear infinite;
 }
 @keyframes roundup-rainbow-pan {
   from {
@@ -324,11 +328,12 @@ html[data-font="accessible"] [data-glyph] {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
-  /* An INFINITE animation is not frozen by a 0.01ms duration — it just
-     spins ~100k cycles/sec and strobes through the hue range. The border
-     must be stopped by name, not shrunk in time, or reduce-motion makes
-     the banner worse than leaving it on. */
-  .roundup-rainbow-border {
+  /* An INFINITE animation is NOT frozen by a 0.01ms duration — it spins
+     ~100k cycles/sec and strobes through the hue range. Both the border
+     and its glow must be stopped by name, or reduce-motion makes the
+     banner worse than leaving it on. */
+  .roundup-rainbow-border,
+  .roundup-rainbow-border::before {
     animation: none;
   }
 }

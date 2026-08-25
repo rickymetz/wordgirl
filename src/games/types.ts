@@ -30,15 +30,16 @@ export interface GameDefinition {
    */
   roundupEntry?: (today: string) => Promise<RoundupEntry | null>;
   /**
-   * Every date this game was FULLY finished (all its boards), for the
-   * cross-game "every puzzle done" streak the roundup shows. Intersecting
-   * these sets across games and counting back from today gives the run of
-   * days the whole set was cleared. A game without it can never be in the
-   * intersection, so the streak stays pinned at 1 (today is always counted)
-   * until it is added — so a game that ships `roundupEntry` must ship this
+   * Was this game FULLY finished (all its boards) on `dateKey` — a cheap
+   * per-date RECORD lookup (version-insensitive; history doesn't un-happen
+   * on a dict bump), for the cross-game "every puzzle done" streak. The
+   * roundup walks backward from today and stops at the first day some game
+   * answers false, so cost is the streak's length, not the whole history.
+   * A game without it answers false, pinning the streak at 1 (today is
+   * always counted) — so a game that ships `roundupEntry` must ship this
    * too, or the streak silently never grows.
    */
-  solvedDates?: () => Promise<string[]>;
+  solvedOn?: (dateKey: string) => Promise<boolean>;
   /** Lazy page component — each game is its own code-split chunk. */
   Page: LazyExoticComponent<ComponentType>;
   /** Extra routes under /games/<id>/, e.g. practice mode. */

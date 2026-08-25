@@ -24,14 +24,14 @@ vi.mock("../../games/registry", () => ({
       name: "Alpha",
       solvedToday: async () => true,
       roundupEntry: async () => state.entries.a,
-      solvedDates: async () => ["2026-08-25"],
+      solvedOn: async (d: string) => d === "2026-08-25",
     },
     {
       id: "b",
       name: "Bravo",
       solvedToday: async () => state.bDone,
       roundupEntry: async () => (state.bDone ? state.entries.b : null),
-      solvedDates: async () => (state.bDone ? ["2026-08-25"] : []),
+      solvedOn: async (d: string) => state.bDone && d === "2026-08-25",
     },
   ],
 }));

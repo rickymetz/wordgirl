@@ -57,20 +57,22 @@ export function roundupTotalMs(entries: RoundupEntry[]): number {
 }
 
 /**
- * How many days in a row ending today the player has finished EVERY game,
- * counting back through a set of all-games-complete dates. Today itself is
- * assumed complete by the caller (the roundup only exists once it is), so
- * a lone perfect day is a streak of 1; the count stops at the first gap.
+ * How many days in a row ending today the player has finished EVERY game.
+ * Today is assumed complete (the roundup only exists once it is), then each
+ * earlier day is PROBED via `isCompleteOn` and the walk stops at the first
+ * that isn't — so it reads only the days the streak actually spans, never
+ * the whole history. `isCompleteOn` is injected to keep this pure and
+ * testable; the caller wires it to the games' per-date record lookups.
  */
-export function consecutiveDaysEndingToday(
+export async function streakEndingToday(
   today: string,
-  completeDates: ReadonlySet<string>,
-): number {
-  let streak = 0;
-  let day = today;
-  // Today counts even if the persisted set hasn't caught up with this
-  // session's final save yet — the caller only asks once the day is done.
-  while (day === today || completeDates.has(day)) {
+  isCompleteOn: (dateKey: string) => Promise<boolean>,
+): Promise<number> {
+  let streak = 1; // today, counted unconditionally
+  let day = previousDateKey(today);
+  // Defensive cap (a decade): a corrupt "always complete" source can't spin.
+  for (let i = 0; i < 3650; i++) {
+    if (!(await isCompleteOn(day))) break;
     streak += 1;
     day = previousDateKey(day);
   }

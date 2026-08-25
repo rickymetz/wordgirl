@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { SerpentinePreview } from "./ui/SerpentinePreview";
 import { SerpentineStatus } from "./ui/SerpentineStatus";
 
@@ -37,10 +37,7 @@ export const serpentine: GameDefinition = {
       hints,
     };
   },
-  solvedDates: async () =>
-    Object.values(await loadAllDailyProgress())
-      .filter((d) => d.solved)
-      .map((d) => d.dateKey),
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

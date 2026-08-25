@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadAllDailyProgress, loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { PolygramPreview } from "./ui/PolygramPreview";
 import { PolygramStatus } from "./ui/PolygramStatus";
 
@@ -29,10 +29,7 @@ export const polygram: GameDefinition = {
       hints,
     };
   },
-  solvedDates: async () =>
-    Object.values(await loadAllDailyProgress())
-      .filter((d) => d.completed)
-      .map((d) => d.dateKey),
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/PolygramPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
