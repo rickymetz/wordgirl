@@ -103,8 +103,9 @@ describe("DailyRoundup", () => {
 
   it("lists each game (stat · time · hints), no emoji in the rows", async () => {
     await mount();
-    expect(container.textContent).toContain("Every puzzle done today");
-    expect(container.textContent).toContain("3/3 solved · 4:41");
+    expect(container.textContent).toContain("Every Puzzle Solved Today");
+    // Subtitle: no streak past day one here, then total time and hints.
+    expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
     expect(container.textContent).toContain("Alpha");
     expect(container.textContent).toContain("5 words · 1:01 · no hints");
     expect(container.textContent).toContain("Bravo");
@@ -131,8 +132,8 @@ describe("DailyRoundup", () => {
       c: ["2026-08-25", "2026-08-24"],
     };
     await mount();
-    // Streak shows in the card summary too.
-    expect(container.textContent).toContain("2-day streak");
+    // Streak leads the card summary past day one.
+    expect(container.textContent).toContain("2 day streak · Total time 4:41 · 2 Hints");
     const button = [...container.querySelectorAll("button")].find(
       (b) => b.textContent?.trim() === "Share",
     )!;

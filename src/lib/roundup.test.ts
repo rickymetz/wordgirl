@@ -55,10 +55,18 @@ describe("roundupTotalMs / roundupSummary", () => {
   it("sums play time across games", () => {
     expect(roundupTotalMs([polygram, pierglass])).toBe(331_000);
   });
-  it("says all-solved and total time, and adds the streak only past day one", () => {
-    expect(roundupSummary([polygram, pierglass], 1)).toBe("2/2 solved · 5:31");
+  it("leads with the streak only past day one, then total time and hints", () => {
+    // polygram 0 hints + pierglass 2 hints = 2.
+    expect(roundupSummary([polygram, pierglass], 1)).toBe(
+      "Total time 5:31 · 2 Hints",
+    );
     expect(roundupSummary([polygram, pierglass], 4)).toBe(
-      "2/2 solved · 5:31 · 4-day streak",
+      "4 day streak · Total time 5:31 · 2 Hints",
+    );
+  });
+  it("singularises a lone hint", () => {
+    expect(roundupSummary([polygram, { ...pierglass, hints: 1 }], 1)).toBe(
+      "Total time 5:31 · 1 Hint",
     );
   });
 });

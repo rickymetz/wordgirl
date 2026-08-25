@@ -104,8 +104,14 @@ export function DailyRoundup({ today }: { today: string }) {
     >
       <div className="flex flex-col gap-3 rounded-[calc(1.5rem-3px)] bg-surface-tint p-4">
         <div className="text-center">
-          <h2 className="font-semibold text-ink">Every puzzle done today</h2>
-          <p className="text-sm text-ink-soft">{roundupSummary(entries, streak)}</p>
+          {/* font-game is Rubik Mono One, and follows the Font setting to
+              the accessible face automatically. */}
+          <h2 className="text-balance font-game text-sm text-ink">
+            Every Puzzle Solved Today
+          </h2>
+          <p className="pt-1 text-sm text-ink-soft">
+            {roundupSummary(entries, streak)}
+          </p>
         </div>
         <ul className="flex flex-col gap-1.5 text-sm">
           {entries.map((e) => (

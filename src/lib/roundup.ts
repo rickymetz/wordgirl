@@ -77,14 +77,19 @@ export function consecutiveDaysEndingToday(
   return streak;
 }
 
-/** The card's one-line summary and the share's second line both say the
- *  same thing; this is the shared phrasing minus any emoji. */
+/** Total hints used across every game's day. */
+export function roundupTotalHints(entries: RoundupEntry[]): number {
+  return entries.reduce((n, e) => n + e.hints, 0);
+}
+
+/** The card's subtitle: the streak (only past day one), the total time,
+ *  and the total hints — no emoji, that's the share string's job. */
 export function roundupSummary(entries: RoundupEntry[], streak: number): string {
-  const parts = [
-    `${entries.length}/${entries.length} solved`,
-    formatDuration(roundupTotalMs(entries)),
-  ];
-  if (streak > 1) parts.push(`${streak}-day streak`);
+  const hints = roundupTotalHints(entries);
+  const parts: string[] = [];
+  if (streak > 1) parts.push(`${streak} day streak`);
+  parts.push(`Total time ${formatDuration(roundupTotalMs(entries))}`);
+  parts.push(`${hints} ${hints === 1 ? "Hint" : "Hints"}`);
   return parts.join(" · ");
 }
 
