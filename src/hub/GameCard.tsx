@@ -29,32 +29,33 @@ export function GameCard({ game }: { game: GameDefinition }) {
         </div>
       </Link>
       {game.secondaryActions && (
-        <div className="mt-3 grid grid-cols-2 gap-3 md:mt-0 md:flex md:w-36 md:shrink-0 md:flex-col">
+        <div className="mt-3 flex gap-1.5 md:mt-0 md:w-36 md:shrink-0 md:flex-col md:gap-3">
           {game.secondaryActions.map((action) => (
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
-              // Phone: a two-column grid, not a horizontal scroller. As a
-              // scroller, the fourth action (Tutorial) started at x=364 in a
-              // 390px viewport — entirely off screen on every card, which
-              // left a brand-new player no visible way back to the tutorial
-              // once the first-visit prompt had been answered. A grid shows
-              // all four without a gesture.
+              // Phone: one row of equal tiles (flex-1), each a centered
+              // label — no horizontal scroller, so all four stay on screen
+              // and reachable without a gesture (the fourth, Tutorial, is a
+              // player's only visible way back to it once the first-visit
+              // prompt is answered). Labels are short and shrink to text-xs
+              // so four fit a 390px card; min-h-11 holds the 44px touch
+              // floor, and it is rem-based so it scales with the Text-size
+              // setting. (At 320px + Huge text the row can still overflow —
+              // the app-wide narrow-Huge gap, not specific to this cluster.)
               //
-              // md+ stacks these into a column that divides the cluster's
-              // height, so each tile shrinks as actions are added — four of
-              // them landed at 28px, under the 44px touch floor (and 820px
-              // tablets hit this breakpoint). min-h keeps the floor and lets
-              // the cluster grow past the primary tile instead; it is
-              // rem-based, so it scales with the Text-size setting.
-              className="rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
+              // md+ stacks the same tiles into a column beside the primary
+              // tile; flex-1 divides the cluster height, min-h-11 keeps the
+              // floor so four actions can't fall under it (820px tablets hit
+              // this breakpoint), and the label goes left-aligned.
+              className="flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-2xl bg-surface-tint px-1.5 py-2 text-center transition-transform active:scale-[0.97] md:justify-start md:px-4 md:py-0 md:text-left"
             >
-              <div className="font-semibold text-accent">{action.label}</div>
-              {action.description && (
-                <div className="mt-0.5 text-xs text-ink-soft md:hidden">
-                  {action.description}
-                </div>
-              )}
+              {/* break-words + the tile's min-w-0: at the narrowest widths
+                  (320px × Huge) a label wraps to a second line instead of
+                  pushing the row off screen. */}
+              <div className="font-semibold text-accent text-xs break-words md:text-base">
+                {action.label}
+              </div>
             </Link>
           ))}
         </div>

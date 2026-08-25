@@ -98,13 +98,15 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   that adds a "Play the tutorial" link.
 - Three ways in, in order of how most players will meet it: the first-visit
   prompt, the hub bento's `Tutorial` tile (LAST in `secondaryActions`,
-  after Stats), and the coach sheet's link. That fourth bento tile is why
-  `GameCard`'s secondary actions are a two-column GRID on phones — as a
-  horizontal scroller the fourth tile started at x=364 in a 390px
-  viewport, entirely off screen, so the tutorial had no visible way back
-  once the prompt was answered. It is also why the tiles carry
-  `md:min-h-11`: on md+ the cluster is a column dividing a fixed height,
-  so a fourth action drove each tile to 28px, under the touch floor.
+  after Stats), and the coach sheet's link. On phones `GameCard`'s
+  secondary actions are a single ROW of equal `flex-1` tiles (NOT a
+  scroller — a scroller pushed the fourth tile, Tutorial, off a 390px
+  screen, leaving no visible way back once the prompt was answered). The
+  labels shrink to `text-xs` and the tiles carry `min-w-0` + `break-words`
+  so four fit without a horizontal scroll (a label wraps at 320px × Huge
+  rather than overflowing). `min-h-11` holds the 44px touch floor — which
+  also matters on md+, where the cluster is a COLUMN dividing a fixed
+  height and a fourth action would otherwise drive each tile to 28px.
 - `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
   monotonic clamp, so a step never flaps backwards when the player
   undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
