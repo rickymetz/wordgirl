@@ -109,16 +109,18 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("lists each game (stat · time · hints), no emoji in the rows", async () => {
+  it("lists each game (metric · time), no emoji or per-row hints", async () => {
     await mount();
     expect(container.textContent).toContain("All Puzzles Solved Today");
-    // Subtitle: no streak past day one here, then total time and hints.
+    // Subtitle carries the totals: total time and total hints.
     expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
     expect(container.textContent).toContain("Alpha");
-    expect(container.textContent).toContain("5 words · 1:01 · no hints");
+    expect(container.textContent).toContain("5 words · 1:01");
     expect(container.textContent).toContain("Bravo");
-    expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
+    expect(container.textContent).toContain("3 rows · 2:10");
     expect(container.textContent).toContain("Charlie");
+    // Rows are metric · time only — hints are summarised, not per row.
+    expect(container.textContent).not.toContain("no hints");
     for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
       expect(container.textContent).not.toContain(glyph);
     }
@@ -132,7 +134,7 @@ describe("DailyRoundup", () => {
     expect(section.className).toContain("roundup-rainbow-border");
   });
 
-  it("shares the whole day: header, summary, an emoji+hint line per game", async () => {
+  it("shares the whole day: header, totals summary, a metric line per game", async () => {
     // Give a two-day all-games streak: yesterday complete for every game.
     state.dates = {
       a: ["2026-08-25", "2026-08-24"],
@@ -153,10 +155,10 @@ describe("DailyRoundup", () => {
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
-        "✅ 3/3 · ⏱️ 4:41 · 🔥 2",
-        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 2",
-        "🟩 Charlie · 8 letters · ⏱️ 1:30 · 🤓 0",
+        "✅ 3/3 · ⏱️ 4:41 · 🫣 2 · 🔥 2",
+        "🔺 Alpha · 5 words · ⏱️ 1:01",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10",
+        "🟩 Charlie · 8 letters · ⏱️ 1:30",
         "wordgirl.net",
       ].join("\n"),
     );

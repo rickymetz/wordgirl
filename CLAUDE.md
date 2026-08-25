@@ -44,8 +44,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   day some game answers false). The banner shows only once
   EVERY game returns an entry, so a game that omits `roundupEntry` keeps
   it hidden (safe-by-omission, like `solvedToday`). Emoji ride the SHARE
-  string only; the card renders `name · metric · time · hints` — no emoji
-  in UI chrome. Mounted on the hub above the cards (self-hides) and, as a
+  string only; the card renders `name · metric · time` — no emoji in UI
+  chrome, and no per-game hints (a MULTI-LEVEL game's `metric` is itself
+  per level, e.g. "Normal 12 · Hard 13", so the row stays one line; total
+  hints ride the summary/share-total line instead). Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`
@@ -365,8 +367,9 @@ Before merging any game feature, verify:
 - `e.preventDefault()` on game-surface pointer handlers
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `roundupEntry` returns null unless the game is FULLY solved for the day
-  (mirrors `solvedToday`), sums multi-board days (metric, time AND hints),
-  and keeps emoji out of `metric` (UI rows carry no emoji; only the share
+  (mirrors `solvedToday`); a multi-level game's `metric` reads PER LEVEL
+  ("Normal 12 · Hard 13"), while time and hints stay summed, and emoji stay
+  out of `metric` (UI rows carry no emoji; only the share
   string does); `solvedOn(dateKey)` answers the record-based per-date
   "fully finished?" the all-games streak walks back through
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`

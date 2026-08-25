@@ -98,9 +98,9 @@ describe("DailyOutro when the day is complete", () => {
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
-        "✅ 2/2 · ⏱️ 3:11",
-        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 1",
+        "✅ 2/2 · ⏱️ 3:11 · 🫣 1",
+        "🔺 Alpha · 5 words · ⏱️ 1:01",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10",
         "wordgirl.net",
       ].join("\n"),
     );

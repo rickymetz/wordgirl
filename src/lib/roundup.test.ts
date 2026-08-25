@@ -26,28 +26,28 @@ const pierglass: RoundupEntry = {
 };
 
 describe("roundupShareLine", () => {
-  it("leads with the emoji, closes with the hint tail (no hints)", () => {
-    expect(roundupShareLine(polygram)).toBe(
-      "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
-    );
+  it("is emoji · name · metric · time — hints ride the day total, not each line", () => {
+    expect(roundupShareLine(polygram)).toBe("🔻 Polygram · 42 words · ⏱️ 3:21");
+    expect(roundupShareLine(pierglass)).toBe("🪞 Pierglass · 6 rows · ⏱️ 2:10");
   });
-  it("shows the hint count behind the peeking face when hints were used", () => {
-    expect(roundupShareLine(pierglass)).toBe(
-      "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
+  it("passes a multi-level metric straight through", () => {
+    const crosshatch: RoundupEntry = {
+      emoji: "🧺", name: "Crosshatch", metric: "Normal 12 · Hard 13",
+      elapsedMs: 9 * 60_000, hints: 1,
+    };
+    expect(roundupShareLine(crosshatch)).toBe(
+      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00",
     );
   });
 });
 
 describe("roundupDetail", () => {
-  it("carries no emoji and no game name, and says hints in words", () => {
+  it("is metric · time only (no emoji, no name, no per-game hints)", () => {
     const detail = roundupDetail(polygram);
-    expect(detail).toBe("42 words · 3:21 · no hints");
+    expect(detail).toBe("42 words · 3:21");
     expect(detail).not.toContain("🔻");
     expect(detail).not.toContain("Polygram");
-  });
-  it("pluralises hints and never leaks an emoji", () => {
-    expect(roundupDetail(pierglass)).toBe("6 rows · 2:10 · 2 hints");
-    expect(roundupDetail({ ...pierglass, hints: 1 })).toBe("6 rows · 2:10 · 1 hint");
+    expect(detail).not.toContain("hint");
   });
 });
 
@@ -99,20 +99,22 @@ describe("streakEndingToday", () => {
 
 describe("buildRoundupText", () => {
   it("stacks header, summary, a line per game, and the link with no blank lines", () => {
+    // Total hints on the summary line (0 + 2 = 2); per-game lines carry
+    // metric + time only.
     const text = buildRoundupText("2026-08-25", [polygram, pierglass], 4);
     expect(text).toBe(
       [
         "WordGirl — August 25",
-        "✅ 2/2 · ⏱️ 5:31 · 🔥 4",
-        "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
-        "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
+        "✅ 2/2 · ⏱️ 5:31 · 🫣 2 · 🔥 4",
+        "🔻 Polygram · 42 words · ⏱️ 3:21",
+        "🪞 Pierglass · 6 rows · ⏱️ 2:10",
         SHARE_URL,
       ].join("\n"),
     );
     expect(text).not.toContain("\n\n");
   });
-  it("drops the streak flame at a one-day streak", () => {
+  it("drops the streak flame at a one-day streak but keeps the hint total", () => {
     const text = buildRoundupText("2026-08-25", [polygram, pierglass], 1);
-    expect(text.split("\n")[1]).toBe("✅ 2/2 · ⏱️ 5:31");
+    expect(text.split("\n")[1]).toBe("✅ 2/2 · ⏱️ 5:31 · 🫣 2");
   });
 });

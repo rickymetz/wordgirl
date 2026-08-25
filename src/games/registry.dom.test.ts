@@ -92,6 +92,15 @@ describe("per-game daily loaders agree", () => {
         elapsedMs: expect.any(Number),
         hints: expect.any(Number),
       });
+      // Multi-level games name each level in the metric ("Normal … Hard …").
+      const levels: Record<string, string[]> = {
+        crosshatch: ["Normal", "Hard"],
+        doublet: ["Easy", "Medium", "Hard"],
+        serpentine: ["Haiku", "Poem"],
+      };
+      for (const label of levels[game.id] ?? []) {
+        expect(entry!.metric).toContain(label);
+      }
     });
 
     it(`${game.id}: all three say NO when one board is short`, async () => {

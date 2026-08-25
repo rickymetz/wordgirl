@@ -22,33 +22,34 @@ export interface RoundupEntry {
   hints: number;
 }
 
-/** The hint tail every game's own share string uses: the count behind a
- *  peeking face, or the "no help" glyph at zero. SHARE strings only. */
+/** Title-case a level/difficulty key ("hard" → "Hard") — the multi-level
+ *  games build their per-level metric from this, matching each game's own
+ *  labels (Normal/Hard, Easy/Medium/Hard, Haiku/Poem). */
+export const capitalize = (s: string): string =>
+  s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
+
+/** The hint tail: the count behind a peeking face, or the "no help" glyph
+ *  at zero. SHARE strings only — used for the whole-day total, since the
+ *  per-game lines now carry per-level metrics and stay to one line. */
 function hintShare(hints: number): string {
   return hints > 0 ? `🫣 ${hints}` : "🤓 0";
 }
 
-/** The same fact in plain words for the card — no emoji, singular/plural
- *  correct, and "no hints" said out loud because a clean solve is a brag. */
-function hintWords(hints: number): string {
-  if (hints <= 0) return "no hints";
-  return `${hints} hint${hints === 1 ? "" : "s"}`;
-}
-
-/** The share glyph + name + stats line a single game paste would carry,
- *  minus the per-game date/URL the roundup owns. */
+/** The share glyph + name + metric + time a single game contributes.
+ *  For a multi-level game the metric is per level ("Normal 12 · Hard 13");
+ *  hints ride the whole-day total line, not each game, so the line stays
+ *  short. */
 export function roundupShareLine(entry: RoundupEntry): string {
   return `${entry.emoji} ${entry.name} · ${entry.metric} · ⏱️ ${formatDuration(
     entry.elapsedMs,
-  )} · ${hintShare(entry.hints)}`;
+  )}`;
 }
 
 /** The stats a game row shows inside the card — no emoji, no name (the
- *  name sits beside it in its own element). */
+ *  name sits beside it in its own element). Metric (per level for a
+ *  multi-level game) and time; total hints live in the summary line. */
 export function roundupDetail(entry: RoundupEntry): string {
-  return `${entry.metric} · ${formatDuration(entry.elapsedMs)} · ${hintWords(
-    entry.hints,
-  )}`;
+  return `${entry.metric} · ${formatDuration(entry.elapsedMs)}`;
 }
 
 /** Active play time summed across every game's day. */
@@ -110,7 +111,10 @@ export function buildRoundupText(
   const streakPart = streak > 1 ? ` · 🔥 ${streak}` : "";
   return [
     `WordGirl — ${formatShareDate(dateKey)}`,
-    `✅ ${entries.length}/${entries.length} · ⏱️ ${total}${streakPart}`,
+    // Whole-day totals: all solved, total time, total hints, then streak.
+    `✅ ${entries.length}/${entries.length} · ⏱️ ${total} · ${hintShare(
+      roundupTotalHints(entries),
+    )}${streakPart}`,
     ...entries.map(roundupShareLine),
     SHARE_URL,
   ].join("\n");
