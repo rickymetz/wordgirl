@@ -319,6 +319,21 @@ html[data-font="accessible"] [data-glyph] {
   }
 }
 
+/* Constrained devices: keep the thin border drifting (a tiny repaint) but
+   freeze the GLOW to a static halo. Animating a card-sized blur is the one
+   costly effect here, and re-blurring it every frame is what hurts a weak
+   GPU. Two gates: `prefers-reduced-data` (the one power-adjacent media
+   query the platform offers) and `html[data-low-power]` (a boot-time JS
+   guess where no media query exists — see lib/lowPower.ts). */
+@media (prefers-reduced-data: reduce) {
+  .roundup-rainbow-border::before {
+    animation: none;
+  }
+}
+html[data-low-power] .roundup-rainbow-border::before {
+  animation: none;
+}
+
 /* Kill springs, morphs, shakes, and pops for motion-sensitive users.
    Inline transition styles need the !important to be overridden. */
 @media (prefers-reduced-motion: reduce) {

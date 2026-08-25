@@ -47,7 +47,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   string only; the card renders `name · metric · time · hints` — no emoji
   in UI chrome. Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
-  and streak helpers live in `lib/roundup.ts`.
+  and streak helpers live in `lib/roundup.ts`. The border animates
+  (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`
+  freezes BOTH by name (an infinite animation is NOT stopped by the global
+  0.01ms duration), and constrained devices freeze just the glow's blur —
+  `prefers-reduced-data` plus `html[data-low-power]`, the boot-time JS
+  guess in `lib/lowPower.ts` (there is no CSS media query for device
+  power).
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
