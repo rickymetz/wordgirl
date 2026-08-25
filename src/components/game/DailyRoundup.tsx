@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { games } from "../../games/registry";
 import {
   buildRoundupText,
+  roundupAggregateDetail,
   roundupDetail,
   roundupLevelDetail,
   roundupSummary,
@@ -167,11 +168,18 @@ export function DailyRoundup({ today }: { today: string }) {
           <ul className="flex flex-col gap-1.5 text-sm">
             {entries.map((e) =>
               e.levels && e.unit ? (
-                // Multi-level game: a name header, then a sub-row per level
-                // (indented), so a long breakdown never wraps a shared row.
+                // Multi-level game: a header row with the game's COMBINED
+                // total, then a smaller sub-row per level below it.
                 <li key={e.name} className="flex flex-col gap-0.5">
-                  <span className="font-semibold text-ink">{e.name}</span>
-                  <ul className="flex flex-col gap-0.5 pl-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="shrink-0 font-semibold text-ink">
+                      {e.name}
+                    </span>
+                    <span className="text-right tabular-nums text-ink-soft">
+                      {roundupAggregateDetail(e)}
+                    </span>
+                  </div>
+                  <ul className="flex flex-col gap-0.5 pl-3 text-xs">
                     {e.levels.map((lv) => (
                       <li
                         key={lv.label}

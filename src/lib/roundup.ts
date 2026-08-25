@@ -79,6 +79,14 @@ export function roundupLevelDetail(unit: string, level: RoundupLevel): string {
   return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}`;
 }
 
+/** A multi-level game's HEADER-row detail: the levels' combined count and
+ *  the whole game's time — the aggregate that sits above the per-level
+ *  sub-rows. */
+export function roundupAggregateDetail(entry: RoundupEntry): string {
+  const total = (entry.levels ?? []).reduce((n, l) => n + l.value, 0);
+  return `${total} ${entry.unit} · ${formatDuration(entry.elapsedMs)}`;
+}
+
 /** Active play time summed across every game's day. */
 export function roundupTotalMs(entries: RoundupEntry[]): number {
   return entries.reduce((ms, e) => ms + e.elapsedMs, 0);

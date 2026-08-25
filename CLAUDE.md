@@ -47,9 +47,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   string only; the card renders `name · metric · time` — no emoji in UI
   chrome, and no per-game hints (total hints ride the summary/share-total
   line instead). A MULTI-LEVEL game supplies `unit` + `levels[]` rather
-  than `metric`: the banner shows a name header then one indented SUB-ROW
-  per level (`label │ value unit · time`, never wraps), while the share
-  keeps ONE inline line per game (`Normal 12 · Hard 13 · ⏱️ time`). Mounted on the hub above the cards (self-hides) and, as a
+  than `metric`: the banner shows a name header with the game's COMBINED
+  total (`sum unit · total time`), then one smaller indented SUB-ROW per
+  level (`label │ value unit · time`, never wraps), while the share keeps
+  ONE inline line per game (`Normal 12 · Hard 13 · ⏱️ time`). Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`

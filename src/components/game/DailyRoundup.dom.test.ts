@@ -164,6 +164,33 @@ describe("DailyRoundup", () => {
     );
   });
 
+  it("renders a multi-level game as a header total plus smaller sub-rows", async () => {
+    state.c = {
+      emoji: "🟩",
+      name: "Charlie",
+      unit: "words",
+      elapsedMs: 9 * 60_000,
+      hints: 0,
+      levels: [
+        { label: "Normal", value: 12, elapsedMs: 4 * 60_000 },
+        { label: "Hard", value: 13, elapsedMs: 5 * 60_000 },
+      ],
+    };
+    await mount();
+    const txt = container.textContent!;
+    expect(txt).toContain("Charlie");
+    expect(txt).toContain("25 words · 9:00"); // header: combined total
+    expect(txt).toContain("Normal");
+    expect(txt).toContain("12 words · 4:00"); // sub-row
+    expect(txt).toContain("Hard");
+    expect(txt).toContain("13 words · 5:00");
+    // The per-level list is the smaller text.
+    const subList = container.querySelector(
+      '[aria-label="Today\'s roundup"] ul ul',
+    );
+    expect(subList?.className).toContain("text-xs");
+  });
+
   const banner = () =>
     container.querySelector('[aria-label="Today\'s roundup"]');
 

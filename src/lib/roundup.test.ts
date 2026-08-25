@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildRoundupText,
+  roundupAggregateDetail,
   roundupDetail,
+  roundupLevelDetail,
   roundupShareLine,
   roundupSummary,
   roundupTotalMs,
@@ -48,6 +50,36 @@ describe("roundupDetail", () => {
     expect(detail).not.toContain("🔻");
     expect(detail).not.toContain("Polygram");
     expect(detail).not.toContain("hint");
+  });
+});
+
+describe("multi-level details", () => {
+  const crosshatch: RoundupEntry = {
+    emoji: "🧺",
+    name: "Crosshatch",
+    unit: "words",
+    elapsedMs: 9 * 60_000,
+    hints: 0,
+    levels: [
+      { label: "Normal", value: 12, elapsedMs: 4 * 60_000 },
+      { label: "Hard", value: 13, elapsedMs: 5 * 60_000 },
+    ],
+  };
+  it("header shows the combined count and the whole game's time", () => {
+    expect(roundupAggregateDetail(crosshatch)).toBe("25 words · 9:00");
+  });
+  it("each sub-row shows its own count (with unit) and time", () => {
+    expect(roundupLevelDetail("words", crosshatch.levels![0])).toBe(
+      "12 words · 4:00",
+    );
+    expect(roundupLevelDetail("words", crosshatch.levels![1])).toBe(
+      "13 words · 5:00",
+    );
+  });
+  it("still shares as one inline line", () => {
+    expect(roundupShareLine(crosshatch)).toBe(
+      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00",
+    );
   });
 });
 
