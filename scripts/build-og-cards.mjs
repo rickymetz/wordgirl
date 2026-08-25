@@ -74,9 +74,55 @@ const GAMES = [
   },
   {
     id: "serpentine", name: "Serpentine", tagline: "One continuous line.", accent: "#a3e635",
-    prep: (page) => useHints(page, 4),
+    prep: traceSerpentine,
   },
 ];
+
+// Draw a real trail: Serpentine extends the line to any ADJACENT cell (it is
+// checked against the poem only at the end), so a free boustrophedon reads as
+// a player mid-trace — unlike hints, which just reveal scattered letters.
+// Keys go to the focused grid: arrows move a cursor, Enter commits it.
+async function traceSerpentine(page) {
+  const grid = page.getByRole("grid");
+  await grid.waitFor({ timeout: 4000 }).catch(() => {});
+  const geo = await page.evaluate(() => {
+    const g = document.querySelector('[role="grid"]');
+    if (!g) return null;
+    const vb = g.querySelector("svg")?.getAttribute("viewBox")?.split(/\s+/).map(Number);
+    const circ = g.querySelector("circle"); // the start node
+    if (!vb || !circ) return null;
+    g.focus();
+    return {
+      cols: vb[2], rows: vb[3],
+      head: { col: Math.round(+circ.getAttribute("cx") - 0.5), row: Math.round(+circ.getAttribute("cy") - 0.5) },
+    };
+  });
+  if (!geo) return;
+  const { cols, rows, head } = geo;
+  // Trace toward the side/half with the most room so no step clamps at an edge
+  // (a clamped Enter re-taps the tail and would UNDO the line).
+  const vdir = head.row < rows / 2 ? 1 : -1;
+  let hdir = head.col < cols / 2 ? 1 : -1;
+  const moves = [];
+  const cur = { ...head };
+  while (moves.length < 8) {
+    if (cur.col + hdir >= 0 && cur.col + hdir < cols) {
+      cur.col += hdir;
+      moves.push(hdir > 0 ? "ArrowRight" : "ArrowLeft");
+    } else if (cur.row + vdir >= 0 && cur.row + vdir < rows) {
+      cur.row += vdir;
+      hdir = -hdir;
+      moves.push(vdir > 0 ? "ArrowDown" : "ArrowUp");
+    } else {
+      break;
+    }
+  }
+  for (const m of moves) {
+    await page.keyboard.press(m);
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(120);
+  }
+}
 
 // Rubik Mono One (the WordGirl wordmark face), embedded so the card renders
 // with no network — the build's hashed copy under dist/assets.
@@ -180,8 +226,9 @@ try {
     await shot.evaluate(() => document.fonts.ready);
     await shot.waitForTimeout(700); // let the board settle / entrance anims finish
     await g.prep(shot); // leave the game mid-play
-    // Close any panel/dialog a prep step may have left open, so the board shows.
-    await shot.keyboard.press("Escape").catch(() => {});
+    // Never screenshot the hint menu: wait for any confirm dialog to close.
+    // (No Escape — in Serpentine that would clear the trail we just drew.)
+    await shot.locator('[role="dialog"]').waitFor({ state: "detached", timeout: 2000 }).catch(() => {});
     await shot.waitForTimeout(500);
     const shotB64 = (await shot.screenshot({ type: "png" })).toString("base64");
     await shot.close();
