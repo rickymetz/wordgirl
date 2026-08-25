@@ -9,17 +9,30 @@ import { SHARE_URL } from "./share";
  * a field rather than baking it into a string is what lets one function
  * honour that split for every game at once.
  */
+/** One level (board) of a multi-level game: its label, its count, and the
+ *  time on it. The banner renders one sub-row per level. */
+export interface RoundupLevel {
+  label: string; // "Normal", "Easy", "Haiku" …
+  value: number; // the count (words/pieces/letters), unit on the entry
+  elapsedMs: number;
+}
+
 export interface RoundupEntry {
   /** The game's share glyph, e.g. "🔻". SHARE line only. */
   emoji: string;
   /** Human game name, e.g. "Polygram". */
   name: string;
-  /** The headline stat, no emoji: "42 words", "6 rows", "12 pieces". */
-  metric: string;
   /** Total active play time for the day across all of the game's boards. */
   elapsedMs: number;
-  /** Hints used across the day's boards — 0 is a clean solve worth saying. */
+  /** Hints used across the day's boards. Shown as the whole-day total. */
   hints: number;
+  /** Single-board games: the ready stat, no emoji ("42 words", "6 rows"). */
+  metric?: string;
+  /** Multi-level games instead give a per-level breakdown + the shared
+   *  unit ("words"/"pieces"/"letters"): the banner shows a sub-row per
+   *  level, the share stays one inline line ("Normal 12 · Hard 13"). */
+  unit?: string;
+  levels?: RoundupLevel[];
 }
 
 /** Title-case a level/difficulty key ("hard" → "Hard") — the multi-level
@@ -35,21 +48,35 @@ function hintShare(hints: number): string {
   return hints > 0 ? `🫣 ${hints}` : "🤓 0";
 }
 
-/** The share glyph + name + metric + time a single game contributes.
- *  For a multi-level game the metric is per level ("Normal 12 · Hard 13");
- *  hints ride the whole-day total line, not each game, so the line stays
- *  short. */
+/** The stat portion of an entry, no emoji: a single-board game's metric
+ *  ("42 words"), or a multi-level game's inline per-level counts
+ *  ("Normal 12 · Hard 13"). */
+function statText(entry: RoundupEntry): string {
+  if (entry.levels) {
+    return entry.levels.map((l) => `${l.label} ${l.value}`).join(" · ");
+  }
+  return entry.metric ?? "";
+}
+
+/** The share glyph + name + stat + total time a single game contributes —
+ *  ONE line even for a multi-level game (its levels read inline). Hints
+ *  ride the whole-day total line, not each game. */
 export function roundupShareLine(entry: RoundupEntry): string {
-  return `${entry.emoji} ${entry.name} · ${entry.metric} · ⏱️ ${formatDuration(
+  return `${entry.emoji} ${entry.name} · ${statText(entry)} · ⏱️ ${formatDuration(
     entry.elapsedMs,
   )}`;
 }
 
-/** The stats a game row shows inside the card — no emoji, no name (the
- *  name sits beside it in its own element). Metric (per level for a
- *  multi-level game) and time; total hints live in the summary line. */
+/** A single-board game's card detail — metric and time (no emoji, no name;
+ *  the name sits beside it). Multi-level games use sub-rows instead. */
 export function roundupDetail(entry: RoundupEntry): string {
-  return `${entry.metric} · ${formatDuration(entry.elapsedMs)}`;
+  return `${entry.metric ?? ""} · ${formatDuration(entry.elapsedMs)}`;
+}
+
+/** A multi-level game's per-level sub-row detail: the count with the game's
+ *  unit, and the time on that level. */
+export function roundupLevelDetail(unit: string, level: RoundupLevel): string {
+  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}`;
 }
 
 /** Active play time summed across every game's day. */

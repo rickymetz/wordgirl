@@ -4,6 +4,7 @@ import { games } from "../../games/registry";
 import {
   buildRoundupText,
   roundupDetail,
+  roundupLevelDetail,
   roundupSummary,
   streakEndingToday,
   type RoundupEntry,
@@ -164,17 +165,38 @@ export function DailyRoundup({ today }: { today: string }) {
             </p>
           </div>
           <ul className="flex flex-col gap-1.5 text-sm">
-            {entries.map((e) => (
-              <li
-                key={e.name}
-                className="flex items-baseline justify-between gap-3"
-              >
-                <span className="shrink-0 font-semibold text-ink">{e.name}</span>
-                <span className="text-right tabular-nums text-ink-soft">
-                  {roundupDetail(e)}
-                </span>
-              </li>
-            ))}
+            {entries.map((e) =>
+              e.levels && e.unit ? (
+                // Multi-level game: a name header, then a sub-row per level
+                // (indented), so a long breakdown never wraps a shared row.
+                <li key={e.name} className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-ink">{e.name}</span>
+                  <ul className="flex flex-col gap-0.5 pl-3">
+                    {e.levels.map((lv) => (
+                      <li
+                        key={lv.label}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <span className="shrink-0 text-ink-soft">{lv.label}</span>
+                        <span className="text-right tabular-nums text-ink-soft">
+                          {roundupLevelDetail(e.unit!, lv)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                <li
+                  key={e.name}
+                  className="flex items-baseline justify-between gap-3"
+                >
+                  <span className="shrink-0 font-semibold text-ink">{e.name}</span>
+                  <span className="text-right tabular-nums text-ink-soft">
+                    {roundupDetail(e)}
+                  </span>
+                </li>
+              ),
+            )}
           </ul>
           <div className="flex justify-center pt-1">
             <ShareButton

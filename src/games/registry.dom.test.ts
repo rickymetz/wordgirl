@@ -88,18 +88,25 @@ describe("per-game daily loaders agree", () => {
       expect(entry).toMatchObject({
         name: expect.any(String),
         emoji: expect.any(String),
-        metric: expect.any(String),
         elapsedMs: expect.any(Number),
         hints: expect.any(Number),
       });
-      // Multi-level games name each level in the metric ("Normal … Hard …").
-      const levels: Record<string, string[]> = {
+      const expectedLevels: Record<string, string[]> = {
         crosshatch: ["Normal", "Hard"],
         doublet: ["Easy", "Medium", "Hard"],
         serpentine: ["Haiku", "Poem"],
       };
-      for (const label of levels[game.id] ?? []) {
-        expect(entry!.metric).toContain(label);
+      if (game.id in expectedLevels) {
+        // Multi-level games break out per level (unit + a level each).
+        expect(entry!.unit).toEqual(expect.any(String));
+        expect(entry!.levels?.map((l) => l.label)).toEqual(expectedLevels[game.id]);
+        for (const lv of entry!.levels ?? []) {
+          expect(lv.value).toEqual(expect.any(Number));
+        }
+      } else {
+        // Single-board games give a ready metric string, no levels.
+        expect(entry!.metric).toEqual(expect.any(String));
+        expect(entry!.levels).toBeUndefined();
       }
     });
 

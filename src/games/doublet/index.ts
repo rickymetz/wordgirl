@@ -27,13 +27,21 @@ export const doublet: GameDefinition = {
       DIFFICULTIES.map((d) => loadDailyProgress(today, d)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // Tiles placed per board ("Easy 3 · Medium 4 · Hard 5"), summed time.
-    const metric = DIFFICULTIES.map(
-      (d, i) => `${capitalize(d)} ${boards[i]!.placed.length}`,
-    ).join(" · ");
+    // One level per board (Easy/Medium/Hard); summed time and hints.
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
-    return { emoji: "👯‍♂️", name: "Doublet", metric, elapsedMs, hints };
+    return {
+      emoji: "👯‍♂️",
+      name: "Doublet",
+      unit: "pieces",
+      levels: DIFFICULTIES.map((d, i) => ({
+        label: capitalize(d),
+        value: boards[i]!.placed.length,
+        elapsedMs: boards[i]!.elapsedMs,
+      })),
+      elapsedMs,
+      hints,
+    };
   },
   solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/DoubletPage")),

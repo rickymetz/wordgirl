@@ -26,15 +26,6 @@ export const crosshatch: GameDefinition = {
       levels.map((level) => loadBoardRecord(today, level)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // Per level ("Normal 12 · Hard 13") when the day has more than one
-    // board, so the roundup shows each level instead of one merged count;
-    // a lone pre-HARD_EPOCH board keeps the plain "N words" form.
-    const metric =
-      levels.length > 1
-        ? levels
-            .map((level, i) => `${capitalize(level)} ${boards[i]!.foundWords.length}`)
-            .join(" · ")
-        : `${boards[0]!.foundWords.length} words`;
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce(
       (n, b) =>
@@ -42,7 +33,29 @@ export const crosshatch: GameDefinition = {
         Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
       0,
     );
-    return { emoji: "🧺", name: "Crosshatch", metric, elapsedMs, hints };
+    // Multi-board days break out by level (banner sub-rows, inline in the
+    // share); a lone pre-HARD_EPOCH board keeps the plain "N words" form.
+    if (levels.length > 1) {
+      return {
+        emoji: "🧺",
+        name: "Crosshatch",
+        unit: "words",
+        levels: levels.map((level, i) => ({
+          label: capitalize(level),
+          value: boards[i]!.foundWords.length,
+          elapsedMs: boards[i]!.elapsedMs,
+        })),
+        elapsedMs,
+        hints,
+      };
+    }
+    return {
+      emoji: "🧺",
+      name: "Crosshatch",
+      metric: `${boards[0]!.foundWords.length} words`,
+      elapsedMs,
+      hints,
+    };
   },
   solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/CrosshatchPage")),

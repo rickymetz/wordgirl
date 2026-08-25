@@ -26,13 +26,21 @@ export const serpentine: GameDefinition = {
       DIFFICULTIES.map((d) => loadDailyProgress(d, today)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // Letters traced per board ("Haiku 17 · Poem 34"), summed play time.
-    const metric = DIFFICULTIES.map(
-      (d, i) => `${capitalize(d)} ${boards[i]!.cells.length}`,
-    ).join(" · ");
+    // One level per board (Haiku/Poem); summed time and hints.
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
-    return { emoji: "🐍", name: "Serpentine", metric, elapsedMs, hints };
+    return {
+      emoji: "🐍",
+      name: "Serpentine",
+      unit: "letters",
+      levels: DIFFICULTIES.map((d, i) => ({
+        label: capitalize(d),
+        value: boards[i]!.cells.length,
+        elapsedMs: boards[i]!.elapsedMs,
+      })),
+      elapsedMs,
+      hints,
+    };
   },
   solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/SerpentinePage")),
