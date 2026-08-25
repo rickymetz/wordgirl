@@ -50,6 +50,7 @@ vi.mock("../../games/registry", () => ({
 let container: HTMLDivElement;
 let root: Root;
 let copied: string[];
+let tracked: string[];
 
 async function flush(ticks = 8) {
   for (let i = 0; i < ticks; i++) {
@@ -73,6 +74,8 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  tracked = [];
+  window.fathom = { trackEvent: (name: string) => void tracked.push(name) };
   localStorage.clear(); // per-day celebrate/dismiss flags
   state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 };
   state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 2 };
@@ -165,6 +168,9 @@ describe("DailyRoundup", () => {
     });
     await flush();
     expect(copied).toHaveLength(1);
+    // The day-share is app-level, so it is counted under its own scope
+    // rather than any one game's.
+    expect(tracked).toEqual(["roundup:share"]);
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",

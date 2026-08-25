@@ -41,6 +41,7 @@ vi.mock("../../lib/useToday", () => ({ useToday: () => "2026-08-25" }));
 let container: HTMLDivElement;
 let root: Root;
 let copied: string[];
+let tracked: string[];
 
 async function flush(ticks = 8) {
   for (let i = 0; i < ticks; i++) {
@@ -71,6 +72,8 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  tracked = [];
+  window.fathom = { trackEvent: (name: string) => void tracked.push(name) };
   state.bDone = true;
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
@@ -95,6 +98,9 @@ describe("DailyOutro when the day is complete", () => {
       share!.click();
     });
     await flush();
+    // The whole-day share is app-level: counted as roundup:share, never
+    // against the game the player happened to finish last.
+    expect(tracked).toEqual(["roundup:share"]);
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",

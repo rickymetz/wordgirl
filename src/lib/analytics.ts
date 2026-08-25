@@ -41,8 +41,16 @@ export function trackSolved(gameId: string) {
   track(`${gameId}:solved`);
 }
 
-export function trackShare(gameId: string) {
-  track(`${gameId}:share`);
+/**
+ * A share was actually SENT (see ShareButton: counted on the result, not
+ * the tap — a dismissed native sheet is not a share).
+ *
+ * `scope` is a game id for a game's own result card, or `"roundup"` for
+ * the whole-day card, which belongs to no single game — see the roundup
+ * section below.
+ */
+export function trackShare(scope: string) {
+  track(`${scope}:share`);
 }
 
 export function trackPractice(gameId: string) {
@@ -115,6 +123,21 @@ export function trackCoach(gameId: string) {
 export function trackSkipLevel(gameId: string) {
   track(`${gameId}:skip-level`);
 }
+
+// --- The day's roundup ----------------------------------------------
+//
+// `roundup:share` is app-level rather than any one game's: it fires from
+// BOTH surfaces the whole-day card is offered on — the hub banner and the
+// finish outro's "Share the day" pill — and both go through ShareButton
+// with the scope "roundup", so the count is shares of the DAY, never of a
+// game. Read it against the five per-game `<game>:share` counts to see
+// whether finishing everything is worth sharing more than one puzzle was.
+//
+// It has no denominator yet: nothing counts the banner being SHOWN, so
+// this is a raw count, not a rate. If that question comes up, add a
+// `roundup:offered` where the banner renders — the same shape as
+// `tutorial-offered` and `backup:reminder` — rather than inferring a
+// denominator from solve counts, which would miss dismissals.
 
 // --- Display settings -----------------------------------------------
 
