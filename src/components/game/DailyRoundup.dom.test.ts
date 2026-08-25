@@ -103,7 +103,7 @@ describe("DailyRoundup", () => {
 
   it("lists each game (stat · time · hints), no emoji in the rows", async () => {
     await mount();
-    expect(container.textContent).toContain("Every Puzzle Solved Today");
+    expect(container.textContent).toContain("All Puzzles Solved Today");
     // Subtitle: no streak past day one here, then total time and hints.
     expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
     expect(container.textContent).toContain("Alpha");

@@ -107,7 +107,7 @@ export function DailyRoundup({ today }: { today: string }) {
           {/* font-game is Rubik Mono One, and follows the Font setting to
               the accessible face automatically. */}
           <h2 className="text-balance font-game text-lg text-ink">
-            Every Puzzle Solved Today
+            All Puzzles Solved Today
           </h2>
           <p className="pt-1 text-sm text-ink-soft">
             {roundupSummary(entries, streak)}
