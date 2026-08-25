@@ -3,19 +3,16 @@ import type { GameDefinition } from "../games/types";
 
 /**
  * Bento cluster per game: a large tile for the primary mode (the daily
- * puzzle) and a row of smaller tiles for secondary modes. Neutral card
- * surfaces — color comes from the game's accent level and its preview
+ * puzzle) and, UNDER it, a horizontal scroller of secondary modes. Neutral
+ * card surfaces — color comes from the game's accent level and its preview
  * art, matching the in-game look (grey petals, one saturated center).
  */
 export function GameCard({ game }: { game: GameDefinition }) {
   return (
-    <section
-      data-level={game.accentLevel}
-      className="md:flex md:gap-3"
-    >
+    <section data-level={game.accentLevel}>
       <Link
         to={`/games/${game.id}`}
-        className="flex items-center overflow-hidden rounded-3xl bg-surface-tint px-6 py-6 transition-transform active:scale-[0.98] md:min-w-0 md:flex-1"
+        className="flex items-center overflow-hidden rounded-3xl bg-surface-tint px-6 py-6 transition-transform active:scale-[0.98]"
       >
         <div className="w-3/4 min-w-0 pr-2">
           <h2 className="font-game text-2xl font-normal tracking-tight">{game.name}</h2>
@@ -29,32 +26,22 @@ export function GameCard({ game }: { game: GameDefinition }) {
         </div>
       </Link>
       {game.secondaryActions && (
-        <div className="mt-3 grid grid-cols-2 gap-3 md:mt-0 md:flex md:w-36 md:shrink-0 md:flex-col">
+        // A single fixed-width row under the card, scrolled horizontally at
+        // every width. Each button is ~40% of the row, so two sit full and
+        // the third is clipped at the right edge — the peek IS the "there's
+        // more, scroll" cue. `.card-action-scroller` hides the scrollbar and
+        // fades that right edge; snap keeps a button from resting
+        // half-clipped after a flick.
+        <div className="card-action-scroller mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto">
           {game.secondaryActions.map((action) => (
             <Link
               key={action.path}
               to={`/games/${game.id}/${action.path}`}
-              // Phone: a two-column grid, not a horizontal scroller. As a
-              // scroller, the fourth action (Tutorial) started at x=364 in a
-              // 390px viewport — entirely off screen on every card, which
-              // left a brand-new player no visible way back to the tutorial
-              // once the first-visit prompt had been answered. A grid shows
-              // all four without a gesture.
-              //
-              // md+ stacks these into a column that divides the cluster's
-              // height, so each tile shrinks as actions are added — four of
-              // them landed at 28px, under the 44px touch floor (and 820px
-              // tablets hit this breakpoint). min-h keeps the floor and lets
-              // the cluster grow past the primary tile instead; it is
-              // rem-based, so it scales with the Text-size setting.
-              className="rounded-2xl bg-surface-tint px-5 py-4 transition-transform active:scale-[0.97] md:w-auto md:min-h-11 md:flex-1 md:px-4 md:py-0 md:flex md:items-center"
+              className="flex min-h-11 w-[37%] flex-none snap-start items-center justify-center rounded-2xl bg-surface-tint px-4 py-3 text-center transition-transform active:scale-[0.97]"
             >
-              <div className="font-semibold text-accent">{action.label}</div>
-              {action.description && (
-                <div className="mt-0.5 text-xs text-ink-soft md:hidden">
-                  {action.description}
-                </div>
-              )}
+              <span className="font-semibold text-accent whitespace-nowrap">
+                {action.label}
+              </span>
             </Link>
           ))}
         </div>
