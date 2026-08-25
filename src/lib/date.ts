@@ -39,6 +39,28 @@ export function formatDateKey(dateKey: string): string {
   });
 }
 
+/**
+ * The hub card's date, longest first: `GameStatus` measures its column and
+ * renders the first rung that fits on ONE line. The Text-size and Font
+ * settings both change how wide a name renders, so a single format can't
+ * hold at every setting — the ladder steps the weekday and month names down
+ * and, at the last rung, drops the weekday entirely so something always
+ * fits. Rung 0 is exactly `formatDateKey`.
+ */
+export function dateKeyFormats(dateKey: string): string[] {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const rungs: Intl.DateTimeFormatOptions[] = [
+    { weekday: "long", month: "long" },
+    { weekday: "long", month: "short" },
+    { weekday: "short", month: "short" },
+    { month: "short" },
+  ];
+  return rungs.map((rung) =>
+    date.toLocaleDateString(undefined, { ...rung, day: "numeric" }),
+  );
+}
+
 /** "July 10" — the share-string date every game's result header uses. */
 export function formatShareDate(dateKey: string): string {
   const [y, m, d] = dateKey.split("-").map(Number);

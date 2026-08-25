@@ -1,6 +1,39 @@
-import { useEffect, useState } from "react";
-import { formatDateKey } from "../lib/date";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { dateKeyFormats } from "../lib/date";
+import { firstFitting, measurerFor } from "../lib/textFit";
+import { useRemeasure } from "../lib/useRemeasure";
 import { useToday } from "../lib/useToday";
+
+/**
+ * Keeps the card's date on ONE line: measures the column the layout
+ * actually leaves and renders the longest `dateKeyFormats` rung that fits.
+ * A constant here would be wrong twice over — the column is a percentage of
+ * a rem-padded card, and the Font setting changes glyph widths without
+ * changing the box — so `useRemeasure` re-runs it on every trigger that
+ * moves those numbers.
+ */
+function useFittedDate(today: string): {
+  ref: React.RefObject<HTMLParagraphElement | null>;
+  text: string;
+} {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [text, setText] = useState(() => dateKeyFormats(today)[0]);
+
+  const measure = useCallback(() => {
+    const el = ref.current;
+    const formats = dateKeyFormats(today);
+    if (!el) return setText(formats[0]);
+    const measureText = measurerFor(el);
+    setText(
+      measureText
+        ? firstFitting(formats, el.clientWidth, measureText)
+        : formats[0],
+    );
+  }, [today]);
+
+  useRemeasure(ref, measure);
+  return { ref, text };
+}
 
 /**
  * The hub-card status block every game shares: today's date, front
@@ -20,6 +53,7 @@ export function GameStatus({
 }) {
   const today = useToday();
   const [line, setLine] = useState<string | null>(null);
+  const date = useFittedDate(today);
 
   // Reloads on midnight rollover and PWA resume, not just on mount —
   // a stale "Solved ✓" for the new day is a broken promise.
@@ -41,8 +75,11 @@ export function GameStatus({
 
   return (
     <div className="mt-3">
-      <p className="text-lg leading-tight font-bold text-accent">
-        {formatDateKey(today)}
+      {/* Deliberately still wrappable: the fitted rung makes wrapping moot,
+          and where there is nothing to measure with, wrapping is a kinder
+          failure than clipping the date against the preview art. */}
+      <p ref={date.ref} className="text-lg leading-tight font-bold text-accent">
+        {date.text}
       </p>
       {line && (
         <p className="mt-0.5 text-sm font-semibold text-accent/75">{line}</p>
