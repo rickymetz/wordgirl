@@ -37,11 +37,31 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   and `firstFitting` + `measurerFor` (`lib/textFit.ts`) pick the longest
   rung that fits the measured column, so it never wraps to two lines. Both
   the Text-size AND Font settings change how wide a name renders — the
-  accessible face is wider at the same size — so it re-measures on the box
-  resizing, on `document.fonts.ready` (first paint measures fallback
-  metrics), and on the `<html>` settings attributes flipping (the Font swap
-  moves no box at all). Measure like this anywhere a single string has to
-  hold across both settings.
+  accessible face is wider at the same size — so it re-measures via
+  `useRemeasure`. Measure like this anywhere a single string has to hold
+  across both settings.
+- `useRemeasure(ref, measure)` (`lib/`) — THE way to re-run a text
+  measurement, because no one trigger covers the others: the box resizing
+  (rotation, breakpoint, Text size), `document.fonts.ready` (first paint
+  measures FALLBACK metrics), and the `<html>` settings attributes flipping
+  (Settings applies the Font swap by mutating the document, and the
+  accessible face is a different width at the same size, so nothing
+  resizes). A layout effect, so the first measured value is the first
+  painted.
+- Title/art collision (`lib/artClearance.ts` + `GameCard`) — hub titles are
+  long words in a wide display face, so above the default Text size they
+  outgrow their column and run sideways THROUGH the preview art. The CARD
+  measures its own boxes (a Range over the heading gives where the text
+  really ends, not its column) and drops the art by the overlap; where the
+  card has no room left under the art, `extraPad` grows the CARD rather
+  than capping the shift — bottom padding sits OUTSIDE the content box, so
+  the card gets taller without moving the text and re-opening the collision
+  it just fixed. Two rules worth keeping: back the applied shift out of each
+  measurement by reading it OFF THE ELEMENT (an observer can fire before
+  React hands you current state, and measuring against a stale shift
+  silently undoes the correction), and return the SAME state object when
+  nothing moved (the padding resizes the card, which re-triggers the
+  measure). No game carries a per-game constant — previews stay dumb.
 - `DailyRoundup` + `useDailyRoundup`/`useRoundupShareText` — the
   cross-game "every puzzle done" banner: a rainbow border (all five game
   accents via `--roundup-rainbow`, the one place the whole palette shows
