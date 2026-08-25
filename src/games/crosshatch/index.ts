@@ -1,6 +1,10 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { isDaySolved } from "./state/persistence";
+import {
+  isDaySolved,
+  levelsFor,
+  loadBoardRecord,
+} from "./state/persistence";
 import { CrosshatchPreview } from "./ui/CrosshatchPreview";
 import { CrosshatchStatus } from "./ui/CrosshatchStatus";
 
@@ -13,6 +17,32 @@ export const crosshatch: GameDefinition = {
   Status: CrosshatchStatus,
   // Two boards a day; the game is done when both are solved.
   solvedToday: (today) => isDaySolved(today),
+  roundupEntry: async (today) => {
+    // Records, not the version-sensitive load, so this agrees with
+    // solvedToday/solvedDates (see loadBoardRecord).
+    const boards = await Promise.all(
+      levelsFor(today).map((level) => loadBoardRecord(today, level)),
+    );
+    if (!boards.every((b) => b?.solved === true)) return null;
+    // The day is both boards, so the roundup sums them — a single-board
+    // count would undersell a two-board day.
+    const words = boards.reduce((n, b) => n + (b?.foundWords.length ?? 0), 0);
+    const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
+    const hints = boards.reduce(
+      (n, b) =>
+        n +
+        Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
+      0,
+    );
+    return {
+      emoji: "🧺",
+      name: "Crosshatch",
+      metric: `${words} words`,
+      elapsedMs,
+      hints,
+    };
+  },
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/CrosshatchPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

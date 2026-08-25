@@ -189,6 +189,15 @@ export function loadStaleDailyProgress(
 const boardRecord = (dateKey: string, level: Level) =>
   base.loadDayRecord(subKey(dateKey, level));
 
+/**
+ * A board's saved record for a date, whatever version wrote it. The
+ * roundup reads this rather than the version-sensitive `loadDailyProgress`
+ * so its "solved + score" agrees with `isDaySolved` and `solvedDates`
+ * (both record-based) — otherwise a same-day generator bump could leave
+ * the game reporting "done" while the roundup silently vanished.
+ */
+export const loadBoardRecord = boardRecord;
+
 /** Is every board this date carries solved? The day is the unit of
  * progress: both boards, or the one board a pre-HARD_EPOCH day has. */
 export async function isDaySolved(dateKey: string): Promise<boolean> {

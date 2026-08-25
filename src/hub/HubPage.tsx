@@ -7,9 +7,12 @@ import { games } from "../games/registry";
 import { SettingsDialog } from "../components/SettingsDialog";
 import { GameCard } from "./GameCard";
 import { BackupPrompt } from "../components/BackupPrompt";
+import { DailyRoundup } from "../components/game/DailyRoundup";
+import { useToday } from "../lib/useToday";
 
 export function HubPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const today = useToday();
   return (
     <div className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl">
       <header className="relative pt-12 pb-8">
@@ -32,6 +35,9 @@ export function HubPage() {
         </button>
       </header>
       <main className="flex flex-col gap-5 md:gap-8">
+        {/* Self-hides until every puzzle is done — the day's shareable
+            summary, sitting above the cards it sums up. */}
+        <DailyRoundup today={today} />
         {games.map((game) => (
           <GameCard key={game.id} game={game} />
         ))}

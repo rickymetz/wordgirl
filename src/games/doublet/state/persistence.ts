@@ -79,6 +79,17 @@ export const saveDailyProgress = base.saveDay;
  * (see loadDayRecord). */
 const boardRecord = (dateKey: string, difficulty: Difficulty) =>
   base.loadDayRecord(`${difficulty}:${dateKey}`);
+
+/** Were ALL of the date's boards solved — the RECORD, version-insensitive
+ *  (history doesn't un-happen on a dict bump), for the cross-game
+ *  "all games done" streak. */
+export async function isDaySolved(dateKey: string): Promise<boolean> {
+  const boards = await Promise.all(
+    DIFFICULTIES.map((d) => boardRecord(dateKey, d)),
+  );
+  return boards.every((b) => b?.solved === true);
+}
+
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const { loadTutorialSeen, markTutorialSeen } = base;
 /**

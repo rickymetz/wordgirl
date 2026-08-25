@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { SerpentinePreview } from "./ui/SerpentinePreview";
 import { SerpentineStatus } from "./ui/SerpentineStatus";
 
@@ -19,6 +19,25 @@ export const serpentine: GameDefinition = {
     ]);
     return boards.every((b) => b?.solved === true);
   },
+  roundupEntry: async (today) => {
+    const boards = await Promise.all([
+      loadDailyProgress("haiku", today),
+      loadDailyProgress("poem", today),
+    ]);
+    if (!boards.every((b) => b?.solved === true)) return null;
+    // Letters traced across both boards, and their summed play time.
+    const letters = boards.reduce((n, b) => n + (b?.cells.length ?? 0), 0);
+    const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
+    const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
+    return {
+      emoji: "🐍",
+      name: "Serpentine",
+      metric: `${letters} letters`,
+      elapsedMs,
+      hints,
+    };
+  },
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/SerpentinePage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

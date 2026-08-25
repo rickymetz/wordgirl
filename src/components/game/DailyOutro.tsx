@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { games } from "../../games/registry";
 import { useToday } from "../../lib/useToday";
 import type { GameDefinition } from "../../games/types";
+import { useRoundupShareText } from "./DailyRoundup";
+import { ShareButton } from "../ShareButton";
 
 /**
  * What a results card owed the player and never gave them: the streak at
@@ -31,6 +33,9 @@ export function DailyOutro({
   const today = useToday();
   const [streak, setStreak] = useState(0);
   const [open, setOpen] = useState<GameDefinition[] | null>(null);
+  // The whole day's share string — present only once every puzzle is done,
+  // which is exactly the branch that offers it below.
+  const roundupText = useRoundupShareText(today);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,9 +90,27 @@ export function DailyOutro({
           ))}
         </p>
       ) : (
-        <p className="text-ink-soft">
-          Every puzzle done today. A new set lands at midnight.
-        </p>
+        <>
+          <p className="text-ink-soft">
+            Every puzzle done today. A new set lands at midnight.
+          </p>
+          {/* Share the whole day right from the finish. The full breakdown
+              lives on the hub, where a card can spend the height; here it
+              is one pill so the results screen keeps its budget. Guarded on
+              the text so a version-mismatched entry that hides the card
+              never leaves a dead button. */}
+          {/* Labelled "Share the day" so it doesn't read as a second copy
+              of the game's own "Share" pill sitting right above it. */}
+          {roundupText && (
+            <div className="pt-2">
+              <ShareButton
+                text={roundupText}
+                gameId="roundup"
+                label="Share the day"
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

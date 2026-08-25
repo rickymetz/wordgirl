@@ -121,6 +121,45 @@
   /* Sky, not turquoise: the decagon colors Polygram's completion card,
      which read as Crosshatch's Tiffany teal from across the room. */
   --level-10: light-dark(#075985, #38bdf8); /* sky */
+
+  /* The games with their own palette key, declared on :root beside the
+     numbered levels for the same reason: one source of truth that both
+     the [data-level] rule below AND the cross-game roundup rainbow read
+     via var(), never a second copy of the hex pair. */
+  --level-crosshatch: light-dark(#0c7d84, #3ddbd9); /* Tiffany teal */
+  --level-pierglass: light-dark(#a21caf, #e879f9);  /* fuchsia */
+  --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
+  --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
+
+  /* The rainbow that borders the "every puzzle done" banner. Its stops
+     are DECORATIVE, not the AA-tuned game accents: a border carries no
+     text, so light mode is free to use bright 600-weight hues that read
+     as a real rainbow instead of the deep, low-chroma shades the accents
+     need to clear contrast on white. Dark mode keeps the vivid game
+     tints, which already pop. Registry order, so the sweep matches the
+     cards below. */
+  --roundup-c1: light-dark(#dc2626, #f87171); /* red */
+  --roundup-c2: light-dark(#0d9488, #3ddbd9); /* teal */
+  --roundup-c3: light-dark(#c026d3, #e879f9); /* fuchsia */
+  --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
+  --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
+  /* TWO full cycles across the image: paired with background-size 200%
+     it makes each half identical, so panning by one width loops with no
+     visible seam (see .roundup-rainbow-border). */
+  --roundup-rainbow: linear-gradient(
+    105deg,
+    var(--roundup-c1) 0%,
+    var(--roundup-c2) 10%,
+    var(--roundup-c3) 20%,
+    var(--roundup-c4) 30%,
+    var(--roundup-c5) 40%,
+    var(--roundup-c1) 50%,
+    var(--roundup-c2) 60%,
+    var(--roundup-c3) 70%,
+    var(--roundup-c4) 80%,
+    var(--roundup-c5) 90%,
+    var(--roundup-c1) 100%
+  );
 }
 [data-level="3"] { --color-accent: var(--level-3); }
 [data-level="4"] { --color-accent: var(--level-4); }
@@ -135,12 +174,12 @@
 [data-level="neutral"] { --color-accent: light-dark(#171717, #e5e5e5); }
 
 /* Crosshatch has its own palette key — Tiffany teal. */
-[data-level="crosshatch"] { --color-accent: light-dark(#0c7d84, #3ddbd9); }
+[data-level="crosshatch"] { --color-accent: var(--level-crosshatch); }
 
 /* Pierglass' palette key — fuchsia, clearly its own game beside
    Polygram red and Crosshatch teal. */
 [data-level="pierglass"] {
-  --color-accent: light-dark(#a21caf, #e879f9);
+  --color-accent: var(--level-pierglass);
   /* The mirror's glass: one gradient for the board pane AND the hub
      card's miniature, so a tint tweak lands everywhere at once. */
   --pierglass-glass: linear-gradient(
@@ -153,11 +192,11 @@
 }
 
 /* Doublet — warm amber. */
-[data-level="doublet"] { --color-accent: light-dark(#92400e, #fbbf24); }
+[data-level="doublet"] { --color-accent: var(--level-doublet); }
 
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {
-  --color-accent: light-dark(#4d7c0f, #a3e635);
+  --color-accent: var(--level-serpentine);
   --color-accent-trail: light-dark(#6b8f0f, #d4e635);
   --color-on-accent: light-dark(#ffffff, #1a1a2e);
 }
@@ -242,6 +281,59 @@ html[data-font="accessible"] [data-glyph] {
   text-align: center;
 }
 
+/* The roundup banner's living rainbow border: the gradient is drawn at
+   twice the width and panned by exactly one width, which loops seamlessly
+   because the two halves are identical (see --roundup-rainbow). A soft
+   blurred copy of the same gradient behind it (::before) is the glow —
+   same gradient, same pan, so the halo drifts in lockstep with the edge.
+   Kept an in-box `background-position` pan (not a translating layer),
+   because a layer wide enough to slide would spill past the viewport and
+   the page must never scroll sideways. The reduced-motion block below
+   stops BOTH by name — the one thing that actually freezes an infinite
+   animation. */
+.roundup-rainbow-border {
+  position: relative;
+  isolation: isolate; /* keep the glow behind the border, above the page */
+  background-image: var(--roundup-rainbow);
+  background-size: 200% 100%;
+  animation: roundup-rainbow-pan 3.5s linear infinite;
+}
+.roundup-rainbow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--roundup-rainbow);
+  background-size: 200% 100%;
+  filter: blur(11px);
+  opacity: 0.55;
+  animation: roundup-rainbow-pan 3.5s linear infinite;
+}
+@keyframes roundup-rainbow-pan {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+/* Constrained devices: keep the thin border drifting (a tiny repaint) but
+   freeze the GLOW to a static halo. Animating a card-sized blur is the one
+   costly effect here, and re-blurring it every frame is what hurts a weak
+   GPU. Two gates: `prefers-reduced-data` (the one power-adjacent media
+   query the platform offers) and `html[data-low-power]` (a boot-time JS
+   guess where no media query exists — see lib/lowPower.ts). */
+@media (prefers-reduced-data: reduce) {
+  .roundup-rainbow-border::before {
+    animation: none;
+  }
+}
+html[data-low-power] .roundup-rainbow-border::before {
+  animation: none;
+}
+
 /* Kill springs, morphs, shakes, and pops for motion-sensitive users.
    Inline transition styles need the !important to be overridden. */
 @media (prefers-reduced-motion: reduce) {
@@ -250,6 +342,14 @@ html[data-font="accessible"] [data-glyph] {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+  /* An INFINITE animation is NOT frozen by a 0.01ms duration — it spins
+     ~100k cycles/sec and strobes through the hue range. Both the border
+     and its glow must be stopped by name, or reduce-motion makes the
+     banner worse than leaving it on. */
+  .roundup-rainbow-border,
+  .roundup-rainbow-border::before {
+    animation: none;
   }
 }
 

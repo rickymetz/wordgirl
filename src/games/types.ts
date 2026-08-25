@@ -1,4 +1,5 @@
 import type { ComponentType, LazyExoticComponent } from "react";
+import type { RoundupEntry } from "../lib/roundup";
 
 export interface GameDefinition {
   /** Also the storage namespace and route segment: /games/<id> */
@@ -18,6 +19,27 @@ export interface GameDefinition {
    * game from the list rather than advertising a puzzle already played.
    */
   solvedToday?: (today: string) => Promise<boolean>;
+  /**
+   * Today's result as one entry in the cross-game daily roundup, or null
+   * when the game isn't finished for `today` (mirror `solvedToday`). Read
+   * by `DailyRoundup`, which shows the roundup only once EVERY game
+   * returns an entry — so a game that omits this loader keeps the roundup
+   * from ever appearing, the same safe-by-omission stance `solvedToday`
+   * takes. The emoji rides the SHARE string only; the UI card renders
+   * `name · metric · time` with no emoji (house rule).
+   */
+  roundupEntry?: (today: string) => Promise<RoundupEntry | null>;
+  /**
+   * Was this game FULLY finished (all its boards) on `dateKey` — a cheap
+   * per-date RECORD lookup (version-insensitive; history doesn't un-happen
+   * on a dict bump), for the cross-game "every puzzle done" streak. The
+   * roundup walks backward from today and stops at the first day some game
+   * answers false, so cost is the streak's length, not the whole history.
+   * A game without it answers false, pinning the streak at 1 (today is
+   * always counted) — so a game that ships `roundupEntry` must ship this
+   * too, or the streak silently never grows.
+   */
+  solvedOn?: (dateKey: string) => Promise<boolean>;
   /** Lazy page component — each game is its own code-split chunk. */
   Page: LazyExoticComponent<ComponentType>;
   /** Extra routes under /games/<id>/, e.g. practice mode. */

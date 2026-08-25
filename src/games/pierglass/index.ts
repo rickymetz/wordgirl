@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { PierglassPreview } from "./ui/PierglassPreview";
 import { PierglassStatus } from "./ui/PierglassStatus";
 
@@ -13,6 +13,18 @@ export const pierglass: GameDefinition = {
   Status: PierglassStatus,
   solvedToday: async (today) =>
     (await loadDailyProgress(today))?.solved === true,
+  roundupEntry: async (today) => {
+    const d = await loadDailyProgress(today);
+    if (!d?.solved) return null;
+    return {
+      emoji: "🪞",
+      name: "Pierglass",
+      metric: `${d.rows.length} rows`,
+      elapsedMs: d.elapsedMs,
+      hints: d.hints ?? 0,
+    };
+  },
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/PierglassPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
 import { DIFFICULTIES } from "./engine/types";
-import { loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { DoubletPreview } from "./ui/DoubletPreview";
 import { DoubletStatus } from "./ui/DoubletStatus";
 
@@ -21,6 +21,24 @@ export const doublet: GameDefinition = {
     );
     return boards.every((b) => b?.solved === true);
   },
+  roundupEntry: async (today) => {
+    const boards = await Promise.all(
+      DIFFICULTIES.map((d) => loadDailyProgress(today, d)),
+    );
+    if (!boards.every((b) => b?.solved === true)) return null;
+    // Tiles placed across all three boards, and their summed play time.
+    const pieces = boards.reduce((n, b) => n + (b?.placed.length ?? 0), 0);
+    const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
+    const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
+    return {
+      emoji: "👯‍♂️",
+      name: "Doublet",
+      metric: `${pieces} pieces`,
+      elapsedMs,
+      hints,
+    };
+  },
+  solvedOn: isDaySolved,
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },

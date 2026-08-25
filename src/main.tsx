@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App";
 import { applySettings, loadSettings } from "./lib/settings";
+import { applyLowPowerFlag } from "./lib/lowPower";
 import { migrateRenamedGames } from "./lib/storage/renames";
 import { setSWRegistration } from "./lib/swUpdate";
 import "./index.css";
@@ -14,6 +15,10 @@ migrateRenamedGames();
 
 // Theme override + text size must land before first paint.
 applySettings(loadSettings());
+
+// Stamp html[data-low-power] on constrained devices so CSS can pare back
+// the costliest effects (the roundup's animated blur). Boot-time, once.
+applyLowPowerFlag();
 
 // Proper SW lifecycle: check for a new build hourly and whenever the
 // app returns to the foreground, so updates land on the next launch
