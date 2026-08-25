@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { capitalize } from "../../lib/roundup";
 import { DIFFICULTIES } from "./engine/types";
 import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { DoubletPreview } from "./ui/DoubletPreview";
@@ -26,14 +27,19 @@ export const doublet: GameDefinition = {
       DIFFICULTIES.map((d) => loadDailyProgress(today, d)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // Tiles placed across all three boards, and their summed play time.
-    const pieces = boards.reduce((n, b) => n + (b?.placed.length ?? 0), 0);
+    // One level per board (Easy/Medium/Hard); summed time and hints.
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
     return {
       emoji: "👯‍♂️",
       name: "Doublet",
-      metric: `${pieces} pieces`,
+      unit: "pieces",
+      levels: DIFFICULTIES.map((d, i) => ({
+        label: capitalize(d),
+        value: boards[i]!.placed.length,
+        elapsedMs: boards[i]!.elapsedMs,
+        hints: boards[i]!.hints ?? 0,
+      })),
       elapsedMs,
       hints,
     };

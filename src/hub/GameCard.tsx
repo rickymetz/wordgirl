@@ -1,5 +1,36 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { GameDefinition } from "../games/types";
+import { edgeFade, type EdgeFade } from "../lib/scrollFade";
+
+/**
+ * Tracks which edges of the action scroller should fade, so the right-edge
+ * fade shows only while there's more to scroll and a left-edge fade appears
+ * once scrolled. A ResizeObserver re-checks when the card's width changes
+ * (rotation, the responsive breakpoint); scroll updates it live.
+ */
+function useScrollFade() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState<EdgeFade>("right");
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () =>
+      setFade(edgeFade(el.scrollLeft, el.scrollWidth, el.clientWidth));
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    // Guarded for environments without ResizeObserver (jsdom); scroll
+    // updates still work there.
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    observer?.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, []);
+  return { ref, fade };
+}
 
 /**
  * Bento cluster per game: a large tile for the primary mode (the daily
@@ -8,6 +39,7 @@ import type { GameDefinition } from "../games/types";
  * art, matching the in-game look (grey petals, one saturated center).
  */
 export function GameCard({ game }: { game: GameDefinition }) {
+  const { ref, fade } = useScrollFade();
   return (
     <section data-level={game.accentLevel}>
       <Link
@@ -30,9 +62,14 @@ export function GameCard({ game }: { game: GameDefinition }) {
         // every width. Each button is ~40% of the row, so two sit full and
         // the third is clipped at the right edge — the peek IS the "there's
         // more, scroll" cue. `.card-action-scroller` hides the scrollbar and
-        // fades that right edge; snap keeps a button from resting
-        // half-clipped after a flick.
-        <div className="card-action-scroller mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto">
+        // fades whichever edges still have content past them (data-fade, so
+        // the right fade clears at the end and a left fade appears once
+        // scrolled); snap keeps a button from resting half-clipped.
+        <div
+          ref={ref}
+          data-fade={fade}
+          className="card-action-scroller mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto"
+        >
           {game.secondaryActions.map((action) => (
             <Link
               key={action.path}

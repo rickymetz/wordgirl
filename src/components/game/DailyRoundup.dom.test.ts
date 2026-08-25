@@ -73,6 +73,7 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  localStorage.clear(); // per-day celebrate/dismiss flags
   state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 };
   state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 2 };
   state.c = { emoji: "🟩", name: "Charlie", metric: "8 letters", elapsedMs: 90_000, hints: 0 };
@@ -81,6 +82,13 @@ beforeEach(() => {
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
   });
+  // ConfettiOverlay reads matchMedia; jsdom doesn't provide it.
+  window.matchMedia = ((q: string) => ({
+    matches: false,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof window.matchMedia;
 });
 
 afterEach(() => {
@@ -101,19 +109,34 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("lists each game (stat · time · hints), no emoji in the rows", async () => {
+  it("lists each game (metric · time · labelled hints) once the day used any, no emoji", async () => {
+    // Bravo used 2 hints, so the day is "some hints used": every game row
+    // shows a labelled count, INCLUDING the clean games' "0 hints".
     await mount();
     expect(container.textContent).toContain("All Puzzles Solved Today");
-    // Subtitle: no streak past day one here, then total time and hints.
+    // Subtitle still carries the day totals: total time and total hints.
     expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
     expect(container.textContent).toContain("Alpha");
-    expect(container.textContent).toContain("5 words · 1:01 · no hints");
+    expect(container.textContent).toContain("5 words · 1:01 · 0 hints");
     expect(container.textContent).toContain("Bravo");
     expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
     expect(container.textContent).toContain("Charlie");
+    // Emoji never leak into the visible card.
     for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
       expect(container.textContent).not.toContain(glyph);
     }
+  });
+
+  it("keeps rows clean on a hint-free day — only the subtitle's 0 Hints", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    expect(container.textContent).toContain("Total time 4:41 · 0 Hints");
+    // No per-row hint counts anywhere.
+    expect(container.textContent).toContain("5 words · 1:01");
+    expect(container.textContent).not.toContain("0 hints");
+    expect(container.textContent).not.toContain("1 hint");
   });
 
   it("wraps the card in the animated rainbow gradient border", async () => {
@@ -124,7 +147,7 @@ describe("DailyRoundup", () => {
     expect(section.className).toContain("roundup-rainbow-border");
   });
 
-  it("shares the whole day: header, summary, an emoji+hint line per game", async () => {
+  it("shares the whole day: header, totals summary, a metric line per game", async () => {
     // Give a two-day all-games streak: yesterday complete for every game.
     state.dates = {
       a: ["2026-08-25", "2026-08-24"],
@@ -145,12 +168,80 @@ describe("DailyRoundup", () => {
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
-        "✅ 3/3 · ⏱️ 4:41 · 🔥 2",
+        "✅ 3/3 · ⏱️ 4:41 · 🫣 2 · 🔥 2",
         "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
         "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 2",
         "🟩 Charlie · 8 letters · ⏱️ 1:30 · 🤓 0",
         "wordgirl.net",
       ].join("\n"),
     );
+  });
+
+  it("renders a multi-level game as a header total plus smaller sub-rows", async () => {
+    state.c = {
+      emoji: "🟩",
+      name: "Charlie",
+      unit: "words",
+      elapsedMs: 9 * 60_000,
+      hints: 4,
+      levels: [
+        { label: "Normal", value: 12, elapsedMs: 4 * 60_000, hints: 1 },
+        { label: "Hard", value: 13, elapsedMs: 5 * 60_000, hints: 3 },
+      ],
+    };
+    await mount();
+    const txt = container.textContent!;
+    expect(txt).toContain("Charlie");
+    expect(txt).toContain("25 words · 9:00 · 4 hints"); // header: unit + labelled total
+    expect(txt).toContain("Normal");
+    expect(txt).toContain("12 · 4:00 · 1"); // sub-row: bare count · time · bare hint
+    expect(txt).toContain("Hard");
+    expect(txt).toContain("13 · 5:00 · 3");
+    // The per-level list is the smaller text.
+    const subList = container.querySelector(
+      '[aria-label="Today\'s roundup"] ul ul',
+    );
+    expect(subList?.className).toContain("text-xs");
+    expect(subList?.className).toContain("italic");
+  });
+
+  const banner = () =>
+    container.querySelector('[aria-label="Today\'s roundup"]');
+
+  it("fires the confetti once, then remembers it for the day", async () => {
+    await mount();
+    // ConfettiOverlay mounts its canvas on the first show.
+    expect(container.querySelector("canvas")).toBeTruthy();
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+    ).toBeTruthy();
+
+    // A later visit the same day shows the banner but does NOT replay it.
+    act(() => root.unmount());
+    container.remove();
+    await mount();
+    expect(banner()).toBeTruthy();
+    expect(container.querySelector("canvas")).toBeNull();
+  });
+
+  it("can be dismissed for the day and stays gone", async () => {
+    await mount();
+    const dismiss = [...container.querySelectorAll("button")].find(
+      (b) => b.getAttribute("aria-label") === "Dismiss roundup",
+    )!;
+    await act(async () => {
+      dismiss.click();
+    });
+    await flush();
+    expect(banner()).toBeNull();
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:dismissed:2026-08-25"),
+    ).toBeTruthy();
+
+    // Still gone on a fresh mount.
+    act(() => root.unmount());
+    container.remove();
+    await mount();
+    expect(banner()).toBeNull();
   });
 });

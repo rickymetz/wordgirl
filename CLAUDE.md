@@ -44,8 +44,19 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   day some game answers false). The banner shows only once
   EVERY game returns an entry, so a game that omits `roundupEntry` keeps
   it hidden (safe-by-omission, like `solvedToday`). Emoji ride the SHARE
-  string only; the card renders `name · metric · time · hints` — no emoji
-  in UI chrome. Mounted on the hub above the cards (self-hides) and, as a
+  string only; the card renders `name · metric · time` — no emoji in UI
+  chrome. HINTS are a whole-DAY decision (`roundupTotalHints(entries) > 0`,
+  passed to the detail/share helpers as `showHints`): on a hint-free day the
+  rows and share lines stay bare and only the subtitle/summary total carries
+  it; once ANY game used a hint, every game row and every share line trails
+  its own count — a clean game shown as `0 hints` (UI) / `🤓 0` (share) so it
+  reads apart. A MULTI-LEVEL game supplies `unit` + `levels[]` rather
+  than `metric`: the banner shows a name header with the game's COMBINED
+  total (`sum unit · total time[ · N hints]`), then one smaller indented,
+  ITALIC sub-row per level (`label │ value · time[ · N]`, never wraps — the
+  unit and the "hint" word live on the header row, so sub-rows stay a tight
+  bare count · time · hint column), while the share keeps ONE inline line per
+  game (`Normal 12 · Hard 13 · ⏱️ time[ · 🫣 N]`). Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`
@@ -53,7 +64,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   0.01ms duration), and constrained devices freeze just the glow's blur —
   `prefers-reduced-data` plus `html[data-low-power]`, the boot-time JS
   guess in `lib/lowPower.ts` (there is no CSS media query for device
-  power).
+  power). A `ConfettiOverlay` burst fires ONCE when the banner first
+  appears for the day, and a "×" dismisses it for the day; both flags are
+  per-date in `lib/roundupCelebration.ts` (a `roundup:` store, not a game),
+  so neither replays on the next hub visit.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
@@ -103,11 +117,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   button is a fixed `w-[37%]`, so two show full and the third is clipped at
   the right edge — the peek is the "scroll for more" cue, so a fourth tile
   (Tutorial) is never stranded off-screen the way a naive scroller once left
-  it. `.card-action-scroller` (index.css) hides the scrollbar and fades that
-  right edge (a theme-agnostic `mask-image`); `snap-x snap-mandatory` +
-  `snap-start` keep a button from resting half-clipped. `min-h-11` holds the
-  44px touch floor. Labels are `whitespace-nowrap` — the fixed width is wide
-  enough for all four even at Huge text.
+  it. `.card-action-scroller` (index.css) hides the scrollbar and feathers
+  only the edges that still have content past them (theme-agnostic
+  `mask-image` keyed on `data-fade`, set from the scroll position via
+  `lib/scrollFade.ts`'s pure `edgeFade` — right feather at the start, left
+  once scrolled, so the last button isn't dimmed at the end); `snap-x
+  snap-mandatory` + `snap-start` keep a button from resting half-clipped.
+  `min-h-11` holds the 44px touch floor. Labels are `whitespace-nowrap` —
+  the fixed width is wide enough for all four even at Huge text.
 - `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
   monotonic clamp, so a step never flaps backwards when the player
   undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
@@ -359,9 +376,12 @@ Before merging any game feature, verify:
 - `e.preventDefault()` on game-surface pointer handlers
 - ShareButton gated on `dateKey` (no practice- or tutorial-mode shares)
 - `roundupEntry` returns null unless the game is FULLY solved for the day
-  (mirrors `solvedToday`), sums multi-board days (metric, time AND hints),
-  and keeps emoji out of `metric` (UI rows carry no emoji; only the share
-  string does); `solvedOn(dateKey)` answers the record-based per-date
+  (mirrors `solvedToday`); a multi-level game gives `unit` + `levels[]`
+  (each level carries its own `hints`; banner sub-row per level, share one
+  inline line), while the game's time and hint total stay summed on the
+  entry, and emoji stay out of the UI (rows carry no emoji — they carry the
+  hint count under the whole-day `showHints` gate; only the share string
+  carries emoji); `solvedOn(dateKey)` answers the record-based per-date
   "fully finished?" the all-games streak walks back through
 - `persisted` is an `isPersisted(mode)` allowlist, not `!== "practice"`
 - Tutorial mode: no save, no stats, no streak, no hints, no share

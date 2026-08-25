@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { capitalize } from "../../lib/roundup";
 import {
   isDaySolved,
   levelsFor,
@@ -20,13 +21,11 @@ export const crosshatch: GameDefinition = {
   roundupEntry: async (today) => {
     // Records, not the version-sensitive load, so this agrees with
     // solvedToday/solvedDates (see loadBoardRecord).
+    const levels = levelsFor(today);
     const boards = await Promise.all(
-      levelsFor(today).map((level) => loadBoardRecord(today, level)),
+      levels.map((level) => loadBoardRecord(today, level)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // The day is both boards, so the roundup sums them — a single-board
-    // count would undersell a two-board day.
-    const words = boards.reduce((n, b) => n + (b?.foundWords.length ?? 0), 0);
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce(
       (n, b) =>
@@ -34,10 +33,30 @@ export const crosshatch: GameDefinition = {
         Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
       0,
     );
+    // Multi-board days break out by level (banner sub-rows, inline in the
+    // share); a lone pre-HARD_EPOCH board keeps the plain "N words" form.
+    if (levels.length > 1) {
+      return {
+        emoji: "🧺",
+        name: "Crosshatch",
+        unit: "words",
+        levels: levels.map((level, i) => ({
+          label: capitalize(level),
+          value: boards[i]!.foundWords.length,
+          elapsedMs: boards[i]!.elapsedMs,
+          hints: Object.values(boards[i]!.revealed ?? {}).reduce(
+            (m, pos) => m + pos.length,
+            0,
+          ),
+        })),
+        elapsedMs,
+        hints,
+      };
+    }
     return {
       emoji: "🧺",
       name: "Crosshatch",
-      metric: `${words} words`,
+      metric: `${boards[0]!.foundWords.length} words`,
       elapsedMs,
       hints,
     };

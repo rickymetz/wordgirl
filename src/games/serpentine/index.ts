@@ -1,5 +1,7 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
+import { capitalize } from "../../lib/roundup";
+import { DIFFICULTIES } from "./engine/types";
 import { isDaySolved, loadDailyProgress } from "./state/persistence";
 import { SerpentinePreview } from "./ui/SerpentinePreview";
 import { SerpentineStatus } from "./ui/SerpentineStatus";
@@ -20,19 +22,23 @@ export const serpentine: GameDefinition = {
     return boards.every((b) => b?.solved === true);
   },
   roundupEntry: async (today) => {
-    const boards = await Promise.all([
-      loadDailyProgress("haiku", today),
-      loadDailyProgress("poem", today),
-    ]);
+    const boards = await Promise.all(
+      DIFFICULTIES.map((d) => loadDailyProgress(d, today)),
+    );
     if (!boards.every((b) => b?.solved === true)) return null;
-    // Letters traced across both boards, and their summed play time.
-    const letters = boards.reduce((n, b) => n + (b?.cells.length ?? 0), 0);
+    // One level per board (Haiku/Poem); summed time and hints.
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
     const hints = boards.reduce((n, b) => n + (b?.hints ?? 0), 0);
     return {
       emoji: "🐍",
       name: "Serpentine",
-      metric: `${letters} letters`,
+      unit: "letters",
+      levels: DIFFICULTIES.map((d, i) => ({
+        label: capitalize(d),
+        value: boards[i]!.cells.length,
+        elapsedMs: boards[i]!.elapsedMs,
+        hints: boards[i]!.hints ?? 0,
+      })),
       elapsedMs,
       hints,
     };

@@ -282,18 +282,36 @@ html[data-font="accessible"] [data-glyph] {
 }
 
 /* The hub card's secondary-action row: a horizontal snap scroller with no
-   visible scrollbar and a soft right-edge fade, so the clipped next button
-   reads as "there's more — scroll" rather than as a cut-off bug. The mask
-   fades the actual content at the right, theme-agnostically (no assumption
-   about the ground colour behind it). */
+   visible scrollbar and a soft edge feather, so the clipped next button
+   reads as "there's more — scroll" rather than a cut-off bug. The mask
+   fades the actual content (theme-agnostic, no assumption about the ground
+   behind it) and only on the edges that still have content past them —
+   `data-fade` is set from the scroll position (see lib/scrollFade.ts), so
+   the right feather clears at the end and a left one appears once scrolled.
+   A hairline ~2% feather keeps the peeked letters crisp. */
 .card-action-scroller {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* legacy Edge */
-  -webkit-mask-image: linear-gradient(to right, #000 98%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 98%, transparent 100%);
+  -webkit-mask-image: var(--card-fade, none);
+  mask-image: var(--card-fade, none);
 }
 .card-action-scroller::-webkit-scrollbar {
   display: none; /* WebKit */
+}
+.card-action-scroller[data-fade="right"] {
+  --card-fade: linear-gradient(to right, #000 98%, transparent 100%);
+}
+.card-action-scroller[data-fade="left"] {
+  --card-fade: linear-gradient(to right, transparent 0%, #000 2%);
+}
+.card-action-scroller[data-fade="both"] {
+  --card-fade: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 2%,
+    #000 98%,
+    transparent 100%
+  );
 }
 
 /* The roundup banner's living rainbow border: the gradient is drawn at

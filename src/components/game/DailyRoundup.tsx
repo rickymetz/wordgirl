@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { games } from "../../games/registry";
 import {
   buildRoundupText,
+  roundupAggregateDetail,
   roundupDetail,
+  roundupLevelDetail,
   roundupSummary,
+  roundupTotalHints,
   streakEndingToday,
   type RoundupEntry,
 } from "../../lib/roundup";
+import {
+  loadRoundupCelebrated,
+  loadRoundupDismissed,
+  markRoundupCelebrated,
+  markRoundupDismissed,
+} from "../../lib/roundupCelebration";
 import { ShareButton } from "../ShareButton";
+import { ConfettiOverlay } from "../ConfettiOverlay";
 
 interface Roundup {
   entries: RoundupEntry[];
@@ -81,47 +92,133 @@ export function useRoundupShareText(today: string): string | null {
  */
 export function DailyRoundup({ today }: { today: string }) {
   const roundup = useDailyRoundup(today);
-  if (!roundup) return null;
+  // null while the per-day dismissed flag is still loading — render nothing
+  // until we know, so a dismissed banner never flashes in and back out.
+  const [dismissed, setDismissed] = useState<boolean | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDismissed(null);
+    void loadRoundupDismissed(today).then((d) => {
+      if (!cancelled) setDismissed(d);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
+
+  // Fire the confetti ONCE, the first time the completed banner is shown for
+  // the day (and only if not dismissed). markCelebrated persists it so a
+  // reload or a later hub visit doesn't replay it.
+  useEffect(() => {
+    if (!roundup || dismissed !== false) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    void loadRoundupCelebrated(today).then((done) => {
+      if (cancelled || done) return;
+      void markRoundupCelebrated(today);
+      setCelebrate(true);
+      // Unmount the canvas once the burst (1.4s) has finished; the banner
+      // then just sits with its gently drifting border.
+      timer = setTimeout(() => {
+        if (!cancelled) setCelebrate(false);
+      }, 1600);
+    });
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [roundup, dismissed, today]);
+
+  if (!roundup || dismissed !== false) return null;
   const { entries, streak } = roundup;
+  // A whole-day decision: rows carry per-game/per-level hint counts only
+  // once SOME game used a hint. On a fully clean day the subtitle's
+  // "0 Hints" is the whole story and the rows stay uncluttered.
+  const showHints = roundupTotalHints(entries) > 0;
   return (
-    <section
-      aria-label="Today's roundup"
-      // The gradient is the border: a 3px sweep showing only where the
-      // inner card doesn't cover it, slowly panning (roundup-rainbow-border).
-      // rounded-3xl matches the game cards.
-      className="roundup-rainbow-border rounded-3xl p-[3px]"
-    >
-      <div className="flex flex-col gap-3 rounded-[calc(1.5rem-3px)] bg-surface-tint p-4">
-        <div className="text-center">
-          {/* font-game is Rubik Mono One, and follows the Font setting to
-              the accessible face automatically. */}
-          <h2 className="text-balance font-game text-lg text-ink">
-            All Puzzles Solved Today
-          </h2>
-          <p className="pt-1 text-sm text-ink-soft">
-            {roundupSummary(entries, streak)}
-          </p>
+    <>
+      {celebrate && <ConfettiOverlay />}
+      <section
+        aria-label="Today's roundup"
+        // The gradient is the border: a 3px sweep showing only where the
+        // inner card doesn't cover it, slowly panning (roundup-rainbow-border).
+        // rounded-3xl matches the game cards.
+        className="roundup-rainbow-border rounded-3xl p-[3px]"
+      >
+        <div className="relative flex flex-col gap-3 rounded-[calc(1.5rem-3px)] bg-surface-tint p-4">
+          <button
+            type="button"
+            onClick={() => {
+              void markRoundupDismissed(today);
+              setDismissed(true);
+            }}
+            aria-label="Dismiss roundup"
+            // 44px tap target via the ::after expansion; the glyph is small.
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-ink-soft active:scale-90 after:absolute after:-inset-2.5"
+          >
+            <X aria-hidden className="h-4 w-4" />
+          </button>
+          <div className="text-center">
+            {/* font-game is Rubik Mono One, and follows the Font setting to
+                the accessible face automatically. */}
+            <h2 className="text-balance px-6 font-game text-lg leading-[0.85] text-ink">
+              All Puzzles Solved Today
+            </h2>
+            <p className="pt-1 text-sm text-ink-soft">
+              {roundupSummary(entries, streak)}
+            </p>
+          </div>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {entries.map((e) =>
+              e.levels && e.unit ? (
+                // Multi-level game: a header row with the game's COMBINED
+                // total, then a smaller sub-row per level below it.
+                <li key={e.name} className="flex flex-col gap-0.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="shrink-0 font-semibold text-ink">
+                      {e.name}
+                    </span>
+                    <span className="text-right tabular-nums text-ink-soft">
+                      {roundupAggregateDetail(e, showHints)}
+                    </span>
+                  </div>
+                  <ul className="flex flex-col gap-0.5 pl-3 text-xs italic">
+                    {e.levels.map((lv) => (
+                      <li
+                        key={lv.label}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <span className="shrink-0 text-ink-soft">{lv.label}</span>
+                        <span className="text-right tabular-nums text-ink-soft">
+                          {roundupLevelDetail(lv, showHints)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ) : (
+                <li
+                  key={e.name}
+                  className="flex items-baseline justify-between gap-3"
+                >
+                  <span className="shrink-0 font-semibold text-ink">{e.name}</span>
+                  <span className="text-right tabular-nums text-ink-soft">
+                    {roundupDetail(e, showHints)}
+                  </span>
+                </li>
+              ),
+            )}
+          </ul>
+          <div className="flex justify-center pt-1">
+            <ShareButton
+              text={buildRoundupText(today, entries, streak)}
+              gameId="roundup"
+            />
+          </div>
         </div>
-        <ul className="flex flex-col gap-1.5 text-sm">
-          {entries.map((e) => (
-            <li
-              key={e.name}
-              className="flex items-baseline justify-between gap-3"
-            >
-              <span className="shrink-0 font-semibold text-ink">{e.name}</span>
-              <span className="text-right tabular-nums text-ink-soft">
-                {roundupDetail(e)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-center pt-1">
-          <ShareButton
-            text={buildRoundupText(today, entries, streak)}
-            gameId="roundup"
-          />
-        </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
