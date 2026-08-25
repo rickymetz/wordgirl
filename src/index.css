@@ -289,8 +289,8 @@ html[data-font="accessible"] [data-glyph] {
 .card-action-scroller {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* legacy Edge */
-  -webkit-mask-image: linear-gradient(to right, #000 95%, transparent 100%);
-  mask-image: linear-gradient(to right, #000 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 98%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 98%, transparent 100%);
 }
 .card-action-scroller::-webkit-scrollbar {
   display: none; /* WebKit */
