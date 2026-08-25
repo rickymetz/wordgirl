@@ -281,6 +281,21 @@ html[data-font="accessible"] [data-glyph] {
   text-align: center;
 }
 
+/* The hub card's secondary-action row: a horizontal snap scroller with no
+   visible scrollbar and a soft right-edge fade, so the clipped next button
+   reads as "there's more — scroll" rather than as a cut-off bug. The mask
+   fades the actual content at the right, theme-agnostically (no assumption
+   about the ground colour behind it). */
+.card-action-scroller {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+  -webkit-mask-image: linear-gradient(to right, #000 90%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 90%, transparent 100%);
+}
+.card-action-scroller::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
 /* The roundup banner's living rainbow border: the gradient is drawn at
    twice the width and panned by exactly one width, which loops seamlessly
    because the two halves are identical (see --roundup-rainbow). A soft
