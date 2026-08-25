@@ -4,7 +4,7 @@ import {
   isDaySolved,
   levelsFor,
   loadAllDailyProgress,
-  loadDailyProgress,
+  loadBoardRecord,
 } from "./state/persistence";
 import { CrosshatchPreview } from "./ui/CrosshatchPreview";
 import { CrosshatchStatus } from "./ui/CrosshatchStatus";
@@ -19,8 +19,10 @@ export const crosshatch: GameDefinition = {
   // Two boards a day; the game is done when both are solved.
   solvedToday: (today) => isDaySolved(today),
   roundupEntry: async (today) => {
+    // Records, not the version-sensitive load, so this agrees with
+    // solvedToday/solvedDates (see loadBoardRecord).
     const boards = await Promise.all(
-      levelsFor(today).map((level) => loadDailyProgress(today, level)),
+      levelsFor(today).map((level) => loadBoardRecord(today, level)),
     );
     if (!boards.every((b) => b?.solved === true)) return null;
     // The day is both boards, so the roundup sums them — a single-board

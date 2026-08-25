@@ -40,7 +40,7 @@ export const doublet: GameDefinition = {
   },
   solvedDates: async () =>
     Object.values(await loadAllDailyProgress())
-      .filter((d) => d.solvedCount === 3)
+      .filter((d) => d.solvedCount === DIFFICULTIES.length)
       .map((d) => d.dateKey),
   Page: lazy(() => import("./ui/DoubletPage")),
   extraRoutes: [

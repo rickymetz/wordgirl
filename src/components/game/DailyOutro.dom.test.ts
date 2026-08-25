@@ -86,8 +86,9 @@ describe("DailyOutro when the day is complete", () => {
   it("announces it and offers a single share of the whole day", async () => {
     await mount();
     expect(container.textContent).toContain("Every puzzle done today");
+    // Labelled distinctly from the game's own "Share" pill above it.
     const share = [...container.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Share",
+      (b) => b.textContent?.trim() === "Share the day",
     );
     expect(share).toBeTruthy();
     await act(async () => {
@@ -114,7 +115,7 @@ describe("DailyOutro with puzzles still open", () => {
     expect(container.textContent).toContain("Bravo");
     expect(container.textContent).not.toContain("Every puzzle done today");
     const share = [...container.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Share",
+      (b) => b.textContent?.trim() === "Share the day",
     );
     expect(share).toBeFalsy();
   });

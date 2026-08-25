@@ -33,9 +33,10 @@ export interface GameDefinition {
    * Every date this game was FULLY finished (all its boards), for the
    * cross-game "every puzzle done" streak the roundup shows. Intersecting
    * these sets across games and counting back from today gives the run of
-   * days the whole set was cleared. Same safe-by-omission stance as the
-   * others: a game without it can never be in the intersection, so the
-   * streak would read 0 until it is added.
+   * days the whole set was cleared. A game without it can never be in the
+   * intersection, so the streak stays pinned at 1 (today is always counted)
+   * until it is added — so a game that ships `roundupEntry` must ship this
+   * too, or the streak silently never grows.
    */
   solvedDates?: () => Promise<string[]>;
   /** Lazy page component — each game is its own code-split chunk. */

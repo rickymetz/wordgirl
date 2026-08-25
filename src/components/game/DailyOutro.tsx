@@ -99,9 +99,15 @@ export function DailyOutro({
               is one pill so the results screen keeps its budget. Guarded on
               the text so a version-mismatched entry that hides the card
               never leaves a dead button. */}
+          {/* Labelled "Share the day" so it doesn't read as a second copy
+              of the game's own "Share" pill sitting right above it. */}
           {roundupText && (
             <div className="pt-2">
-              <ShareButton text={roundupText} gameId="roundup" />
+              <ShareButton
+                text={roundupText}
+                gameId="roundup"
+                label="Share the day"
+              />
             </div>
           )}
         </>
