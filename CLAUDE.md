@@ -103,11 +103,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   button is a fixed `w-[37%]`, so two show full and the third is clipped at
   the right edge — the peek is the "scroll for more" cue, so a fourth tile
   (Tutorial) is never stranded off-screen the way a naive scroller once left
-  it. `.card-action-scroller` (index.css) hides the scrollbar and fades that
-  right edge (a theme-agnostic `mask-image`); `snap-x snap-mandatory` +
-  `snap-start` keep a button from resting half-clipped. `min-h-11` holds the
-  44px touch floor. Labels are `whitespace-nowrap` — the fixed width is wide
-  enough for all four even at Huge text.
+  it. `.card-action-scroller` (index.css) hides the scrollbar and feathers
+  only the edges that still have content past them (theme-agnostic
+  `mask-image` keyed on `data-fade`, set from the scroll position via
+  `lib/scrollFade.ts`'s pure `edgeFade` — right feather at the start, left
+  once scrolled, so the last button isn't dimmed at the end); `snap-x
+  snap-mandatory` + `snap-start` keep a button from resting half-clipped.
+  `min-h-11` holds the 44px touch floor. Labels are `whitespace-nowrap` —
+  the fixed width is wide enough for all four even at Huge text.
 - `TutorialStep` (`lib/tutorial/types.ts`) + `useTutorialProgress` (a
   monotonic clamp, so a step never flaps backwards when the player
   undoes). Each game owns `engine/tutorial.ts` (the hand-picked puzzle
