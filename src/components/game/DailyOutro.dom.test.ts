@@ -99,8 +99,8 @@ describe("DailyOutro when the day is complete", () => {
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 3:11 · 🫣 1",
-        "🔺 Alpha · 5 words · ⏱️ 1:01",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10",
+        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 1",
         "wordgirl.net",
       ].join("\n"),
     );

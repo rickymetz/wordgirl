@@ -169,9 +169,9 @@ describe("DailyRoundup", () => {
       [
         "WordGirl — August 25",
         "✅ 3/3 · ⏱️ 4:41 · 🫣 2 · 🔥 2",
-        "🔺 Alpha · 5 words · ⏱️ 1:01",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10",
-        "🟩 Charlie · 8 letters · ⏱️ 1:30",
+        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
+        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 2",
+        "🟩 Charlie · 8 letters · ⏱️ 1:30 · 🤓 0",
         "wordgirl.net",
       ].join("\n"),
     );
@@ -192,11 +192,11 @@ describe("DailyRoundup", () => {
     await mount();
     const txt = container.textContent!;
     expect(txt).toContain("Charlie");
-    expect(txt).toContain("25 words · 9:00 · 4 hints"); // header: labelled total
+    expect(txt).toContain("25 words · 9:00 · 4 hints"); // header: unit + labelled total
     expect(txt).toContain("Normal");
-    expect(txt).toContain("12 words · 4:00 · 1"); // sub-row: bare hint number
+    expect(txt).toContain("12 · 4:00 · 1"); // sub-row: bare count · time · bare hint
     expect(txt).toContain("Hard");
-    expect(txt).toContain("13 words · 5:00 · 3");
+    expect(txt).toContain("13 · 5:00 · 3");
     // The per-level list is the smaller text.
     const subList = container.querySelector(
       '[aria-label="Today\'s roundup"] ul ul',

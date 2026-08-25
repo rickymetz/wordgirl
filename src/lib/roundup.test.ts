@@ -28,17 +28,30 @@ const pierglass: RoundupEntry = {
 };
 
 describe("roundupShareLine", () => {
-  it("is emoji · name · metric · time — hints ride the day total, not each line", () => {
-    expect(roundupShareLine(polygram)).toBe("🔻 Polygram · 42 words · ⏱️ 3:21");
-    expect(roundupShareLine(pierglass)).toBe("🪞 Pierglass · 6 rows · ⏱️ 2:10");
+  it("is emoji · name · metric · time, no hint tail on a hint-free day", () => {
+    expect(roundupShareLine(polygram, false)).toBe(
+      "🔻 Polygram · 42 words · ⏱️ 3:21",
+    );
+    expect(roundupShareLine(pierglass, false)).toBe(
+      "🪞 Pierglass · 6 rows · ⏱️ 2:10",
+    );
   });
-  it("passes a multi-level metric straight through", () => {
+  it("trails each line with the game's hint glyph once the day used any", () => {
+    // Clean game shows 🤓 0 so it reads apart from the ones that used hints.
+    expect(roundupShareLine(polygram, true)).toBe(
+      "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
+    );
+    expect(roundupShareLine(pierglass, true)).toBe(
+      "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
+    );
+  });
+  it("passes a multi-level metric straight through, hint glyph last", () => {
     const crosshatch: RoundupEntry = {
       emoji: "🧺", name: "Crosshatch", metric: "Normal 12 · Hard 13",
       elapsedMs: 9 * 60_000, hints: 1,
     };
-    expect(roundupShareLine(crosshatch)).toBe(
-      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00",
+    expect(roundupShareLine(crosshatch, true)).toBe(
+      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00 · 🫣 1",
     );
   });
 });
@@ -78,23 +91,17 @@ describe("multi-level details", () => {
       "25 words · 9:00 · 4 hints",
     );
   });
-  it("each sub-row shows its count and time, with a BARE hint number (no label)", () => {
-    expect(roundupLevelDetail("words", crosshatch.levels![0], true)).toBe(
-      "12 words · 4:00 · 1",
-    );
-    expect(roundupLevelDetail("words", crosshatch.levels![1], true)).toBe(
-      "13 words · 5:00 · 3",
-    );
+  it("each sub-row is a bare count · time · bare hint (unit and label live on the header)", () => {
+    expect(roundupLevelDetail(crosshatch.levels![0], true)).toBe("12 · 4:00 · 1");
+    expect(roundupLevelDetail(crosshatch.levels![1], true)).toBe("13 · 5:00 · 3");
   });
   it("omits every hint tail on a hint-free day (show=false)", () => {
     expect(roundupAggregateDetail(crosshatch, false)).toBe("25 words · 9:00");
-    expect(roundupLevelDetail("words", crosshatch.levels![0], false)).toBe(
-      "12 words · 4:00",
-    );
+    expect(roundupLevelDetail(crosshatch.levels![0], false)).toBe("12 · 4:00");
   });
-  it("still shares as one inline line", () => {
-    expect(roundupShareLine(crosshatch)).toBe(
-      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00",
+  it("still shares as one inline line, hint glyph last", () => {
+    expect(roundupShareLine(crosshatch, true)).toBe(
+      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00 · 🫣 4",
     );
   });
 });
@@ -146,20 +153,33 @@ describe("streakEndingToday", () => {
 });
 
 describe("buildRoundupText", () => {
-  it("stacks header, summary, a line per game, and the link with no blank lines", () => {
-    // Total hints on the summary line (0 + 2 = 2); per-game lines carry
-    // metric + time only.
+  it("stacks header, summary, a hint-tailed line per game, and the link with no blank lines", () => {
+    // Day used hints (0 + 2 = 2), so every game line trails its glyph — the
+    // clean game as 🤓 0 — and the summary keeps the total.
     const text = buildRoundupText("2026-08-25", [polygram, pierglass], 4);
     expect(text).toBe(
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 5:31 · 🫣 2 · 🔥 4",
+        "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
+        "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
+        SHARE_URL,
+      ].join("\n"),
+    );
+    expect(text).not.toContain("\n\n");
+  });
+  it("leaves the game lines bare on a hint-free day; only the summary's 🤓 0 shows", () => {
+    const clean = { ...pierglass, hints: 0 };
+    const text = buildRoundupText("2026-08-25", [polygram, clean], 1);
+    expect(text).toBe(
+      [
+        "WordGirl — August 25",
+        "✅ 2/2 · ⏱️ 5:31 · 🤓 0",
         "🔻 Polygram · 42 words · ⏱️ 3:21",
         "🪞 Pierglass · 6 rows · ⏱️ 2:10",
         SHARE_URL,
       ].join("\n"),
     );
-    expect(text).not.toContain("\n\n");
   });
   it("drops the streak flame at a one-day streak but keeps the hint total", () => {
     const text = buildRoundupText("2026-08-25", [polygram, pierglass], 1);

@@ -192,7 +192,7 @@ export function DailyRoundup({ today }: { today: string }) {
                       >
                         <span className="shrink-0 text-ink-soft">{lv.label}</span>
                         <span className="text-right tabular-nums text-ink-soft">
-                          {roundupLevelDetail(e.unit!, lv, showHints)}
+                          {roundupLevelDetail(lv, showHints)}
                         </span>
                       </li>
                     ))}

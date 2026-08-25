@@ -60,12 +60,19 @@ function statText(entry: RoundupEntry): string {
 }
 
 /** The share glyph + name + stat + total time a single game contributes —
- *  ONE line even for a multi-level game (its levels read inline). Hints
- *  ride the whole-day total line, not each game. */
-export function roundupShareLine(entry: RoundupEntry): string {
+ *  ONE line even for a multi-level game (its levels read inline). `showHints`
+ *  is the whole-day decision (see `hintTail`): once any game used a hint,
+ *  every line trails its own count (🫣 N, or 🤓 0 to mark a clean game
+ *  apart); on a hint-free day the lines stay bare and the summary's 🤓 0
+ *  carries it. */
+export function roundupShareLine(
+  entry: RoundupEntry,
+  showHints: boolean,
+): string {
+  const hint = showHints ? ` · ${hintShare(entry.hints)}` : "";
   return `${entry.emoji} ${entry.name} · ${statText(entry)} · ⏱️ ${formatDuration(
     entry.elapsedMs,
-  )}`;
+  )}${hint}`;
 }
 
 /**
@@ -94,15 +101,15 @@ export function roundupDetail(entry: RoundupEntry, showHints: boolean): string {
   )}`;
 }
 
-/** A multi-level game's per-level sub-row detail: the count with the game's
- *  unit, the time on that level, and (when the day used any hints) a BARE
- *  hint number — the "hint" word lives on the game header row above. */
+/** A multi-level game's per-level sub-row detail: the bare count, the time
+ *  on that level, and (when the day used any hints) a BARE hint number. Both
+ *  the unit ("words"/"pieces") and the "hint" word live on the game header
+ *  row above, so the sub-rows stay a tight count · time · hints column. */
 export function roundupLevelDetail(
-  unit: string,
   level: RoundupLevel,
   showHints: boolean,
 ): string {
-  return `${level.value} ${unit} · ${formatDuration(level.elapsedMs)}${hintTail(
+  return `${level.value} · ${formatDuration(level.elapsedMs)}${hintTail(
     level.hints,
     showHints,
     false,
@@ -181,13 +188,16 @@ export function buildRoundupText(
 ): string {
   const total = formatDuration(roundupTotalMs(entries));
   const streakPart = streak > 1 ? ` · 🔥 ${streak}` : "";
+  // Same whole-day gate as the banner: per-game hint tails only appear once
+  // some game used one; otherwise the summary's total is the whole story.
+  const showHints = roundupTotalHints(entries) > 0;
   return [
     `WordGirl — ${formatShareDate(dateKey)}`,
     // Whole-day totals: all solved, total time, total hints, then streak.
     `✅ ${entries.length}/${entries.length} · ⏱️ ${total} · ${hintShare(
       roundupTotalHints(entries),
     )}${streakPart}`,
-    ...entries.map(roundupShareLine),
+    ...entries.map((e) => roundupShareLine(e, showHints)),
     SHARE_URL,
   ].join("\n");
 }
