@@ -131,16 +131,34 @@
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
 
-  /* The five daily games, in registry order, as one sweep — the border
-     of the "every puzzle done" roundup banner. Kept here with the tokens
-     it is built from so a palette tweak carries into it automatically. */
+  /* The rainbow that borders the "every puzzle done" banner. Its stops
+     are DECORATIVE, not the AA-tuned game accents: a border carries no
+     text, so light mode is free to use bright 600-weight hues that read
+     as a real rainbow instead of the deep, low-chroma shades the accents
+     need to clear contrast on white. Dark mode keeps the vivid game
+     tints, which already pop. Registry order, so the sweep matches the
+     cards below. */
+  --roundup-c1: light-dark(#dc2626, #f87171); /* red */
+  --roundup-c2: light-dark(#0d9488, #3ddbd9); /* teal */
+  --roundup-c3: light-dark(#c026d3, #e879f9); /* fuchsia */
+  --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
+  --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
+  /* TWO full cycles across the image: paired with background-size 200%
+     it makes each half identical, so panning by one width loops with no
+     visible seam (see .roundup-rainbow-border). */
   --roundup-rainbow: linear-gradient(
     105deg,
-    var(--level-3),
-    var(--level-crosshatch),
-    var(--level-pierglass),
-    var(--level-doublet),
-    var(--level-serpentine)
+    var(--roundup-c1) 0%,
+    var(--roundup-c2) 10%,
+    var(--roundup-c3) 20%,
+    var(--roundup-c4) 30%,
+    var(--roundup-c5) 40%,
+    var(--roundup-c1) 50%,
+    var(--roundup-c2) 60%,
+    var(--roundup-c3) 70%,
+    var(--roundup-c4) 80%,
+    var(--roundup-c5) 90%,
+    var(--roundup-c1) 100%
   );
 }
 [data-level="3"] { --color-accent: var(--level-3); }
@@ -261,6 +279,25 @@ html[data-font="accessible"] [data-glyph] {
   display: inline-block;
   min-width: 1em;
   text-align: center;
+}
+
+/* The roundup banner's living rainbow border: the gradient is drawn at
+   twice the width and panned by exactly one width, which loops seamlessly
+   because the two halves are identical (see --roundup-rainbow). Slow on
+   purpose — a gentle drift, not a strobe. The reduced-motion rule below
+   freezes it to a static rainbow. */
+.roundup-rainbow-border {
+  background-image: var(--roundup-rainbow);
+  background-size: 200% 100%;
+  animation: roundup-rainbow-pan 9s linear infinite;
+}
+@keyframes roundup-rainbow-pan {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
 }
 
 /* Kill springs, morphs, shakes, and pops for motion-sensitive users.

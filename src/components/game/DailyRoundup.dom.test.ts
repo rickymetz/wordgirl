@@ -115,12 +115,12 @@ describe("DailyRoundup", () => {
     }
   });
 
-  it("wraps the card in the rainbow gradient border", async () => {
+  it("wraps the card in the animated rainbow gradient border", async () => {
     await mount();
     const section = container.querySelector<HTMLElement>(
       '[aria-label="Today\'s roundup"]',
     )!;
-    expect(section.style.background).toContain("--roundup-rainbow");
+    expect(section.className).toContain("roundup-rainbow-border");
   });
 
   it("shares the whole day: header, summary, an emoji+hint line per game", async () => {

@@ -98,9 +98,9 @@ export function DailyRoundup({ today }: { today: string }) {
     <section
       aria-label="Today's roundup"
       // The gradient is the border: a 3px sweep showing only where the
-      // inner card doesn't cover it. rounded-3xl matches the game cards.
-      className="rounded-3xl p-[3px]"
-      style={{ background: "var(--roundup-rainbow)" }}
+      // inner card doesn't cover it, slowly panning (roundup-rainbow-border).
+      // rounded-3xl matches the game cards.
+      className="roundup-rainbow-border rounded-3xl p-[3px]"
     >
       <div className="flex flex-col gap-3 rounded-[calc(1.5rem-3px)] bg-surface-tint p-4">
         <div className="text-center">
