@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { dateKeyFormats } from "../lib/date";
 import { firstFitting, measurerFor } from "../lib/textFit";
+import { useRemeasure } from "../lib/useRemeasure";
 import { useToday } from "../lib/useToday";
 
 /**
@@ -8,10 +9,8 @@ import { useToday } from "../lib/useToday";
  * actually leaves and renders the longest `dateKeyFormats` rung that fits.
  * A constant here would be wrong twice over — the column is a percentage of
  * a rem-padded card, and the Font setting changes glyph widths without
- * changing the box — so this re-measures on all three triggers: the box
- * resizing (Text size, rotation), the web fonts finishing (first paint
- * measures fallback metrics otherwise), and the settings attributes on
- * <html> flipping (the Font swap, which moves no box at all).
+ * changing the box — so `useRemeasure` re-runs it on every trigger that
+ * moves those numbers.
  */
 function useFittedDate(today: string): {
   ref: React.RefObject<HTMLParagraphElement | null>;
@@ -20,45 +19,19 @@ function useFittedDate(today: string): {
   const ref = useRef<HTMLParagraphElement>(null);
   const [text, setText] = useState(() => dateKeyFormats(today)[0]);
 
-  // Layout effect, not effect: measuring before paint means the long rung
-  // is never briefly painted (and wrapped) before the fitted one replaces it.
-  useLayoutEffect(() => {
+  const measure = useCallback(() => {
     const el = ref.current;
     const formats = dateKeyFormats(today);
-    if (!el) {
-      setText(formats[0]);
-      return;
-    }
-    const update = () => {
-      const measure = measurerFor(el);
-      setText(
-        measure ? firstFitting(formats, el.clientWidth, measure) : formats[0],
-      );
-    };
-    update();
-
-    const resize =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
-    resize?.observe(el);
-    // Settings are applied by mutating <html> (data-font, style fontSize),
-    // not through React, so nothing else would tell us to re-measure.
-    const attrs =
-      typeof MutationObserver !== "undefined" ? new MutationObserver(update) : null;
-    attrs?.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-font", "style"],
-    });
-    let cancelled = false;
-    void document.fonts?.ready.then(() => {
-      if (!cancelled) update();
-    });
-    return () => {
-      cancelled = true;
-      resize?.disconnect();
-      attrs?.disconnect();
-    };
+    if (!el) return setText(formats[0]);
+    const measureText = measurerFor(el);
+    setText(
+      measureText
+        ? firstFitting(formats, el.clientWidth, measureText)
+        : formats[0],
+    );
   }, [today]);
 
+  useRemeasure(ref, measure);
   return { ref, text };
 }
 
