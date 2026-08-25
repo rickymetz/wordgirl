@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:dictionary": "node scripts/build-dictionary.mjs",
+    "build:og-cards": "node scripts/build-og-cards.mjs",
     "prepare": "husky",
     "lint": "eslint src/"
   },
