@@ -73,6 +73,7 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  localStorage.clear(); // per-day celebrate/dismiss flags
   state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 };
   state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 2 };
   state.c = { emoji: "🟩", name: "Charlie", metric: "8 letters", elapsedMs: 90_000, hints: 0 };
@@ -81,6 +82,13 @@ beforeEach(() => {
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
   });
+  // ConfettiOverlay reads matchMedia; jsdom doesn't provide it.
+  window.matchMedia = ((q: string) => ({
+    matches: false,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof window.matchMedia;
 });
 
 afterEach(() => {
@@ -152,5 +160,45 @@ describe("DailyRoundup", () => {
         "wordgirl.net",
       ].join("\n"),
     );
+  });
+
+  const banner = () =>
+    container.querySelector('[aria-label="Today\'s roundup"]');
+
+  it("fires the confetti once, then remembers it for the day", async () => {
+    await mount();
+    // ConfettiOverlay mounts its canvas on the first show.
+    expect(container.querySelector("canvas")).toBeTruthy();
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+    ).toBeTruthy();
+
+    // A later visit the same day shows the banner but does NOT replay it.
+    act(() => root.unmount());
+    container.remove();
+    await mount();
+    expect(banner()).toBeTruthy();
+    expect(container.querySelector("canvas")).toBeNull();
+  });
+
+  it("can be dismissed for the day and stays gone", async () => {
+    await mount();
+    const dismiss = [...container.querySelectorAll("button")].find(
+      (b) => b.getAttribute("aria-label") === "Dismiss roundup",
+    )!;
+    await act(async () => {
+      dismiss.click();
+    });
+    await flush();
+    expect(banner()).toBeNull();
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:dismissed:2026-08-25"),
+    ).toBeTruthy();
+
+    // Still gone on a fresh mount.
+    act(() => root.unmount());
+    container.remove();
+    await mount();
+    expect(banner()).toBeNull();
   });
 });

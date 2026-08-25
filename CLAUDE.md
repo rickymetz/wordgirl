@@ -53,7 +53,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   0.01ms duration), and constrained devices freeze just the glow's blur —
   `prefers-reduced-data` plus `html[data-low-power]`, the boot-time JS
   guess in `lib/lowPower.ts` (there is no CSS media query for device
-  power).
+  power). A `ConfettiOverlay` burst fires ONCE when the banner first
+  appears for the day, and a "×" dismisses it for the day; both flags are
+  per-date in `lib/roundupCelebration.ts` (a `roundup:` store, not a game),
+  so neither replays on the next hub visit.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
