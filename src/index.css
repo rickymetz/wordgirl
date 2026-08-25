@@ -283,13 +283,28 @@ html[data-font="accessible"] [data-glyph] {
 
 /* The roundup banner's living rainbow border: the gradient is drawn at
    twice the width and panned by exactly one width, which loops seamlessly
-   because the two halves are identical (see --roundup-rainbow). Slow on
-   purpose — a gentle drift, not a strobe. The reduced-motion rule below
-   freezes it to a static rainbow. */
+   because the two halves are identical (see --roundup-rainbow). A soft
+   blurred copy behind it (::before) is the glow — same gradient, same
+   pan, so the halo drifts in lockstep with the edge. The reduced-motion
+   rule below freezes both to a static rainbow. */
 .roundup-rainbow-border {
+  position: relative;
+  isolation: isolate; /* keep the glow behind the border, above the page */
   background-image: var(--roundup-rainbow);
   background-size: 200% 100%;
-  animation: roundup-rainbow-pan 9s linear infinite;
+  animation: roundup-rainbow-pan 3.5s linear infinite;
+}
+.roundup-rainbow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--roundup-rainbow);
+  background-size: 200% 100%;
+  filter: blur(11px);
+  opacity: 0.55;
+  animation: roundup-rainbow-pan 3.5s linear infinite;
 }
 @keyframes roundup-rainbow-pan {
   from {
