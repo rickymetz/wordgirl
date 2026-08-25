@@ -31,7 +31,17 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 
 **Hub & archive**
 - `GameStatus` — the hub-card date + play-state line; games pass
-  `loadState`/`loadStreak` loaders (~15 lines per game).
+  `loadState`/`loadStreak` loaders (~15 lines per game). The DATE is
+  fitted, not fixed: `dateKeyFormats` is a longest-first ladder
+  (`Tuesday, August 25` → `Tuesday, Aug 25` → `Tue, Aug 25` → `Aug 25`)
+  and `firstFitting` + `measurerFor` (`lib/textFit.ts`) pick the longest
+  rung that fits the measured column, so it never wraps to two lines. Both
+  the Text-size AND Font settings change how wide a name renders — the
+  accessible face is wider at the same size — so it re-measures on the box
+  resizing, on `document.fonts.ready` (first paint measures fallback
+  metrics), and on the `<html>` settings attributes flipping (the Font swap
+  moves no box at all). Measure like this anywhere a single string has to
+  hold across both settings.
 - `DailyRoundup` + `useDailyRoundup`/`useRoundupShareText` — the
   cross-game "every puzzle done" banner: a rainbow border (all five game
   accents via `--roundup-rainbow`, the one place the whole palette shows
