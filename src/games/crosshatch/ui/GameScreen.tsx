@@ -73,7 +73,7 @@ function buildShareText(
   level: Level,
 ): string {
   const date = formatShareDate(dateKey);
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return [
     `🧺 Crosshatch — ${date}`,
     `${LEVEL_LABEL[level]} · ${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,

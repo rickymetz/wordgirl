@@ -79,7 +79,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   passed to the detail/share helpers as `showHints`): on a hint-free day the
   rows and share lines stay bare and only the subtitle/summary total carries
   it; once ANY game used a hint, every game row and every share line trails
-  its own count — a clean game shown as `0 hints` (UI) / a bare `🤓` (share)
+  its own count — a clean game shown as `0 hints` (UI) / a bare `😎` (share)
   so it reads apart. A MULTI-LEVEL game supplies `levels[]` in place of
   `value`: the banner shows a name header with the game's COMBINED
   total (`sum unit · total time[ · N hints]`), then one smaller indented,
@@ -88,7 +88,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   bare count · time · hint column), while the share keeps ONE inline line per
   game. The SHARE lines are built to a message bubble's ~30-34 columns —
   `emoji name values · time[ hint]`, values slash-joined for a multi-level
-  game (`🧺 Crosshatch 11/14 · 1:06:15 🫣3`, a bare `🤓` for a clean game).
+  game (`🧺 Crosshatch 11/14 · 1:06:15 🫣3`, a bare `😎` for a clean game).
   Unit words, level names and the per-line stopwatch are all dropped: they
   repeat down the block, and a line over the bubble width wraps and orphans
   its tail. Entries therefore carry `unit` + a NUMBER (`value`, or a

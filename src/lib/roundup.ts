@@ -48,7 +48,7 @@ export const capitalize = (s: string): string =>
  *  at zero. SHARE strings only — used for the whole-day total, since the
  *  per-game lines now carry per-level metrics and stay to one line. */
 function hintShare(hints: number): string {
-  return hints > 0 ? `🫣 ${hints}` : "🤓 0";
+  return hints > 0 ? `🫣 ${hints}` : "😎 0";
 }
 
 /** The counts a SHARE line carries: digits only, since a share line has a
@@ -71,15 +71,15 @@ function shareValues(entry: RoundupEntry): string {
  * next to a name reads as a time). What survives is what differs per game.
  *
  * `showHints` is the whole-day decision the banner uses too: on a hint-free
- * day the lines stay bare and the summary's 🤓 0 speaks for all of them;
- * once any game used one, every line ends in its own count — a bare 🤓 for
+ * day the lines stay bare and the summary's 😎 0 speaks for all of them;
+ * once any game used one, every line ends in its own count — a bare 😎 for
  * a game that stayed clean, so it reads apart at a glance.
  */
 export function roundupShareLine(
   entry: RoundupEntry,
   showHints: boolean,
 ): string {
-  const hint = !showHints ? "" : entry.hints > 0 ? ` 🫣${entry.hints}` : " 🤓";
+  const hint = !showHints ? "" : entry.hints > 0 ? ` 🫣${entry.hints}` : " 😎";
   return `${entry.emoji} ${entry.name} ${shareValues(entry)} · ${formatDuration(
     entry.elapsedMs,
   )}${hint}`;

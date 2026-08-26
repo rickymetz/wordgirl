@@ -125,7 +125,7 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
     expect(container.textContent).toContain("Charlie");
     // Emoji never leak into the visible card.
-    for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
+    for (const glyph of ["🔺", "🟦", "🟩", "🫣", "😎"]) {
       expect(container.textContent).not.toContain(glyph);
     }
   });
@@ -175,9 +175,9 @@ describe("DailyRoundup", () => {
       [
         "WordGirl — August 25",
         "✅ 3/3 · ⏱️ 4:41 · 🫣 2 · 🔥 2",
-        "🔺 Alpha 5 · 1:01 🤓",
+        "🔺 Alpha 5 · 1:01 😎",
         "🟦 Bravo 3 · 2:10 🫣2",
-        "🟩 Charlie 8 · 1:30 🤓",
+        "🟩 Charlie 8 · 1:30 😎",
         "wordgirl.net",
       ].join("\n"),
     );

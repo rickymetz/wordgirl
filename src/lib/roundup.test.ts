@@ -44,8 +44,8 @@ describe("roundupShareLine", () => {
     expect(roundupShareLine(pierglass, false)).toBe("🪞 Pierglass 6 · 2:10");
   });
   it("trails each line with the game's hint glyph once the day used any", () => {
-    // A bare 🤓 is the clean game: no count to read, it just stayed clean.
-    expect(roundupShareLine(polygram, true)).toBe("🔻 Polygram 42 · 3:21 🤓");
+    // A bare 😎 is the clean game: no count to read, it just stayed clean.
+    expect(roundupShareLine(polygram, true)).toBe("🔻 Polygram 42 · 3:21 😎");
     expect(roundupShareLine(pierglass, true)).toBe("🪞 Pierglass 6 · 2:10 🫣2");
   });
   it("joins a multi-level game's boards in their fixed order", () => {
@@ -182,26 +182,26 @@ describe("streakEndingToday", () => {
 describe("buildRoundupText", () => {
   it("stacks header, summary, a hint-tailed line per game, and the link with no blank lines", () => {
     // Day used hints (0 + 2 = 2), so every game line trails its glyph — the
-    // clean game as 🤓 0 — and the summary keeps the total.
+    // clean game as 😎 0 — and the summary keeps the total.
     const text = buildRoundupText("2026-08-25", [polygram, pierglass], 4);
     expect(text).toBe(
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 5:31 · 🫣 2 · 🔥 4",
-        "🔻 Polygram 42 · 3:21 🤓",
+        "🔻 Polygram 42 · 3:21 😎",
         "🪞 Pierglass 6 · 2:10 🫣2",
         SHARE_URL,
       ].join("\n"),
     );
     expect(text).not.toContain("\n\n");
   });
-  it("leaves the game lines bare on a hint-free day; only the summary's 🤓 0 shows", () => {
+  it("leaves the game lines bare on a hint-free day; only the summary's 😎 0 shows", () => {
     const clean = { ...pierglass, hints: 0 };
     const text = buildRoundupText("2026-08-25", [polygram, clean], 1);
     expect(text).toBe(
       [
         "WordGirl — August 25",
-        "✅ 2/2 · ⏱️ 5:31 · 🤓 0",
+        "✅ 2/2 · ⏱️ 5:31 · 😎 0",
         "🔻 Polygram 42 · 3:21",
         "🪞 Pierglass 6 · 2:10",
         SHARE_URL,

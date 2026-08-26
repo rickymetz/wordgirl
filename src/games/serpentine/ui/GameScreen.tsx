@@ -52,7 +52,7 @@ function buildShareText(
   const title = `🐍 Serpentine${dateKey ? ` — ${formatShareDate(dateKey)}` : ""}`;
   const label = difficulty === "haiku" ? "Haiku" : "Poem";
   const time = elapsedMs !== null ? ` · ⏱️ ${formatDuration(elapsedMs)}` : "";
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return `${title}\n${label} · ${puzzle.path.length} letters${time}${hintPart}\n${SHARE_URL}`;
 }
 
