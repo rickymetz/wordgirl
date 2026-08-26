@@ -12,8 +12,8 @@ import type { RoundupEntry } from "../../lib/roundup";
 const state = vi.hoisted(() => ({
   bDone: true,
   entries: {
-    a: { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 },
-    b: { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 1 },
+    a: { emoji: "🔺", name: "Alpha", unit: "words", value: 5, elapsedMs: 61_000, hints: 0 },
+    b: { emoji: "🟦", name: "Bravo", unit: "rows", value: 3, elapsedMs: 130_000, hints: 1 },
   } as Record<string, RoundupEntry | null>,
 }));
 
@@ -105,8 +105,8 @@ describe("DailyOutro when the day is complete", () => {
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 3:11 · 🫣 1",
-        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 1",
+        "🔺 Alpha 5 · 1:01 🤓",
+        "🟦 Bravo 3 · 2:10 🫣1",
         "wordgirl.net",
       ].join("\n"),
     );

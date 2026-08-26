@@ -24,7 +24,8 @@ export const polygram: GameDefinition = {
     return {
       emoji: "🔻",
       name: "Polygram",
-      metric: `${d.foundWords.length} words`,
+      unit: "words",
+      value: d.foundWords.length,
       elapsedMs: d.elapsedMs,
       hints,
     };

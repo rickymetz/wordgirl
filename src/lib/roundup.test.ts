@@ -15,44 +15,71 @@ import { SHARE_URL } from "./share";
 const polygram: RoundupEntry = {
   emoji: "🔻",
   name: "Polygram",
-  metric: "42 words",
+  unit: "words",
+  value: 42,
   elapsedMs: 3 * 60_000 + 21_000,
   hints: 0,
 };
 const pierglass: RoundupEntry = {
   emoji: "🪞",
   name: "Pierglass",
-  metric: "6 rows",
+  unit: "rows",
+  value: 6,
   elapsedMs: 2 * 60_000 + 10_000,
   hints: 2,
 };
 
 describe("roundupShareLine", () => {
-  it("is emoji · name · metric · time, no hint tail on a hint-free day", () => {
-    expect(roundupShareLine(polygram, false)).toBe(
-      "🔻 Polygram · 42 words · ⏱️ 3:21",
-    );
-    expect(roundupShareLine(pierglass, false)).toBe(
-      "🪞 Pierglass · 6 rows · ⏱️ 2:10",
-    );
+  // A phone message bubble fits ~30-34 columns; every line below is inside
+  // that, which is the whole reason the units and level names are dropped.
+  const columns = (s: string) =>
+    [...s].reduce((n, ch) => {
+      const c = ch.codePointAt(0)!;
+      if (c === 0xfe0f || c === 0x200d) return n; // VS16 / ZWJ are zero-width
+      return n + (c > 0x2000 && c !== 0x00b7 && c !== 0x2014 ? 2 : 1);
+    }, 0);
+
+  it("is emoji, name, count and time — no unit word, no per-line stopwatch", () => {
+    expect(roundupShareLine(polygram, false)).toBe("🔻 Polygram 42 · 3:21");
+    expect(roundupShareLine(pierglass, false)).toBe("🪞 Pierglass 6 · 2:10");
   });
   it("trails each line with the game's hint glyph once the day used any", () => {
-    // Clean game shows 🤓 0 so it reads apart from the ones that used hints.
-    expect(roundupShareLine(polygram, true)).toBe(
-      "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
-    );
-    expect(roundupShareLine(pierglass, true)).toBe(
-      "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
-    );
+    // A bare 🤓 is the clean game: no count to read, it just stayed clean.
+    expect(roundupShareLine(polygram, true)).toBe("🔻 Polygram 42 · 3:21 🤓");
+    expect(roundupShareLine(pierglass, true)).toBe("🪞 Pierglass 6 · 2:10 🫣2");
   });
-  it("passes a multi-level metric straight through, hint glyph last", () => {
+  it("joins a multi-level game's boards in their fixed order", () => {
     const crosshatch: RoundupEntry = {
-      emoji: "🧺", name: "Crosshatch", metric: "Normal 12 · Hard 13",
-      elapsedMs: 9 * 60_000, hints: 1,
+      emoji: "🧺", name: "Crosshatch", unit: "words",
+      elapsedMs: 9 * 60_000, hints: 4,
+      levels: [
+        { label: "Normal", value: 12, elapsedMs: 4 * 60_000, hints: 1 },
+        { label: "Hard", value: 13, elapsedMs: 5 * 60_000, hints: 3 },
+      ],
     };
     expect(roundupShareLine(crosshatch, true)).toBe(
-      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00 · 🫣 1",
+      "🧺 Crosshatch 12/13 · 9:00 🫣4",
     );
+  });
+  it("keeps even the longest realistic line inside a message bubble", () => {
+    // Longest name, three boards, an hour-plus time and a hint count — the
+    // shape that used to wrap and orphan its tail on the next line.
+    const worst: RoundupEntry = {
+      emoji: "👯‍♂️", name: "Serpentine", unit: "letters",
+      elapsedMs: 66 * 60_000 + 15_000, hints: 12,
+      levels: [
+        { label: "Easy", value: 37, elapsedMs: 60_000, hints: 4 },
+        { label: "Medium", value: 31, elapsedMs: 60_000, hints: 4 },
+        { label: "Hard", value: 28, elapsedMs: 60_000, hints: 4 },
+      ],
+    };
+    expect(roundupShareLine(worst, true)).toBe(
+      "👯‍♂️ Serpentine 37/31/28 · 1:06:15 🫣12",
+    );
+    expect(columns(roundupShareLine(worst, true))).toBeLessThanOrEqual(40);
+    for (const e of [polygram, pierglass]) {
+      expect(columns(roundupShareLine(e, true))).toBeLessThanOrEqual(34);
+    }
   });
 });
 
@@ -99,9 +126,9 @@ describe("multi-level details", () => {
     expect(roundupAggregateDetail(crosshatch, false)).toBe("25 words · 9:00");
     expect(roundupLevelDetail(crosshatch.levels![0], false)).toBe("12 · 4:00");
   });
-  it("still shares as one inline line, hint glyph last", () => {
+  it("still shares as one line — values joined, labels left to the banner", () => {
     expect(roundupShareLine(crosshatch, true)).toBe(
-      "🧺 Crosshatch · Normal 12 · Hard 13 · ⏱️ 9:00 · 🫣 4",
+      "🧺 Crosshatch 12/13 · 9:00 🫣4",
     );
   });
 });
@@ -161,8 +188,8 @@ describe("buildRoundupText", () => {
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 5:31 · 🫣 2 · 🔥 4",
-        "🔻 Polygram · 42 words · ⏱️ 3:21 · 🤓 0",
-        "🪞 Pierglass · 6 rows · ⏱️ 2:10 · 🫣 2",
+        "🔻 Polygram 42 · 3:21 🤓",
+        "🪞 Pierglass 6 · 2:10 🫣2",
         SHARE_URL,
       ].join("\n"),
     );
@@ -175,8 +202,8 @@ describe("buildRoundupText", () => {
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 5:31 · 🤓 0",
-        "🔻 Polygram · 42 words · ⏱️ 3:21",
-        "🪞 Pierglass · 6 rows · ⏱️ 2:10",
+        "🔻 Polygram 42 · 3:21",
+        "🪞 Pierglass 6 · 2:10",
         SHARE_URL,
       ].join("\n"),
     );

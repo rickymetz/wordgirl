@@ -86,7 +86,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   ITALIC sub-row per level (`label │ value · time[ · N]`, never wraps — the
   unit and the "hint" word live on the header row, so sub-rows stay a tight
   bare count · time · hint column), while the share keeps ONE inline line per
-  game (`Normal 12 · Hard 13 · ⏱️ time[ · 🫣 N]`). Mounted on the hub above the cards (self-hides) and, as a
+  game. The SHARE lines are built to a message bubble's ~30-34 columns —
+  `emoji name values · time[ hint]`, values slash-joined for a multi-level
+  game (`🧺 Crosshatch 11/14 · 1:06:15 🫣3`, a bare `🤓` for a clean game).
+  Unit words, level names and the per-line stopwatch are all dropped: they
+  repeat down the block, and a line over the bubble width wraps and orphans
+  its tail. Entries therefore carry `unit` + a NUMBER (`value`, or a
+  `value` per level), never a ready "42 words" string — the banner spells it
+  out, the share can only afford the digits. Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`

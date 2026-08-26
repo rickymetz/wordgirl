@@ -105,8 +105,9 @@ describe("per-game daily loaders agree", () => {
           expect(lv.hints).toEqual(expect.any(Number));
         }
       } else {
-        // Single-board games give a ready metric string, no levels.
-        expect(entry!.metric).toEqual(expect.any(String));
+        // Single-board games give a bare count plus the unit, no levels.
+        expect(entry!.unit).toEqual(expect.any(String));
+        expect(entry!.value).toEqual(expect.any(Number));
         expect(entry!.levels).toBeUndefined();
       }
     });
