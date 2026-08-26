@@ -25,8 +25,12 @@ export interface GameDefinition {
    * by `DailyRoundup`, which shows the roundup only once EVERY game
    * returns an entry — so a game that omits this loader keeps the roundup
    * from ever appearing, the same safe-by-omission stance `solvedToday`
-   * takes. The emoji rides the SHARE string only; the UI card renders
-   * `name · metric · time` with no emoji (house rule).
+   * takes. The entry carries a `unit` plus a NUMBER — `value` for a
+   * single-board game, or one per level in `levels[]` — never a ready
+   * "42 words" string: the banner spells the unit out, while the share
+   * line has a message bubble's width and can only afford the digits.
+   * The emoji rides the SHARE string only; the UI card renders
+   * `name · value unit · time` with no emoji (house rule).
    */
   roundupEntry?: (today: string) => Promise<RoundupEntry | null>;
   /**
