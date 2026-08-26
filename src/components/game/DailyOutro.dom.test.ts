@@ -12,8 +12,8 @@ import type { RoundupEntry } from "../../lib/roundup";
 const state = vi.hoisted(() => ({
   bDone: true,
   entries: {
-    a: { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 },
-    b: { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 1 },
+    a: { emoji: "🔺", name: "Alpha", unit: "words", value: 5, elapsedMs: 61_000, hints: 0 },
+    b: { emoji: "🟦", name: "Bravo", unit: "rows", value: 3, elapsedMs: 130_000, hints: 1 },
   } as Record<string, RoundupEntry | null>,
 }));
 
@@ -41,6 +41,7 @@ vi.mock("../../lib/useToday", () => ({ useToday: () => "2026-08-25" }));
 let container: HTMLDivElement;
 let root: Root;
 let copied: string[];
+let tracked: string[];
 
 async function flush(ticks = 8) {
   for (let i = 0; i < ticks; i++) {
@@ -71,6 +72,8 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  tracked = [];
+  window.fathom = { trackEvent: (name: string) => void tracked.push(name) };
   state.bDone = true;
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
@@ -95,12 +98,15 @@ describe("DailyOutro when the day is complete", () => {
       share!.click();
     });
     await flush();
+    // The whole-day share is app-level: counted as roundup:share, never
+    // against the game the player happened to finish last.
+    expect(tracked).toEqual(["roundup:share"]);
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
         "✅ 2/2 · ⏱️ 3:11 · 🫣 1",
-        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 1",
+        "🔺 Alpha 5 · 1:01 😎",
+        "🟦 Bravo 3 · 2:10 🫣1",
         "wordgirl.net",
       ].join("\n"),
     );

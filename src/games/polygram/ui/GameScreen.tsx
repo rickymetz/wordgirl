@@ -65,7 +65,7 @@ function buildShareText(
     (n, positions) => n + positions.length,
     0,
   );
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   const date = formatShareDate(dateKey);
   return [
     `🔻 Polygram — ${date}`,

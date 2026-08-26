@@ -19,7 +19,8 @@ export const pierglass: GameDefinition = {
     return {
       emoji: "🪞",
       name: "Pierglass",
-      metric: `${d.rows.length} rows`,
+      unit: "rows",
+      value: d.rows.length,
       elapsedMs: d.elapsedMs,
       hints: d.hints ?? 0,
     };

@@ -51,7 +51,7 @@ function buildShareText(
   elapsedMs: number,
   hints: number,
 ): string {
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return [
     `👯‍♂️ Doublet — ${formatShareDate(dateKey)}`,
     // The piece count, not just the band: "Easy" spans 3 to 4 dominoes,

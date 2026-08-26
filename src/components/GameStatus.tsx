@@ -24,11 +24,17 @@ function useFittedDate(today: string): {
     const formats = dateKeyFormats(today);
     if (!el) return setText(formats[0]);
     const measureText = measurerFor(el);
-    setText(
-      measureText
-        ? firstFitting(formats, el.clientWidth, measureText)
-        : formats[0],
-    );
+    // getBoundingClientRect, not clientWidth: clientWidth rounds to a whole
+    // pixel and so reads up to half a pixel WIDER than the box really is,
+    // which is enough to accept a rung that then wraps — the one thing the
+    // ladder exists to prevent. The tightest real fit runs on ~0.1px of
+    // slack, well inside that rounding error.
+    const style = getComputedStyle(el);
+    const width =
+      el.getBoundingClientRect().width -
+      parseFloat(style.paddingLeft) -
+      parseFloat(style.paddingRight);
+    setText(measureText ? firstFitting(formats, width, measureText) : formats[0]);
   }, [today]);
 
   useRemeasure(ref, measure);

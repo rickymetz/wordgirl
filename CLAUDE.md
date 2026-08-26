@@ -67,26 +67,33 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   accents via `--roundup-rainbow`, the one place the whole palette shows
   at once) around a neutral card of each game's result plus a Share.
   Each game supplies `GameDefinition.roundupEntry(today)` returning
-  `{ emoji, name, metric, elapsedMs, hints }` (or null unless the WHOLE
+  `{ emoji, name, unit, value | levels[], elapsedMs, hints }` (or null unless the WHOLE
   game is done — mirror `solvedToday`, aggregating multi-board days) and
   `solvedOn(dateKey)` (a cheap version-insensitive record lookup, for the
   all-games streak: the banner walks back from today and stops at the first
   day some game answers false). The banner shows only once
   EVERY game returns an entry, so a game that omits `roundupEntry` keeps
   it hidden (safe-by-omission, like `solvedToday`). Emoji ride the SHARE
-  string only; the card renders `name · metric · time` — no emoji in UI
+  string only; the card renders `name · value unit · time` — no emoji in UI
   chrome. HINTS are a whole-DAY decision (`roundupTotalHints(entries) > 0`,
   passed to the detail/share helpers as `showHints`): on a hint-free day the
   rows and share lines stay bare and only the subtitle/summary total carries
   it; once ANY game used a hint, every game row and every share line trails
-  its own count — a clean game shown as `0 hints` (UI) / `🤓 0` (share) so it
-  reads apart. A MULTI-LEVEL game supplies `unit` + `levels[]` rather
-  than `metric`: the banner shows a name header with the game's COMBINED
+  its own count — a clean game shown as `0 hints` (UI) / a bare `😎` (share)
+  so it reads apart. A MULTI-LEVEL game supplies `levels[]` in place of
+  `value`: the banner shows a name header with the game's COMBINED
   total (`sum unit · total time[ · N hints]`), then one smaller indented,
   ITALIC sub-row per level (`label │ value · time[ · N]`, never wraps — the
   unit and the "hint" word live on the header row, so sub-rows stay a tight
   bare count · time · hint column), while the share keeps ONE inline line per
-  game (`Normal 12 · Hard 13 · ⏱️ time[ · 🫣 N]`). Mounted on the hub above the cards (self-hides) and, as a
+  game. The SHARE lines are built to a message bubble's ~30-34 columns —
+  `emoji name values · time[ hint]`, values slash-joined for a multi-level
+  game (`🧺 Crosshatch 11/14 · 1:06:15 🫣3`, a bare `😎` for a clean game).
+  Unit words, level names and the per-line stopwatch are all dropped: they
+  repeat down the block, and a line over the bubble width wraps and orphans
+  its tail. Entries therefore carry `unit` + a NUMBER (`value`, or a
+  `value` per level), never a ready "42 words" string — the banner spells it
+  out, the share can only afford the digits. Mounted on the hub above the cards (self-hides) and, as a
   one-pill share, in `DailyOutro`'s all-done branch. Pure share/format
   and streak helpers live in `lib/roundup.ts`. The border animates
   (`.roundup-rainbow-border` + a blurred glow); `prefers-reduced-motion`

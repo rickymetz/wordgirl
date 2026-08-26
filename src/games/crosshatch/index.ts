@@ -56,7 +56,8 @@ export const crosshatch: GameDefinition = {
     return {
       emoji: "🧺",
       name: "Crosshatch",
-      metric: `${boards[0]!.foundWords.length} words`,
+      unit: "words",
+      value: boards[0]!.foundWords.length,
       elapsedMs,
       hints,
     };

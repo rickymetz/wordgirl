@@ -57,7 +57,7 @@ function buildShareText(
   hints: number,
 ): string {
   const date = formatShareDate(dateKey);
-  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 🤓 0";
+  const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   // Rows against par, not a bare word count: everyone empties the rack,
   // so the count alone compared nothing between two players' results.
   const parPart = rows <= parRows ? "⭐️ par" : `par ${parRows}`;

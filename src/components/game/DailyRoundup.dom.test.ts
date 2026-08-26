@@ -50,6 +50,7 @@ vi.mock("../../games/registry", () => ({
 let container: HTMLDivElement;
 let root: Root;
 let copied: string[];
+let tracked: string[];
 
 async function flush(ticks = 8) {
   for (let i = 0; i < ticks; i++) {
@@ -73,10 +74,12 @@ async function mount() {
 
 beforeEach(() => {
   copied = [];
+  tracked = [];
+  window.fathom = { trackEvent: (name: string) => void tracked.push(name) };
   localStorage.clear(); // per-day celebrate/dismiss flags
-  state.a = { emoji: "🔺", name: "Alpha", metric: "5 words", elapsedMs: 61_000, hints: 0 };
-  state.b = { emoji: "🟦", name: "Bravo", metric: "3 rows", elapsedMs: 130_000, hints: 2 };
-  state.c = { emoji: "🟩", name: "Charlie", metric: "8 letters", elapsedMs: 90_000, hints: 0 };
+  state.a = { emoji: "🔺", name: "Alpha", unit: "words", value: 5, elapsedMs: 61_000, hints: 0 };
+  state.b = { emoji: "🟦", name: "Bravo", unit: "rows", value: 3, elapsedMs: 130_000, hints: 2 };
+  state.c = { emoji: "🟩", name: "Charlie", unit: "letters", value: 8, elapsedMs: 90_000, hints: 0 };
   state.cHasLoader = true;
   state.dates = { a: ["2026-08-25"], b: ["2026-08-25"], c: ["2026-08-25"] };
   Object.assign(navigator, {
@@ -122,7 +125,7 @@ describe("DailyRoundup", () => {
     expect(container.textContent).toContain("3 rows · 2:10 · 2 hints");
     expect(container.textContent).toContain("Charlie");
     // Emoji never leak into the visible card.
-    for (const glyph of ["🔺", "🟦", "🟩", "🫣", "🤓"]) {
+    for (const glyph of ["🔺", "🟦", "🟩", "🫣", "😎"]) {
       expect(container.textContent).not.toContain(glyph);
     }
   });
@@ -165,13 +168,16 @@ describe("DailyRoundup", () => {
     });
     await flush();
     expect(copied).toHaveLength(1);
+    // The day-share is app-level, so it is counted under its own scope
+    // rather than any one game's.
+    expect(tracked).toEqual(["roundup:share"]);
     expect(copied[0]).toBe(
       [
         "WordGirl — August 25",
         "✅ 3/3 · ⏱️ 4:41 · 🫣 2 · 🔥 2",
-        "🔺 Alpha · 5 words · ⏱️ 1:01 · 🤓 0",
-        "🟦 Bravo · 3 rows · ⏱️ 2:10 · 🫣 2",
-        "🟩 Charlie · 8 letters · ⏱️ 1:30 · 🤓 0",
+        "🔺 Alpha 5 · 1:01 😎",
+        "🟦 Bravo 3 · 2:10 🫣2",
+        "🟩 Charlie 8 · 1:30 😎",
         "wordgirl.net",
       ].join("\n"),
     );
