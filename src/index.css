@@ -481,12 +481,14 @@ body {
   position: absolute;
   inset: 0;
   margin: 0 auto;
-  max-width: 22rem;
+  /* Tracks the hub column (28rem) minus its px-5, so the stuck panel
+     gets enough width that its body copy isn't chopped into slivers. */
+  max-width: 25.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.25rem;
   text-align: center;
 }
 #boot-spinner {
