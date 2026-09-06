@@ -57,7 +57,15 @@ function ogShells(): Plugin {
           const desc = `${g.tagline} A new puzzle every day.`;
           const url = `${SITE}/games/${g.id}`;
           const img = `${SITE}/og/${g.id}.png`;
-          let html = base.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
+          // These shells boot a GAME, so the hub-shaped boot skeleton
+          // would promise a layout the mount never delivers —
+          // data-boot="game" hides it (index.css) and leaves the
+          // route-agnostic spinner + note.
+          let html = base.replace(
+            /<html lang="en">/,
+            `<html lang="en" data-boot="game">`,
+          );
+          html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
           html = setMeta(html, "name", "description", desc);
           html = setMeta(html, "property", "og:title", title);
           html = setMeta(html, "property", "og:description", desc);

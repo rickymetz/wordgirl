@@ -42,20 +42,12 @@
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
-    <!-- createRoot().render() replaces these children, so this screen
-         only survives while the app has not mounted — a boot still in
-         flight on a slow connection, a chunk that 404s after a deploy,
-         an evicted precache with no network. Two pure-CSS stages
-         (index.css), no JS, because the bundle may be the thing that is
-         missing: at 400ms a hub-shaped skeleton (title bone + card
-         bones in the same surface-tint the real cards wear, so the
-         mount reads as the skeleton filling in) plus a spinner — a
-         normal boot never flashes them — and the stuck message joins
-         at 8s. A slow connection is not a failure, so the copy never
-         claims one — it offers waiting AND reloading. With no
-         stylesheet at all everything shows at once, unstyled but
-         legible, which is exactly the case the reload link exists
-         for (the empty bone divs collapse to nothing). -->
+    <!-- Pre-mount boot screen. React replaces all of #root's children
+         on mount, so this survives only while a boot is in flight or
+         never lands. Staging, constraints and rationale live with the
+         styles: index.css, "Boot screen". The role="status" wrappers
+         must stay in the tree unhidden — their children's visibility
+         flip is what screen readers announce. -->
     <div id="root">
       <div id="boot-fallback">
         <div id="boot-skeleton" aria-hidden="true">
@@ -96,17 +88,30 @@
               <div class="boot-bone boot-bone-pill"></div>
             </div>
           </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
         </div>
         <div id="boot-center">
           <div id="boot-spinner" aria-hidden="true"></div>
-          <p id="boot-note" role="status">Loading…</p>
-          <div id="boot-stuck">
-            <h1>Still loading…</h1>
-            <p>
-              The app is taking longer than usual to arrive. This can happen
-              on a slow connection — keep waiting, or reload to try again.
-            </p>
-            <p><a href="/">Reload</a></p>
+          <div role="status">
+            <h1 id="boot-note">Loading…</h1>
+          </div>
+          <div role="status">
+            <div id="boot-stuck">
+              <h2>Still loading…</h2>
+              <p>
+                The app is taking longer than usual to arrive. Reloading is
+                usually the fastest fix — or keep waiting if your connection
+                is just slow.
+              </p>
+              <p><a href="">Reload</a></p>
+            </div>
           </div>
         </div>
       </div>
