@@ -438,14 +438,44 @@ body {
   border-radius: 1.5rem;
   animation: boot-pulse 1.8s ease-in-out infinite;
 }
+/* Bone geometry mirrors the hub: dictionary/settings icons flanking the
+   title, then per game a rounded-3xl card over the action-pill scroller
+   — three w-[37%] pills, the third clipped at the right edge exactly
+   like the real "scroll for more" peek. */
+.boot-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.boot-bone-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+}
 .boot-bone-title {
   width: 9rem;
   height: 2rem;
   border-radius: 0.75rem;
-  margin: 0 auto 2rem;
+}
+.boot-game {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 .boot-bone-card {
-  height: 8rem;
+  height: 10.5rem;
+}
+.boot-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+.boot-bone-pill {
+  width: 37%;
+  height: 2.75rem;
+  border-radius: 1rem;
 }
 #boot-center {
   position: absolute;
