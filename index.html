@@ -42,17 +42,29 @@
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
-    <!-- createRoot().render() replaces these children, so the fallback
-         only survives when the app never mounts — a chunk that 404s
-         after a deploy, an evicted precache with no network. It is
-         revealed by a pure-CSS delay (index.css) so a normal boot never
-         flashes it, and it stays legible with no stylesheet at all,
-         which is exactly the case it exists for. -->
+    <!-- createRoot().render() replaces these children, so this screen
+         only survives while the app has not mounted — a boot still in
+         flight on a slow connection, a chunk that 404s after a deploy,
+         an evicted precache with no network. Two pure-CSS stages
+         (index.css), no JS, because the bundle may be the thing that is
+         missing: the spinner appears after a short delay so a normal
+         boot never flashes it, and the stuck message joins it at 8s. A
+         slow connection is not a failure, so the copy never claims one
+         — it offers waiting AND reloading. With no stylesheet at all
+         everything shows at once, unstyled but legible, which is
+         exactly the case the reload link exists for. -->
     <div id="root">
       <div id="boot-fallback">
-        <h1>WordGirl did not finish loading</h1>
-        <p>Some of the app files did not arrive.</p>
-        <p><a href="/">Reload</a></p>
+        <div id="boot-spinner" aria-hidden="true"></div>
+        <p id="boot-note" role="status">Loading…</p>
+        <div id="boot-stuck">
+          <h1>Still loading…</h1>
+          <p>
+            The app is taking longer than usual to arrive. This can happen
+            on a slow connection — keep waiting, or reload to try again.
+          </p>
+          <p><a href="/">Reload</a></p>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

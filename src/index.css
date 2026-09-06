@@ -400,30 +400,53 @@ body {
 }
 
 /*
- * Boot fallback (markup in index.html). React replaces it on mount, so
- * the only way it stays on screen is a boot that never happened. The
- * reveal is a zero-duration animation with a delay — no JS, so it works
- * when the bundle is the thing that failed. With no stylesheet at all
- * it shows immediately, unstyled, which beats a white void.
+ * Boot screen (markup in index.html). React replaces it on mount, so it
+ * stays on screen only while a boot is still in flight or never lands.
+ * Two stages, both pure-CSS delayed reveals — no JS, so they work when
+ * the bundle is the thing that hasn't arrived: the spinner + "Loading…"
+ * at 400ms (a fast boot never flashes them; a slow connection stops
+ * looking dead), and the stuck message at 8s. The spinner keeps
+ * spinning under the message — bytes may still be arriving, and the
+ * copy offers waiting as well as the reload. With no stylesheet at all
+ * everything shows at once, unstyled, which beats a white void.
  */
 #boot-fallback {
   margin: auto;
   padding: 2rem;
   max-width: 20rem;
   text-align: center;
-  opacity: 0;
-  animation: boot-fallback-reveal 0s linear 8s forwards;
 }
-#boot-fallback h1 {
+#boot-spinner {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto 1rem;
+  border-radius: 9999px;
+  border: 3px solid var(--color-line);
+  border-top-color: var(--color-ink);
+  opacity: 0;
+  animation:
+    boot-reveal 0.3s ease 0.4s forwards,
+    boot-spin 0.8s linear infinite;
+}
+#boot-note {
+  color: var(--color-ink-soft);
+  opacity: 0;
+  animation: boot-reveal 0.3s ease 0.4s forwards;
+}
+#boot-stuck {
+  opacity: 0;
+  animation: boot-reveal 0s linear 8s forwards;
+}
+#boot-stuck h1 {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin: 1.5rem 0 0.5rem;
 }
-#boot-fallback p {
+#boot-stuck p {
   color: var(--color-ink-soft);
   margin-bottom: 1rem;
 }
-#boot-fallback a {
+#boot-stuck a {
   display: inline-block;
   padding: 0.75rem 1.5rem;
   border-radius: 9999px;
@@ -432,9 +455,21 @@ body {
   font-weight: 600;
   text-decoration: none;
 }
-@keyframes boot-fallback-reveal {
+@keyframes boot-reveal {
   to {
     opacity: 1;
+  }
+}
+@keyframes boot-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* An infinite animation is not stopped by the global 0.01ms duration —
+   freeze the spin by name; the ring stays as a static mark. */
+@media (prefers-reduced-motion: reduce) {
+  #boot-spinner {
+    animation: boot-reveal 0.3s ease 0.4s forwards;
   }
 }
 #root {
