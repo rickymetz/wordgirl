@@ -527,6 +527,9 @@ body {
 #boot-stuck p {
   color: var(--color-ink-soft);
   margin-bottom: 1rem;
+  /* Even out the centered copy's line lengths — without it the last
+     line wraps to a two-word orphan. */
+  text-wrap: balance;
 }
 #boot-stuck a {
   display: inline-block;
