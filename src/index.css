@@ -403,17 +403,60 @@ body {
  * Boot screen (markup in index.html). React replaces it on mount, so it
  * stays on screen only while a boot is still in flight or never lands.
  * Two stages, both pure-CSS delayed reveals — no JS, so they work when
- * the bundle is the thing that hasn't arrived: the spinner + "Loading…"
- * at 400ms (a fast boot never flashes them; a slow connection stops
- * looking dead), and the stuck message at 8s. The spinner keeps
- * spinning under the message — bytes may still be arriving, and the
- * copy offers waiting as well as the reload. With no stylesheet at all
- * everything shows at once, unstyled, which beats a white void.
+ * the bundle is the thing that hasn't arrived: a hub-shaped skeleton
+ * plus spinner + "Loading…" at 400ms (a fast boot never flashes them;
+ * a slow connection stops looking dead), and the stuck message at 8s.
+ * The bones mirror the hub's real geometry — max-w-md, px-5, pt-12
+ * header, rounded-3xl cards in the SAME surface-tint the cards wear at
+ * the neutral root accent — so the mount reads as the skeleton filling
+ * in rather than a scene change. The spinner keeps spinning under the
+ * stuck message — bytes may still be arriving, and the copy offers
+ * waiting as well as the reload. With no stylesheet at all the text
+ * shows at once, unstyled (empty bones collapse), which beats a void.
  */
 #boot-fallback {
-  margin: auto;
+  position: relative;
+  flex: 1;
+  width: 100%;
+}
+#boot-skeleton {
+  position: absolute;
+  inset: 0;
+  margin: 0 auto;
+  max-width: 28rem;
+  padding: 3rem 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow: hidden;
+  opacity: 0;
+  animation: boot-reveal 0.3s ease 0.4s forwards;
+}
+.boot-bone {
+  flex: none;
+  background: var(--color-surface-tint);
+  border-radius: 1.5rem;
+  animation: boot-pulse 1.8s ease-in-out infinite;
+}
+.boot-bone-title {
+  width: 9rem;
+  height: 2rem;
+  border-radius: 0.75rem;
+  margin: 0 auto 2rem;
+}
+.boot-bone-card {
+  height: 8rem;
+}
+#boot-center {
+  position: absolute;
+  inset: 0;
+  margin: 0 auto;
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 2rem;
-  max-width: 20rem;
   text-align: center;
 }
 #boot-spinner {
@@ -433,14 +476,21 @@ body {
   opacity: 0;
   animation: boot-reveal 0.3s ease 0.4s forwards;
 }
+/* A surface panel, because it sits over the skeleton's bones — plain
+   text there would run across the card edges behind it. */
 #boot-stuck {
   opacity: 0;
   animation: boot-reveal 0s linear 8s forwards;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
 }
 #boot-stuck h1 {
   font-size: 1.25rem;
   font-weight: 700;
-  margin: 1.5rem 0 0.5rem;
+  margin: 0 0 0.5rem;
 }
 #boot-stuck p {
   color: var(--color-ink-soft);
@@ -465,11 +515,20 @@ body {
     transform: rotate(360deg);
   }
 }
-/* An infinite animation is not stopped by the global 0.01ms duration —
-   freeze the spin by name; the ring stays as a static mark. */
+@keyframes boot-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+/* Infinite animations are not stopped by the global 0.01ms duration —
+   freeze the spin and the bone pulse by name; the ring and bones stay
+   as static marks. */
 @media (prefers-reduced-motion: reduce) {
   #boot-spinner {
     animation: boot-reveal 0.3s ease 0.4s forwards;
+  }
+  .boot-bone {
+    animation: none;
   }
 }
 #root {
