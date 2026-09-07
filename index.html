@@ -39,13 +39,281 @@
       content="A little collection of word games — a new puzzle every day."
     />
     <meta name="twitter:image" content="https://wordgirl.net/og.png" />
+    <!-- Pre-JS mirror of applySettings (src/lib/settings.ts): the
+         bundle re-applies these on mount, but on the slow connection
+         the boot screen exists for that is seconds away, and a
+         forced-dark player would stare at a white skeleton until then.
+         Same storage key, same <html> hooks, same theme-color rewrite;
+         values must stay in sync with settings.ts. Inline because it
+         has to run before first paint — its sha256 is pinned in the
+         CSP (netlify.toml), and the build fails if it drifts
+         (cspHashGuard in vite.config.ts). Must sit AFTER the
+         theme-color metas it rewrites. -->
+    <script>
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("wg:v1:local:settings"));
+          if (!s) return;
+          var root = document.documentElement;
+          if (s.theme === "light" || s.theme === "dark") {
+            root.dataset.theme = s.theme;
+            var metas = document.querySelectorAll('meta[name="theme-color"]');
+            for (var i = 0; i < metas.length; i++)
+              metas[i].content = s.theme === "dark" ? "#121116" : "#ffffff";
+          }
+          if ([87.5, 112.5, 125].indexOf(s.fontScale) !== -1)
+            root.style.fontSize = s.fontScale + "%";
+          if (s.font === "accessible") root.dataset.font = s.font;
+        } catch (e) {}
+      })();
+    </script>
+    <!-- The boot screen's whole stylesheet, inline so it paints from
+         the HTML alone — the app stylesheet is render-blocking and on
+         a cold slow connection arrives long after this document, which
+         is exactly the boot the screen exists for. Self-contained on
+         purpose: the --boot-* tokens MIRROR index.css (--color-surface,
+         -raised, -ink, -ink-soft, -line, the root accent, and the
+         surface-tint mix at the neutral accent) because the real
+         tokens live in the file that may not have arrived; the html/
+         body/#root rules mirror index.css likewise and resolve to the
+         same values when both apply. Staging, a11y and layout
+         rationale: see the boot markup below. sha256 pinned in the CSP
+         (netlify.toml); the build fails if it drifts (cspHashGuard in
+         vite.config.ts). -->
+    <style>
+      html {
+        color-scheme: light dark;
+        --boot-surface: light-dark(#ffffff, #121116);
+        --boot-raised: light-dark(#ffffff, #211f26);
+        --boot-ink: light-dark(#26242b, #eceaf0);
+        --boot-ink-soft: light-dark(#6f6b78, #98939f);
+        --boot-line: light-dark(#e3e0d9, #322f38);
+        --boot-accent: light-dark(#171717, #e5e5e5);
+        --boot-tint: light-dark(
+          color-mix(in oklab, #171717 6%, #ffffff),
+          color-mix(in oklab, #e5e5e5 13%, #211f26)
+        );
+      }
+      html[data-theme="light"] { color-scheme: light; }
+      html[data-theme="dark"] { color-scheme: dark; }
+      @media (min-width: 768px) {
+        html { font-size: 18px; }
+      }
+      body { margin: 0; }
+      #root {
+        display: flex;
+        flex-direction: column;
+        min-height: 100dvh;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      #boot-fallback {
+        position: relative;
+        flex: 1;
+        width: 100%;
+        background: var(--boot-surface);
+        color: var(--boot-ink);
+        font-family: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+      }
+      #boot-skeleton {
+        position: absolute;
+        inset: 0;
+        margin: 0 auto;
+        max-width: 28rem;
+        padding: 3rem 1.25rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        overflow: hidden;
+        visibility: hidden;
+        opacity: 0;
+        animation:
+          boot-reveal 0.3s ease 0.3s forwards,
+          boot-pulse 1.8s ease-in-out 0.6s infinite;
+      }
+      @media (min-width: 768px) {
+        #boot-skeleton {
+          max-width: 42rem;
+          gap: 2rem;
+        }
+      }
+      html[data-boot="game"] #boot-skeleton { display: none; }
+      .boot-bone {
+        flex: none;
+        background: var(--boot-tint);
+        border-radius: 1.5rem;
+      }
+      .boot-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+      }
+      .boot-bone-icon {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 9999px;
+      }
+      .boot-bone-title {
+        width: 9rem;
+        height: 2rem;
+        border-radius: 0.75rem;
+      }
+      .boot-game {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .boot-bone-card {
+        /* Sized to the COLD state the skeleton actually precedes: on a
+           never-played profile the real cards measure 136-176px at
+           default text (played cards, ~206px, imply a warm cache that
+           skips the skeleton). 9.5rem is the measured mean. */
+        height: 9.5rem;
+      }
+      .boot-row {
+        display: flex;
+        gap: 0.75rem;
+        overflow: hidden;
+      }
+      .boot-bone-pill {
+        width: 37%;
+        height: 2.75rem;
+        border-radius: 1rem;
+      }
+      #boot-center {
+        position: absolute;
+        inset: 0;
+        margin: 0 auto;
+        max-width: 25.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* When the column overflows (landscape, large zoom) plain
+           center clips BOTH ends unreachably; safe center falls back
+           to start and the overflow scrolls. */
+        justify-content: safe center;
+        overflow-y: auto;
+        padding: 1.25rem;
+        text-align: center;
+      }
+      #boot-spinner {
+        /* flex: none — the overflowing column otherwise squashes the
+           ring into a sliver before it starts to scroll. */
+        flex: none;
+        width: 2rem;
+        height: 2rem;
+        margin: 0 auto 1rem;
+        border-radius: 9999px;
+        border: 3px solid var(--boot-line);
+        border-top-color: var(--boot-ink);
+        visibility: hidden;
+        opacity: 0;
+        animation:
+          boot-reveal 0.3s ease 0.3s forwards,
+          boot-spin 0.8s linear infinite;
+      }
+      /* On its own surface pill: ink-soft straight on a pulsing bone
+         bottoms out at 4.05:1 in dark mode, under AA. An h1 so the
+         page always has a heading naming its state, sized as body
+         text. */
+      #boot-note {
+        font-size: 1rem;
+        font-weight: 400;
+        margin: 0;
+        color: var(--boot-ink-soft);
+        background: var(--boot-surface);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        visibility: hidden;
+        opacity: 0;
+        animation: boot-reveal 0.3s ease 0.3s forwards;
+      }
+      /* House panel styling (raised + line border + shadow, like
+         ModalDialog). Kept at zero size as well as hidden until its
+         reveal so stage 1 centers on what is actually visible; the
+         0s-duration keyframe jumps every property at the 8s mark. */
+      #boot-stuck {
+        visibility: hidden;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        margin-top: 0;
+        padding: 0 1.5rem;
+        border: 0 solid var(--boot-line);
+        border-radius: 1.5rem;
+        background: var(--boot-raised);
+        box-shadow:
+          0 20px 25px -5px rgb(0 0 0 / 0.1),
+          0 8px 10px -6px rgb(0 0 0 / 0.1);
+        animation: boot-stuck-reveal 0s linear 8s forwards;
+      }
+      #boot-stuck h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem;
+      }
+      #boot-stuck p {
+        color: var(--boot-ink-soft);
+        margin: 0 0 1rem;
+        /* Even out the centered copy's line lengths — without it the
+           last line wraps to a two-word orphan. */
+        text-wrap: balance;
+      }
+      #boot-stuck a {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 9999px;
+        background: var(--boot-accent);
+        color: var(--boot-surface);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      @keyframes boot-reveal {
+        to {
+          visibility: visible;
+          opacity: 1;
+        }
+      }
+      @keyframes boot-stuck-reveal {
+        to {
+          visibility: visible;
+          opacity: 1;
+          max-height: none;
+          margin-top: 1.5rem;
+          padding: 1.5rem;
+          border-width: 1px;
+        }
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes boot-pulse {
+        50% { opacity: 0.55; }
+      }
+      /* Infinite animations are not stopped by index.css's global
+         0.01ms duration — freeze the spin and the pulse by name.
+         Shrinking animation-name to the reveal alone keeps the base
+         shorthand's timing (extra values in the lists go inert), so
+         the freeze can't drift from the source. */
+      @media (prefers-reduced-motion: reduce) {
+        #boot-spinner,
+        #boot-skeleton {
+          animation-name: boot-reveal;
+        }
+      }
+    </style>
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
     <!-- Pre-mount boot screen. React replaces all of #root's children
          on mount, so this survives only while a boot is in flight or
-         never lands. Staging, constraints and rationale live with the
-         styles: index.css, "Boot screen". The role="status" wrappers
+         never lands. Its whole stylesheet is the inline <style> in
+         <head> — see the comments there. The role="status" wrappers
          must stay in the tree unhidden — their children's visibility
          flip is what screen readers announce. -->
     <div id="root">

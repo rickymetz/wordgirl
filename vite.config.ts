@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
@@ -83,6 +84,62 @@ function ogShells(): Plugin {
   };
 }
 
+/**
+ * The CSP (netlify.toml) has no 'unsafe-inline': every inline <style>
+ * and <script> the site ships must be individually allowed by a
+ * committed 'sha256-…' source. netlify.toml is static config, so the
+ * hashes cannot be injected at build time — instead this guard makes
+ * DRIFT a build failure: it hashes every inline block in the built
+ * index.html and 404.html exactly as served (the per-game OG shells
+ * copy index.html, so they carry the same blocks) and fails the build
+ * naming the missing tokens. Without it, editing the inline boot CSS
+ * ships a page whose styles the browser silently refuses.
+ */
+function cspHashGuard(): Plugin {
+  let outDir = "dist";
+  return {
+    name: "wordgirl-csp-hash-guard",
+    apply: "build",
+    configResolved(cfg) {
+      outDir = cfg.build.outDir;
+    },
+    closeBundle: {
+      sequential: true,
+      order: "post",
+      handler() {
+        const csp = readFileSync("netlify.toml", "utf8");
+        const missing: string[] = [];
+        for (const file of ["index.html", "404.html"]) {
+          const html = readFileSync(join(outDir, file), "utf8");
+          for (const kind of ["style", "script"] as const) {
+            // Inline blocks only — a tag with src= is covered by 'self'
+            // or an allowed host, not a hash.
+            const tag = new RegExp(
+              `<${kind}(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)</${kind}>`,
+              "g",
+            );
+            for (const m of html.matchAll(tag)) {
+              const hash = createHash("sha256")
+                .update(m[1], "utf8")
+                .digest("base64");
+              const token = `'sha256-${hash}'`;
+              if (!csp.includes(token)) {
+                missing.push(`${file} inline <${kind}>: ${token}`);
+              }
+            }
+          }
+        }
+        if (missing.length) {
+          throw new Error(
+            `netlify.toml CSP is missing hashes for inline content — add each ` +
+              `to its style-src/script-src:\n${missing.join("\n")}`,
+          );
+        }
+      },
+    },
+  };
+}
+
 export default defineConfig({
   build: {
     rollupOptions: {
@@ -98,6 +155,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     ogShells(),
+    cspHashGuard(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: "auto",
