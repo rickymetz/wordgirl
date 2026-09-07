@@ -42,17 +42,78 @@
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
-    <!-- createRoot().render() replaces these children, so the fallback
-         only survives when the app never mounts — a chunk that 404s
-         after a deploy, an evicted precache with no network. It is
-         revealed by a pure-CSS delay (index.css) so a normal boot never
-         flashes it, and it stays legible with no stylesheet at all,
-         which is exactly the case it exists for. -->
+    <!-- Pre-mount boot screen. React replaces all of #root's children
+         on mount, so this survives only while a boot is in flight or
+         never lands. Staging, constraints and rationale live with the
+         styles: index.css, "Boot screen". The role="status" wrappers
+         must stay in the tree unhidden — their children's visibility
+         flip is what screen readers announce. -->
     <div id="root">
       <div id="boot-fallback">
-        <h1>WordGirl did not finish loading</h1>
-        <p>Some of the app files did not arrive.</p>
-        <p><a href="/">Reload</a></p>
+        <div id="boot-skeleton" aria-hidden="true">
+          <div class="boot-head">
+            <div class="boot-bone boot-bone-icon"></div>
+            <div class="boot-bone boot-bone-title"></div>
+            <div class="boot-bone boot-bone-icon"></div>
+          </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
+          <div class="boot-game">
+            <div class="boot-bone boot-bone-card"></div>
+            <div class="boot-row">
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+              <div class="boot-bone boot-bone-pill"></div>
+            </div>
+          </div>
+        </div>
+        <div id="boot-center">
+          <div id="boot-spinner" aria-hidden="true"></div>
+          <div role="status">
+            <h1 id="boot-note">Loading…</h1>
+          </div>
+          <div role="status">
+            <div id="boot-stuck">
+              <h2>Still loading…</h2>
+              <p>
+                The app is taking longer than usual to arrive. Reloading is
+                usually the fastest fix — or keep waiting if your connection
+                is just slow.
+              </p>
+              <p><a href="">Reload</a></p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
