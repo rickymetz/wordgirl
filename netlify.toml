@@ -2,6 +2,14 @@
   command = "npm run build"
   publish = "dist"
 
+# Netlify's dashboard-side asset optimization rewrites HTML — including
+# the inline boot style/script whose sha256 the CSP pins — AFTER the
+# build cspHashGuard validated, so a UI toggle could ship pages whose
+# inline blocks no longer match their committed hashes. Pin it off in
+# the repo, where it can't be flipped silently.
+[build.processing]
+  skip_processing = true
+
 # Block WordPress scanner bots — these return 404 instead of serving
 # the SPA, so they stop inflating pageview counts.
 [[redirects]]
@@ -162,19 +170,19 @@
     # Verified in Chromium against this exact header: dropping the CDN from
     # img-src raises a securitypolicyviolation on the pixel and none on
     # sendBeacon, fetch or XHR.
-    # The sha256 sources pin the site's three inline blocks: index.html's
-    # boot <style> and settings <script> (which must run before the
-    # render-blocking stylesheet/bundle arrive — the whole point of the
-    # boot screen), and 404.html's <style>. No 'unsafe-inline': edits to
-    # any of those blocks change the hash, and the build FAILS with the
-    # new token to paste here (cspHashGuard in vite.config.ts) — without
-    # that guard a drifted hash ships a page whose styles the browser
-    # silently refuses.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.usefathom.com 'sha256-mxsOfPqVopZ9HGRuIgF2IpeX2/L9Err7WLHTk0NNgU8='; style-src 'self' 'sha256-G5XsflxGJYS+9BcMdcb2+OuGSyA5RsIF6GTPrkVibUU=' 'sha256-My7JR8LTPF7T4jaXp5kka8FoUh9ThvAyqZV9+C32yJI='; img-src 'self' data: https://cdn.usefathom.com; font-src 'self'; connect-src 'self' https://cdn.usefathom.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'"
+    # The sha256 sources admit the site's three inline blocks (boot
+    # style + settings script in index.html, 404.html's style) — no
+    # 'unsafe-inline'. Do not edit them by hand: on any drift the build
+    # fails naming the exact token and directive (cspHashGuard).
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.usefathom.com 'sha256-mxsOfPqVopZ9HGRuIgF2IpeX2/L9Err7WLHTk0NNgU8='; style-src 'self' 'sha256-hDRGKrdaGHPb1sQkO+TFcXA9npFIxq9HN8mFSrVVeas=' 'sha256-My7JR8LTPF7T4jaXp5kka8FoUh9ThvAyqZV9+C32yJI='; img-src 'self' data: https://cdn.usefathom.com; font-src 'self'; connect-src 'self' https://cdn.usefathom.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 
-# Docs — same protections as the app minus the CSP, which Starlight's
-# inline styles and scripts would break. See the proxy note above for
-# why this is defence in depth and not the fix.
+# Docs — the extra protections a proxied response can carry. Note the
+# docs escape the app CSP only because Netlify does not apply custom
+# headers to proxied responses at all — a [[headers]] block cannot
+# SUBTRACT a /* header (Netlify merges matching blocks), so if that
+# proxy behavior ever changes, the docs get the app CSP and Starlight's
+# inline styles/scripts break. See the proxy note above for why this is
+# defence in depth and not the fix.
 [[headers]]
   for = "/docs/*"
   [headers.values]

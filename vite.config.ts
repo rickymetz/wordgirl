@@ -1,8 +1,8 @@
 /// <reference types="vitest/config" />
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import { auditCspHashes, cspHeaderValue } from "./src/lib/cspHashes";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -60,8 +60,8 @@ function ogShells(): Plugin {
           const img = `${SITE}/og/${g.id}.png`;
           // These shells boot a GAME, so the hub-shaped boot skeleton
           // would promise a layout the mount never delivers —
-          // data-boot="game" hides it (index.css) and leaves the
-          // route-agnostic spinner + note.
+          // data-boot="game" hides it (index.html's inline boot style)
+          // and leaves the route-agnostic spinner + note.
           let html = base.replace(
             /<html lang="en">/,
             `<html lang="en" data-boot="game">`,
@@ -86,53 +86,54 @@ function ogShells(): Plugin {
 
 /**
  * The CSP (netlify.toml) has no 'unsafe-inline': every inline <style>
- * and <script> the site ships must be individually allowed by a
+ * and <script> the SITE SERVES must be individually allowed by a
  * committed 'sha256-…' source. netlify.toml is static config, so the
  * hashes cannot be injected at build time — instead this guard makes
- * DRIFT a build failure: it hashes every inline block in the built
- * index.html and 404.html exactly as served (the per-game OG shells
- * copy index.html, so they carry the same blocks) and fails the build
- * naming the missing tokens. Without it, editing the inline boot CSS
- * ships a page whose styles the browser silently refuses.
+ * drift a build failure, in both directions: a block whose token is
+ * absent from ITS directive (the browser would silently refuse it),
+ * and a stale sha256 source matching no shipped block (a standing
+ * grant that only ever ratchets the policy looser). It audits every
+ * built page Netlify serves with the header — index.html, 404.html
+ * and the per-game OG shells — via the pure helpers in
+ * src/lib/cspHashes.ts (unit-tested there). Out of scope on purpose:
+ * the service worker's OFFLINE_HTML (src/sw/appShell.ts) also carries
+ * an inline style, but the worker synthesizes that Response itself, so
+ * no Netlify header ever applies to it.
  */
 function cspHashGuard(): Plugin {
   let outDir = "dist";
+  let root = process.cwd();
   return {
     name: "wordgirl-csp-hash-guard",
     apply: "build",
     configResolved(cfg) {
       outDir = cfg.build.outDir;
+      root = cfg.root;
     },
     closeBundle: {
       sequential: true,
       order: "post",
       handler() {
-        const csp = readFileSync("netlify.toml", "utf8");
-        const missing: string[] = [];
-        for (const file of ["index.html", "404.html"]) {
-          const html = readFileSync(join(outDir, file), "utf8");
-          for (const kind of ["style", "script"] as const) {
-            // Inline blocks only — a tag with src= is covered by 'self'
-            // or an allowed host, not a hash.
-            const tag = new RegExp(
-              `<${kind}(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)</${kind}>`,
-              "g",
-            );
-            for (const m of html.matchAll(tag)) {
-              const hash = createHash("sha256")
-                .update(m[1], "utf8")
-                .digest("base64");
-              const token = `'sha256-${hash}'`;
-              if (!csp.includes(token)) {
-                missing.push(`${file} inline <${kind}>: ${token}`);
-              }
-            }
-          }
-        }
-        if (missing.length) {
+        const toml = readFileSync(join(root, "netlify.toml"), "utf8");
+        const csp = cspHeaderValue(toml);
+        if (!csp) {
           throw new Error(
-            `netlify.toml CSP is missing hashes for inline content — add each ` +
-              `to its style-src/script-src:\n${missing.join("\n")}`,
+            "netlify.toml: no Content-Security-Policy header found",
+          );
+        }
+        const files = [
+          "index.html",
+          "404.html",
+          ...OG_GAMES.map((g) => `games/${g.id}/index.html`),
+        ].map((name) => ({
+          name,
+          html: readFileSync(join(outDir, name), "utf8"),
+        }));
+        const { missing, stale } = auditCspHashes(files, csp);
+        const problems = [...missing, ...stale];
+        if (problems.length) {
+          throw new Error(
+            `CSP hash audit failed (netlify.toml):\n${problems.join("\n")}`,
           );
         }
       },

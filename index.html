@@ -44,11 +44,9 @@
          the boot screen exists for that is seconds away, and a
          forced-dark player would stare at a white skeleton until then.
          Same storage key, same <html> hooks, same theme-color rewrite;
-         values must stay in sync with settings.ts. Inline because it
-         has to run before first paint — its sha256 is pinned in the
-         CSP (netlify.toml), and the build fails if it drifts
-         (cspHashGuard in vite.config.ts). Must sit AFTER the
-         theme-color metas it rewrites. -->
+         src/lib/bootMirror.test.ts pins the copies to settings.ts.
+         sha256 pinned in netlify.toml; cspHashGuard enforces it. Must
+         sit AFTER the theme-color metas it rewrites. -->
     <script>
       (function () {
         try {
@@ -76,10 +74,10 @@
          surface-tint mix at the neutral accent) because the real
          tokens live in the file that may not have arrived; the html/
          body/#root rules mirror index.css likewise and resolve to the
-         same values when both apply. Staging, a11y and layout
-         rationale: see the boot markup below. sha256 pinned in the CSP
-         (netlify.toml); the build fails if it drifts (cspHashGuard in
-         vite.config.ts). -->
+         same values when both apply; src/lib/bootMirror.test.ts pins
+         every mirrored value. Staging, a11y and layout rationale: see
+         the boot markup below. sha256 pinned in netlify.toml;
+         cspHashGuard enforces it. -->
     <style>
       html {
         color-scheme: light dark;
@@ -101,6 +99,12 @@
       }
       body { margin: 0; }
       #root {
+        /* border-box keeps the safe-area padding INSIDE the 100dvh
+           (mirrors index.css). It normally comes from Tailwind's
+           preflight — which is in the stylesheet that hasn't arrived —
+           and without it a notched phone gets insets + 100dvh and the
+           boot screen page-scrolls, then jumps when the CSS lands. */
+        box-sizing: border-box;
         display: flex;
         flex-direction: column;
         min-height: 100dvh;
@@ -115,7 +119,53 @@
         width: 100%;
         background: var(--boot-surface);
         color: var(--boot-ink);
-        font-family: "Avenir Next", "Avenir", ui-rounded, system-ui, sans-serif;
+        /* The literal list is the no-stylesheet fallback (a var()
+           fallback may contain commas) and mirrors
+           --font-display-house; once index.css lands, the token wins,
+           so the Font setting is honored mid-boot. */
+        font-family: var(
+          --font-display,
+          "Avenir Next",
+          "Avenir",
+          ui-rounded,
+          system-ui,
+          sans-serif
+        );
+      }
+      /* Bones mirror the hub's geometry — max-w-md/px-5/pt-12 (28rem,
+         1.25rem, 3rem here), md:max-w-2xl + md:gap-8, rounded-3xl
+         cards over w-[37%] action pills with the third clipped at the
+         right edge exactly like the real scroller's "scroll for more"
+         peek (see GameCard) — in the NEUTRAL root surface-tint; the
+         real cards re-mix that token per game accent (data-level),
+         which no-JS cannot know. The pulse lives on this container,
+         not the bones: one composited layer instead of twenty. */
+      /* The skeleton, spinner and stuck panel carry the hidden
+         ATTRIBUTE as their no-CSS default: if this style block is ever
+         refused (a stale CSP hash, an intermediary rewriting the HTML,
+         an old engine without CSP3 style-element hashes), the [hidden]
+         rule blanks them instead of dumping the 8s "Still loading"
+         panel on every healthy load. Overriding [hidden] is a cascade
+         puzzle: Tailwind's preflight ships [hidden] { display: none
+         !important } in @layer base, which arrives WITH the app
+         stylesheet while the bundle is still pending, and for
+         !important declarations LAYERED beats unlayered and the
+         EARLIEST layer beats later ones — so these display overrides
+         live in their own layer, registered first in the document,
+         which outranks base precisely and only where both are
+         !important. The note stays un-hidden — bare "Loading…" text
+         is the honest no-style state. */
+      @layer boot {
+        #boot-skeleton {
+          display: flex !important;
+        }
+        html[data-boot="game"] #boot-skeleton {
+          display: none !important;
+        }
+        #boot-spinner,
+        #boot-stuck {
+          display: block !important;
+        }
       }
       #boot-skeleton {
         position: absolute;
@@ -123,7 +173,6 @@
         margin: 0 auto;
         max-width: 28rem;
         padding: 3rem 1.25rem 0;
-        display: flex;
         flex-direction: column;
         gap: 1.25rem;
         overflow: hidden;
@@ -139,7 +188,11 @@
           gap: 2rem;
         }
       }
-      html[data-boot="game"] #boot-skeleton { display: none; }
+      /* data-boot="game" is stamped by the per-game OG shells
+         (ogShells, vite.config.ts): those documents boot a GAME, so
+         the hub-shaped skeleton would promise a layout the mount never
+         delivers — they keep only the route-agnostic spinner + note.
+         The hiding rule lives in the boot layer above. */
       .boot-bone {
         flex: none;
         background: var(--boot-tint);
@@ -188,6 +241,9 @@
         position: absolute;
         inset: 0;
         margin: 0 auto;
+        /* Tracks the hub column (28rem) minus its px-5, so the stuck
+           panel gets enough width that its body copy isn't chopped
+           into slivers. */
         max-width: 25.5rem;
         display: flex;
         flex-direction: column;
@@ -307,18 +363,29 @@
         }
       }
     </style>
+    <!-- No integrity attribute, deliberately: Fathom ships rolling
+         updates to script.js, so a pinned SRI hash would silently kill
+         analytics at their next deploy. The accepted tradeoff is that
+         a compromise of their CDN runs in this origin; self-hosting a
+         pinned copy is the upgrade path if that ever stops being
+         acceptable. -->
     <script src="https://cdn.usefathom.com/script.js" data-site="SNVNKBMT" data-spa="auto" defer></script>
   </head>
   <body>
     <!-- Pre-mount boot screen. React replaces all of #root's children
          on mount, so this survives only while a boot is in flight or
-         never lands. Its whole stylesheet is the inline <style> in
-         <head> — see the comments there. The role="status" wrappers
-         must stay in the tree unhidden — their children's visibility
-         flip is what screen readers announce. -->
+         never lands. Its whole stylesheet is the inline style block in
+         <head> — see the comments there. Two invariants the markup
+         carries: the role="status" wrappers must stay in the tree
+         unhidden (their children's visibility flip is what screen
+         readers announce — and visibility, not just opacity, is what
+         keeps the hidden Reload link out of the tab order and
+         hit-testing, where a stray mid-screen tap would silently
+         reload); and the hidden attributes are the fail-closed no-CSS
+         default (see the style block). -->
     <div id="root">
       <div id="boot-fallback">
-        <div id="boot-skeleton" aria-hidden="true">
+        <div id="boot-skeleton" aria-hidden="true" hidden>
           <div class="boot-head">
             <div class="boot-bone boot-bone-icon"></div>
             <div class="boot-bone boot-bone-title"></div>
@@ -366,12 +433,12 @@
           </div>
         </div>
         <div id="boot-center">
-          <div id="boot-spinner" aria-hidden="true"></div>
+          <div id="boot-spinner" aria-hidden="true" hidden></div>
           <div role="status">
             <h1 id="boot-note">Loading…</h1>
           </div>
           <div role="status">
-            <div id="boot-stuck">
+            <div id="boot-stuck" hidden>
               <h2>Still loading…</h2>
               <p>
                 The app is taking longer than usual to arrive. Reloading is

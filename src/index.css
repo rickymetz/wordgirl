@@ -25,6 +25,11 @@
    * color-scheme, so the theme can follow the system OR be forced from
    * Settings (data-theme below) through one mechanism — no duplicated
    * dark-mode token blocks.
+   *
+   * surface/-raised/ink/ink-soft/line/accent and the surface-tint mix
+   * are MIRRORED as --boot-* in index.html's inline boot style (which
+   * must render before this file arrives); bootMirror.test.ts fails
+   * the build when a mirrored value drifts.
    */
   /* White page bg — the accent-tinted tiles carry the depth. */
   --color-surface: light-dark(#ffffff, #121116);
@@ -201,12 +206,16 @@
   --color-on-accent: light-dark(#ffffff, #1a1a2e);
 }
 
+/* These three rules and the 18px step are MIRRORED by index.html's
+   inline boot style, which must resolve light-dark() before this file
+   arrives (bootMirror.test.ts pins the copies). */
 html {
   /* Resolves every light-dark() pair; follows the system by default. */
   color-scheme: light dark;
   @media (min-width: 768px) { font-size: 18px; }
 }
-/* Manual override from Settings (applied by src/lib/settings.ts). */
+/* Manual override from Settings (applied by src/lib/settings.ts, and
+   pre-paint by index.html's inline boot script). */
 html[data-theme="light"] { color-scheme: light; }
 html[data-theme="dark"] { color-scheme: dark; }
 

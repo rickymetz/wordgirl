@@ -20,6 +20,12 @@ export interface Settings {
   font: FontPref;
 }
 
+/**
+ * MIRRORED by index.html's inline boot script as the literal non-100
+ * value list (100 means "no override", matching applySettings below).
+ * Change a rung here and the boot mirror must follow —
+ * bootMirror.test.ts fails the build until it does.
+ */
 export const FONT_SCALES = [
   { value: 87.5, label: "Small" },
   { value: 100, label: "Default" },
@@ -38,15 +44,17 @@ const DEFAULT_SETTINGS: Settings = {
   font: "default",
 };
 
-const KEY = "wg:v1:local:settings";
+/** MIRRORED by index.html's inline boot script (bootMirror.test.ts). */
+export const SETTINGS_KEY = "wg:v1:local:settings";
 
-// Keep in sync with --color-surface in index.css; the installed PWA's
-// browser chrome follows these metas.
-const SURFACE = { light: "#ffffff", dark: "#121116" };
+// A three-way mirror: --color-surface in index.css, and the theme-color
+// rewrite in index.html's inline boot script (bootMirror.test.ts). The
+// installed PWA's browser chrome follows these metas.
+export const SURFACE = { light: "#ffffff", dark: "#121116" };
 
 export function loadSettings(): Settings {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<Settings>;
     return {
@@ -69,7 +77,7 @@ export function loadSettings(): Settings {
 
 export function saveSettings(settings: Settings): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(settings));
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
     // Storage unavailable — the setting still applies for this session.
   }
