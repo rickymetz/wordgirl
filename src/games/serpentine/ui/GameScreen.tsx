@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
@@ -231,6 +232,7 @@ export function GameScreen({
               Hint{hintCount > 0 ? ` (${hintCount})` : ""}
             </button>
           )}
+          <DictionaryLink />
           <button
             type="button"
             onClick={() => {

@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import {
@@ -18,6 +18,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
@@ -39,7 +40,9 @@ import {
 } from "../state/persistence";
 
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
-import { isStraddle } from "../engine/types";
+import { parSolution } from "../engine/generator";
+import { lexiconItems } from "../engine/lexicon";
+import { isStraddle, toMultiset } from "../engine/types";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
@@ -143,6 +146,23 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
+
+  // Post-solve par reveal, offered only when the solve came in ABOVE
+  // par — at par the player's own board already is a par solution. The
+  // search runs on first open, not at solve (it is exhaustive-ish and
+  // most solves never open it).
+  const [showPar, setShowPar] = useState(false);
+  const parRowDefs = useMemo(
+    () =>
+      showPar
+        ? parSolution(
+            toMultiset(puzzle.bank),
+            lexiconItems(state.lexicon),
+            puzzle.parRows,
+          )
+        : null,
+    [showPar, puzzle.bank, puzzle.parRows, state.lexicon],
+  );
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -290,6 +310,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
+          <DictionaryLink />
           <button
             type="button"
             onClick={() => {
@@ -420,6 +441,38 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 <Sparkles aria-hidden className="h-3.5 w-3.5 text-accent" />
                 {glyphRowCount(state.rows)} true mirror {glyphRowCount(state.rows) === 1 ? "row" : "rows"}
               </span>
+            )}
+            {/* Kept small on purpose: post-solve slack under the board
+                is ~1-2 lines on a 667px screen, and the board cannot
+                give the reveal room (its solved rows are content-sized,
+                so the height budget isn't what binds). On short
+                viewports an OPEN reveal may scroll the page a few px —
+                accepted: it is optional, user-invoked, and there is no
+                board interaction left to protect. */}
+            {!atPar && (
+              <>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => setShowPar((open) => !open)}
+                  aria-expanded={showPar}
+                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+                >
+                  {showPar ? "Hide the par solution" : "Show a par solution"}
+                </button>
+                {showPar && parRowDefs && (
+                  <div className="-mt-1.5 flex flex-col items-center gap-0.5">
+                    {parRowDefs.map((r) => (
+                      <p
+                        key={r.words.join("/")}
+                        className="text-xs font-semibold tracking-wide"
+                      >
+                        {r.words.map((w) => w.toUpperCase()).join(" · ")}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               solvedElapsedMs !== null && (

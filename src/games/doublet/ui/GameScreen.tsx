@@ -8,6 +8,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
@@ -432,6 +433,7 @@ export function GameScreen({
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
+          <DictionaryLink />
           <button
             type="button"
             onClick={() => {

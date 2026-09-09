@@ -2,7 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { buildLexicon, lexiconItems, MIRROR_WORDS } from "./lexicon";
-import { dailySeed, generatePierglass, minRows, solveBank } from "./generator";
+import {
+  dailySeed,
+  generatePierglass,
+  minRows,
+  parSolution,
+  solveBank,
+} from "./generator";
 import { toMultiset } from "./types";
 
 const dict = parseDictionary(
@@ -146,6 +152,29 @@ describe("minRows", () => {
       // would have no choice to get right.
       expect(Math.max(...counts)).toBeGreaterThan(p.parRows);
     }
+  });
+});
+
+describe("parSolution", () => {
+  it("returns a real par-row decomposition on generated days", () => {
+    for (let day = 1; day <= 20; day++) {
+      const key = `2026-09-${String(day).padStart(2, "0")}`;
+      const p = generatePierglass(dict, dailySeed(key), items);
+      const sol = parSolution(toMultiset(p.bank), items, p.parRows);
+      // The reveal shows this to the player, so it must exist, hit par
+      // exactly, spend the bank exactly, and never repeat a row.
+      expect(sol, `${key}: no par solution found`).not.toBeNull();
+      expect(sol!.length).toBe(p.parRows);
+      expect(sol!.flatMap((r) => [...r.cost]).sort()).toEqual([...p.bank]);
+      const labels = sol!.map((r) => r.words.join("/"));
+      expect(new Set(labels).size).toBe(labels.length);
+    }
+  });
+
+  it("is null for an infeasible budget", () => {
+    // mom (mo) + was/saw needs two rows; one row cannot spend all five.
+    const bank = toMultiset([..."mo", ..."asw"]);
+    expect(parSolution(bank, items, 1)).toBeNull();
   });
 });
 

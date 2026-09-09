@@ -20,6 +20,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
@@ -455,6 +456,7 @@ export function GameScreen({
               Hint{hintCount > 0 ? ` (${hintCount})` : ""}
             </button>
           )}
+          <DictionaryLink />
           <button
             type="button"
             onClick={() => {

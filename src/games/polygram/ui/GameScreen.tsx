@@ -14,6 +14,7 @@ import {
   Type,
 } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint, trackSkipLevel } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
@@ -340,6 +341,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Hint{hintUsed ? ` (${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)})` : ""}
             </button>
           )}
+          <DictionaryLink />
           <button
             type="button"
             onClick={() => {
