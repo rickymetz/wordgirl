@@ -433,7 +433,9 @@ export function GameScreen({
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
-          <DictionaryLink />
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="doublet" />
+          )}
           <button
             type="button"
             onClick={() => {

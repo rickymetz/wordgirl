@@ -41,7 +41,7 @@ import {
 
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
 import { parSolution } from "../engine/generator";
-import { lexiconItems } from "../engine/lexicon";
+import { seededRandom, shuffle } from "../../../lib/random";
 import { isStraddle, toMultiset } from "../engine/types";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
@@ -81,7 +81,7 @@ interface Props {
 }
 
 export function GameScreen({ mode, onRestartTutorial }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
+  const { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved } =
     usePierglassGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
@@ -149,19 +149,24 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
 
   // Post-solve par reveal, offered only when the solve came in ABOVE
   // par — at par the player's own board already is a par solution. The
-  // search runs on first open, not at solve (it is exhaustive-ish and
-  // most solves never open it).
+  // search runs once on FIRST open, not at solve (most solves never
+  // open it) and not per toggle. Items are seed-shuffled first:
+  // first-fit over the lexicon's frequency order would show the same
+  // high-frequency staples every day and never the hand-curated
+  // showpiece pairs, which sit last in the list — the shuffle keeps
+  // the reveal deterministic per day but varied across days.
   const [showPar, setShowPar] = useState(false);
+  const [everOpenedPar, setEverOpenedPar] = useState(false);
   const parRowDefs = useMemo(
     () =>
-      showPar
+      everOpenedPar
         ? parSolution(
             toMultiset(puzzle.bank),
-            lexiconItems(state.lexicon),
+            shuffle([...items], seededRandom(puzzle.seed)),
             puzzle.parRows,
           )
         : null,
-    [showPar, puzzle.bank, puzzle.parRows, state.lexicon],
+    [everOpenedPar, puzzle.bank, puzzle.seed, puzzle.parRows, items],
   );
   // The box opens below the fold on tight screens (the solved board is
   // content-sized, so nothing above can give it room) — bring it into
@@ -323,7 +328,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
-          <DictionaryLink />
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="pierglass" />
+          )}
           <button
             type="button"
             onClick={() => {
@@ -474,15 +481,39 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 there is no board interaction left to protect (the
                 solved rows are content-sized, so the board's height
                 budget cannot make room). */}
+            {/* flex-col-reverse: the box sits ABOVE the toggle on
+                screen while the DOM keeps trigger-then-content order —
+                a screen reader activating "Show" finds the content
+                ahead of it, and aria-controls names the box. */}
             {!atPar && (
               <div
                 ref={parBoxRef}
-                className="flex flex-col items-center gap-3"
+                className="flex flex-col-reverse items-center gap-3"
               >
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setShowPar((open) => !open);
+                    setEverOpenedPar(true);
+                  }}
+                  aria-expanded={showPar && !!parRowDefs}
+                  aria-controls="par-solution"
+                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+                >
+                  {showPar && parRowDefs
+                    ? "Hide the par solution"
+                    : "Show a par solution"}
+                </button>
                 {showPar && parRowDefs && (
-                  <div className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3">
-                    <p className="text-xs font-semibold tracking-wider text-ink-soft uppercase">
-                      Par · {puzzle.parRows} rows
+                  <div
+                    id="par-solution"
+                    className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3"
+                  >
+                    {/* "One way", not "the": a day has up to 40
+                        decompositions, and this is one of them. */}
+                    <p className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                      One way to par
                     </p>
                     {parRowDefs.map((r) => (
                       <p
@@ -494,15 +525,6 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                     ))}
                   </div>
                 )}
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setShowPar((open) => !open)}
-                  aria-expanded={showPar}
-                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
-                >
-                  {showPar ? "Hide the par solution" : "Show a par solution"}
-                </button>
               </div>
             )}
             {isDaily && (

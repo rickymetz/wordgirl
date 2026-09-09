@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { seededRandom, shuffle } from "../../../lib/random";
 import { buildLexicon, lexiconItems, MIRROR_WORDS } from "./lexicon";
 import {
   dailySeed,
@@ -175,6 +176,22 @@ describe("parSolution", () => {
     // mom (mo) + was/saw needs two rows; one row cannot spend all five.
     const bank = toMultiset([..."mo", ..."asw"]);
     expect(parSolution(bank, items, 1)).toBeNull();
+  });
+
+  it("stays exact under a shuffled item order (the reveal shuffles per day)", () => {
+    const rng = seededRandom("reveal-shuffle-test");
+    for (let day = 1; day <= 5; day++) {
+      const key = `2026-10-${String(day).padStart(2, "0")}`;
+      const p = generatePierglass(dict, dailySeed(key), items);
+      const sol = parSolution(
+        toMultiset(p.bank),
+        shuffle([...items], rng),
+        p.parRows,
+      );
+      expect(sol).not.toBeNull();
+      expect(sol!.length).toBe(p.parRows);
+      expect(sol!.flatMap((r) => [...r.cost]).sort()).toEqual([...p.bank]);
+    }
   });
 });
 

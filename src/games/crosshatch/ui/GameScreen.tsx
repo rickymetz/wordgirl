@@ -456,7 +456,9 @@ export function GameScreen({
               Hint{hintCount > 0 ? ` (${hintCount})` : ""}
             </button>
           )}
-          <DictionaryLink />
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="crosshatch" />
+          )}
           <button
             type="button"
             onClick={() => {

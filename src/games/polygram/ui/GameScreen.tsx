@@ -341,7 +341,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Hint{hintUsed ? ` (${Object.values(state.revealed).reduce((n, p) => n + p.length, 0)})` : ""}
             </button>
           )}
-          <DictionaryLink />
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="polygram" />
+          )}
           <button
             type="button"
             onClick={() => {
