@@ -163,6 +163,19 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
         : null,
     [showPar, puzzle.bank, puzzle.parRows, state.lexicon],
   );
+  // The box opens below the fold on tight screens (the solved board is
+  // content-sized, so nothing above can give it room) — bring it into
+  // view so opening never appears to do nothing.
+  const parBoxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!showPar) return;
+    parBoxRef.current?.scrollIntoView({
+      block: "nearest",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [showPar, parRowDefs]);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -442,38 +455,6 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 {glyphRowCount(state.rows)} true mirror {glyphRowCount(state.rows) === 1 ? "row" : "rows"}
               </span>
             )}
-            {/* Kept small on purpose: post-solve slack under the board
-                is ~1-2 lines on a 667px screen, and the board cannot
-                give the reveal room (its solved rows are content-sized,
-                so the height budget isn't what binds). On short
-                viewports an OPEN reveal may scroll the page a few px —
-                accepted: it is optional, user-invoked, and there is no
-                board interaction left to protect. */}
-            {!atPar && (
-              <>
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setShowPar((open) => !open)}
-                  aria-expanded={showPar}
-                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
-                >
-                  {showPar ? "Hide the par solution" : "Show a par solution"}
-                </button>
-                {showPar && parRowDefs && (
-                  <div className="-mt-1.5 flex flex-col items-center gap-0.5">
-                    {parRowDefs.map((r) => (
-                      <p
-                        key={r.words.join("/")}
-                        className="text-xs font-semibold tracking-wide"
-                      >
-                        {r.words.map((w) => w.toUpperCase()).join(" · ")}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               solvedElapsedMs !== null && (
               <ShareButton
@@ -486,6 +467,40 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 )}
                 gameId="pierglass"
               />
+            )}
+            {/* Below the share, so the result actions stay together.
+                On short viewports an OPEN reveal may scroll the page a
+                few px — accepted: it is optional, user-invoked, and
+                there is no board interaction left to protect (the
+                solved rows are content-sized, so the board's height
+                budget cannot make room). */}
+            {!atPar && (
+              <>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => setShowPar((open) => !open)}
+                  aria-expanded={showPar}
+                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+                >
+                  {showPar ? "Hide the par solution" : "Show a par solution"}
+                </button>
+                {showPar && parRowDefs && (
+                  <div
+                    ref={parBoxRef}
+                    className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3"
+                  >
+                    {parRowDefs.map((r) => (
+                      <p
+                        key={r.words.join("/")}
+                        className="text-sm font-semibold tracking-wide"
+                      >
+                        {r.words.map((w) => w.toUpperCase()).join(" · ")}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
             {isDaily && (
               <DailyOutro gameId="pierglass" loadStreak={outroStreak} />
