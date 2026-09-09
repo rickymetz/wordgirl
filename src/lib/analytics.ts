@@ -109,6 +109,13 @@ export function trackHint(gameId: string) {
   track(`${gameId}:hint`);
 }
 
+/** The in-game dictionary link was used. Hints are counted and shared;
+ * dictionary lookups are invisible — this event is the only way to
+ * answer whether the link quietly bypasses the hint counter. */
+export function trackDictionary(gameId: string) {
+  track(`${gameId}:dictionary`);
+}
+
 /** An archived day was reset to be played again. */
 export function trackReplay(gameId: string) {
   track(`${gameId}:replay`);

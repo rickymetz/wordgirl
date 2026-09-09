@@ -96,6 +96,38 @@ export function minRows(bank: Multiset, items: RowDef[], upper: number): number 
   return upper;
 }
 
+/**
+ * One full decomposition within `budget` rows — the day's par made
+ * concrete, for the post-solve "how was par possible?" reveal. The
+ * same bounded walk as `minRows`, keeping the rows it chose; with
+ * budget = parRows the result is exactly par-many rows (fewer cannot
+ * exist — par is the minimum). Null only for an infeasible budget,
+ * which a parRows caller can never pass.
+ */
+export function parSolution(
+  bank: Multiset,
+  items: RowDef[],
+  budget: number,
+): RowDef[] | null {
+  const costs = items.map((i) => toMultiset(i.cost));
+  const widest = items.reduce((m, i) => Math.max(m, i.cost.length), 0);
+  const chosen: RowDef[] = [];
+  const search = (left: Multiset, startIdx: number, budget: number): boolean => {
+    const n = multisetSize(left);
+    if (n === 0) return true;
+    if (budget === 0 || n > budget * widest) return false;
+    for (let i = startIdx; i < items.length; i++) {
+      if (fitsIn(costs[i], left)) {
+        chosen.push(items[i]);
+        if (search(subtract(left, costs[i]), i + 1, budget - 1)) return true;
+        chosen.pop();
+      }
+    }
+    return false;
+  };
+  return search(bank, 0, budget) ? chosen : null;
+}
+
 interface Candidate {
   bank: string[];
   seedRows: string[];

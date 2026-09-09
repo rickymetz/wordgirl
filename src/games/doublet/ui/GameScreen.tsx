@@ -8,6 +8,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
 import { placedDominoIds } from "../state/reducer";
@@ -431,6 +432,9 @@ export function GameScreen({
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
+          )}
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="doublet" />
           )}
           <button
             type="button"

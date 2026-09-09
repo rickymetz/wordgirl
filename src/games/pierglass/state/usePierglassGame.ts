@@ -286,5 +286,8 @@ export function usePierglassGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved: hydratedSolvedRef.current, abandonSession };
+  // `items` is exposed so the UI's par-solution search runs over the
+  // SAME item list parRows was computed against — re-deriving it in
+  // the UI would make that invariant a coincidence.
+  return { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved: hydratedSolvedRef.current, abandonSession };
 }

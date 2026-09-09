@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import {
@@ -18,6 +18,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
@@ -39,7 +40,9 @@ import {
 } from "../state/persistence";
 
 import { glyphRowCount, resolvePlacement } from "../state/reducer";
-import { isStraddle } from "../engine/types";
+import { parSolution } from "../engine/generator";
+import { seededRandom, shuffle } from "../../../lib/random";
+import { isStraddle, toMultiset } from "../engine/types";
 import { GameToast, useToast } from "../../../components/game/GameToast";
 import { MirrorBoard } from "./MirrorBoard";
 import { LetterBank } from "./LetterBank";
@@ -78,7 +81,7 @@ interface Props {
 }
 
 export function GameScreen({ mode, onRestartTutorial }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved } =
+  const { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved } =
     usePierglassGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
@@ -143,6 +146,41 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
+
+  // Post-solve par reveal, offered only when the solve came in ABOVE
+  // par — at par the player's own board already is a par solution. The
+  // search runs once on FIRST open, not at solve (most solves never
+  // open it) and not per toggle. Items are seed-shuffled first:
+  // first-fit over the lexicon's frequency order would show the same
+  // high-frequency staples every day and never the hand-curated
+  // showpiece pairs, which sit last in the list — the shuffle keeps
+  // the reveal deterministic per day but varied across days.
+  const [showPar, setShowPar] = useState(false);
+  const [everOpenedPar, setEverOpenedPar] = useState(false);
+  const parRowDefs = useMemo(
+    () =>
+      everOpenedPar
+        ? parSolution(
+            toMultiset(puzzle.bank),
+            shuffle([...items], seededRandom(puzzle.seed)),
+            puzzle.parRows,
+          )
+        : null,
+    [everOpenedPar, puzzle.bank, puzzle.seed, puzzle.parRows, items],
+  );
+  // The box opens below the fold on tight screens (the solved board is
+  // content-sized, so nothing above can give it room) — bring it into
+  // view so opening never appears to do nothing.
+  const parBoxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!showPar) return;
+    parBoxRef.current?.scrollIntoView({
+      block: "nearest",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [showPar, parRowDefs]);
 
   // Practice: offer a jump to the daily only while it's still unsolved.
   const [dailySolved, setDailySolved] = useState<boolean | null>(null);
@@ -290,6 +328,9 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="pierglass" />
+          )}
           <button
             type="button"
             onClick={() => {
@@ -433,6 +474,58 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 )}
                 gameId="pierglass"
               />
+            )}
+            {/* Below the share, so the result actions stay together.
+                On short viewports an OPEN reveal may scroll the page a
+                few px — accepted: it is optional, user-invoked, and
+                there is no board interaction left to protect (the
+                solved rows are content-sized, so the board's height
+                budget cannot make room). */}
+            {/* flex-col-reverse: the box sits ABOVE the toggle on
+                screen while the DOM keeps trigger-then-content order —
+                a screen reader activating "Show" finds the content
+                ahead of it, and aria-controls names the box. */}
+            {!atPar && (
+              <div
+                ref={parBoxRef}
+                className="flex flex-col-reverse items-center gap-3"
+              >
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setShowPar((open) => !open);
+                    setEverOpenedPar(true);
+                  }}
+                  aria-expanded={showPar && !!parRowDefs}
+                  aria-controls="par-solution"
+                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+                >
+                  {showPar && parRowDefs
+                    ? "Hide the par solution"
+                    : "Show a par solution"}
+                </button>
+                {showPar && parRowDefs && (
+                  <div
+                    id="par-solution"
+                    className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3"
+                  >
+                    {/* "One way", not "the": a day has up to 40
+                        decompositions, and this is one of them. */}
+                    <p className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                      One way to par
+                    </p>
+                    {parRowDefs.map((r) => (
+                      <p
+                        key={r.words.join("/")}
+                        className="text-sm font-semibold tracking-wide"
+                      >
+                        {r.words.map((w) => w.toUpperCase()).join(" · ")}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
             {isDaily && (
               <DailyOutro gameId="pierglass" loadStreak={outroStreak} />

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { CircleHelp, Undo2, Trash2, Lightbulb } from "lucide-react";
 import { HomeLink } from "../../../components/HomeLink";
+import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
@@ -230,6 +231,9 @@ export function GameScreen({
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{hintCount > 0 ? ` (${hintCount})` : ""}
             </button>
+          )}
+          {(mode.kind === "daily" || mode.kind === "archive") && (
+            <DictionaryLink gameId="serpentine" />
           )}
           <button
             type="button"

@@ -185,6 +185,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `BottomSheet`, `CoachSheet` (+ `Key`), `ModalDialog`,
   `useModalFocus` (mark initial focus `data-autofocus`), `HomeLink`,
   `SettingsDialog`.
+- `DictionaryLink` — the game-header book link to `/dictionary`,
+  rendered in DAILY and ARCHIVE modes ONLY: practice mints a fresh
+  seed per mount and the tutorial restarts, so a one-tap exit there
+  silently loses the run. The hub keeps its own corner variant on
+  purpose. Its negative margin is vertical-only plus `mr-2` — two
+  adjacent icon buttons that BOTH collapse the header's gap end up
+  with hit areas 28px apart and the later one click-steals the first
+  (the touch audit catches exactly this).
 - `HoldButton` — press-and-hold (default 1s) for one-way actions a
   stray thumb must not trigger (Polygram's level skip). The house
   alternative to a confirmation dialog when the action is small enough
@@ -342,7 +350,14 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   (the dictionary's bookmark button was exactly that). Two standing
   exceptions: Crosshatch's keyboard keys are ~30px wide because ten of
   them cannot be 44px on a 390px screen, and a control behind an open
-  sheet fails the hit test by design.
+  sheet fails the hit test by design. Blind spot: the audit never
+  SOLVES a board, so post-solve results controls (Pierglass' par
+  toggle) are outside its reach — measure those by hand.
+- Accepted scroll: Pierglass' post-solve par reveal may scroll the
+  page a few px while OPEN (optional, user-invoked, post-play; the
+  solved board is content-sized, so the height budget cannot make
+  room). It scrolls itself into view, so the no-scroll check's next
+  red on that screen is this, not a regression.
 - Sheets (settings, how-to-play) use `components/BottomSheet` /
   `CoachSheet` inside `<AnimatePresence>`. Centered confirmations use
   `components/ModalDialog`. All dialogs get focus containment via
