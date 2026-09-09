@@ -475,21 +475,15 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 solved rows are content-sized, so the board's height
                 budget cannot make room). */}
             {!atPar && (
-              <>
-                <button
-                  type="button"
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => setShowPar((open) => !open)}
-                  aria-expanded={showPar}
-                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
-                >
-                  {showPar ? "Hide the par solution" : "Show a par solution"}
-                </button>
+              <div
+                ref={parBoxRef}
+                className="flex flex-col items-center gap-3"
+              >
                 {showPar && parRowDefs && (
-                  <div
-                    ref={parBoxRef}
-                    className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3"
-                  >
+                  <div className="flex flex-col items-center gap-1 rounded-2xl bg-surface-tint px-6 py-3">
+                    <p className="text-xs font-semibold tracking-wider text-ink-soft uppercase">
+                      Par · {puzzle.parRows} rows
+                    </p>
                     {parRowDefs.map((r) => (
                       <p
                         key={r.words.join("/")}
@@ -500,7 +494,16 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                     ))}
                   </div>
                 )}
-              </>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => setShowPar((open) => !open)}
+                  aria-expanded={showPar}
+                  className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+                >
+                  {showPar ? "Hide the par solution" : "Show a par solution"}
+                </button>
+              </div>
             )}
             {isDaily && (
               <DailyOutro gameId="pierglass" loadStreak={outroStreak} />
