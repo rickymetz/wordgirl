@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HomeLink } from "./HomeLink";
+import { GamePager, GamePagerNav } from "./GamePager";
 import {
   dateKeyRange,
   formatDateKey,
@@ -93,8 +94,10 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
   });
 
   return (
-    <div
-      data-level={config.accent}
+    <GamePager
+      gameId={config.gameId}
+      page="archive"
+      accent={config.accent}
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
       <header className="flex items-center justify-between pt-6 pb-2">
@@ -107,8 +110,9 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
         </Link>
       </header>
 
-      <div className="pb-5">
+      <div className="flex items-center justify-between pb-5">
         <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
+        <GamePagerNav gameId={config.gameId} page="archive" />
       </div>
 
       {stats && config.hasPlayed(stats) && (
@@ -132,7 +136,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
             />
           ))}
       </div>
-    </div>
+    </GamePager>
   );
 }
 

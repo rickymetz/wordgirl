@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "./HomeLink";
+import { GamePager, GamePagerNav } from "./GamePager";
 import { trackStatsDay } from "../lib/analytics";
 import { dateKeyRange, localDateKey } from "../lib/date";
 
@@ -114,8 +115,10 @@ export function GameTrends<Day extends { dateKey: string }>({
   const from = dateKeyRange(config.epoch, today).slice(-WINDOW_DAYS);
 
   return (
-    <div
-      data-level={config.accent}
+    <GamePager
+      gameId={config.gameId}
+      page="stats"
+      accent={config.accent}
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
       <header className="flex items-center justify-between pt-6 pb-2">
@@ -127,9 +130,12 @@ export function GameTrends<Day extends { dateKey: string }>({
           Archive
         </Link>
       </header>
-      <div className="pb-5">
-        <h1 className="text-2xl font-bold tracking-tight">Stats</h1>
-        <p className="pt-1 text-sm text-ink-soft">Last {WINDOW_DAYS} days</p>
+      <div className="flex items-start justify-between pb-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Stats</h1>
+          <p className="pt-1 text-sm text-ink-soft">Last {WINDOW_DAYS} days</p>
+        </div>
+        <GamePagerNav gameId={config.gameId} page="stats" />
       </div>
 
       {days && (
@@ -175,7 +181,7 @@ export function GameTrends<Day extends { dateKey: string }>({
             One day so far — the lines join up as you play.
           </p>
         )}
-    </div>
+    </GamePager>
   );
 }
 

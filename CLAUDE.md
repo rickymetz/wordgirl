@@ -108,6 +108,15 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
+- `GamePager` + `GamePagerNav` — the archive/stats carousel: swipe
+  left/right (touch/pen only — a mouse drag is selection) or the
+  ‹ Name › chevrons to reach the SAME page of the next game, cycling
+  in registry order. GamePager is the page's outer shell (it owns
+  data-level, the swipe handlers, `touch-pan-y` so vertical scroll
+  stays the browser's, and the slide-in keyed off navigation state);
+  both live inside GameArchive/GameTrends, so games get it for free.
+  GamePager.test.ts pins that every game exposes both routes — the
+  cycle must never 404.
 - `GameTrends` — the stats-over-time page from a config: per-metric
   single-series Tufte SPARKLINES in the game's accent (validated: the
   four accents FAIL as a categorical set, so never chart games against
