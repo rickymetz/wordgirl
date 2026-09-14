@@ -36,8 +36,20 @@ const updateSW = registerSW({
 });
 void updateSW;
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// ?demo-history seeds six weeks of plausible progress for previewing
+// full archive/stats pages (lib/demoHistory.ts — it refuses to touch
+// real saves unless the value is "replace"). Seed BEFORE mounting so
+// no hook hydrates mid-write, then reload with the param stripped.
+const demoParam = new URLSearchParams(location.search).get("demo-history");
+if (demoParam !== null) {
+  void import("./lib/demoHistory").then(({ seedDemoHistory }) => {
+    seedDemoHistory(demoParam === "replace");
+    location.replace(location.pathname);
+  });
+} else {
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
