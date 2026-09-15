@@ -320,7 +320,16 @@ export function GamePager({
         drag.current = null;
         if (s.engaged) settle(s.dx, 0, () => setPeek(null));
       }}
-      onLostPointerCapture={() => {
+      onLostPointerCapture={(e) => {
+        // Only THIS element's capture counts. On real touch the
+        // browser implicitly captures the pointer to the element
+        // under the finger, and transferring it here (the
+        // setPointerCapture above) fires lostpointercapture on that
+        // inner element first — which BUBBLES through this handler
+        // and, unguarded, killed every real-device drag the moment
+        // it engaged. Synthetic test pointers never take implicit
+        // capture, which is how that shipped.
+        if (e.target !== e.currentTarget) return;
         // Abnormal capture loss with a live drag (pointerup already
         // clears drag.current on the normal path): don't strand the
         // track off-center.
