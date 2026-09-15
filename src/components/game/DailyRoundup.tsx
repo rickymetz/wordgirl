@@ -119,12 +119,13 @@ export function DailyRoundup({ today }: { today: string }) {
     };
   }, [today]);
 
-  // Which tier this day has earned: a hint-free day gets the grand (gold,
-  // multi-burst) sequence. Derived once — the effect's unmount timer and
-  // the overlay it unmounts have to agree, and two copies of the same
-  // ternary is how they stop agreeing.
-  const variant: ConfettiVariant =
-    roundup && roundupTotalHints(roundup.entries) === 0 ? "grand" : "burst";
+  // ONE whole-day decision, read by four things: the confetti tier, the
+  // effect's unmount timer, the headline, and the rows' hint counts. It
+  // lives up here (before the early return) because the effect needs it;
+  // a second copy of the same test is how they stop agreeing.
+  const perfectDay = roundup !== null && roundupTotalHints(roundup.entries) === 0;
+  // A hint-free day gets the grand (gold, multi-burst) sequence.
+  const variant: ConfettiVariant = perfectDay ? "grand" : "burst";
 
   // Fire the confetti ONCE, the first time the completed banner is shown for
   // the day (and only if not dismissed). markCelebrated persists it so a
@@ -175,10 +176,9 @@ export function DailyRoundup({ today }: { today: string }) {
 
   if (!roundup || dismissed !== false) return null;
   const { entries, streak } = roundup;
-  // A whole-day decision: rows carry per-game/per-level hint counts only
-  // once SOME game used a hint. On a fully clean day the subtitle's
-  // "0 Hints" is the whole story and the rows stay uncluttered.
-  const showHints = roundupTotalHints(entries) > 0;
+  // Rows carry per-game/per-level hint counts only once SOME game used a
+  // hint; on a clean day the headline says it and the rows stay uncluttered.
+  const showHints = !perfectDay;
   return (
     <>
       {celebrate && <ConfettiOverlay variant={variant} />}
@@ -205,8 +205,16 @@ export function DailyRoundup({ today }: { today: string }) {
           <div className="text-center">
             {/* font-game is Rubik Mono One, and follows the Font setting to
                 the accessible face automatically. */}
-            <h2 className="text-balance px-6 font-game text-lg leading-[0.85] text-ink">
-              All Puzzles Solved Today
+            {/* The perfect day says so in TEXT, not only in gold confetti:
+                the overlay renders nothing under prefers-reduced-motion and
+                fires once on a hub visit that may never happen, so an
+                animation alone leaves the achievement unattributable — and
+                unannounced to a screen reader. Same whole-day gate as the
+                rows. */}
+            <h2 className="text-balance px-6 font-game text-lg leading-none text-ink">
+              {perfectDay
+                ? "All Puzzles Solved, No Hints"
+                : "All Puzzles Solved Today"}
             </h2>
             <p className="pt-1 text-sm text-ink-soft">
               {roundupSummary(entries, streak)}
