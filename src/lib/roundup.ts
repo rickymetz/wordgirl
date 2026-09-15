@@ -173,14 +173,24 @@ export function roundupTotalHints(entries: RoundupEntry[]): number {
   return entries.reduce((n, e) => n + e.hints, 0);
 }
 
-/** The card's subtitle: the streak (only past day one), the total time,
- *  and the total hints — no emoji, that's the share string's job. */
+/**
+ * The card's subtitle: the streak (only past day one), the total time, and
+ * the total hints — no emoji, that's the share string's job.
+ *
+ * The hint total drops out entirely on a hint-free day, because the
+ * HEADLINE says "No Hints" there and the two sit on consecutive lines: at
+ * the Huge text setting they stack directly and the pair reads as a
+ * rendering fault rather than a stat. A day that used hints still needs
+ * the number, so this is the same whole-day gate the rows use, not a new
+ * rule. (The SHARE string keeps its 😎 0 — a pasted block has no headline
+ * above it to carry the fact.)
+ */
 export function roundupSummary(entries: RoundupEntry[], streak: number): string {
   const hints = roundupTotalHints(entries);
   const parts: string[] = [];
   if (streak > 1) parts.push(`${streak} day streak`);
   parts.push(`Total time ${formatDuration(roundupTotalMs(entries))}`);
-  parts.push(`${hints} ${hints === 1 ? "Hint" : "Hints"}`);
+  if (hints > 0) parts.push(`${hints} ${hints === 1 ? "Hint" : "Hints"}`);
   return parts.join(" · ");
 }
 

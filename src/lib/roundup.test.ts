@@ -151,6 +151,16 @@ describe("roundupTotalMs / roundupSummary", () => {
       "Total time 5:31 · 1 Hint",
     );
   });
+  it("drops the hint total on a hint-free day — the headline carries it", () => {
+    // "No Hints" is in the headline directly above, so repeating it here
+    // reads as a fault rather than a stat (they stack at Huge text).
+    expect(roundupSummary([polygram, { ...pierglass, hints: 0 }], 1)).toBe(
+      "Total time 5:31",
+    );
+    expect(roundupSummary([polygram, { ...pierglass, hints: 0 }], 4)).toBe(
+      "4 day streak · Total time 5:31",
+    );
+  });
 });
 
 describe("streakEndingToday", () => {
