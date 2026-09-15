@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HomeLink } from "./HomeLink";
+import { GamePager, GamePagerNav } from "./GamePager";
 import {
   dateKeyRange,
   formatDateKey,
@@ -46,6 +47,19 @@ export interface GameArchiveConfig<Day extends ArchiveDayBase, Stats> {
 }
 
 /**
+ * Last loaded data per game, module-lived. A committed pager swipe
+ * REMOUNTS this page for the new game, but the peek already mounted
+ * that game's page for real — its loads ran, so starting the new
+ * mount from null repaints data the screen was showing a frame ago
+ * (the post-commit flash). Serve the previous result synchronously
+ * and let the effect refresh it underneath.
+ */
+const archiveCache = new Map<
+  string,
+  { progress?: Record<string, unknown>; stats?: unknown }
+>();
+
+/**
  * The house archive page: stats grid and calendar mosaic on the game's
  * accent-tinted panels, played days listed newest-first as scoreboard
  * rows. Style rules live HERE (see CLAUDE.md "Archive pages") — games
@@ -56,27 +70,40 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
 }: {
   config: GameArchiveConfig<Day, Stats>;
 }) {
-  const [progress, setProgress] = useState<Record<string, Day> | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const cached = archiveCache.get(config.gameId);
+  const [progress, setProgress] = useState<Record<string, Day> | null>(
+    (cached?.progress as Record<string, Day> | undefined) ?? null,
+  );
+  const [stats, setStats] = useState<Stats | null>(
+    (cached?.stats as Stats | undefined) ?? null,
+  );
 
   // A rejected read must land on a RENDERED empty state, not on a promise
   // that never settles — without the catch the page holds its loading
   // state forever and says nothing about why.
   useEffect(() => {
+    const entry = archiveCache.get(config.gameId) ?? {};
+    archiveCache.set(config.gameId, entry);
     void config
       .loadAllDays()
       .catch((err) => {
         console.warn("archive: could not read saved days", err);
         return {} as Record<string, Day>;
       })
-      .then(setProgress);
+      .then((days) => {
+        entry.progress = days;
+        setProgress(days);
+      });
     void config
       .loadStats()
       .catch((err) => {
         console.warn("archive: could not read stats", err);
         return null;
       })
-      .then(setStats);
+      .then((loaded) => {
+        entry.stats = loaded;
+        setStats(loaded);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.gameId]);
 
@@ -93,11 +120,20 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
   });
 
   return (
-    <div
-      data-level={config.accent}
+    <GamePager
+      gameId={config.gameId}
+      page="archive"
+      accent={config.accent}
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
-      <header className="flex items-center justify-between pt-6 pb-2">
+      {/* pb-4, not pb-2: the header link and the pager chevron below it
+          both expand to a 44px hit box, and at pb-2 the chevron's
+          overlapped the link's lower 6px AND won the hit test — a tap
+          at the bottom of "Today's puzzle" paged to the next game
+          instead. Two stacked rows of touch targets need the gap
+          measured, not eyeballed (the DictionaryLink click-steal
+          lesson, one axis over). */}
+      <header className="flex items-center justify-between pt-6 pb-4">
         <HomeLink />
         <Link
           to={`/games/${config.gameId}`}
@@ -107,8 +143,9 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
         </Link>
       </header>
 
-      <div className="pb-5">
+      <div className="flex items-center justify-between pb-5">
         <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
+        <GamePagerNav gameId={config.gameId} page="archive" />
       </div>
 
       {stats && config.hasPlayed(stats) && (
@@ -132,7 +169,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
             />
           ))}
       </div>
-    </div>
+    </GamePager>
   );
 }
 

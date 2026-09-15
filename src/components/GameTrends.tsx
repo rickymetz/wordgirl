@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import { HomeLink } from "./HomeLink";
+import { GamePager, GamePagerNav } from "./GamePager";
 import { trackStatsDay } from "../lib/analytics";
 import { dateKeyRange, localDateKey } from "../lib/date";
 
@@ -64,12 +65,25 @@ const WINDOW_DAYS = 30;
 
 const defaultFormat = (v: number) => `${Math.round(v * 10) / 10}`;
 
+/**
+ * Last loaded days per game, module-lived. A committed pager swipe
+ * REMOUNTS this page for the new game, but the peek already mounted
+ * that game's page for real — its load ran, so starting the new mount
+ * from null repaints charts the screen was showing a frame ago (the
+ * post-commit flash). Serve the previous result synchronously and let
+ * the effect refresh it underneath.
+ */
+const trendsCache = new Map<string, Record<string, unknown>>();
+
 export function GameTrends<Day extends { dateKey: string }>({
   config,
 }: {
   config: GameTrendsConfig<Day>;
 }) {
-  const [days, setDays] = useState<Record<string, Day> | null>(null);
+  const [days, setDays] = useState<Record<string, Day> | null>(
+    (trendsCache.get(config.gameId) as Record<string, Day> | undefined) ??
+      null,
+  );
   // A rejected read must land on a RENDERED empty state, not on a promise
   // that never settles — without the catch the page holds its loading
   // state forever and says nothing about why.
@@ -80,7 +94,10 @@ export function GameTrends<Day extends { dateKey: string }>({
         console.warn("stats: could not read saved days", err);
         return {} as Record<string, Day>;
       })
-      .then(setDays);
+      .then((loaded) => {
+        trendsCache.set(config.gameId, loaded);
+        setDays(loaded);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.gameId]);
 
@@ -114,11 +131,20 @@ export function GameTrends<Day extends { dateKey: string }>({
   const from = dateKeyRange(config.epoch, today).slice(-WINDOW_DAYS);
 
   return (
-    <div
-      data-level={config.accent}
+    <GamePager
+      gameId={config.gameId}
+      page="stats"
+      accent={config.accent}
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
-      <header className="flex items-center justify-between pt-6 pb-2">
+      {/* pb-4, not pb-2: the header link and the pager chevron below it
+          both expand to a 44px hit box, and at pb-2 the chevron's
+          overlapped the link's lower 6px AND won the hit test — a tap
+          at the bottom of "Today's puzzle" paged to the next game
+          instead. Two stacked rows of touch targets need the gap
+          measured, not eyeballed (the DictionaryLink click-steal
+          lesson, one axis over). */}
+      <header className="flex items-center justify-between pt-6 pb-4">
         <HomeLink />
         <Link
           to={`/games/${config.gameId}/archive`}
@@ -127,9 +153,12 @@ export function GameTrends<Day extends { dateKey: string }>({
           Archive
         </Link>
       </header>
-      <div className="pb-5">
-        <h1 className="text-2xl font-bold tracking-tight">Stats</h1>
-        <p className="pt-1 text-sm text-ink-soft">Last {WINDOW_DAYS} days</p>
+      <div className="flex items-start justify-between pb-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Stats</h1>
+          <p className="pt-1 text-sm text-ink-soft">Last {WINDOW_DAYS} days</p>
+        </div>
+        <GamePagerNav gameId={config.gameId} page="stats" />
       </div>
 
       {days && (
@@ -175,8 +204,45 @@ export function GameTrends<Day extends { dateKey: string }>({
             One day so far — the lines join up as you play.
           </p>
         )}
-    </div>
+    </GamePager>
   );
+}
+
+/**
+ * A chart pick must coexist with the pager's swipe, which can start
+ * anywhere — including on a chart. Picking on pointerDOWN meant every
+ * swipe that happened to begin on a sparkline also changed its readout
+ * before the page slid away. So: arm on down, pick on UP, and only if
+ * the pointer stayed put (under ~10px — less than the pager's own
+ * engage distance, so a movement in the dead zone between them picks
+ * nothing and drags nothing rather than doing both). Once the pager
+ * engages it takes pointer capture, so the chart never sees that up
+ * at all.
+ *
+ * A plain factory over a caller-owned ref, not a hook: the charts
+ * early-return before their handlers are built, and a hook below an
+ * early return breaks the rules of hooks.
+ */
+type TapStart = { id: number; x: number; y: number } | null;
+function tapPickHandlers(
+  start: React.MutableRefObject<TapStart>,
+  onTap: (e: PointerEvent<SVGSVGElement>) => void,
+) {
+  return {
+    onPointerDown: (e: PointerEvent<SVGSVGElement>) => {
+      start.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    },
+    onPointerUp: (e: PointerEvent<SVGSVGElement>) => {
+      const s = start.current;
+      start.current = null;
+      if (!s || s.id !== e.pointerId) return;
+      if (Math.hypot(e.clientX - s.x, e.clientY - s.y) >= 10) return;
+      onTap(e);
+    },
+    onPointerCancel: () => {
+      start.current = null;
+    },
+  };
 }
 
 /** Marks are far smaller than a fingertip, so a tap anywhere on a
@@ -211,6 +277,7 @@ function MetricChart<Day extends { dateKey: string }>({
   picked: string | null;
   onPick: (dateKey: string | null) => void;
 }) {
+  const tapStart = useRef<TapStart>(null);
   const fmt = metric.format ?? defaultFormat;
   const points = dates.map((dateKey) => {
     const day = days[dateKey];
@@ -297,9 +364,9 @@ function MetricChart<Day extends { dateKey: string }>({
   const anchor = (i: number) =>
     x(i) < 26 ? "start" : x(i) > W - 26 ? "end" : "middle";
 
-  const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
+  const tapPick = tapPickHandlers(tapStart, (e) => {
     onPick(drawn[nearestAt(e, W, x, dataIdx)].dateKey);
-  };
+  });
 
   /**
    * The same reading by keyboard. Tapping a day was pointer-only, so the
@@ -361,7 +428,7 @@ function MetricChart<Day extends { dateKey: string }>({
               ? `${metric.label}: nothing recorded on ${shortDate(picked)}. Arrow keys to move between days.`
               : `${metric.label}, last ${dates.length} days. Best ${fmt(best)}, average ${fmt(avg)}, latest ${fmt(drawn[latest].v!)}. Arrow keys to read a day.`
         }
-        onPointerDown={pickNearest}
+        {...tapPick}
         onKeyDown={onKeyDown}
       >
         {/* Range-frame: the only scaffold, spanning exactly the played
@@ -458,6 +525,7 @@ function HourChart<Day extends { dateKey: string }>({
   pickedDate: string | null;
   onPickDate: (dateKey: string | null) => void;
 }) {
+  const tapStart = useRef<TapStart>(null);
   const [picked, setPicked] = useState<number | null>(null);
   const bins = Array.from({ length: 24 }, () => 0);
   for (const dateKey of dates) {
@@ -494,7 +562,7 @@ function HourChart<Day extends { dateKey: string }>({
   const pickedLive = picked !== null && bins[picked] > 0 ? picked : null;
   const labeled = dayHour ?? pickedLive ?? peak;
   const dayCount = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
-  const pickNearest = (e: PointerEvent<SVGSVGElement>) => {
+  const tapPick = tapPickHandlers(tapStart, (e) => {
     const h = nearestAt(e, W, x, filled);
     // One selection at a time: reading an hour is a different question
     // from reading a day, and leaving a date up on the sparklines while
@@ -502,7 +570,7 @@ function HourChart<Day extends { dateKey: string }>({
     // the page that do not agree.
     onPickDate(null);
     setPicked((cur) => (cur === h ? null : h));
-  };
+  });
 
   return (
     <section className="mt-8">
@@ -529,7 +597,7 @@ function HourChart<Day extends { dateKey: string }>({
               ? `${metric.label}: nothing recorded on ${shortDate(pickedDate)}.`
               : `${metric.label}: most solves around ${fmtHour(peak)}.`
         }
-        onPointerDown={pickNearest}
+        {...tapPick}
       >
         <line
           x1={0}

@@ -135,6 +135,30 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).
+- `GamePager` + `GamePagerNav` — the archive/stats carousel: LIVE
+  drag left/right (touch/pen only — a mouse drag is selection) or the
+  ‹ Name › chevrons to reach the SAME page of the next game, cycling
+  in registry order. GamePager is the page's outer shell (it owns
+  data-level, the drag, `touch-pan-y` so vertical scroll stays the
+  browser's, and the settle animation); both live inside
+  GameArchive/GameTrends, so games get it for free. The peek under a
+  drag is the neighbor's REAL page (inert, aria-hidden), so anything a
+  pager page mounts must be mount-safe: loads idempotent, no analytics
+  on mount, no autofocus. A committed swipe REMOUNTS the destination —
+  GameArchive/GameTrends serve their last loaded data from a module
+  cache so the commit doesn't flash empty, and chart taps pick on
+  pointerUP with a <10px slop so a swipe that starts on a chart never
+  also changes it. The GESTURE rules are pure and tuned against a
+  measured sweep, not by feel (`dragIntent`/`commitDirection`, unit
+  tested): a thumb PIVOTS, so an intentional side-swipe arcs downward
+  and the vertical stand-down needs a ratio well past 45° or it drops
+  real swipes before they start; and a release turns the page on a
+  FLICK (velocity) or a far-enough DRAG (projected landing), because a
+  distance-only rule leaves ordinary mid-speed swipes in a gap and
+  reads as "it only works at one speed". Judge any retune on measured
+  dx/velocity from real touch events — a scripted swipe takes ~2x its
+  requested duration, so nominal timings lie. GamePager.test.ts pins
+  that every game exposes both routes — the cycle must never 404.
 - `GameTrends` — the stats-over-time page from a config: per-metric
   single-series Tufte SPARKLINES in the game's accent (validated: the
   four accents FAIL as a categorical set, so never chart games against
@@ -237,6 +261,11 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - `useViewport()` — `{vw, vh, rem}` for board budgets (vh excludes
   safe-area; rem is the Text-size setting — scale px constants by
   `rem/16`).
+- `demoHistory.ts` — the ?demo-history seeder behind archive/stats
+  screenshots and deploy-preview review (dev + preview builds only;
+  production tree-shakes it). Every seeded save carries puzzleKey
+  "demo-history" so it can list but never hydrate; it refuses to touch
+  real progress without `=replace` plus a confirm.
 - `seededRandom(seed)`, `shuffle` (`lib/random.ts`); date helpers
   (`localDateKey`, `previousDateKey`, `dateKeyRange`, `formatDateKey`,
   `formatShareDate`, `formatDuration`); the shared dictionary
