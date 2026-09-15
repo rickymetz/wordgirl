@@ -216,8 +216,11 @@ describe("DailyRoundup", () => {
 
   it("fires the confetti once, then remembers it for the day", async () => {
     await mount();
-    // ConfettiOverlay mounts its canvas on the first show.
-    expect(container.querySelector("canvas")).toBeTruthy();
+    // ConfettiOverlay mounts its canvas on the first show. Bravo used
+    // hints today, so it's the everyday burst, not the perfect-day one.
+    expect(
+      container.querySelector('canvas[data-confetti="burst"]'),
+    ).toBeTruthy();
     expect(
       localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
     ).toBeTruthy();
@@ -228,6 +231,20 @@ describe("DailyRoundup", () => {
     await mount();
     expect(banner()).toBeTruthy();
     expect(container.querySelector("canvas")).toBeNull();
+  });
+
+  it("fires the grand confetti when the whole day used zero hints", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    expect(
+      container.querySelector('canvas[data-confetti="grand"]'),
+    ).toBeTruthy();
+    // Still a one-shot: remembered for the day like the everyday burst.
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+    ).toBeTruthy();
   });
 
   it("can be dismissed for the day and stays gone", async () => {

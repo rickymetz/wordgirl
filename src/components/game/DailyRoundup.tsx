@@ -18,7 +18,7 @@ import {
   markRoundupDismissed,
 } from "../../lib/roundupCelebration";
 import { ShareButton } from "../ShareButton";
-import { ConfettiOverlay } from "../ConfettiOverlay";
+import { CONFETTI_DURATION, ConfettiOverlay } from "../ConfettiOverlay";
 
 interface Roundup {
   entries: RoundupEntry[];
@@ -119,11 +119,13 @@ export function DailyRoundup({ today }: { today: string }) {
       if (cancelled || done) return;
       void markRoundupCelebrated(today);
       setCelebrate(true);
-      // Unmount the canvas once the burst (1.4s) has finished; the banner
-      // then just sits with its gently drifting border.
+      // Unmount the canvas once the run has finished (the grand variant
+      // takes longer); the banner then just sits with its drifting border.
+      const variant =
+        roundupTotalHints(roundup.entries) > 0 ? "burst" : "grand";
       timer = setTimeout(() => {
         if (!cancelled) setCelebrate(false);
-      }, 1600);
+      }, CONFETTI_DURATION[variant] + 200);
     });
     return () => {
       cancelled = true;
@@ -139,7 +141,10 @@ export function DailyRoundup({ today }: { today: string }) {
   const showHints = roundupTotalHints(entries) > 0;
   return (
     <>
-      {celebrate && <ConfettiOverlay />}
+      {/* A hint-free day earns the grand (gold, multi-burst) sequence. */}
+      {celebrate && (
+        <ConfettiOverlay variant={showHints ? "burst" : "grand"} />
+      )}
       <section
         aria-label="Today's roundup"
         // The gradient is the border: a 3px sweep showing only where the
