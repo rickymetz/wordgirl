@@ -1,4 +1,11 @@
-import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Suspense,
+  startTransition,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -282,12 +289,20 @@ export function GamePager({
             // synthetic) still gets the drag — capture only keeps
             // moves flowing when the finger leaves the page.
           }
-          setPeek({
-            top:
-              window.scrollY -
-              (outer ? outer.getBoundingClientRect().top + window.scrollY : 0),
-            pitch: s.pitch,
-          });
+          // A transition, not an urgent update: the panes are two FULL
+          // pages — on a populated stats page that is hundreds of SVG
+          // nodes twice over — and rendering them synchronously inside
+          // this pointermove freezes the main thread on the engage
+          // frame, mid-gesture. iOS cancels touches whose page stops
+          // responding, which killed populated-page swipes on real
+          // phones while empty pages (nothing to render) worked.
+          // Time-sliced, the panes arrive a frame or two later — they
+          // start off-screen, so nobody sees the difference.
+          const top =
+            window.scrollY -
+            (outer ? outer.getBoundingClientRect().top + window.scrollY : 0);
+          const pitch = s.pitch;
+          startTransition(() => setPeek({ top, pitch }));
         }
         s.dx = dx;
         setX(dx);
@@ -314,11 +329,24 @@ export function GamePager({
         }
       }}
       onPointerCancel={(e) => {
-        // The browser took the gesture (vertical scroll): snap home.
         const s = drag.current;
         if (!s || e.pointerId !== s.id) return;
         drag.current = null;
-        if (s.engaged) settle(s.dx, 0, () => setPeek(null));
+        if (!s.engaged || !pager) return;
+        // Usually the browser took the gesture for a vertical scroll:
+        // snap home. But iOS can also cancel a touch late — after a
+        // long horizontal pull, or when the page hitches — and past
+        // the commit distance the player has plainly turned the page,
+        // so finish the turn rather than snapping a completed gesture
+        // back. (No quick-flick shortcut here: a cancelled gesture's
+        // velocity belongs to the scroll that took it.)
+        if (Math.abs(s.dx) > 0.28 * s.pitch) {
+          const dir: 1 | -1 = s.dx < 0 ? 1 : -1;
+          swallowClickRef.current = true;
+          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false));
+        } else {
+          settle(s.dx, 0, () => setPeek(null));
+        }
       }}
       onLostPointerCapture={(e) => {
         // Only THIS element's capture counts. On real touch the
