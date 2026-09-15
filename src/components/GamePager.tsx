@@ -41,10 +41,6 @@ function usePager(gameId: string, page: PagerPage) {
   const nextId = adjacentIn(ids, gameId, 1);
   const nameOf = (id: string) => games.find((g) => g.id === id)!.name;
   const go = (dir: 1 | -1, slide: boolean) => {
-    // The next page starts at its own top — carrying this page's
-    // scroll into a different game's archive strands the reader
-    // mid-list.
-    window.scrollTo(0, 0);
     // replace, not push: these are lateral moves between five parallel
     // views of one screen — tabs, not destinations. A wrap-around lap
     // under push left five duplicate history entries for the platform
@@ -52,9 +48,20 @@ function usePager(gameId: string, page: PagerPage) {
     // player CAME FROM instead. pagerDir tells the incoming page which
     // side to slide in from — the chevron path only; a completed drag
     // already animated the turn and mounts static.
-    void navigate(`/games/${dir === 1 ? nextId : prevId}/${page}`, {
-      replace: true,
-      state: slide ? { pagerDir: dir } : undefined,
+    void Promise.resolve(
+      navigate(`/games/${dir === 1 ? nextId : prevId}/${page}`, {
+        replace: true,
+        // Synchronous route commit: a scheduler-paced commit leaves
+        // painted frames between the drag's settled view and the new
+        // page — visible as a flash of the old page on slow devices.
+        flushSync: true,
+        state: slide ? { pagerDir: dir } : undefined,
+      }),
+    ).then(() => {
+      // The next page starts at its own top — AFTER the commit, so
+      // the reset lands on the new page. Resetting first scrolled the
+      // old page while it was still on screen under the settled peek.
+      window.scrollTo(0, 0);
     });
   };
   return { go, prevId, nextId, name: self.name, nameOf };
@@ -295,11 +302,13 @@ export function GamePager({
         if (Math.abs(s.dx) > 0.28 * s.pitch || quick) {
           const dir: 1 | -1 = s.dx < 0 ? 1 : -1;
           // Finish the turn visually, then swap in the real route.
-          settle(s.dx, -dir * s.pitch, () => {
-            setPeek(null);
-            setX(0);
-            pager.go(dir, false);
-          });
+          // The settled view — neighbor's peek covering the screen —
+          // STAYS until the destination page replaces this whole
+          // subtree. Resetting the track or tearing the peeks down
+          // here painted the OLD page back for however many frames
+          // the router took to commit (the swipe flash); the remount
+          // discards both anyway.
+          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false));
         } else {
           settle(s.dx, 0, () => setPeek(null));
         }
