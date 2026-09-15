@@ -156,6 +156,14 @@ const CANCEL_COMMIT_FRACTION = 0.28;
 /** How far ahead release velocity is projected. Short, like a flick's
  * own follow-through: it should reward a fling, not teleport a nudge. */
 const FLING_PROJECTION_MS = 150;
+/** How long after an engaged drag a synthesized click is still that
+ * drag's echo. Generous — iOS can delay the click ~300ms — but bounded,
+ * so a click the drag never caused is never eaten. */
+const CLICK_SWALLOW_MS = 500;
+/** How long after mounting this page will ADOPT a touch that is already
+ * moving — see the pointermove handler. Long enough to cover a route
+ * swap mid-gesture, short enough that it can only ever be that. */
+const ADOPT_WINDOW_MS = 400;
 /** A finger that stopped this long before lifting has no momentum —
  * without this, a drag that rests at the end still flings. */
 const VELOCITY_IDLE_MS = 80;
@@ -192,12 +200,19 @@ export function commitDirection(
 ): 1 | -1 | 0 {
   const dir: 1 | -1 = dx < 0 ? 1 : -1;
   if (Math.abs(dx) < MIN_TURN_TRAVEL) return 0;
-  // Reversed out of the turn: whatever the numbers, they disagree.
-  if (vx !== 0 && Math.sign(vx) !== Math.sign(dx)) return 0;
-  if (Math.abs(vx) >= FLING_VELOCITY) return dir;
-  return Math.abs(dx + vx * FLING_PROJECTION_MS) > fraction * pitch
-    ? dir
-    : 0;
+  // A flick has to be a flick IN THE DIRECTION OF TRAVEL.
+  if (Math.abs(vx) >= FLING_VELOCITY && Math.sign(vx) === Math.sign(dx))
+    return dir;
+  // Otherwise, where the page is headed. Reversal is judged HERE, on
+  // the projected landing, and not as a veto on the sign of vx alone:
+  // a finger that slows to a stop before lifting leaves a velocity near
+  // zero, so a px or two of wobble as it leaves the glass flips that
+  // sign — and a bare sign test threw away finished 150px drags on it.
+  // Pulling the page back past its own start is a cancel; twitching is
+  // not.
+  const projected = dx + vx * FLING_PROJECTION_MS;
+  if (Math.sign(projected) !== Math.sign(dx)) return 0;
+  return Math.abs(projected) > fraction * pitch ? dir : 0;
 }
 
 /** Drag bookkeeping lives in refs: frames write the track transform
@@ -249,17 +264,32 @@ export function GamePager({
   const location = useLocation();
   const reduced = useReducedMotion();
   const outerRef = useRef<HTMLDivElement | null>(null);
+  /** When this instance mounted, for the gesture adoption below. */
+  const mountedAt = useRef(performance.now());
   const trackRef = useRef<HTMLDivElement | null>(null);
   const drag = useRef<DragState | null>(null);
   /** The in-flight settle. Exactly one may exist; whoever starts a new
    * gesture or unmounts the component must end it first — an owned
    * animation can never navigate a page the user has already left. */
-  const animRef = useRef<Animation | null>(null);
-  /** Swallow the click a touch sequence can still synthesize after an
-   * engaged drag: browser tap-slop is engine-dependent, and the
-   * calendar is a mesh of Links — a spring-back must never also open
-   * a day. */
-  const swallowClickRef = useRef(false);
+  const settleRef = useRef<{
+    anim: Animation;
+    to: number;
+    after?: () => void;
+    /** This settle turns the page, so running it unmounts this tree. */
+    commits: boolean;
+  } | null>(null);
+  /**
+   * Until when a synthesized click should be swallowed. A touch
+   * sequence can still produce a click after an engaged drag (tap-slop
+   * is engine-dependent) and the calendar is a mesh of Links, so a
+   * spring-back must never also open a day.
+   *
+   * A DEADLINE, not a latch: most drags synthesize no click at all, and
+   * a latch set by those stayed armed until something else clicked —
+   * eating a later mouse click, or Enter on a focused link, neither of
+   * which is part of any drag.
+   */
+  const swallowUntilRef = useRef(0);
   // One state flip per drag mounts the two peek panes; every frame
   // after that is a direct transform write. The flip mounts two full
   // neighbor pages (data loads and all) on the engage frame — the
@@ -270,20 +300,47 @@ export function GamePager({
 
   useEffect(
     () => () => {
-      // Unmount ends any settle WITHOUT its callback (cancel never
+      // Unmount drops any settle WITHOUT its callback (cancel never
       // fires onfinish) — the navigate-after-unmount hole.
-      animRef.current?.cancel();
-      animRef.current = null;
+      settleRef.current?.anim.cancel();
+      settleRef.current = null;
     },
     [],
   );
+
+  /**
+   * Land the in-flight settle NOW, callback and all, and say whether it
+   * turned the page.
+   *
+   * Animation.finish() does neither job: it QUEUES onfinish, so the turn
+   * that settle owed would fire into whatever the player did next — or
+   * be dropped by the ownership check once a second settle started,
+   * which is how two quick swipes advanced one game — and a finished
+   * fill:"forwards" animation still outranks the inline transform, so
+   * the track froze under the new drag. cancel() is what gives the
+   * element back.
+   */
+  const endSettle = (): boolean => {
+    const s = settleRef.current;
+    if (!s) return false;
+    settleRef.current = null;
+    s.anim.cancel();
+    setX(s.to);
+    s.after?.();
+    return s.commits;
+  };
 
   const setX = (x: number) => {
     if (trackRef.current)
       trackRef.current.style.transform = `translateX(${x}px)`;
   };
 
-  const settle = (from: number, toX: number, after?: () => void) => {
+  const settle = (
+    from: number,
+    toX: number,
+    after?: () => void,
+    commits = false,
+  ) => {
     const track = trackRef.current;
     if (!track) return;
     if (reduced) {
@@ -302,14 +359,11 @@ export function GamePager({
       ],
       { duration: 180, easing: "ease-out", fill: "forwards" },
     );
-    animRef.current = anim;
+    const rec = { anim, to: toX, after, commits };
+    settleRef.current = rec;
     anim.onfinish = () => {
       // Ownership check: a newer gesture or settle took over.
-      if (animRef.current !== anim) return;
-      animRef.current = null;
-      anim.cancel();
-      setX(toX);
-      after?.();
+      if (settleRef.current === rec) endSettle();
     };
   };
 
@@ -321,8 +375,8 @@ export function GamePager({
       ref={outerRef}
       className="relative flex w-full grow flex-col touch-pan-y touch-pinch-zoom [overflow-x:clip]"
       onClickCapture={(e) => {
-        if (swallowClickRef.current) {
-          swallowClickRef.current = false;
+        if (performance.now() < swallowUntilRef.current) {
+          swallowUntilRef.current = 0;
           e.preventDefault();
           e.stopPropagation();
         }
@@ -332,11 +386,12 @@ export function GamePager({
         // First pointer owns the gesture; a second finger must not
         // steal or corrupt it (it stranded the track mid-drag).
         if (drag.current) return;
-        swallowClickRef.current = false;
-        // A settle still running? Jump it to its end — commit settles
-        // navigate NOW instead of eating this gesture, spring-backs
-        // just land home.
-        animRef.current?.finish();
+        swallowUntilRef.current = 0;
+        // A settle still running? Land it now. A commit settle turns
+        // the page immediately rather than having its turn eaten, and
+        // takes this subtree with it — so there is nothing left here to
+        // drag. A spring-back just lands home and the new drag begins.
+        if (endSettle()) return;
         drag.current = {
           id: e.pointerId,
           x: e.clientX,
@@ -351,7 +406,32 @@ export function GamePager({
       }}
       onPointerMove={(e) => {
         const s = drag.current;
-        if (!s || e.pointerId !== s.id) return;
+        if (!s) {
+          // A finger already down, on a page that just mounted: the
+          // pointerdown went to the page this one REPLACED. That is the
+          // second of two quick swipes — its touch-down landed during
+          // the first swipe's settle, which turned the page out from
+          // under it. Adopt the gesture from here instead of ignoring
+          // the finger until it lifts, because swiping straight through
+          // several games is exactly when this happens. The window
+          // makes it only ever a route swap, and an adopted gesture
+          // still has to prove itself horizontal like any other.
+          if (e.pointerType === "mouse" || !pager) return;
+          if (performance.now() - mountedAt.current > ADOPT_WINDOW_MS) return;
+          drag.current = {
+            id: e.pointerId,
+            x: e.clientX,
+            y: e.clientY,
+            engaged: false,
+            dx: 0,
+            lastX: e.clientX,
+            lastT: performance.now(),
+            vx: 0,
+            pitch: 0,
+          };
+          return; // this move is the origin; the next one measures from it
+        }
+        if (e.pointerId !== s.id) return;
         const dx = e.clientX - s.x;
         const dy = e.clientY - s.y;
         // Velocity, weighted hard toward the newest sample: a flick at
@@ -414,7 +494,7 @@ export function GamePager({
         if (!s || e.pointerId !== s.id) return;
         drag.current = null;
         if (!s.engaged || !pager) return;
-        swallowClickRef.current = true;
+        swallowUntilRef.current = performance.now() + CLICK_SWALLOW_MS;
         // A finger resting at the end of a drag carries no momentum.
         const vx = performance.now() - s.lastT > VELOCITY_IDLE_MS ? 0 : s.vx;
         const dir = commitDirection({ dx: s.dx, vx, pitch: s.pitch });
@@ -426,7 +506,7 @@ export function GamePager({
           // here painted the OLD page back for however many frames
           // the router took to commit (the swipe flash); the remount
           // discards both anyway.
-          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false));
+          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false), true);
         } else {
           settle(s.dx, 0, () => setPeek(null));
         }
@@ -448,8 +528,8 @@ export function GamePager({
           CANCEL_COMMIT_FRACTION,
         );
         if (dir !== 0) {
-          swallowClickRef.current = true;
-          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false));
+          swallowUntilRef.current = performance.now() + CLICK_SWALLOW_MS;
+          settle(s.dx, -dir * s.pitch, () => pager.go(dir, false), true);
         } else {
           settle(s.dx, 0, () => setPeek(null));
         }

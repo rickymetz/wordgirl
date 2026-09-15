@@ -126,7 +126,14 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
       accent={config.accent}
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-12 md:max-w-2xl"
     >
-      <header className="flex items-center justify-between pt-6 pb-2">
+      {/* pb-4, not pb-2: the header link and the pager chevron below it
+          both expand to a 44px hit box, and at pb-2 the chevron's
+          overlapped the link's lower 6px AND won the hit test — a tap
+          at the bottom of "Today's puzzle" paged to the next game
+          instead. Two stacked rows of touch targets need the gap
+          measured, not eyeballed (the DictionaryLink click-steal
+          lesson, one axis over). */}
+      <header className="flex items-center justify-between pt-6 pb-4">
         <HomeLink />
         <Link
           to={`/games/${config.gameId}`}

@@ -111,6 +111,15 @@ describe("commitDirection", () => {
     expect(commitDirection({ dx: -100, vx: 2, pitch })).toBe(0);
   });
 
+  it("keeps a finished drag when the finger only wobbles on lift", () => {
+    // A drag that slows to a stop leaves a near-zero velocity, so a
+    // couple of px of wobble as the finger leaves the glass flips its
+    // SIGN. That is not a cancel, and a bare sign veto threw away
+    // completed 150px drags on it.
+    expect(commitDirection({ dx: -150, vx: 0.09, pitch })).toBe(1);
+    expect(commitDirection({ dx: 150, vx: -0.09, pitch })).toBe(-1);
+  });
+
   it("takes a stricter fraction for a cancelled gesture", () => {
     expect(commitDirection({ dx: -95, vx: 0, pitch }, 0.28)).toBe(0);
     expect(commitDirection({ dx: -120, vx: 0, pitch }, 0.28)).toBe(1);
