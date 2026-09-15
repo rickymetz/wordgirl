@@ -354,14 +354,17 @@ export function GamePager({
         if (!s || e.pointerId !== s.id) return;
         const dx = e.clientX - s.x;
         const dy = e.clientY - s.y;
-        // Velocity, weighted toward the newest sample: a flick at the
-        // END of a slow drag is a flick, and a finger that coasts to a
-        // stop has spent its momentum by the time it lifts.
+        // Velocity, weighted hard toward the newest sample: a flick at
+        // the END of a slow drag is a flick, and — the case that needs
+        // the heavy weighting — a finger that DECELERATES to a stop
+        // before lifting has changed its mind, which a gentler average
+        // still reads as moving. The idle cutoff below only catches a
+        // finger that stops sending moves at all.
         const now = performance.now();
         const dt = now - s.lastT;
         if (dt > 0) {
           const sample = (e.clientX - s.lastX) / dt;
-          s.vx = s.vx === 0 ? sample : s.vx * 0.3 + sample * 0.7;
+          s.vx = s.vx === 0 ? sample : s.vx * 0.15 + sample * 0.85;
           s.lastX = e.clientX;
           s.lastT = now;
         }

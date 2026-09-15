@@ -96,6 +96,12 @@ describe("commitDirection", () => {
     expect(commitDirection({ dx: -85, vx: -0.25, pitch })).toBe(1);
   });
 
+  it("springs back when a short drag decelerates to a stop", () => {
+    // Hesitation: pulled a little, thought better of it, stopped, let
+    // go. Traced from a real recording, where it read as a non-swipe.
+    expect(commitDirection({ dx: 50, vx: 0.17, pitch: 393 })).toBe(0);
+  });
+
   it("springs back on a nudge", () => {
     expect(commitDirection({ dx: -20, vx: 0, pitch })).toBe(0);
     expect(commitDirection({ dx: -30, vx: -0.05, pitch })).toBe(0);
