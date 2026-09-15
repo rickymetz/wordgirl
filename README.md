@@ -190,6 +190,11 @@ npm run build      # typecheck + production build + service worker
 npm run preview    # serve the production build locally
 ```
 
+To preview full archive/stats pages, open any page with `?demo-history`
+appended — it seeds six weeks of fake solved days for all five games
+(dev and deploy-preview builds only; it refuses to overwrite real
+progress unless you pass `?demo-history=replace` and confirm).
+
 ### Architecture
 
 - **Single Vite app** — React + TypeScript + Tailwind v4. Each game is a

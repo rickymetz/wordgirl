@@ -38,14 +38,26 @@ void updateSW;
 
 // ?demo-history seeds six weeks of plausible progress for previewing
 // full archive/stats pages (lib/demoHistory.ts — it refuses to touch
-// real saves unless the value is "replace"). Seed BEFORE mounting so
-// no hook hydrates mid-write, then reload with the param stripped.
-const demoParam = new URLSearchParams(location.search).get("demo-history");
+// real saves unless the value is "replace", and re-confirms replace
+// with the visitor). Seed BEFORE mounting so no hook hydrates
+// mid-write, then reload with the param stripped.
+//
+// Dev + preview/branch deploys ONLY (netlify.toml sets the flag): a
+// build-time constant, so production bundles tree-shake the whole
+// branch and ?demo-history=replace is not a wipe URL anyone can text
+// to a player. The redirect is in .finally() — whatever the import or
+// the seeder does, the visitor always lands on a booted app, never a
+// blank page.
+const demoAllowed =
+  import.meta.env.DEV || import.meta.env.VITE_DEMO_HISTORY === "1";
+const demoParam = demoAllowed
+  ? new URLSearchParams(location.search).get("demo-history")
+  : null;
 if (demoParam !== null) {
-  void import("./lib/demoHistory").then(({ seedDemoHistory }) => {
-    seedDemoHistory(demoParam === "replace");
-    location.replace(location.pathname);
-  });
+  void import("./lib/demoHistory")
+    .then(({ seedDemoHistory }) => seedDemoHistory(demoParam === "replace"))
+    .catch((err) => console.warn("demo-history: seeding failed", err))
+    .finally(() => location.replace(location.pathname + location.hash));
 } else {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

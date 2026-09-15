@@ -2,6 +2,17 @@
   command = "npm run build"
   publish = "dist"
 
+# The ?demo-history seeder (src/lib/demoHistory.ts) exists so deploy
+# previews can show full archive/stats pages. Only preview and branch
+# deploys get the flag: production builds never define it, so the
+# seeder — and its ?demo-history=replace wipe path — is dead code
+# eliminated from the bundle people actually play on.
+[context.deploy-preview.environment]
+  VITE_DEMO_HISTORY = "1"
+
+[context.branch-deploy.environment]
+  VITE_DEMO_HISTORY = "1"
+
 # Netlify's dashboard-side asset optimization rewrites HTML — including
 # the inline boot style/script whose sha256 the CSP pins — AFTER the
 # build cspHashGuard validated, so a UI toggle could ship pages whose
