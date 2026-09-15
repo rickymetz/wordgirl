@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjacentIn } from "./GamePager";
+import { adjacentIn, commitDirection, dragIntent } from "./GamePager";
 import { games } from "../games/registry";
 
 describe("adjacentIn", () => {
@@ -44,5 +44,69 @@ describe("pager routes", () => {
         );
       }
     }
+  });
+});
+
+describe("dragIntent", () => {
+  it("takes a clear sideways move", () => {
+    expect(dragIntent(12, 2)).toBe("horizontal");
+    expect(dragIntent(-40, 10)).toBe("horizontal");
+  });
+
+  it("waits while the gesture is still too small to read", () => {
+    expect(dragIntent(4, 3)).toBe("pending");
+    expect(dragIntent(0, 12)).toBe("pending");
+  });
+
+  it("stands down for a scroll", () => {
+    expect(dragIntent(3, 40)).toBe("vertical");
+    expect(dragIntent(-10, -60)).toBe("vertical");
+  });
+
+  it("keeps the arc of a thumb swipe — the pivot is not a scroll", () => {
+    // A thumb hinges at its base, so an intentional side-swipe opens
+    // downward. A bare 45° test called this a scroll and dropped the
+    // drag before it started; that is what made the pager feel like it
+    // only worked "if you swipe just so".
+    expect(dragIntent(14, 18)).toBe("horizontal");
+    expect(dragIntent(20, 26)).toBe("horizontal");
+  });
+});
+
+describe("commitDirection", () => {
+  const pitch = 390; // a phone
+
+  it("turns the page on a long slow drag", () => {
+    expect(commitDirection({ dx: -120, vx: 0, pitch })).toBe(1);
+    expect(commitDirection({ dx: 120, vx: 0, pitch })).toBe(-1);
+  });
+
+  it("turns the page on a flick, however short", () => {
+    expect(commitDirection({ dx: -60, vx: -0.6, pitch })).toBe(1);
+    expect(commitDirection({ dx: -30, vx: -0.9, pitch })).toBe(1);
+  });
+
+  it("does not turn on a fast twitch that barely moved", () => {
+    expect(commitDirection({ dx: -8, vx: -0.9, pitch })).toBe(0);
+  });
+
+  it("turns the page on the ordinary middle swipe that used to fail", () => {
+    // ~85px at a moderate 0.25px/ms: too short for the old distance
+    // rule, too slow for the old flick rule, so it sprang back.
+    expect(commitDirection({ dx: -85, vx: -0.25, pitch })).toBe(1);
+  });
+
+  it("springs back on a nudge", () => {
+    expect(commitDirection({ dx: -20, vx: 0, pitch })).toBe(0);
+    expect(commitDirection({ dx: -30, vx: -0.05, pitch })).toBe(0);
+  });
+
+  it("springs back when the finger reverses to cancel", () => {
+    expect(commitDirection({ dx: -100, vx: 2, pitch })).toBe(0);
+  });
+
+  it("takes a stricter fraction for a cancelled gesture", () => {
+    expect(commitDirection({ dx: -95, vx: 0, pitch }, 0.28)).toBe(0);
+    expect(commitDirection({ dx: -120, vx: 0, pitch }, 0.28)).toBe(1);
   });
 });

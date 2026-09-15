@@ -121,8 +121,17 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   GameArchive/GameTrends serve their last loaded data from a module
   cache so the commit doesn't flash empty, and chart taps pick on
   pointerUP with a <10px slop so a swipe that starts on a chart never
-  also changes it. GamePager.test.ts pins that every game exposes both
-  routes — the cycle must never 404.
+  also changes it. The GESTURE rules are pure and tuned against a
+  measured sweep, not by feel (`dragIntent`/`commitDirection`, unit
+  tested): a thumb PIVOTS, so an intentional side-swipe arcs downward
+  and the vertical stand-down needs a ratio well past 45° or it drops
+  real swipes before they start; and a release turns the page on a
+  FLICK (velocity) or a far-enough DRAG (projected landing), because a
+  distance-only rule leaves ordinary mid-speed swipes in a gap and
+  reads as "it only works at one speed". Judge any retune on measured
+  dx/velocity from real touch events — a scripted swipe takes ~2x its
+  requested duration, so nominal timings lie. GamePager.test.ts pins
+  that every game exposes both routes — the cycle must never 404.
 - `GameTrends` — the stats-over-time page from a config: per-metric
   single-series Tufte SPARKLINES in the game's accent (validated: the
   four accents FAIL as a categorical set, so never chart games against

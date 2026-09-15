@@ -119,15 +119,100 @@ function PeekPane({
   );
 }
 
+/**
+ * Gesture tuning, in one place because these numbers decide whether the
+ * pager feels like a page turn or like a trick you have to learn.
+ *
+ * The rule they encode: take the gesture on a clear horizontal intent,
+ * and judge the release the way a native carousel does — by where the
+ * page is HEADED (position plus momentum), not by distance alone.
+ */
+/** Horizontal travel that means "this is a page turn". */
+const ENGAGE_SLOP = 10;
+/** Vertical travel before a steep gesture reads as a scroll... */
+const VERTICAL_SLOP = 14;
+/** ...and how much steeper than 45° it has to be. A thumb PIVOTS around
+ * its base, so the opening of a perfectly intentional side-swipe arcs
+ * downward: at a bare 45° test that arc read as a scroll and the drag
+ * was dropped before it began — the "only works if you swipe just so"
+ * failure. Well past 45°, and it is a scroll. */
+const VERTICAL_RATIO = 1.5;
+/** Fraction of the pitch the projected landing must pass to turn. */
+const COMMIT_FRACTION = 0.2;
+/** A release this fast IS a page turn, whatever the distance — the
+ * flick rule every native carousel has. Without it a flick lives or
+ * dies by the projected-landing arithmetic, and a short one lands
+ * within a few px of the line: the knife-edge that makes a pager feel
+ * like it only works at one particular speed. px/ms, so 0.35 ≈ 350px/s. */
+const FLING_VELOCITY = 0.35;
+/** Travel below which nothing turns the page, on either path: the page
+ * has barely moved, so this is a tap or a twitch, and a few px of
+ * motion multiplied by a flick's velocity must not project its way
+ * into a page turn. */
+const MIN_TURN_TRAVEL = 24;
+/** A cancelled gesture (the browser claimed it) turns the page only on
+ * a plainly finished pull — no momentum credit, a longer pull. */
+const CANCEL_COMMIT_FRACTION = 0.28;
+/** How far ahead release velocity is projected. Short, like a flick's
+ * own follow-through: it should reward a fling, not teleport a nudge. */
+const FLING_PROJECTION_MS = 150;
+/** A finger that stopped this long before lifting has no momentum —
+ * without this, a drag that rests at the end still flings. */
+const VELOCITY_IDLE_MS = 80;
+
+export type DragIntent = "pending" | "horizontal" | "vertical";
+
+/** What a gesture is so far, from its travel since touch-down. */
+export function dragIntent(dx: number, dy: number): DragIntent {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ay > VERTICAL_SLOP && ay > ax * VERTICAL_RATIO) return "vertical";
+  if (ax >= ENGAGE_SLOP) return "horizontal";
+  return "pending";
+}
+
+/**
+ * Which way the release turns the page, or 0 to spring back.
+ *
+ * Two ways to turn, because a page turn is two different gestures: a
+ * FLICK (fast release, any distance) and a DRAG (far enough that the
+ * page is more than half turned, however slowly it got there). The
+ * old rule wanted either 109px of travel or a sub-300ms gesture
+ * measured from touch-down, so an ordinary 80px swipe over 400ms met
+ * neither and sprang back — and a slow drag that ended in a flick was
+ * never "quick" at all. That gap is what made the pager feel like it
+ * worked at one speed only.
+ *
+ * A finger that reverses at the end lands back where it started and
+ * springs back, which is how a player cancels a turn in flight.
+ */
+export function commitDirection(
+  { dx, vx, pitch }: { dx: number; vx: number; pitch: number },
+  fraction: number = COMMIT_FRACTION,
+): 1 | -1 | 0 {
+  const dir: 1 | -1 = dx < 0 ? 1 : -1;
+  if (Math.abs(dx) < MIN_TURN_TRAVEL) return 0;
+  // Reversed out of the turn: whatever the numbers, they disagree.
+  if (vx !== 0 && Math.sign(vx) !== Math.sign(dx)) return 0;
+  if (Math.abs(vx) >= FLING_VELOCITY) return dir;
+  return Math.abs(dx + vx * FLING_PROJECTION_MS) > fraction * pitch
+    ? dir
+    : 0;
+}
+
 /** Drag bookkeeping lives in refs: frames write the track transform
  * straight to the DOM (house drag rule — never setState per frame). */
 interface DragState {
   id: number;
   x: number;
   y: number;
-  t: number;
   engaged: boolean;
   dx: number;
+  /** Last sample, for velocity: position, time, and the smoothed
+   * px/ms it implies. */
+  lastX: number;
+  lastT: number;
+  vx: number;
   /** The turn distance: min(viewport, content column + gutter). On
    * phones that is the viewport; on wide screens it keeps the neighbor
    * column arriving BESIDE the current one instead of trailing ~300px
@@ -256,9 +341,11 @@ export function GamePager({
           id: e.pointerId,
           x: e.clientX,
           y: e.clientY,
-          t: performance.now(),
           engaged: false,
           dx: 0,
+          lastX: e.clientX,
+          lastT: performance.now(),
+          vx: 0,
           pitch: 0,
         };
       }}
@@ -267,15 +354,27 @@ export function GamePager({
         if (!s || e.pointerId !== s.id) return;
         const dx = e.clientX - s.x;
         const dy = e.clientY - s.y;
+        // Velocity, weighted toward the newest sample: a flick at the
+        // END of a slow drag is a flick, and a finger that coasts to a
+        // stop has spent its momentum by the time it lifts.
+        const now = performance.now();
+        const dt = now - s.lastT;
+        if (dt > 0) {
+          const sample = (e.clientX - s.lastX) / dt;
+          s.vx = s.vx === 0 ? sample : s.vx * 0.3 + sample * 0.7;
+          s.lastX = e.clientX;
+          s.lastT = now;
+        }
         if (!s.engaged) {
-          // Commit to a horizontal drag only on clear intent; a mostly
-          // vertical move is a scroll the browser is about to take
-          // over (pointercancel), so stand down early.
-          if (Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx)) {
+          // Take the gesture on clear horizontal intent; a clearly
+          // vertical one is a scroll the browser is about to take over
+          // (pointercancel), so stand down early.
+          const intent = dragIntent(dx, dy);
+          if (intent === "vertical") {
             drag.current = null;
             return;
           }
-          if (Math.abs(dx) < 12 || Math.abs(dx) <= Math.abs(dy)) return;
+          if (intent === "pending") return;
           s.engaged = true;
           const outer = outerRef.current;
           const w = outer?.clientWidth ?? window.innerWidth;
@@ -313,9 +412,10 @@ export function GamePager({
         drag.current = null;
         if (!s.engaged || !pager) return;
         swallowClickRef.current = true;
-        const quick = performance.now() - s.t < 300 && Math.abs(s.dx) > 56;
-        if (Math.abs(s.dx) > 0.28 * s.pitch || quick) {
-          const dir: 1 | -1 = s.dx < 0 ? 1 : -1;
+        // A finger resting at the end of a drag carries no momentum.
+        const vx = performance.now() - s.lastT > VELOCITY_IDLE_MS ? 0 : s.vx;
+        const dir = commitDirection({ dx: s.dx, vx, pitch: s.pitch });
+        if (dir !== 0) {
           // Finish the turn visually, then swap in the real route.
           // The settled view — neighbor's peek covering the screen —
           // STAYS until the destination page replaces this whole
@@ -338,10 +438,13 @@ export function GamePager({
         // long horizontal pull, or when the page hitches — and past
         // the commit distance the player has plainly turned the page,
         // so finish the turn rather than snapping a completed gesture
-        // back. (No quick-flick shortcut here: a cancelled gesture's
-        // velocity belongs to the scroll that took it.)
-        if (Math.abs(s.dx) > 0.28 * s.pitch) {
-          const dir: 1 | -1 = s.dx < 0 ? 1 : -1;
+        // back. No momentum credit here: a cancelled gesture's velocity
+        // belongs to the scroll that took it.
+        const dir = commitDirection(
+          { dx: s.dx, vx: 0, pitch: s.pitch },
+          CANCEL_COMMIT_FRACTION,
+        );
+        if (dir !== 0) {
           swallowClickRef.current = true;
           settle(s.dx, -dir * s.pitch, () => pager.go(dir, false));
         } else {
