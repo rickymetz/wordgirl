@@ -101,10 +101,37 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   0.01ms duration), and constrained devices freeze just the glow's blur —
   `prefers-reduced-data` plus `html[data-low-power]`, the boot-time JS
   guess in `lib/lowPower.ts` (there is no CSS media query for device
-  power). A `ConfettiOverlay` burst fires ONCE when the banner first
-  appears for the day, and a "×" dismisses it for the day; both flags are
+  power). A `ConfettiOverlay` fires ONCE when the banner first appears for
+  the day, and a "×" dismisses it for the day; both flags are
   per-date in `lib/roundupCelebration.ts` (a `roundup:` store, not a game),
-  so neither replays on the next hub visit.
+  so neither replays on the next hub visit. Because that one-shot is spent
+  the moment it's marked, the banner waits for `document.hidden` to clear
+  before celebrating (rAF doesn't tick in a hidden tab, so marking it there
+  would burn the day having drawn nothing), and it only celebrates a
+  roundup whose `dateKey` still matches `today` — a midnight rollover
+  re-renders with the new day before the old entries clear.
+- `ConfettiOverlay` (`components/`) — TWO tiers, off the SAME whole-day
+  hint decision as the roundup rows: `burst` (the everyday single pop,
+  what all five solve screens show) and `grand` (gold, four staggered
+  bursts with stars) on a hint-free day, so a perfect day is the only way
+  to see it. Mounters read `CONFETTI_DURATION[variant]` rather than a
+  literal (`useSolveTransition` does), and `resolveConfettiVariant` gates
+  the expensive tier the way the roundup's glow is gated —
+  `prefers-reduced-data` / `html[data-low-power]` get `burst` instead.
+  It is deliberately roundup-ONLY: per-game confetti is sequenced against
+  the results reveal, and "the whole day, hint-free" is the only unit
+  where perfection means anything. Two rules worth keeping: colors are
+  `--confetti-*` / `--confetti-gold-*` tokens read once at mount through a
+  probe element (canvas can't resolve `var()`, and `getComputedStyle` on a
+  custom property hands back the literal `light-dark(...)` text), because
+  a flat unoutlined fill DISAPPEARS on a page it isn't tuned for — the
+  dark gold ramp sits at 1.07-2.15:1 on white, so light mode inverts the
+  ramp to bronze rather than lightening it; and particle position is a
+  closed-form function of the particle's own age, never an accumulator
+  advanced per frame, or the arc doubles on a 120Hz screen and a
+  backgrounded tab can skip a staggered burst's whole window.
+  `prefers-reduced-motion` renders nothing, so confetti can never be the
+  ONLY thing marking an achievement.
 - `GameArchive` — the whole archive page from a config (see the
   Archive section below). Preview art is per-game, composed from
   `Tile mini` (see `PierglassPreview` for the idiom).

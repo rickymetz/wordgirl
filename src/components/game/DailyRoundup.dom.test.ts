@@ -130,16 +130,32 @@ describe("DailyRoundup", () => {
     }
   });
 
-  it("keeps rows clean on a hint-free day — only the subtitle's 0 Hints", async () => {
+  it("says so in the HEADLINE on a hint-free day, and keeps the rest clean", async () => {
     state.a = { ...state.a!, hints: 0 };
     state.b = { ...state.b!, hints: 0 };
     state.c = { ...state.c!, hints: 0 };
     await mount();
-    expect(container.textContent).toContain("Total time 4:41 · 0 Hints");
-    // No per-row hint counts anywhere.
+    // The achievement is in text, not only in the confetti — which renders
+    // nothing under reduced motion and fires at most once per day.
+    expect(container.querySelector("h2")?.textContent).toBe(
+      "All Puzzles Solved, No Hints",
+    );
+    // …and the subtitle no longer repeats it on the line directly below.
+    expect(container.textContent).toContain("Total time 4:41");
+    expect(container.textContent).not.toContain("0 Hints");
+    // No per-row hint counts anywhere either.
     expect(container.textContent).toContain("5 words · 1:01");
     expect(container.textContent).not.toContain("0 hints");
     expect(container.textContent).not.toContain("1 hint");
+  });
+
+  it("keeps the plain headline and the hint total on a day that used one", async () => {
+    // state.b carries 2 hints by default.
+    await mount();
+    expect(container.querySelector("h2")?.textContent).toBe(
+      "All Puzzles Solved Today",
+    );
+    expect(container.textContent).toContain("Total time 4:41 · 2 Hints");
   });
 
   it("wraps the card in the animated rainbow gradient border", async () => {
@@ -216,8 +232,11 @@ describe("DailyRoundup", () => {
 
   it("fires the confetti once, then remembers it for the day", async () => {
     await mount();
-    // ConfettiOverlay mounts its canvas on the first show.
-    expect(container.querySelector("canvas")).toBeTruthy();
+    // ConfettiOverlay mounts its canvas on the first show. Bravo used
+    // hints today, so it's the everyday burst, not the perfect-day one.
+    expect(
+      container.querySelector('canvas[data-confetti="burst"]'),
+    ).toBeTruthy();
     expect(
       localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
     ).toBeTruthy();
@@ -228,6 +247,20 @@ describe("DailyRoundup", () => {
     await mount();
     expect(banner()).toBeTruthy();
     expect(container.querySelector("canvas")).toBeNull();
+  });
+
+  it("fires the grand confetti when the whole day used zero hints", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    expect(
+      container.querySelector('canvas[data-confetti="grand"]'),
+    ).toBeTruthy();
+    // Still a one-shot: remembered for the day like the everyday burst.
+    expect(
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+    ).toBeTruthy();
   });
 
   it("can be dismissed for the day and stays gone", async () => {

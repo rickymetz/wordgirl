@@ -18,9 +18,20 @@ import {
   markRoundupDismissed,
 } from "../../lib/roundupCelebration";
 import { ShareButton } from "../ShareButton";
-import { ConfettiOverlay } from "../ConfettiOverlay";
+import {
+  CONFETTI_DURATION,
+  ConfettiOverlay,
+  resolveConfettiVariant,
+  type ConfettiVariant,
+} from "../ConfettiOverlay";
 
 interface Roundup {
+  /** The dateKey this was computed for. Carried so an effect can tell a
+   *  freshly loaded roundup from yesterday's: `setRoundup(null)` runs in
+   *  an effect, i.e. AFTER the render that a midnight rollover triggers,
+   *  so for one commit `today` is the new day while these entries are
+   *  still the old one's. */
+  dateKey: string;
   entries: RoundupEntry[];
   /** Days in a row, ending today, that every game was finished. */
   streak: number;
@@ -62,7 +73,7 @@ export function useDailyRoundup(today: string): Roundup | null {
       };
       const streak = await streakEndingToday(today, isCompleteOn);
       if (cancelled) return;
-      setRoundup({ entries, streak });
+      setRoundup({ dateKey: today, entries, streak });
     })();
     return () => {
       cancelled = true;
@@ -108,38 +119,69 @@ export function DailyRoundup({ today }: { today: string }) {
     };
   }, [today]);
 
+  // ONE whole-day decision, read by four things: the confetti tier, the
+  // effect's unmount timer, the headline, and the rows' hint counts. It
+  // lives up here (before the early return) because the effect needs it;
+  // a second copy of the same test is how they stop agreeing.
+  const perfectDay = roundup !== null && roundupTotalHints(roundup.entries) === 0;
+  // A hint-free day gets the grand (gold, multi-burst) sequence.
+  const variant: ConfettiVariant = perfectDay ? "grand" : "burst";
+
   // Fire the confetti ONCE, the first time the completed banner is shown for
   // the day (and only if not dismissed). markCelebrated persists it so a
   // reload or a later hub visit doesn't replay it.
   useEffect(() => {
     if (!roundup || dismissed !== false) return;
+    // A midnight rollover re-renders with the new `today` before
+    // useDailyRoundup has cleared the old day's entries, and marking THEN
+    // would burn the new day's one-shot before its banner ever exists.
+    if (roundup.dateKey !== today) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
-    void loadRoundupCelebrated(today).then((done) => {
-      if (cancelled || done) return;
-      void markRoundupCelebrated(today);
-      setCelebrate(true);
-      // Unmount the canvas once the burst (1.4s) has finished; the banner
-      // then just sits with its gently drifting border.
-      timer = setTimeout(() => {
-        if (!cancelled) setCelebrate(false);
-      }, 1600);
-    });
+    // requestAnimationFrame doesn't run in a hidden tab, so celebrating now
+    // would persist the flag having drawn nothing — and the grand tier is
+    // rare enough that losing it to a locked phone means losing it for the
+    // day. Wait for the tab to be looked at.
+    const run = () => {
+      void loadRoundupCelebrated(today).then((done) => {
+        if (cancelled || done) return;
+        void markRoundupCelebrated(today);
+        setCelebrate(true);
+        // Unmount the canvas once the run has finished (the grand variant
+        // takes longer); the banner then just sits with its drifting border.
+        timer = setTimeout(() => {
+          if (!cancelled) setCelebrate(false);
+        }, CONFETTI_DURATION[resolveConfettiVariant(variant)] + 200);
+      });
+    };
+    if (!document.hidden) {
+      run();
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
+    }
+    const onVisible = () => {
+      if (document.hidden) return;
+      document.removeEventListener("visibilitychange", onVisible);
+      if (!cancelled) run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [roundup, dismissed, today]);
+  }, [roundup, dismissed, today, variant]);
 
   if (!roundup || dismissed !== false) return null;
   const { entries, streak } = roundup;
-  // A whole-day decision: rows carry per-game/per-level hint counts only
-  // once SOME game used a hint. On a fully clean day the subtitle's
-  // "0 Hints" is the whole story and the rows stay uncluttered.
-  const showHints = roundupTotalHints(entries) > 0;
+  // Rows carry per-game/per-level hint counts only once SOME game used a
+  // hint; on a clean day the headline says it and the rows stay uncluttered.
+  const showHints = !perfectDay;
   return (
     <>
-      {celebrate && <ConfettiOverlay />}
+      {celebrate && <ConfettiOverlay variant={variant} />}
       <section
         aria-label="Today's roundup"
         // The gradient is the border: a 3px sweep showing only where the
@@ -163,8 +205,16 @@ export function DailyRoundup({ today }: { today: string }) {
           <div className="text-center">
             {/* font-game is Rubik Mono One, and follows the Font setting to
                 the accessible face automatically. */}
-            <h2 className="text-balance px-6 font-game text-lg leading-[0.85] text-ink">
-              All Puzzles Solved Today
+            {/* The perfect day says so in TEXT, not only in gold confetti:
+                the overlay renders nothing under prefers-reduced-motion and
+                fires once on a hub visit that may never happen, so an
+                animation alone leaves the achievement unattributable — and
+                unannounced to a screen reader. Same whole-day gate as the
+                rows. */}
+            <h2 className="text-balance px-6 font-game text-lg leading-none text-ink">
+              {perfectDay
+                ? "All Puzzles Solved, No Hints"
+                : "All Puzzles Solved Today"}
             </h2>
             <p className="pt-1 text-sm text-ink-soft">
               {roundupSummary(entries, streak)}
