@@ -14,7 +14,8 @@
  * DE/LE/LES/UN/ET/FIN/MER are French, ES/SI Spanish, DER German.
  *
  * AI-written, then two AI editor passes (every charade and hidden word
- * checked against its answer mechanically). A human read is still owed.
+ * checked against its answer mechanically), then restyled to the owner's
+ * taste and spot-reviewed; accepted for launch.
  */
 export interface Cryptic {
   clue: string;

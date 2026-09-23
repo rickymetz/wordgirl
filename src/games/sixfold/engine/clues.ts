@@ -5,7 +5,8 @@
  * per return of the family, so a repeat day never shows the last clue.
  *
  * AI-written, then two AI editor passes (parses, sibling fit, taste, US
- * spelling). A human read is still owed; the review sheet tracks it.
+ * spelling), then the owner's spot review; accepted for launch. After
+ * launch an edit changes past archive days: fix real errors only.
  *
  * Straight clues are crossword-mini style: definitions, the odd
  * fill-in-the-blank or "?" pun. The bite lives in the cryptics. The rest of

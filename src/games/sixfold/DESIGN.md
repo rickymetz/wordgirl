@@ -95,21 +95,23 @@ what a person knows: the clue's row, and a COMMON family word on the
 hidden line. *Uniqueness* is proven against every dictionary anagram, so
 a player who knows a rare one (DEASIL) never finds a second grid.
 
-## Before launch
+## Launch and after
 
-- **Clue review.** `engine/clues.ts` + `engine/cryptic.ts` are AI-drafted:
-  2 straight clues and 1 cryptic (with its parse) per word, 386 words,
-  ~1,150 clues. A third pass restyled 269 cryptics to the owner's taste (learned from their review: word-sized pieces, a real surface, no abbreviation soup, no answer chunk in the clue), skipping the 63 clues they had approved. A second AI pass before launch changed 72 more (a wrong LIERS parse, a tasteless DILATE surface, the "sex appeal" clues, loose definitions). The first AI editor pass (round 4) changed 202: broken parses,
-  missing indicators, British devices (RS, CE, lift, EST = "establishment"),
-  root-reusing cryptics, tense/number slips, near-duplicate straight pairs,
-  and three sibling clashes. Every charade and hidden word is checked
-  mechanically against its answer. A HUMAN read is still owed before
-  launch — sibling-fit first, since that is the one failure that makes a
-  day unfair.
+- **Clue review — accepted for launch (2026-09-23).** `engine/clues.ts` +
+  `engine/cryptic.ts` hold 2 straight clues and 1 cryptic (with its parse)
+  per word: 386 words, 1,158 clues, AI-drafted, then:
+  - three AI editor passes (202, 72, then 269 cryptics restyled to the
+    owner's taste: word-sized pieces, a real surface, no abbreviation soup,
+    no answer chunk written into the clue), plus a sibling-clash pass;
+  - the owner's spot review of 77 clues, cryptics first (all approved after
+    their notes were applied), then a go for launch.
+  Every charade and hidden word is checked mechanically against its answer.
+  **After launch a clue edit changes what a past archive day shows** and
+  moves the 120-day pin in `schedule.test.ts`: edit only to fix a real
+  error, and re-pin deliberately.
 - **Growing the pool later** means: promote in `families.ts`, clue in
   `clues.ts` and `cryptic.ts`, and APPEND to `schedule.ts` with a `since` past the current
   cycle. `schedule.test.ts` fails on anything else.
-- **`ARCHIVE_EPOCH`** to the launch date; teach `?demo-history` the game.
 
 ## Build notes
 
