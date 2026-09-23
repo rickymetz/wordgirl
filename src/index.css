@@ -262,6 +262,9 @@
     color-mix(in oklab, var(--color-ink) 55%, var(--color-surface))
   );
   --sixfold-hair: color-mix(in oklab, var(--color-ink) 14%, transparent);
+  /* The player's own letters. Dark lifts off the accent: #818cf8 on the
+     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc clears it. */
+  --sixfold-typed: light-dark(var(--color-accent), #a5b4fc);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

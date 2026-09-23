@@ -63,12 +63,12 @@ export function buildShareText(
   day: { cryptic: boolean; diagonal: boolean },
 ): string {
   const hintPart = hints > 0 ? `🫣 ${hints}` : "😎 0";
-  // Like the siblings, line two says what kind of board it was: the
-  // day's clue, and the diagonal when the hidden word ran along it.
-  const kind = `${day.cryptic ? "Cryptic" : "Straight"} clue${day.diagonal ? " · diagonal" : ""}`;
+  // Like the siblings, line two says what kind of board it was — but only
+  // when the day had a twist (a cryptic clue, the diagonal).
+  const kind = [day.cryptic && "Cryptic clue", day.diagonal && "Diagonal"].filter(Boolean).join(" · ");
   return [
     `🔠 ${GAME_NAME} — ${formatShareDate(dateKey)}`,
-    `${kind} · ⏱️ ${formatDuration(elapsedMs)} · ${hintPart}`,
+    `${kind ? `${kind} · ` : ""}⏱️ ${formatDuration(elapsedMs)} · ${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -234,7 +234,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         show("Given letters can't change", 1600);
         break;
       case "noCell":
-        show("Tap a cell first", 1600);
+        show("Select a cell first", 1600);
         break;
       case "full": {
         const bad = wrongLines(puzzle, state.entries);
@@ -251,11 +251,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
       }
       case "solved":
         show("Solved!", 1600);
-        setNarration(
-          `Solved. ${puzzle.cluedWord.toUpperCase()} across, ${puzzle.hiddenWord.toUpperCase()} ${
-            puzzle.col < 0 ? "on the diagonal" : "down"
-          }.`,
-        );
+        // The words and time are read when focus moves to the results.
         break;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -320,8 +316,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         {/* The mark: the board's two word lines crossing — the clued row
             solid, the hidden line lighter — inside a rounded frame. */}
         <svg
-          role="img"
-          aria-label="sixfold"
+          aria-hidden
           width="20"
           height="20"
           viewBox="0 0 20 20"
@@ -350,13 +345,6 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
       <div className="flex flex-col gap-1.5 rounded-2xl bg-surface-tint px-4 py-2.5">
         <p className="text-base leading-snug [@media(max-height:640px)]:text-sm">
           <span className="font-semibold text-accent">{rowLabel}:</span> {puzzle.clue}
-          {puzzle.clueCryptic && (
-            // A cryptic reads as nonsense to anyone expecting a definition;
-            // saying so up front is the difference between a puzzle and a bug.
-            <span className="ml-1.5 inline-block rounded-full border border-accent/60 px-1.5 text-[0.7rem] font-semibold tracking-wide text-accent uppercase">
-              Cryptic
-            </span>
-          )}
         </p>
         {/* The tutorial's steps point at the board's own shading, and it
             needs the height at Huge text. */}
@@ -386,7 +374,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         />
         <GameToast
           toast={toast}
-          className="top-0 [@media(max-height:640px)]:top-auto [@media(max-height:640px)]:bottom-full"
+          // Over the letter keys, never the board: a message about a line
+          // must not cover the line (or the tapped cell) it is about.
+          className="top-full"
         />
       </div>
 
@@ -402,12 +392,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
             tabIndex={-1}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-2 pb-1 outline-none"
+            className="flex flex-col items-center gap-2 pb-1 outline-none [@media(max-height:720px)]:gap-1"
           >
-            <p className="text-center text-sm text-ink-soft">
-              <span className="font-semibold text-ink">{puzzle.cluedWord.toUpperCase()}</span> across ·{" "}
+            <p className="text-center text-sm text-ink-soft [@media(max-height:720px)]:text-xs">
+              <span className="font-semibold text-ink">{puzzle.cluedWord.toUpperCase()}</span> in{" "}
+              {rowLabel.toLowerCase()} ·{" "}
               <span className="font-semibold text-ink">{puzzle.hiddenWord.toUpperCase()}</span>{" "}
-              {puzzle.col < 0 ? "on the diagonal" : "down"}
+              {puzzle.col < 0 ? "on the diagonal" : `in ${hiddenLabel.toLowerCase()}`}
             </p>
             {puzzle.family.length > 2 && (
               <p className="text-center text-xs text-ink-soft">
@@ -422,7 +413,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
             )}
             {puzzle.clueCryptic && puzzle.clueHow && (
               <p className="text-center text-xs text-ink-soft">
-                The cryptic: <span className="font-semibold text-ink">{puzzle.clueHow}</span>
+                How the clue works: <span className="font-semibold text-ink">{puzzle.clueHow}</span>
               </p>
             )}
             {(solvedElapsedMs !== null || state.hints > 0) && (
@@ -594,7 +585,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                   <>
                     The <Key>shaded row</Key> answers the clue. The other{" "}
                     <Key>shaded line</Key> spells another word from the same
-                    letters — work it out yourself.
+                    letters. It has no clue.
                   </>
                 ),
               },
@@ -603,7 +594,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                 title: "The words matter",
                 body: (
                   <>
-                    Sudoku logic carries you most of the way, then stalls.
+                    Sudoku logic fills about half the gaps, then stalls.
                     The two words settle it.
                   </>
                 ),
@@ -614,8 +605,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                 body: (
                   <>
                     A letter twice in a row, column or box gets a{" "}
-                    <Key>corner mark</Key>. If a full board still isn't
-                    right, the line that isn't its word is named.
+                    <Key>corner mark</Key>. If a full board is still wrong,
+                    the line that doesn't spell its word is named.
                   </>
                 ),
               },
@@ -688,10 +679,10 @@ function LineBlanks({
   }.`;
   return (
     <span className="flex items-center gap-1.5">
-      <span aria-hidden>{label}</span>
+      <span aria-hidden className="whitespace-nowrap">{label}</span>
       <span className="font-game text-ink" aria-hidden>
         {[...text].map((ch, i) => (
-          <span key={i} data-glyph className={typed[i] ? "text-accent" : undefined}>
+          <span key={i} data-glyph className={typed[i] ? "text-(--sixfold-typed)" : undefined}>
             {ch === BLANK ? "?" : ch.toUpperCase()}
           </span>
         ))}

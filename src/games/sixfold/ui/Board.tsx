@@ -119,7 +119,8 @@ export function Board({
   const hinted = new Set(revealed);
   const { regions } = puzzle;
   const tabCell = selected ?? 0;
-  const lineName = puzzle.col < 0 ? "diagonal" : `column ${puzzle.col + 1}, hidden word`;
+  // The cell label already says its column; the line is just "hidden word".
+  const lineName = puzzle.col < 0 ? "diagonal, hidden word" : "hidden word";
 
   const onKeyDown = (e: KeyboardEvent) => {
     const move = MOVES[e.key];
@@ -169,7 +170,7 @@ export function Board({
             ? "text-ink"
             : hinted.has(c)
               ? "text-ink"
-              : "text-accent";
+              : "text-(--sixfold-typed)";
       const wash =
         !solved && !isSel && peers.has(c)
           ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"

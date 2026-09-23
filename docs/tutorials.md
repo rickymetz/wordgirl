@@ -342,7 +342,7 @@ the refusal rather than describing it.
 
 ## Sixfold ⊞
 
-**The puzzle:** **LISTEN** across, **SILENT** down, eight gaps — 3 steps.
+**The puzzle:** **LISTEN** in row 4, **SILENT** in column 5, eight gaps — 3 steps.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-strip-dark.png">
@@ -352,9 +352,9 @@ the refusal rather than describing it.
 The board teaches the daily's shape — sudoku first, then a stall only a word
 breaks — at toy scale. Four gaps sit one to a row, each the only letter its row
 is missing. The other four form an E/T rectangle: two cells in the clued row,
-two in the bottom row, sharing two columns. Sudoku fills it either way round,
+two in the bottom row, sharing two columns. Sudoku fills it either way around,
 so the board stalls there. The clue settles it: LISTEN puts T then E in row 4,
-and SILENT down agrees. A real day leaves far more gaps and stalls sooner.
+and SILENT in column 5 agrees. A real day leaves far more gaps.
 `tutorial.test.ts` re-checks each of those claims against the real solver and
 dictionary.
 

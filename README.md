@@ -195,9 +195,9 @@ A 6×6 letter sudoku with two words hidden in it:
 - One **clued row** spells a family word. A second **hidden line** — the
   main diagonal when the family allows it, otherwise a crossing column —
   spells another, and lights up at the finish.
-- Sudoku carries you most of the way (~46% of the empty cells), then
-  **stalls**; the words break the stall. Every board is unique even if
-  both lines may be *any* dictionary anagram.
+- Sudoku fills about half the empty cells (~46%), then **stalls**; the
+  words break the stall. Every board has one solution even if either line
+  could be *any* dictionary anagram.
 - Clues rotate **straight, straight, cryptic** each time a family
   returns; a cryptic day shows its parse on the results card. **Hints**
   fill the next cell you could work out.

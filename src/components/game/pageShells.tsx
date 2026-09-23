@@ -42,7 +42,7 @@ export function PracticeShell({
   gameId: string;
   makeSeed: () => string;
   /**
-   * Changing this draws a fresh seed. Two of the five games let a player
+   * Changing this draws a fresh seed. Two of the games let a player
    * switch difficulty mid-practice, which must hand them a new board of
    * the new size rather than leave the old one up.
    */

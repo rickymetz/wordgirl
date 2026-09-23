@@ -99,7 +99,7 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 - **Clue review.** `engine/clues.ts` + `engine/cryptic.ts` are AI-drafted:
   2 straight clues and 1 cryptic (with its parse) per word, 386 words,
-  ~1,150 clues. An AI editor pass (round 4) changed 202: broken parses,
+  ~1,150 clues. A second AI pass before launch changed 72 more (a wrong LIERS parse, a tasteless DILATE surface, the "sex appeal" clues, loose definitions). The first AI editor pass (round 4) changed 202: broken parses,
   missing indicators, British devices (RS, CE, lift, EST = "establishment"),
   root-reusing cryptics, tense/number slips, near-duplicate straight pairs,
   and three sibling clashes. Every charade and hidden word is checked
@@ -114,7 +114,7 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 ## Build notes
 
 - **Accent:** indigo (`--level-sixfold`, #4338ca / #818cf8), CVD-distinct
-  from all five game accents. `validate_palette.js` now resolves named
+  from the other five game accents. `validate_palette.js` now resolves named
   game tokens (it silently skipped every game after Polygram). The
   roundup rainbow has a sixth stop.
 - **Highlight tokens:** `--sixfold-line` (15% light / 30% dark — dark

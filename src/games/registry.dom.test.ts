@@ -11,8 +11,10 @@ import { DICT_VERSION } from "../lib/words/dictionary";
  * short → all say no — so a future edit to one can't silently split them.
  */
 
-// A date on/after crosshatch's HARD_EPOCH so its day carries BOTH boards.
-const DAY = "2026-08-25";
+// A date on/after crosshatch's HARD_EPOCH so its day carries BOTH boards,
+// and after Sixfold's launch (before it, Sixfold's solvedOn says every day
+// is done, so the all-games streak survives its arrival).
+const DAY = "2026-09-30";
 const V = DICT_VERSION;
 const k = (id: string, sub: string) => `wg:v1:local:${id}:daily:${sub}`;
 const put = (id: string, sub: string, v: unknown) =>

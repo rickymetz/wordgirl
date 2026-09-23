@@ -112,7 +112,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   re-renders with the new day before the old entries clear.
 - `ConfettiOverlay` (`components/`) — TWO tiers, off the SAME whole-day
   hint decision as the roundup rows: `burst` (the everyday single pop,
-  what all five solve screens show) and `grand` (gold, four staggered
+  what every solve screen shows) and `grand` (gold, four staggered
   bursts with stars) on a hint-free day, so a perfect day is the only way
   to see it. Mounters read `CONFETTI_DURATION[variant]` rather than a
   literal (`useSolveTransition` does), and `resolveConfettiVariant` gates
@@ -282,7 +282,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   (version-ordering, solved-final, per-game unsolved veto), stats
   lock/defaults-merge, coachSeen, plus `streakAdvance`/`countsAsToday`/
   `displayStreak`. `lib/daily/useDailyClock.ts` owns active-time
-  (pause on hide, flush, freeze-at-solve). All five games use both.
+  (pause on hide, flush, freeze-at-solve). Every game uses both.
 - Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
   morphing: `polygram/ui/`.
 

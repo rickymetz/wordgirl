@@ -23,7 +23,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Stuck? Use the words",
     body: (
       <>
-        Sudoku can't tell which way round E and T go. The clue's answer
+        Sudoku can't tell which way around E and T go. The clue's answer
         fills the <Key>shaded row</Key>.
       </>
     ),
@@ -40,4 +40,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 export const TUTORIAL_RECAP =
-  "Sudoku first, then a word to break the stall. A real day leaves far more gaps, and the stall comes sooner.";
+  "Sudoku first, then a word to break the stall. A real day has far more gaps, and two words to find.";

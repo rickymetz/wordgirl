@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { isDaySolved, loadDayRecord } from "./state/persistence";
+import { ARCHIVE_EPOCH, isDaySolved, loadDayRecord } from "./state/persistence";
 import { SixfoldPreview } from "./ui/SixfoldPreview";
 import { SixfoldStatus } from "./ui/SixfoldStatus";
 
@@ -28,7 +28,10 @@ export const sixfold: GameDefinition = {
       hints: d.hints ?? 0,
     };
   },
-  solvedOn: isDaySolved,
+  // Before Sixfold existed there was nothing to finish: those days count
+  // as done, so the all-games streak (which walks back until some game
+  // says no) doesn't reset for every player on launch day.
+  solvedOn: async (dateKey) => dateKey < ARCHIVE_EPOCH || isDaySolved(dateKey),
   Page: lazy(() => import("./ui/SixfoldPage")),
   extraRoutes: [
     { path: "tutorial", Page: lazy(() => import("./ui/TutorialPage")) },
@@ -37,6 +40,8 @@ export const sixfold: GameDefinition = {
     { path: "stats", Page: lazy(() => import("./ui/TrendsPage")) },
     { path: "archive/:dateKey", Page: lazy(() => import("./ui/ArchivePlayPage")) },
   ],
+  // Launched 2026-09-23 (ARCHIVE_EPOCH): the hub card says "New" for two weeks.
+  newUntil: "2026-10-07",
   // Indigo — the one hue the game palette lacked.
   accentLevel: "sixfold",
   secondaryActions: [

@@ -102,3 +102,14 @@ describe("stats", () => {
     expect((await loadStats()).solved).toBe(1);
   });
 });
+
+describe("the all-games streak on launch day", () => {
+  it("counts days before Sixfold existed as done, and real days by the record", async () => {
+    const { sixfold } = await import("../index");
+    const { ARCHIVE_EPOCH } = await import("./persistence");
+    expect(await sixfold.solvedOn?.("2026-01-15")).toBe(true);
+    expect(await sixfold.solvedOn?.(ARCHIVE_EPOCH)).toBe(false);
+    await saveDailyProgress(day({ dateKey: ARCHIVE_EPOCH, solved: true, elapsedMs: 1_000 }), { edited: true });
+    expect(await sixfold.solvedOn?.(ARCHIVE_EPOCH)).toBe(true);
+  });
+});
