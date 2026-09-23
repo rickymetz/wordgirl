@@ -25,6 +25,7 @@ import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
+import { pressHandlers } from "../../../lib/pressHandlers";
 import { SHARE_URL } from "../../../lib/share";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
@@ -461,14 +462,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           <motion.div key="controls" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
             {/* Seven keys a row: the pad borrows 6px of the page gutter
                 each side so every key clears 44px from a 375px screen. */}
-            <div className="-mx-1.5 flex gap-1">
+            <div className="-mx-1.5 flex touch-none gap-1">
               {letters.map((l) => (
                 <button
                   key={l}
                   type="button"
                   aria-label={`letter ${l.toUpperCase()}`}
-                  onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => dispatch({ type: "pressLetter", letter: l })}
+                  {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
                   className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile font-game text-xl text-ink touch-manipulation select-none active:scale-95"
                 >
                   {l.toUpperCase()}
@@ -477,8 +477,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
               <button
                 type="button"
                 aria-label="erase"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => dispatch({ type: "erase" })}
+                {...pressHandlers(() => dispatch({ type: "erase" }))}
                 className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
               >
                 <Delete aria-hidden className="h-5 w-5" />

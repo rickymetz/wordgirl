@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
+import { pressHandlers } from "../../../lib/pressHandlers";
 import { useViewport } from "../../../lib/useViewport";
 import { cluedCells, hiddenCells } from "../engine/hints";
 import type { SixfoldPuzzle } from "../engine/types";
@@ -198,8 +199,7 @@ export function Board({
           tabIndex={c === tabCell ? 0 : -1}
           aria-label={`Row ${r + 1}, column ${col + 1}${line}: ${what}`}
           aria-selected={isSel}
-          onPointerDown={(e) => e.preventDefault()}
-          onClick={() => onTap(c)}
+          {...pressHandlers(() => onTap(c))}
           onFocus={() => onFocusCell(c)}
           className={`relative box-border flex items-center justify-center font-game focus:outline-none focus-visible:z-10 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-6px] ${
             isSel && !solved ? "focus-visible:outline-surface" : "focus-visible:outline-ink"
@@ -246,7 +246,7 @@ export function Board({
         // only programmatically focusable.
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="absolute inset-0 m-auto flex flex-col overflow-hidden rounded-xl border-2 border-(--sixfold-box) touch-manipulation select-none"
+        className="absolute inset-0 m-auto flex flex-col overflow-hidden rounded-xl border-2 border-(--sixfold-box) touch-none select-none"
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}

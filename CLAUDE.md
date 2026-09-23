@@ -244,6 +244,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   adjacent icon buttons that BOTH collapse the header's gap end up
   with hit areas 28px apart and the later one click-steals the first
   (the touch audit catches exactly this).
+- `pressHandlers(action)` (`lib/pressHandlers.ts`) — for keys and cells
+  that must never swallow a tap: the action runs on `pointerdown` (a thumb
+  that drifts a few px, or a tap that sets off iOS's rubber-band, gets its
+  `click` CANCELLED; measured 0/10 at 24px drift), and `click` handles only
+  keyboard activation (`detail === 0`). Pair with `touch-none` on the key
+  row. Sixfold's keypad and grid use it; Crosshatch's keyboard is the next
+  candidate ("keys sometimes need two or three presses" is this bug).
 - `HoldButton` — press-and-hold (default 1s) for one-way actions a
   stray thumb must not trigger (Polygram's level skip). The house
   alternative to a confirmation dialog when the action is small enough
