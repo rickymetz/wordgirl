@@ -150,6 +150,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
+  // Which of a line's letters the player typed (indigo on the board, so
+  // indigo in the readout too); givens and hints stay ink.
+  const typedIn = (cells: number[]) =>
+    cells.map((c) => state.entries[c] !== BLANK && !isLocked(state, c));
   const lineLabel = (l: "clued" | "hidden") =>
     l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : hiddenLabel;
 
@@ -364,8 +368,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         {/* Once solved, the results line under the board names both words. */}
         {!isTutorial && !state.solved && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <LineBlanks label={rowLabel} text={lineText(cluedCells(puzzle))} wrong={badLines.includes("clued")} />
-            <LineBlanks label={hiddenLabel} text={lineText(hiddenCells(puzzle))} wrong={badLines.includes("hidden")} />
+            <LineBlanks label={rowLabel} text={lineText(cluedCells(puzzle))} typed={typedIn(cluedCells(puzzle))} wrong={badLines.includes("clued")} />
+            <LineBlanks label={hiddenLabel} text={lineText(hiddenCells(puzzle))} typed={typedIn(hiddenCells(puzzle))} wrong={badLines.includes("hidden")} />
           </div>
         )}
       </div>
@@ -670,7 +674,18 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
 }
 
 /** A word line as monospaced blanks: letters where filled, `?` where not. */
-function LineBlanks({ label, text, wrong = false }: { label: string; text: string; wrong?: boolean }) {
+function LineBlanks({
+  label,
+  text,
+  typed,
+  wrong = false,
+}: {
+  label: string;
+  text: string;
+  /** Per letter: typed by the player (accent), as on the board. */
+  typed: readonly boolean[];
+  wrong?: boolean;
+}) {
   // aria-label is ignored on a plain span, so the spoken version is real
   // (visually hidden) text beside the glyphs.
   const spoken = `${label}: ${[...text].map((ch) => (ch === BLANK ? "blank" : ch.toUpperCase())).join(", ")}${
@@ -681,7 +696,7 @@ function LineBlanks({ label, text, wrong = false }: { label: string; text: strin
       <span aria-hidden>{label}</span>
       <span className="font-game text-ink" aria-hidden>
         {[...text].map((ch, i) => (
-          <span key={i} data-glyph>
+          <span key={i} data-glyph className={typed[i] ? "text-accent" : undefined}>
             {ch === BLANK ? "?" : ch.toUpperCase()}
           </span>
         ))}
