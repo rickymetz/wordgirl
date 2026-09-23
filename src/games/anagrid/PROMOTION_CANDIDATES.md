@@ -1,3 +1,143 @@
+# Approved promotions
+
+Decided by interview: pool size "everything that passes the filters";
+plurals allowed; a past-tense or -ing word only when paired with a base
+word (so SORTED/STORED leaves the existing pool, and ten Tier A families
+with two verb forms drop out); Tier B and the extra family words hand-picked.
+CARING/RACING stays: CARING reads as an adjective and RACING as a noun.
+
+**127 families added, pool 168** — 175 promoted words; 302 words need clues.
+
+```
+actors   → costar, castor
+aliens   → saline
+ashore   → hoarse
+badger   → barged
+barely   → barley, bleary
+blamed   → bedlam
+boiler   → reboil
+breast   → barest
+breath   → bather
+bridal   → ribald
+bruise   → buries, busier, rubies
+busted   → debuts
+buster   → brutes, tubers, rebuts
+candle   → lanced
+cartel   → claret
+castle   → cleats
+chains   → chinas
+charts   → starch
+cinema   → anemic, iceman
+clears   → scaler
+cursed   → crudes
+dancer   → craned
+dances   → ascend
+deacon   → canoed
+debris   → brides
+detail   → dilate, tailed
+detour   → routed, toured
+diaper   → paired, repaid
+donate   → atoned
+drives   → divers
+drones   → snored
+editor   → rioted, triode
+failed   → afield
+faster   → strafe
+filter   → lifter, trifle
+finest   → infest
+finger   → fringe
+forces   → fresco
+formed   → deform
+freaks   → fakers
+friend   → finder
+gifted   → fidget
+golden   → longed
+grapes   → pagers
+grunts   → strung
+hearts   → earths, haters
+hustle   → sleuth
+images   → ageism
+inches   → niches
+insult   → sunlit
+itself   → stifle, filets
+lasted   → deltas
+layers   → relays, slayer
+layout   → outlay
+linked   → kindle
+listed   → delist
+locker   → relock
+lovers   → solver
+maiden   → median
+marble   → ramble
+medals   → damsel
+mental   → lament, mantle
+minute   → minuet
+mister   → merits, timers, remits
+morals   → molars
+neural   → unreal
+novels   → sloven
+oceans   → canoes
+ordeal   → loader, reload
+others   → throes
+owners   → worsen
+parcel   → placer
+parent   → entrap
+partly   → paltry
+patron   → tarpon
+planes   → panels
+planet   → platen
+plates   → staple, petals, pastel, pleats, palest
+player   → replay, pearly
+posted   → depots, despot
+poster   → presto, tropes
+praise   → aspire
+priest   → stripe, sprite, ripest
+prince   → pincer
+prints   → sprint
+remind   → minder
+result   → luster, rustle
+retain   → retina
+rifles   → fliers, lifers
+rights   → girths
+runway   → unwary
+sample   → maples
+scored   → decors, coders, credos
+scrape   → capers, recaps, spacer, pacers
+scream   → creams
+search   → arches, chaser
+senior   → nosier
+serial   → sailer
+shared   → dasher
+shovel   → hovels
+shrine   → shiner
+signal   → aligns
+silver   → livers, sliver
+slower   → lowers
+snatch   → chants
+solemn   → lemons, melons
+sought   → toughs
+spider   → prides
+stance   → ascent
+stared   → trades, treads
+starve   → averts
+streak   → skater, takers
+strike   → trikes
+stroke   → stoker
+subtle   → bustle, bluest, sublet
+throne   → hornet
+traced   → redact
+traces   → crates, caster, reacts, recast
+trance   → nectar, canter, recant
+trials   → trails
+tribes   → biters
+unable   → nebula
+voters   → strove, troves
+waters   → waster
+winter   → twiner
+wolves   → vowels
+wonder   → downer
+```
+
 # Anagrid — pool promotion shortlist
 
 The live pool is 42 families; the 60-day repeat gap needs 60+. This is
