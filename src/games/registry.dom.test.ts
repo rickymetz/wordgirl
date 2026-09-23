@@ -65,6 +65,12 @@ function seed(id: string, solved: boolean) {
         });
       }
       break;
+    case "anagrid":
+      put(id, DAY, {
+        dateKey: DAY, dictVersion: V, solved,
+        elapsedMs: 240000, entries: "a".repeat(36), revealed: [], filled: 30, hints: 0,
+      });
+      break;
     default:
       throw new Error(`registry test has no seed for "${id}" — add one`);
   }

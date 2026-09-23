@@ -72,7 +72,7 @@ const SCREENS = [
   { name: "privacy", path: "/privacy" },
   { name: "terms", path: "/terms" },
 ];
-for (const g of ["polygram", "crosshatch", "pierglass", "doublet", "serpentine"]) {
+for (const g of ["polygram", "crosshatch", "pierglass", "doublet", "serpentine", "anagrid"]) {
   SCREENS.push({ name: `${g}`, path: `/games/${g}` });
   SCREENS.push({ name: `${g}+coach`, path: `/games/${g}`, act: async (p) => {
     const b = p.locator('button[aria-label*="how to play" i], button[aria-label*="help" i]').first();

@@ -20,8 +20,9 @@ const css = readFileSync(resolve(__dirname, "../src/index.css"), "utf8");
 
 const accents = [];
 const re =
-  /\[data-level="([^"]+)"\]\s*\{[^}]*--color-accent:\s*(?:light-dark\(([^,]+),\s*([^)]+)\)|var\(--level-\d+\))/g;
-const levelRe = /--level-(\d+):\s*light-dark\(([^,]+),\s*([^)]+)\)/g;
+  /\[data-level="([^"]+)"\]\s*\{[^}]*--color-accent:\s*(?:light-dark\(([^,]+),\s*([^)]+)\)|var\(--level-[\w-]+\))/g;
+// Numeric Polygram levels AND named game keys (--level-crosshatch…).
+const levelRe = /--level-([\w-]+):\s*light-dark\(([^,]+),\s*([^)]+)\)/g;
 
 const levels = {};
 for (const m of css.matchAll(levelRe)) {
@@ -37,7 +38,7 @@ for (const m of css.matchAll(re)) {
 
 // Also resolve var(--level-N) references
 const varRef =
-  /\[data-level="([^"]+)"\]\s*\{\s*--color-accent:\s*var\(--level-(\d+)\)/g;
+  /\[data-level="([^"]+)"\]\s*\{\s*--color-accent:\s*var\(--level-([\w-]+)\)/g;
 for (const m of css.matchAll(varRef)) {
   const name = m[1];
   const lv = levels[m[2]];

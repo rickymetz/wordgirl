@@ -20,6 +20,18 @@ export interface Family {
  */
 export const PROMOTED_WORDS: readonly string[] = [];
 
+/**
+ * Common-tier words that can't be a clued answer: proper nouns the
+ * subtitle-frequency cut let in. Dropping one can orphan its family
+ * (ADVISE loses DAVIES) — that's the point; a family needs two REAL
+ * words.
+ */
+export const EXCLUDED_WORDS: ReadonlySet<string> = new Set([
+  "davies",
+  "fowler",
+  "regina",
+]);
+
 function sortedLetters(word: string): string {
   return [...word].sort().join("");
 }
@@ -32,7 +44,7 @@ export function anagramFamilies(dict: Dictionary): Family[] {
   const promoted = new Set(PROMOTED_WORDS);
   const groups = new Map<string, Set<string>>();
   const add = (w: string) => {
-    if (w.length !== N || !distinct(w)) return;
+    if (w.length !== N || !distinct(w) || EXCLUDED_WORDS.has(w)) return;
     const key = sortedLetters(w);
     let g = groups.get(key);
     if (!g) groups.set(key, (g = new Set()));

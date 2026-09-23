@@ -7,8 +7,11 @@ rules alone never pin the grid down — the words have to do some of the
 work. That is the difference from plain Wordoku, where the letters are
 digits in costume and the word is decoration.
 
-Status: engine spike only (`engine/`). No UI, state, registry entry or
-clue data yet. The name is undecided; `anagrid` is a working id.
+Status: playable — daily, archive, stats, tutorial, hub card and
+roundup entry, per the CLAUDE.md new-game checklist. The name is
+undecided; `anagrid` is a working id (a folder move plus the registry
+entry to rename). See "Build notes" below for what shipped and what
+didn't.
 
 ## Decisions (requirements interview)
 
@@ -60,8 +63,11 @@ letter `c` equals the down's letter `r`.
 | Two parallel rows | 14 / 45 | not built |
 | Diagonal + anti-diagonal | 2 / 45 | not built |
 
-With the mixed rule the pool is **45 / 45 families: 6 diagonal days,
-39 across + down days**. Diagonal boards need 1-3 givens; across + down
+With the mixed rule every family makes a board: **6 diagonal days,
+the rest across + down**. Three "common" words turned out to be proper
+nouns from the subtitle-frequency list (DAVIES, REGINA, FOWLER); they
+are excluded (`EXCLUDED_WORDS`), which orphans their families, so the
+live pool is **42 families**. Diagonal boards need 1-3 givens; across + down
 boards 3-7. Both pass the stricter `open` proof too.
 
 **Two models of the player, deliberately different.**
@@ -79,13 +85,14 @@ can't. 40 candidate layouts were generated and measured, then dropped.
 
 ## Open items
 
-- **Pool size vs repeat gap.** 45 families means a family returns every
-  45 days; the interview asked for a 60-day minimum gap. That needs 15+
+- **Pool size vs repeat gap.** 42 families means a family returns every
+  42 days; the interview asked for a 60-day minimum gap. That needs 15+
   more families via `PROMOTED_WORDS` (hand-reviewed bonus-tier words —
   471 all-tier families allow a diagonal, 1,216 allow across + down).
-- **Clues.** Offline AI draft + human review, one per clued word
-  (~90 words for the current pool). The clue must not spoil the hidden
-  word, which is an anagram of its answer.
+- **Clues.** `engine/clues.ts` holds AI-drafted clues for all 86 pool
+  words, marked as drafts: they need the human review pass before
+  launch. `clues.test.ts` enforces coverage, length, and that no clue
+  names its own family.
 - **Difficulty tuning.** Diagonal days run on 1-3 givens and lean
   harder on word knowledge than across + down days. Measure real solve
   times before deciding whether to floor the givens.
@@ -93,3 +100,27 @@ can't. 40 candidate layouts were generated and measured, then dropped.
 - **Everything else** follows the CLAUDE.md new-game checklist:
   persistence, clock, archive, trends, roundup entry, coach sheet,
   tutorial, the three test files.
+
+## Build notes
+
+- **Deferred per the interview:** Practice mode (no route, no bento
+  tile), other board sizes, jigsaw layouts.
+- **Accent:** indigo (`--level-anagrid`, #4338ca / #818cf8) — 7.9:1 and
+  5.7:1, and CVD-distinct from all five game accents.
+  `validate_palette.js` only resolved numeric `--level-N` tokens, so it
+  never checked ANY named game accent; it now does, and all six pass.
+  The roundup rainbow gains a sixth stop.
+- **Share:** `🔠 Anagrid — <date>` / `⏱️ 4:32 · 😎 0` / URL.
+- **Roundup:** unit `letters`, value = cells the player filled.
+- **Wrong-but-full board:** a full grid with no repeats that isn't the
+  solution (a word line isn't a word) gets a toast rather than a solve;
+  nothing else is checked, per "conflicts only".
+- **Tutorial:** LISTEN across, SILENT down, one E/T rectangle only the
+  clue resolves. At Huge text on a 375×667 it drops the blanks legend
+  and the entry-order toggle and hides the title row, or it scrolls
+  145px. 320×568 at Huge still scrolls — the documented app-wide gap.
+- **Replay:** solved archive days offer "Play again" behind a
+  `ModalDialog`.
+- **Not done:** the `?demo-history` seeder doesn't know this game yet,
+  and there are no teaser/OG images or README section until it has a
+  name.

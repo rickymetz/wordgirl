@@ -63,8 +63,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   nothing moved (the padding resizes the card, which re-triggers the
   measure). No game carries a per-game constant — previews stay dumb.
 - `DailyRoundup` + `useDailyRoundup`/`useRoundupShareText` — the
-  cross-game "every puzzle done" banner: a rainbow border (all five game
-  accents via `--roundup-rainbow`, the one place the whole palette shows
+  cross-game "every puzzle done" banner: a rainbow border (every game's
+  accent via `--roundup-rainbow`, the one place the whole palette shows
   at once) around a neutral card of each game's result plus a Share.
   Each game supplies `GameDefinition.roundupEntry(today)` returning
   `{ emoji, name, unit, value | levels[], elapsedMs, hints }` (or null unless the WHOLE
@@ -329,7 +329,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   else the pairing appears (docs, marketing). Share strings are the one
   exception: they LEAD with the game's emoji, so the first character in
   a pasted result identifies the game (🐍 Serpentine, 👯‍♂️ Doublet,
-  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch).
+  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Anagrid).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in. That holds only in the DEFAULT

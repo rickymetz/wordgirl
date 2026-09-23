@@ -135,6 +135,7 @@
   --level-pierglass: light-dark(#a21caf, #e879f9);  /* fuchsia */
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
+  --level-anagrid: light-dark(#4338ca, #818cf8);    /* indigo */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -148,6 +149,7 @@
   --roundup-c3: light-dark(#c026d3, #e879f9); /* fuchsia */
   --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
   --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
+  --roundup-c6: light-dark(#4f46e5, #818cf8); /* indigo */
 
   /* Confetti. Decorative like the rainbow above and tuned the same way,
      but the reason it MUST be a light-dark() pair is sharper here: a
@@ -189,15 +191,17 @@
   --roundup-rainbow: linear-gradient(
     105deg,
     var(--roundup-c1) 0%,
-    var(--roundup-c2) 10%,
-    var(--roundup-c3) 20%,
-    var(--roundup-c4) 30%,
-    var(--roundup-c5) 40%,
+    var(--roundup-c2) 8.33%,
+    var(--roundup-c3) 16.67%,
+    var(--roundup-c4) 25%,
+    var(--roundup-c5) 33.33%,
+    var(--roundup-c6) 41.67%,
     var(--roundup-c1) 50%,
-    var(--roundup-c2) 60%,
-    var(--roundup-c3) 70%,
-    var(--roundup-c4) 80%,
-    var(--roundup-c5) 90%,
+    var(--roundup-c2) 58.33%,
+    var(--roundup-c3) 66.67%,
+    var(--roundup-c4) 75%,
+    var(--roundup-c5) 83.33%,
+    var(--roundup-c6) 91.67%,
     var(--roundup-c1) 100%
   );
 }
@@ -233,6 +237,9 @@
 
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
+
+/* Anagrid (working title) — indigo, the one hue the palette lacked. */
+[data-level="anagrid"] { --color-accent: var(--level-anagrid); }
 
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {
