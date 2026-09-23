@@ -4,6 +4,7 @@ import type { GameDefinition } from "../games/types";
 import { clearance } from "../lib/artClearance";
 import { edgeFade, type EdgeFade } from "../lib/scrollFade";
 import { useRemeasure } from "../lib/useRemeasure";
+import { useToday } from "../lib/useToday";
 
 /**
  * Tracks which edges of the action scroller should fade, so the right-edge
@@ -109,6 +110,8 @@ function useArtClearance() {
 export function GameCard({ game }: { game: GameDefinition }) {
   const { ref, fade } = useScrollFade();
   const art = useArtClearance();
+  const today = useToday();
+  const isNew = game.newUntil !== undefined && today < game.newUntil;
   return (
     <section data-level={game.accentLevel}>
       <Link
@@ -124,6 +127,11 @@ export function GameCard({ game }: { game: GameDefinition }) {
         }
       >
         <div className="w-3/4 min-w-0 pr-2">
+          {isNew && (
+            <span className="mb-1.5 inline-block rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-surface">
+              New
+            </span>
+          )}
           <h2
             ref={art.titleRef}
             className="font-game text-2xl font-normal tracking-tight"

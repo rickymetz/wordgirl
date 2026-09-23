@@ -135,6 +135,7 @@
   --level-pierglass: light-dark(#a21caf, #e879f9);  /* fuchsia */
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
+  --level-sixfold: light-dark(#4338ca, #818cf8);    /* indigo */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -148,6 +149,7 @@
   --roundup-c3: light-dark(#c026d3, #e879f9); /* fuchsia */
   --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
   --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
+  --roundup-c6: light-dark(#4f46e5, #818cf8); /* indigo */
 
   /* Confetti. Decorative like the rainbow above and tuned the same way,
      but the reason it MUST be a light-dark() pair is sharper here: a
@@ -189,15 +191,17 @@
   --roundup-rainbow: linear-gradient(
     105deg,
     var(--roundup-c1) 0%,
-    var(--roundup-c2) 10%,
-    var(--roundup-c3) 20%,
-    var(--roundup-c4) 30%,
-    var(--roundup-c5) 40%,
+    var(--roundup-c2) 8.33%,
+    var(--roundup-c3) 16.67%,
+    var(--roundup-c4) 25%,
+    var(--roundup-c5) 33.33%,
+    var(--roundup-c6) 41.67%,
     var(--roundup-c1) 50%,
-    var(--roundup-c2) 60%,
-    var(--roundup-c3) 70%,
-    var(--roundup-c4) 80%,
-    var(--roundup-c5) 90%,
+    var(--roundup-c2) 58.33%,
+    var(--roundup-c3) 66.67%,
+    var(--roundup-c4) 75%,
+    var(--roundup-c5) 83.33%,
+    var(--roundup-c6) 91.67%,
     var(--roundup-c1) 100%
   );
 }
@@ -233,6 +237,35 @@
 
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
+
+/* Sixfold — indigo, the one hue the palette lacked. */
+[data-level="sixfold"] {
+  --color-accent: var(--level-sixfold);
+  /* The word lines' shading. Dark mode needs about twice the mix: 15%
+     indigo on near-black barely separates from an empty cell. */
+  --sixfold-line: light-dark(
+    color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
+    color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
+  );
+  /* The selection's row/column/box: a neutral wash LAYERED over whatever
+     the cell already is (plain or word-line tint), so it never punches a
+     hole in the shading. */
+  --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
+  /* Ring on every cell holding the selected cell's letter. */
+  --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
+  /* Grid rules. The 2px box lines step down in dark, where full ink was a
+     near-white cage brighter than the letters; the 1px cell lines are
+     translucent ink, so they darken a white cell and a tinted word-line
+     cell by the same step (solid grey vanished on the tint). */
+  --sixfold-box: light-dark(
+    var(--color-ink),
+    color-mix(in oklab, var(--color-ink) 55%, var(--color-surface))
+  );
+  --sixfold-hair: color-mix(in oklab, var(--color-ink) 14%, transparent);
+  /* The player's own letters. Dark lifts off the accent: #818cf8 on the
+     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc clears it. */
+  --sixfold-typed: light-dark(var(--color-accent), #a5b4fc);
+}
 
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {

@@ -54,6 +54,10 @@ export interface GameDefinition {
   /** Palette key theming this game's hub cluster (data-level): a
    *  Polygram level number or a game's own key like "crosshatch". */
   accentLevel?: number | string;
+  /** A newly launched game's hub card wears a "New" label until this
+   *  dateKey (exclusive), so returning players spot it without the
+   *  card order — and everyone's share lines and swipe order — moving. */
+  newUntil?: string;
   /** Secondary entry points rendered as small bento tiles on the hub. */
   secondaryActions?: { label: string; path: string; description?: string }[];
 }

@@ -1,0 +1,148 @@
+---
+title: Sixfold
+description: Fill a 6×6 letter sudoku. Two lines of the grid spell two words from the same six letters. This page also tells you how the game makes each puzzle.
+---
+
+<style>{`:root { --wg-accent: light-dark(#4338ca, #818cf8); }`}</style>
+
+import { Image } from 'astro:assets';
+import teaser from '../../../assets/sixfold.png';
+
+<Image src={teaser} alt="Sixfold — a 6×6 letter grid with a shaded row and a shaded column" width={480} />
+
+Sixfold is a letter sudoku. The grid has 6 rows and 6 columns. The six letters come from an anagram family: a set of words that use the same six letters, such as LISTEN and SILENT. Two lines of the solved grid spell two different words from the family. One line has a clue. The other line has no clue: you work out its word from the same letters. Solve the square. Find the words.
+
+## How to play
+
+1. Tap a cell. Then tap a letter on the pad below the grid.
+2. Each row, each column, and each box of 2 by 3 cells must hold each of the six letters one time.
+3. The shaded row answers the clue above the grid.
+4. The other shaded line spells a different word from the same letters. This line is a column, or the main diagonal from the top-left corner to the bottom-right corner. The game does not give a clue for it.
+
+Some letters are given at the start. You cannot change a given letter. The pad shows the six letters in alphabetical order, so it does not tell you the words.
+
+If you put a letter two times in one row, column, or box, the game puts a corner mark on your letter. A given letter never gets the mark. If the grid is full and has no repeats but is still not correct, the game tells you which word line is wrong.
+
+When you finish, the two words light up on the grid. The results show both words, the other words of the family, your time, and your hints. Each day has one board, and all days have the same difficulty.
+
+Practice gives an unlimited number of boards. Each practice board uses a random family, at the same difficulty as the daily, with any one of its clues. Practice boards are not saved, and they do not enter your statistics.
+
+## Sudoku first, then the words
+
+In a plain letter sudoku, the letters are only numbers with a new look. The word is decoration. Sixfold makes the words necessary.
+
+The sudoku rules fill most of the board. Then they stop: two or more complete grids still obey every sudoku rule. This point is the stall. Only the words decide which grid is correct. The clue gives you the row. The row then gives you the letters that the sudoku could not place.
+
+The first version of the game removed as many given letters as possible. The result was the wrong way around. The sudoku placed a median of 0 cells before the words, so each day started with "type both words", and simple sudoku finished the rest. The current generator keeps more given letters, so the stall comes later. On a daily board, the sudoku rules fill about 46 percent of the empty cells before the stall. Before the stall, each move is a single: a cell that can hold only one letter, or a letter that can go in only one cell of a row, column, or box.
+
+## The shape of the two words
+
+A puzzle uses one of two shapes:
+
+- **Row and column.** The clued word goes along a row. The hidden word goes down a column. The two lines share one cell. The two words must have the same letter there.
+- **Row and diagonal.** The clued word goes along a row. The hidden word goes down the main diagonal.
+
+The game uses the diagonal when the family allows it. Otherwise it uses a column.
+
+### Why the diagonal is rare
+
+The clued row $r$ crosses the diagonal at cell $(r, r)$. So the two words must have the same letter at position $r$. But each other cell $(r, j)$ of the row is in column $j$, and so is the diagonal cell $(j, j)$. One column cannot hold a letter two times. So at every other position, the two words must have **different** letters:
+
+$$
+\text{clued}[i] = \text{hidden}[i] \iff i = r
+$$
+
+Two words from one family often agree in more than one position. SACRED and SCARED agree in four positions, so they can never make a diagonal pair. LADIES and IDEALS agree only at the S, so they can. In the first measurement, only 8 of 45 families of common words allowed a diagonal. In the full pool of 168 families, 57 allow it.
+
+A row and a column share only the cell where they cross. Thus any two words from a family can make a pair, at each position where the letter of the row's word agrees with the letter of the column's word.
+
+## How the game makes a puzzle
+
+The code is in `src/games/sixfold/engine/generator.ts`, `solver.ts`, and `families.ts`.
+
+### Step 1: Select the family
+
+The families come from the dictionary. A family is a set of two or more common six-letter words with six different letters. Some words were not common enough for the common tier, but they are ordinary words. A person reviewed them, and 176 of them are in the pool (`PROMOTED_WORDS` in `families.ts`). Proper nouns and British spellings are not answers. Plural words are answers. A verb form is an answer only when it pairs with a base word, so SORTED and STORED are not a family.
+
+The result is 168 families. The schedule (`schedule.ts`) puts them in cycles. Each cycle is a random order of all the families, so each family occurs one time in each cycle. A cycle has 168 days, so a family comes back after about 5½ months.
+
+### Step 2: Draw a full grid
+
+The generator selects a pair of words and a position for them. It writes the two words into an empty grid. Then it finds a random complete sudoku grid that agrees with the words.
+
+### Step 3: Remove letters
+
+The generator removes letters from the full grid one at a time, in random order. It puts a letter back if the board then breaks one of three rules:
+
+1. **A person can solve it.** The solver uses only the moves a person uses: singles, the clue's word in its row, and a common family word on the hidden line.
+2. **Only one solution is possible.** This is true even if each word line can be *any* dictionary word with these letters. See below.
+3. **The sudoku stalls late.** The sudoku rules alone must leave a maximum of 6 complete grids.
+
+At the end, the generator keeps the board only if the sudoku rules alone leave two or more grids. That makes sure that the words are necessary. A daily board has a median of 9 given letters.
+
+The difficulty setting is the maximum number of grids in rule 3. A small number keeps more given letters, so the stall comes later. The generator has three settings:
+
+| Level | Maximum grids | Given letters (median) | Empty cells the sudoku fills before the stall |
+| --- | --- | --- | --- |
+| Easy | 2 | 10 | about 78% |
+| **Medium — every daily** | 6 | 9 | about 46% |
+| Hard | 24 | 9 | about 25% |
+
+All dailies use medium (`DAILY_DIFFICULTY`). An earlier version made Monday and Tuesday easy. On easy days, the sudoku filled about 78 percent of the empty cells before the stall, and the start was too simple.
+
+The generator tries each word pair four times with new random grids. If no pair makes a good board, it tries the next family in the cycle. This has not occurred: every one of the 168 families was measured and makes a board at each level. If no family makes a board, the generator stops with an error. A daily board takes about 18 milliseconds.
+
+## One solution, two models of the player
+
+The generator uses two different models of what a player knows. This is intentional.
+
+- **Solvability** uses what a person knows: the clue's row, and a common family word on the hidden line.
+- **Uniqueness** is proven against every dictionary word with these six letters, common or rare.
+
+Thus a player who knows a rare anagram (DEASIL, for example) never finds a second correct grid. The other family word in the clued row always makes a repeated letter somewhere.
+
+The first version did not have this rule. It tested uniqueness only with the clue's word in its row. On 16 percent of days, the other family word in the clued row also made a full grid with no repeats. The current test makes each word line free, so this cannot occur.
+
+A second rule, "the clue must be necessary", cannot exist together with strict uniqueness. The wrong word in the clued row always makes a repeat. A player can see that repeat without the clue. In a measurement, only 1 board in 378 obeyed both rules. So the clue is the fast way to the row, not the only way. The difficulty of the clue is where the challenge comes from, not the generator.
+
+## Hints
+
+A hint fills one cell. It does not fill the first empty cell in reading order. It fills the next cell that you could work out yourself, from the correct letters on the board (`src/games/sixfold/engine/hints.ts`). A wrong letter is not a base for a deduction, so the hint ignores wrong letters. Thus a hint shows you the next move.
+
+The first hint of the day asks for confirmation. Your result shows how many hints you used. Hints never break a streak.
+
+## Clues
+
+Each answer word has three clues: two straight clues and one cryptic clue. The code is in `engine/clues.ts` and `engine/cryptic.ts`. The pool has 386 answer words and 1,158 clues.
+
+- A straight clue is a small crossword clue: a definition, a fill-in-the-blank, or a pun with a `?`. It has a maximum of 40 characters.
+- A cryptic clue has a definition at one end and wordplay that makes the answer a second way. It has a maximum of 48 characters.
+
+Each clue must fit its own word and not the other words of the family. A clue never contains a family word, and it uses American spelling.
+
+### The rotation
+
+The clues rotate: straight, straight, cryptic. Each time a family comes back in a new cycle, it shows the next clue. So a family never shows the same clue two times in a row.
+
+Each family starts at a different position in the rotation. The start comes from its letters (`clueTurn` in `generator.ts`). Without this, all families would be at the same position together, and one full cycle of 5½ months would be only cryptic days. With it, about one day in three is cryptic.
+
+### Cryptic clues
+
+A cryptic clue shows a **Cryptic** tag, so that it does not look like an error. The wordplay types are charades (A + B), containers, hidden words, sound-alikes, deletions, and double definitions. For example:
+
+- *Origin found in sour cereal* — SOURCE, hidden in SOUR CEreal.
+- *Peril is daughter's rage* — DANGER, D (daughter) + ANGER.
+
+A cryptic clue never uses anagram wordplay. The pad already shows the six letters, so an anagram would give the answer away. After you finish a cryptic day, the results show the parse: how the wordplay makes the answer.
+
+## The frozen schedule
+
+The day's family comes from the schedule, not from a random pick. Cycle $c$ contains each family whose `since` value is $c$ or less. The order of each cycle comes from a seed that names only the cycle. Cycles start on January 1, 2026.
+
+The schedule can only grow at the end, and only with a `since` value in a future cycle. Then all past days, and their clues, stay the same. A change to an entry, a removal, a new order, or an addition to the current cycle would change past days and break archive saves. `schedule.test.ts` pins the family of each day, so such a change cannot occur silently.
+
+The cycle seed is `anagrid:cycle:` and the cycle number. It keeps the working name of the game, because a new seed would change every day. The board of one day then comes from a second seed, such as `daily:2026-09-23:1:0`: the date, the cycle, and the number of families skipped (0 unless a family could not make a board).
+
+## Versions
+
+Sixfold uses the dictionary, and each saved day stores `DICT_VERSION`. But the saved day also stores a `puzzleKey`: a fingerprint of the solution, the given letters, the clued row, and the hidden column (`sixfoldPuzzleKey` in `state/persistence.ts`). The board is the puzzle. So a dictionary version change that does not change the board keeps your saved day valid.

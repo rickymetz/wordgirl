@@ -92,7 +92,7 @@ export function useRoundupShareText(today: string): string | null {
 }
 
 /**
- * The "every puzzle done" banner: a rainbow border sweeping all five game
+ * The "every puzzle done" banner: a rainbow border sweeping every game
  * accents (the app's whole palette at once, the one place it earns being
  * loud) around a neutral card listing each result and sharing the day.
  * Renders nothing until the day is complete, so the hub mounts it above
@@ -111,7 +111,7 @@ export function DailyRoundup({ today }: { today: string }) {
   useEffect(() => {
     let cancelled = false;
     setDismissed(null);
-    void loadRoundupDismissed(today).then((d) => {
+    void loadRoundupDismissed(today, games.length).then((d) => {
       if (!cancelled) setDismissed(d);
     });
     return () => {
@@ -143,9 +143,9 @@ export function DailyRoundup({ today }: { today: string }) {
     // rare enough that losing it to a locked phone means losing it for the
     // day. Wait for the tab to be looked at.
     const run = () => {
-      void loadRoundupCelebrated(today).then((done) => {
+      void loadRoundupCelebrated(today, games.length).then((done) => {
         if (cancelled || done) return;
-        void markRoundupCelebrated(today);
+        void markRoundupCelebrated(today, games.length);
         setCelebrate(true);
         // Unmount the canvas once the run has finished (the grand variant
         // takes longer); the banner then just sits with its drifting border.
@@ -193,7 +193,7 @@ export function DailyRoundup({ today }: { today: string }) {
           <button
             type="button"
             onClick={() => {
-              void markRoundupDismissed(today);
+              void markRoundupDismissed(today, games.length);
               setDismissed(true);
             }}
             aria-label="Dismiss roundup"

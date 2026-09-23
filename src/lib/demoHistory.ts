@@ -5,11 +5,12 @@ import { createGameStore } from "./storage/createGameStore";
 import { createLocalStorageAdapter } from "./storage/localStorageAdapter";
 import { BACKUP_PREFIX } from "./backup";
 import { levelsFor } from "../games/crosshatch/state/persistence";
+import { ARCHIVE_EPOCH as SIXFOLD_EPOCH } from "../games/sixfold/state/persistence";
 
 /**
  * Demo history for previewing full archive/stats pages: visiting any
  * page with ?demo-history writes ~6 weeks of plausible progress for
- * all five games into THIS browser's storage, then reloads with the
+ * all six games into THIS browser's storage, then reloads with the
  * param stripped (main.tsx owns the trigger, and only dev and preview
  * builds compile the trigger in at all).
  *
@@ -48,6 +49,7 @@ export const GAME_IDS = [
   "pierglass",
   "doublet",
   "serpentine",
+  "sixfold",
 ] as const;
 
 /** Fake words render in archive word lists; nonsense is fine, these
@@ -378,6 +380,52 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
       }
     }
     put("serpentine", "stats", { ...streakBase, bestTimeHaiku, bestTimePoem });
+  }
+
+  // — Sixfold: one board a day, and only from its launch
+  //   (ARCHIVE_EPOCH) on.
+  {
+    const pairs = [
+      ["listen", "silent"],
+      ["badger", "barged"],
+      ["hostel", "hotels"],
+      ["angels", "angles"],
+      ["antler", "rental"],
+    ];
+    let bestTimeMs: number | null = null;
+    let hintFreeSolves = 0;
+    for (const d of played) {
+      // Nothing to seed before the game existed — seeded "history" there
+      // would also mask the all-games streak's launch-day behavior.
+      if (d < SIXFOLD_EPOCH) continue;
+      const [cluedWord, hiddenWord] = pick(pairs);
+      const elapsedMs = minutes(3, 14);
+      const hints = rng() < 0.25 ? int(1, 3) : 0;
+      if (hints === 0) hintFreeSolves++;
+      bestTimeMs = bestTimeMs === null ? elapsedMs : Math.min(bestTimeMs, elapsedMs);
+      put("sixfold", `daily:${d}`, {
+        ...dayBase(d, elapsedMs),
+        entries: cluedWord.repeat(6),
+        revealed: Array.from({ length: hints }, (_, i) => i),
+        filled: int(22, 27),
+        hints,
+        conflicts: rng() < 0.4 ? int(1, 4) : 0,
+        cluedWord,
+        hiddenWord,
+      });
+    }
+    const seeded = played.filter((d) => d >= SIXFOLD_EPOCH).length;
+    if (seeded > 0) {
+      put("sixfold", "stats", {
+        ...streakBase,
+        played: seeded,
+        solved: seeded,
+        currentStreak: Math.min(run, seeded),
+        bestStreak: Math.min(best, seeded),
+        bestTimeMs,
+        hintFreeSolves,
+      });
+    }
   }
 
   // Six weeks of "progress" would trip the backup reminder on the

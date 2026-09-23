@@ -63,8 +63,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   nothing moved (the padding resizes the card, which re-triggers the
   measure). No game carries a per-game constant — previews stay dumb.
 - `DailyRoundup` + `useDailyRoundup`/`useRoundupShareText` — the
-  cross-game "every puzzle done" banner: a rainbow border (all five game
-  accents via `--roundup-rainbow`, the one place the whole palette shows
+  cross-game "every puzzle done" banner: a rainbow border (every game's
+  accent via `--roundup-rainbow`, the one place the whole palette shows
   at once) around a neutral card of each game's result plus a Share.
   Each game supplies `GameDefinition.roundupEntry(today)` returning
   `{ emoji, name, unit, value | levels[], elapsedMs, hints }` (or null unless the WHOLE
@@ -112,7 +112,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   re-renders with the new day before the old entries clear.
 - `ConfettiOverlay` (`components/`) — TWO tiers, off the SAME whole-day
   hint decision as the roundup rows: `burst` (the everyday single pop,
-  what all five solve screens show) and `grand` (gold, four staggered
+  what every solve screen shows) and `grand` (gold, four staggered
   bursts with stars) on a hint-free day, so a perfect day is the only way
   to see it. Mounters read `CONFETTI_DURATION[variant]` rather than a
   literal (`useSolveTransition` does), and `resolveConfettiVariant` gates
@@ -244,6 +244,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   adjacent icon buttons that BOTH collapse the header's gap end up
   with hit areas 28px apart and the later one click-steals the first
   (the touch audit catches exactly this).
+- `pressHandlers(action)` (`lib/pressHandlers.ts`) — for keys and cells
+  that must never swallow a tap: the action runs on `pointerdown` (a thumb
+  that drifts a few px, or a tap that sets off iOS's rubber-band, gets its
+  `click` CANCELLED; measured 0/10 at 24px drift), and `click` handles only
+  keyboard activation (`detail === 0`). Pair with `touch-none` on the key
+  row. Sixfold's keypad and grid use it; Crosshatch's keyboard is the next
+  candidate ("keys sometimes need two or three presses" is this bug).
 - `HoldButton` — press-and-hold (default 1s) for one-way actions a
   stray thumb must not trigger (Polygram's level skip). The house
   alternative to a confirmation dialog when the action is small enough
@@ -282,7 +289,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   (version-ordering, solved-final, per-game unsolved veto), stats
   lock/defaults-merge, coachSeen, plus `streakAdvance`/`countsAsToday`/
   `displayStreak`. `lib/daily/useDailyClock.ts` owns active-time
-  (pause on hide, flush, freeze-at-solve). All five games use both.
+  (pause on hide, flush, freeze-at-solve). Every game uses both.
 - Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
   morphing: `polygram/ui/`.
 
@@ -329,7 +336,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   else the pairing appears (docs, marketing). Share strings are the one
   exception: they LEAD with the game's emoji, so the first character in
   a pasted result identifies the game (🐍 Serpentine, 👯‍♂️ Doublet,
-  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch).
+  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Sixfold).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in. That holds only in the DEFAULT
@@ -405,7 +412,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `::after` that is the right size but CLIPPED by a scrolling ancestor
   (the dictionary's bookmark button was exactly that). Two standing
   exceptions: Crosshatch's keyboard keys are ~30px wide because ten of
-  them cannot be 44px on a 390px screen, and a control behind an open
+  them cannot be 44px on a 390px screen (Sixfold's seven letter keys
+  likewise dip to ~39px, at 320px only), and a control behind an open
   sheet fails the hit test by design. Blind spot: the audit never
   SOLVES a board, so post-solve results controls (Pierglass' par
   toggle) are outside its reach — measure those by hand.

@@ -3,7 +3,7 @@ import { CONFETTI_DURATION } from "../components/ConfettiOverlay";
 
 /** Hold the reveal until the burst has actually finished. Read from the
  *  overlay rather than restated, so retuning the burst can't leave all
- *  five games cutting their confetti off mid-flight. */
+ *  games cutting their confetti off mid-flight. */
 const CONFETTI_MS = CONFETTI_DURATION.burst + 100;
 
 /**

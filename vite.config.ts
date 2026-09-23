@@ -21,6 +21,7 @@ const OG_GAMES = [
   { id: "pierglass", name: "Pierglass", tagline: "Every word, a reflection." },
   { id: "doublet", name: "Doublet", tagline: "Place the tiles. Spell the words." },
   { id: "serpentine", name: "Serpentine", tagline: "One continuous line." },
+  { id: "sixfold", name: "Sixfold", tagline: "Solve the square. Find the words." },
 ] as const;
 
 /** Rewrite the `content` of the one <meta> tag identified by attr="val". */

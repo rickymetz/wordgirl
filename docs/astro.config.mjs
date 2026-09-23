@@ -36,6 +36,7 @@ export default defineConfig({
             { label: "Pierglass", slug: "games/pierglass" },
             { label: "Doublet", slug: "games/doublet" },
             { label: "Serpentine", slug: "games/serpentine" },
+            { label: "Sixfold", slug: "games/sixfold" },
             { label: "How daily puzzles work", slug: "games/daily-puzzles" },
             { label: "Streaks, modes, and the app", slug: "games/player-guide" },
           ],

@@ -1,6 +1,6 @@
 ---
 title: Architecture overview
-description: One Vite application contains five games. This page shows the structure.
+description: One Vite application contains six games. This page shows the structure.
 ---
 
 WordGirl is one application. It uses React 19, TypeScript, and Vite. Each game is one folder. A registry connects the games to the routes. The game engines are pure TypeScript. They do not use React or the DOM.

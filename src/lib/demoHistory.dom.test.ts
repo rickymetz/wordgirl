@@ -3,6 +3,7 @@ import { GAME_IDS, seedDemoHistory } from "./demoHistory";
 import { createGameStore } from "./storage/createGameStore";
 import { DICT_VERSION } from "./words/dictionary";
 import { HARD_EPOCH } from "../games/crosshatch/state/persistence";
+import { ARCHIVE_EPOCH as SIXFOLD_EPOCH } from "../games/sixfold/state/persistence";
 import { loadAllDailyProgress as loadPierglassDays } from "../games/pierglass/state/persistence";
 
 // 2026-09-15: the 42-day span (08-04 … 09-14) straddles HARD_EPOCH
@@ -47,10 +48,20 @@ describe("seedDemoHistory", () => {
     expect(days["2026-09-15"]).toBeUndefined();
 
     for (const game of GAME_IDS) {
+      // Sixfold launched after this span: nothing to seed, and no stats.
+      if (game === "sixfold") continue;
       const stats = await createGameStore(game).get<{ played: number }>(
         "stats",
       );
       expect(stats?.played, `${game} stats`).toBeGreaterThan(0);
+    }
+  });
+
+  it("seeds no Sixfold day before Sixfold existed", async () => {
+    await seedDemoHistory(false);
+    const sixfold = createGameStore("sixfold");
+    for (const k of await sixfold.keys("daily:")) {
+      expect(k.slice("daily:".length) >= SIXFOLD_EPOCH, k).toBe(true);
     }
   });
 

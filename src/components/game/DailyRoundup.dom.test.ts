@@ -238,7 +238,7 @@ describe("DailyRoundup", () => {
       container.querySelector('canvas[data-confetti="burst"]'),
     ).toBeTruthy();
     expect(
-      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25:3"),
     ).toBeTruthy();
 
     // A later visit the same day shows the banner but does NOT replay it.
@@ -259,8 +259,18 @@ describe("DailyRoundup", () => {
     ).toBeTruthy();
     // Still a one-shot: remembered for the day like the everyday burst.
     expect(
-      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25"),
+      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25:3"),
     ).toBeTruthy();
+  });
+
+  it("a flag from when the day had fewer games doesn't hide the new banner", async () => {
+    // Launch day of a new game: the player dismissed (and celebrated) the
+    // smaller roundup that morning. The bigger one is a different banner.
+    localStorage.setItem("wg:v1:local:roundup:dismissed:2026-08-25:2", "true");
+    localStorage.setItem("wg:v1:local:roundup:celebrated:2026-08-25:2", "true");
+    await mount();
+    expect(banner()).toBeTruthy();
+    expect(container.querySelector("canvas")).toBeTruthy();
   });
 
   it("can be dismissed for the day and stays gone", async () => {
@@ -274,7 +284,7 @@ describe("DailyRoundup", () => {
     await flush();
     expect(banner()).toBeNull();
     expect(
-      localStorage.getItem("wg:v1:local:roundup:dismissed:2026-08-25"),
+      localStorage.getItem("wg:v1:local:roundup:dismissed:2026-08-25:3"),
     ).toBeTruthy();
 
     // Still gone on a fresh mount.

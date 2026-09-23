@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { games } from "../games/registry";
 
 /**
- * Carousel between the five games' parallel pages (archive ↔ archive,
+ * Carousel between the games' parallel pages (archive ↔ archive,
  * stats ↔ stats): drag left/right anywhere on the page — the page
  * follows the finger while the neighboring game's REAL page peeks in
  * from that side — or use the chevrons beside the title. Cycles in

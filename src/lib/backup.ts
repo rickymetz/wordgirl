@@ -12,7 +12,7 @@ import { localDateKey } from "./date";
  * backup that costs no server and no sign-up.
  *
  * EVERYTHING lives under one prefix. Settings, dictionary bookmarks and
- * all five games' saves are namespaced `wg:v1:local:`, so a backup is
+ * every game's saves are namespaced `wg:v1:local:`, so a backup is
  * simply that prefix's contents — no per-game registry to keep in sync,
  * and a game added tomorrow is included without touching this file.
  */
