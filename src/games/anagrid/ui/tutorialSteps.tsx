@@ -23,7 +23,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Solve the clue",
     body: (
       <>
-        The clue's answer fills the <Key>marked row</Key>. Sudoku alone
+        The clue's answer fills the <Key>shaded row</Key>. Sudoku alone
         can't place its E and T — the word can.
       </>
     ),

@@ -239,7 +239,15 @@
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
 
 /* Anagrid (working title) — indigo, the one hue the palette lacked. */
-[data-level="anagrid"] { --color-accent: var(--level-anagrid); }
+[data-level="anagrid"] {
+  --color-accent: var(--level-anagrid);
+  /* The word lines' shading. Dark mode needs about twice the mix: 15%
+     indigo on near-black barely separates from an empty cell. */
+  --anagrid-line: light-dark(
+    color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
+    color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
+  );
+}
 
 /* Serpentine — lime green, distinct from the existing palette. */
 [data-level="serpentine"] {

@@ -10,12 +10,6 @@ const MIN_CELL = 44;
 const MAX_CELL = 64;
 /** A letter never outgrows this share of its cell (see CLAUDE.md). */
 const LETTER_MAX_RATIO = 0.52;
-/** The clued row's marker tabs: width, and their gap from the board. */
-const TAB_W = 5;
-const TAB_GAP = 4;
-// The tabs hang into the screen's 20px side padding (px-5), so they
-// cost the board no width — 9px each side fits with room to spare.
-
 export function hiddenCells(p: AnagridPuzzle): number[] {
   return Array.from({ length: N }, (_, i) => (p.col < 0 ? i * N + i : i * N + p.col));
 }
@@ -83,7 +77,9 @@ export function Board({
   const boardPx = cellPx * N;
   const letterPx = Math.floor(cellPx * LETTER_MAX_RATIO);
 
-  const hidden = new Set(hiddenCells(puzzle));
+  // Both word lines share one tint: the clue card names which is which,
+  // and a fill can't sit on a gridline the way a stroke did.
+  const wordLine = new Set([...hiddenCells(puzzle), ...cluedCells(puzzle)]);
   const given = new Set(puzzle.givens);
   const hinted = new Set(revealed);
   const { regions } = puzzle;
@@ -101,20 +97,25 @@ export function Board({
     const isSel = c === selected;
     const conflict = conflicts.has(c);
     const sameLetter = filled && focusLetter !== null && ch === focusLetter;
+    // Four strengths that must stay apart: the selection is a SOLID
+    // fill, a matching letter a strong tint, a word line a light tint,
+    // and the selection's row/column/box a neutral grey.
     const bg = conflict
       ? "bg-warn/15"
       : isSel
-        ? "bg-accent/30"
+        ? "bg-accent"
         : sameLetter
-          ? "bg-accent/15"
-          : hidden.has(c)
-            ? "bg-surface-tint"
+          ? "bg-accent/35"
+          : wordLine.has(c)
+            ? "bg-(--anagrid-line)"
             : peers.has(c)
               ? "bg-ink/5"
               : "bg-surface";
     const tone = conflict
       ? "text-warn"
-      : solved || !(given.has(c) || hinted.has(c))
+      : isSel
+        ? "text-surface"
+        : solved || !(given.has(c) || hinted.has(c))
         ? "text-accent"
         : hinted.has(c)
           ? "text-ink-soft"
@@ -164,17 +165,6 @@ export function Board({
           <div key={r} role="row" className="contents">
             {cells.slice(r * N, r * N + N)}
           </div>
-        ))}
-        {/* The clued row: marked by tabs OUTSIDE the board, level with
-            the row. A stroke over the cells sat on the heavy box lines
-            and made the regions hard to read; the tabs touch no gridline. */}
-        {[-(TAB_W + TAB_GAP), boardPx + TAB_GAP].map((left) => (
-          <div
-            key={left}
-            aria-hidden
-            className="pointer-events-none absolute rounded-full bg-accent"
-            style={{ left, top: puzzle.row * cellPx + 4, width: TAB_W, height: cellPx - 8 }}
-          />
         ))}
       </div>
     </div>
