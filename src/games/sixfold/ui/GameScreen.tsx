@@ -208,6 +208,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
       case "locked":
         show("Given letters can't change", 1600);
         break;
+      case "noCell":
+        show("Tap a cell first", 1600);
+        break;
       case "full": {
         const bad = wrongLines(puzzle, state.entries);
         if (bad.length) {

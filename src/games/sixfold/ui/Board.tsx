@@ -135,11 +135,15 @@ export function Board({
       const repeat = repeats.has(c);
       const match = !isSel && filled && focusLetter !== null && ch === focusLetter;
 
+      // The selection is a solid accent tile: a tint alone sat within
+      // 1.3:1 of the word-line shading and was easy to lose.
       const fill = solved
         ? onLine
           ? "bg-accent"
           : "bg-surface"
-        : wrong.has(c)
+        : isSel
+          ? "bg-accent"
+          : wrong.has(c)
           ? "bg-warn/15"
           : onLine
             ? "bg-(--sixfold-line)"
@@ -148,7 +152,9 @@ export function Board({
         ? onLine
           ? "text-surface"
           : "text-ink"
-        : repeat
+        : isSel
+          ? "text-surface"
+          : repeat
           ? "text-warn"
           : given.has(c)
             ? "text-ink"
@@ -160,7 +166,7 @@ export function Board({
           ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
           : "";
       const ring = isSel
-        ? "shadow-[inset_0_0_0_3px_var(--color-accent)]"
+        ? ""
         : match
           ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
           : "";

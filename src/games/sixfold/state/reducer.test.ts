@@ -29,8 +29,11 @@ describe("entry", () => {
     expect(s.feedback).toMatchObject({ type: "placed", cell: FIRST, letter: "s", repeats: false });
   });
 
-  it("ignores letters with no selection, and letters not in the set", () => {
-    expect(run([{ type: "pressLetter", letter: "s" }]).entries).toBe(initialState(P).entries);
+  it("with no selection a letter writes nothing but says so; letters not in the set are ignored", () => {
+    const none = run([{ type: "pressLetter", letter: "s" }]);
+    expect(none.entries).toBe(initialState(P).entries);
+    expect(none.feedback).toMatchObject({ type: "noCell" });
+    expect(run([{ type: "erase" }]).feedback).toMatchObject({ type: "noCell" });
     const s = run([
       { type: "tapCell", cell: FIRST },
       { type: "pressLetter", letter: "q" },
@@ -60,8 +63,8 @@ describe("entry", () => {
     expect(s.feedback).toMatchObject({ type: "cleared", cell: FIRST });
   });
 
-  it("a tap toggles; keyboard focus only ever selects", () => {
-    expect(run([{ type: "tapCell", cell: 3 }, { type: "tapCell", cell: 3 }]).selected).toBeNull();
+  it("re-tapping the selected cell keeps it; keyboard focus only ever selects", () => {
+    expect(run([{ type: "tapCell", cell: 3 }, { type: "tapCell", cell: 3 }]).selected).toBe(3);
     expect(run([{ type: "select", cell: 3 }, { type: "select", cell: 3 }]).selected).toBe(3);
   });
 

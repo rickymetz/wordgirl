@@ -14,6 +14,8 @@ export type Feedback =
   | { type: "locked"; cell: number; nonce: number }
   /** Every cell filled, but not the solution. */
   | { type: "full"; nonce: number }
+  /** A letter or erase with no cell selected: nothing to write into. */
+  | { type: "noCell"; nonce: number }
   | { type: "solved"; nonce: number };
 
 export interface GameState {
@@ -167,8 +169,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case "tapCell": {
       const { cell } = action;
-      if (cell < 0 || cell >= CELLS) return state;
-      return { ...state, selected: state.selected === cell ? null : cell };
+      // Tapping the selected cell keeps it selected. It used to toggle
+      // off, so re-tapping a cell to fix it left nothing selected and
+      // the next letter silently went nowhere.
+      if (cell < 0 || cell >= CELLS || state.selected === cell) return state;
+      return { ...state, selected: cell };
     }
     case "select": {
       if (action.cell < 0 || action.cell >= CELLS || state.selected === action.cell) return state;
@@ -176,11 +181,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
     }
     case "pressLetter": {
       const letter = action.letter.toLowerCase();
-      if (!state.puzzle.letters.includes(letter) || state.selected === null) return state;
+      if (!state.puzzle.letters.includes(letter) || state.solved) return state;
+      if (state.selected === null) return { ...state, feedback: { type: "noCell", nonce: nextNonce(state) } };
       return write(state, state.selected, letter);
     }
     case "erase": {
-      if (state.selected === null) return state;
+      if (state.solved) return state;
+      if (state.selected === null) return { ...state, feedback: { type: "noCell", nonce: nextNonce(state) } };
       return write(state, state.selected, BLANK);
     }
     case "move": {
