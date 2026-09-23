@@ -296,15 +296,19 @@ function withClue(a: Attempt, turn: number): Attempt {
 }
 
 /** A practice seed: its own namespace, so it can never replay a daily. */
-export function practiceSeed(random: string): string {
-  return `practice:${random}`;
+export function practiceSeed(random: string, difficulty: Difficulty = DAILY_DIFFICULTY): string {
+  return difficulty === DAILY_DIFFICULTY ? `practice:${random}` : `practice:${difficulty}:${random}`;
 }
 
 /**
  * An unsaved practice board: any scheduled family, at the daily's
- * difficulty, with any of its word's three clues.
+ * difficulty unless asked otherwise, with any of its word's three clues.
  */
-export function practicePuzzle(dict: Dictionary, seed: string): Attempt {
+export function practicePuzzle(
+  dict: Dictionary,
+  seed: string,
+  difficulty: Difficulty = DAILY_DIFFICULTY,
+): Attempt {
   const rand = seededRandom(seed);
   const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
   const order = shuffle(
@@ -315,7 +319,7 @@ export function practicePuzzle(dict: Dictionary, seed: string): Attempt {
   for (const letters of order) {
     const family = byLetters.get(letters);
     if (!family) continue;
-    const a = generateForFamily(dict, family, `${seed}:${letters}`, DAILY_DIFFICULTY);
+    const a = generateForFamily(dict, family, `${seed}:${letters}`, difficulty);
     if (a) return withClue(a, turn);
   }
   throw new Error(`sixfold: no family makes a practice board for ${seed}`);

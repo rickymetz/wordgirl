@@ -124,8 +124,9 @@ describe("practicePuzzle", () => {
     expect(boards.some((p) => !p.clueCryptic)).toBe(true);
   });
 
-  it("holds to the daily's guarantees", () => {
-    for (const p of boards) {
+  it("holds to the daily's guarantees, on the sparse board too", () => {
+    const sparse = seeds.slice(0, 4).map((s) => practicePuzzle(dict, practiceSeed(s, "hard"), "hard").puzzle);
+    for (const p of [...boards, ...sparse]) {
       const units = buildUnits(layoutById(p.layoutId)!.regions);
       const all = idx(p, lineWords(dict, p.letters));
       const strict: WordConstraint[] = [

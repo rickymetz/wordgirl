@@ -76,12 +76,19 @@ interface Props {
   onReplay?: () => Promise<void>;
   /** Practice: deal a fresh board. */
   onNewPuzzle?: () => void;
+  /** Practice prototype: how many letters the board gives. */
+  board?: PracticeBoard;
+  onBoardChange?: (board: PracticeBoard) => void;
 }
+
+/** Practice prototype: today's board vs the sparse setting. */
+export type PracticeBoard = "standard" | "sparse";
+const BOARD_LABEL: Record<PracticeBoard, string> = { standard: "Standard", sparse: "Fewer letters" };
 
 /** Human position for narration and toasts: "row 2, column 4". */
 const where = (cell: number) => `row ${Math.floor(cell / N) + 1}, column ${(cell % N) + 1}`;
 
-export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: Props) {
+export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, board, onBoardChange }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, abandonSession } =
     useSixfoldGame(mode);
   const isTutorial = mode.kind === "tutorial";
@@ -123,6 +130,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : "Down";
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
+  // The clue card echoes only what the PLAYER has placed: a given letter
+  // echoed there spells half the word before the clue is even read.
+  const readoutText = (cells: number[]) =>
+    state.solved ? lineText(cells) : cells.map((c) => (puzzle.givens.includes(c) ? BLANK : state.entries[c])).join("");
   const lineLabel = (l: "clued" | "hidden") =>
     l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : `Column ${puzzle.col + 1}`;
 
@@ -289,6 +300,25 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         {isTutorial && <span className="text-base font-semibold text-ink-soft">tutorial</span>}
       </div>
 
+      {board !== undefined && onBoardChange && (
+        <div className="flex gap-1 pb-2 [@media(max-height:720px)]:pb-1" role="group" aria-label="Board">
+          {(["standard", "sparse"] as const).map((b) => (
+            <button
+              key={b}
+              type="button"
+              aria-pressed={b === board}
+              className={`relative rounded-full px-3.5 py-1 text-sm font-semibold touch-manipulation select-none transition-colors after:absolute after:-inset-x-1 after:-inset-y-2.5 ${
+                b === board ? "bg-accent text-surface" : "bg-surface-tint text-ink-soft"
+              }`}
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => onBoardChange(b)}
+            >
+              {BOARD_LABEL[b]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isTutorial && <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />}
 
       {storageBroken && !isTutorial && (
@@ -313,8 +343,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
             needs the height at Huge text. */}
         {!isTutorial && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <LineBlanks label="Across" text={lineText(cluedCells(puzzle))} />
-            <LineBlanks label={hiddenLabel} text={lineText(hiddenCells(puzzle))} />
+            <LineBlanks label="Across" text={readoutText(cluedCells(puzzle))} />
+            <LineBlanks label={hiddenLabel} text={readoutText(hiddenCells(puzzle))} />
           </div>
         )}
       </div>

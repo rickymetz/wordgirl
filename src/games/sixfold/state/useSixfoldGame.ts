@@ -11,7 +11,7 @@ import { trackSolved, trackStarted } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { dailyPuzzle, practicePuzzle } from "../engine/generator";
+import { dailyPuzzle, practicePuzzle, type Difficulty } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
   sixfoldPuzzleKey,
@@ -33,7 +33,7 @@ import {
 export type GameMode =
   | { kind: "daily"; dateKey: string }
   | { kind: "archive"; dateKey: string }
-  | { kind: "practice"; seed: string }
+  | { kind: "practice"; seed: string; difficulty?: Difficulty }
   | { kind: "tutorial" };
 
 /** Modes whose progress is written to storage. An allowlist, so a new
@@ -55,14 +55,15 @@ export function useSixfoldGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
   const seed = mode.kind === "practice" ? mode.seed : "";
+  const practiceDifficulty = mode.kind === "practice" ? mode.difficulty : undefined;
   const puzzle = useMemo(
     () =>
       mode.kind === "tutorial"
         ? TUTORIAL_PUZZLE
         : mode.kind === "practice"
-          ? practicePuzzle(dict, seed).puzzle
+          ? practicePuzzle(dict, seed, practiceDifficulty).puzzle
           : dailyPuzzle(dict, dateKey).puzzle,
-    [dict, dateKey, seed, mode.kind],
+    [dict, dateKey, seed, practiceDifficulty, mode.kind],
   );
   const pKey = useMemo(() => sixfoldPuzzleKey(puzzle), [puzzle]);
   const [state, rawDispatch] = useReducer(gameReducer, puzzle, initialState);
