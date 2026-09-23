@@ -180,6 +180,42 @@ A path-tracing puzzle that uncovers hidden poetry:
 
 <sub><b>Tutorial</b> — 4 steps, one small puzzle. Click through for full size.</sub>
 
+### Sixfold
+
+<p align="center">
+  <img src="public/teasers/sixfold.png" alt="Sixfold screenshot" width="300" />
+</p>
+
+A 6×6 letter sudoku with two words hidden in it:
+
+- The six letters are an **anagram family** (LISTEN, SILENT…). Every row,
+  column and 2×3 box holds each letter once.
+- **Tap a cell, then a letter.** Repeats get a corner mark; a full but
+  wrong board names the word line that is off.
+- One **clued row** spells a family word. A second **hidden line** — the
+  main diagonal when the family allows it, otherwise a crossing column —
+  spells another, and lights up at the finish.
+- Sudoku carries you most of the way (~46% of the empty cells), then
+  **stalls**; the words break the stall. Every board is unique even if
+  both lines may be *any* dictionary anagram.
+- Clues rotate **straight, straight, cryptic** each time a family
+  returns; a cryptic day shows its parse on the results card. **Hints**
+  fill the next cell you could work out.
+- **168 families** on a frozen, append-only cycle schedule — a family
+  returns about every 5½ months.
+- Daily, a replayable archive, and unlimited **practice** boards (any
+  family, any of its clues; nothing saved).
+
+
+<a href="docs/tutorials.md#sixfold">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/tutorials/sixfold-strip-dark.png">
+    <img alt="Sixfold tutorial, step by step" src="docs/tutorials/sixfold-strip-light.png">
+  </picture>
+</a>
+
+<sub><b>Tutorial</b> — 3 steps, one small puzzle. Click through for full size.</sub>
+
 ## Development
 
 ```bash
@@ -191,7 +227,7 @@ npm run preview    # serve the production build locally
 ```
 
 To preview full archive/stats pages, open any page with `?demo-history`
-appended — it seeds six weeks of fake solved days for all five games
+appended — it seeds six weeks of fake solved days for all six games
 (dev and deploy-preview builds only; it refuses to overwrite real
 progress unless you pass `?demo-history=replace` and confirm).
 

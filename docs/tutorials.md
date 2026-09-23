@@ -338,6 +338,65 @@ the refusal rather than describing it.
 
 </details>
 
+<a id="sixfold"></a>
+
+## Sixfold ╋
+
+**The puzzle:** **LISTEN** across, **SILENT** down, eight gaps — 3 steps.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-strip-dark.png">
+  <img alt="Sixfold tutorial, step by step" src="tutorials/sixfold-strip-light.png">
+</picture>
+
+The board teaches the daily's shape — sudoku first, then a stall only a word
+breaks — at toy scale. Four gaps sit one to a row, each the only letter its row
+is missing. The other four form an E/T rectangle: two cells in the clued row,
+two in the bottom row, sharing two columns. Sudoku fills it either way round,
+so the board stalls there. The clue settles it: LISTEN puts T then E in row 4,
+and SILENT down agrees. A real day leaves far more gaps and stalls sooner.
+`tutorial.test.ts` re-checks each of those claims against the real solver and
+dictionary.
+
+| Step | |
+| --: | :-- |
+| 1 | One of each letter |
+| 2 | Stuck? Use the words |
+| 3 | Finish the grid |
+
+<details>
+<summary>Full-size frames</summary>
+
+**1 · One of each letter**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-1-sudoku-gaps-dark.png">
+  <img alt="Sixfold tutorial, One of each letter" src="tutorials/sixfold-1-sudoku-gaps-light.png" width="390">
+</picture>
+
+**2 · Stuck? Use the words**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-2-the-stall-dark.png">
+  <img alt="Sixfold tutorial, Stuck? Use the words" src="tutorials/sixfold-2-the-stall-light.png" width="390">
+</picture>
+
+**3 · Finish the grid**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-3-clue-row-filled-dark.png">
+  <img alt="Sixfold tutorial, Finish the grid" src="tutorials/sixfold-3-clue-row-filled-light.png" width="390">
+</picture>
+
+**4 · Tutorial complete**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tutorials/sixfold-4-complete-dark.png">
+  <img alt="Sixfold tutorial, complete" src="tutorials/sixfold-4-complete-light.png" width="390">
+</picture>
+
+</details>
+
 ---
 
 ## How a tutorial is built

@@ -1,9 +1,9 @@
 ---
 title: WordGirl
-description: Five word games with a new puzzle each day. These pages tell you how to play them and how they operate.
+description: Six word games with a new puzzle each day. These pages tell you how to play them and how they operate.
 template: splash
 hero:
-  tagline: How five daily word games work — the rules, the hidden poems, a 200-year-old chess trick, and why no server ever sees your puzzle.
+  tagline: How six daily word games work — the rules, the hidden poems, a 200-year-old chess trick, and why no server ever sees your puzzle.
   actions:
     - text: See the games
       link: /docs/games/polygram/
@@ -45,6 +45,11 @@ import HubCard from '../../components/HubCard.astro';
     One continuous line through the grid shows a hidden poem. The trick that
     draws it was invented for a chess knight in 1823.
   </HubCard>
+  <HubCard game="sixfold" title="Sixfold" href="/docs/games/sixfold/"
+    accent="light-dark(#4338ca, #818cf8)">
+    A letter sudoku where two lines spell words. Why can SACRED and SCARED
+    never share the diagonal?
+  </HubCard>
   <HubCard title="Daily puzzles" href="/docs/games/daily-puzzles/">
     Nobody sends you the puzzle. At midnight, your device and every other
     device invent the same one — from nothing but the date.
@@ -59,7 +64,7 @@ import HubCard from '../../components/HubCard.astro';
 
 <CardGrid>
   <Card title="Architecture" icon="open-book">
-    One Vite application, five games, a registry, and pure TypeScript engines.
+    One Vite application, six games, a registry, and pure TypeScript engines.
     [Start with the overview →](/docs/architecture/overview/)
   </Card>
   <Card title="Game kit" icon="seti:react">

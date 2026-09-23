@@ -13,6 +13,9 @@
 //
 //   npm run build && npm run build:og-cards
 //
+// OG_ONLY=sixfold (comma-separated ids) regenerates just those cards, so
+// adding a game doesn't re-shoot every other game's board.
+//
 // Committed generator, committed output — same shape as build-dictionary.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -76,6 +79,11 @@ const GAMES = [
   {
     id: "serpentine", name: "Serpentine", tagline: "One continuous line.", accent: "#a3e635",
     prep: traceSerpentine,
+  },
+  {
+    id: "sixfold", name: "Sixfold", tagline: "Solve the square. Find the words.", accent: "#818cf8",
+    // Hints fill the cells sudoku would deduce next — a board mid-solve.
+    prep: (page) => useHints(page, 6),
   },
 ];
 
@@ -188,7 +196,7 @@ function cardHtml({ name, tagline, accent, shotB64 }, fontB64) {
     .main{flex:1;display:flex;flex-direction:column;justify-content:center}
     .name{font-family:"Rubik Mono One",monospace;font-size:104px;line-height:1.0;
       color:${accent};letter-spacing:-2px;text-transform:uppercase;white-space:nowrap}
-    .tagline{margin-top:28px;font-family:"Avenir Next","Avenir",ui-rounded,system-ui,sans-serif;
+    .tagline{margin-top:28px;text-wrap:balance;font-family:"Avenir Next","Avenir",ui-rounded,system-ui,sans-serif;
       font-weight:600;font-size:40px;line-height:1.25;color:#e7e5e4;max-width:600px}
     .url{font-family:"Avenir Next","Avenir",ui-rounded,system-ui,sans-serif;
       font-weight:700;font-size:34px;color:${accent};letter-spacing:.5px}
@@ -261,7 +269,8 @@ try {
   // Card renderer reuses one page at 1200x630.
   const cardPage = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
 
-  for (const g of GAMES) {
+  const only = process.env.OG_ONLY?.split(",");
+  for (const g of GAMES.filter((g) => !only || only.includes(g.id))) {
     const shot = await context.newPage();
     await shot.goto(`${BASE}/games/${g.id}`, { waitUntil: "networkidle" });
     await shot.evaluate(() => document.fonts.ready);

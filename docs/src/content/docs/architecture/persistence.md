@@ -3,7 +3,7 @@ title: Data storage and streaks
 description: All the games save data with the same shared functions.
 ---
 
-All five games save data with one shared set of functions. The reason is history: the save guards below were fixed four separate times in individual games before the shared recipe existed. The extraction froze the fix count at four. A new game must use these functions. Do not write localStorage code in a game.
+All six games save data with one shared set of functions. The reason is history: the save guards below were fixed four separate times in individual games before the shared recipe existed. The extraction froze the fix count at four. A new game must use these functions. Do not write localStorage code in a game.
 
 ## Storage with a namespace
 
