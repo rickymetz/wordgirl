@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -7,6 +7,7 @@ import {
   Delete,
   Grid3x3,
   Lightbulb,
+  Puzzle,
   Rows3,
   SpellCheck,
   TriangleAlert,
@@ -59,11 +60,15 @@ export function buildShareText(
   dateKey: string,
   elapsedMs: number,
   hints: number,
+  day: { cryptic: boolean; diagonal: boolean },
 ): string {
   const hintPart = hints > 0 ? `🫣 ${hints}` : "😎 0";
+  // Like the siblings, line two says what kind of board it was: the
+  // day's clue, and the diagonal when the hidden word ran along it.
+  const kind = `${day.cryptic ? "Cryptic" : "Straight"} clue${day.diagonal ? " · diagonal" : ""}`;
   return [
     `🔠 ${GAME_NAME} — ${formatShareDate(dateKey)}`,
-    `⏱️ ${formatDuration(elapsedMs)} · ${hintPart}`,
+    `${kind} · ⏱️ ${formatDuration(elapsedMs)} · ${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -76,19 +81,12 @@ interface Props {
   onReplay?: () => Promise<void>;
   /** Practice: deal a fresh board. */
   onNewPuzzle?: () => void;
-  /** Practice prototype: how many letters the board gives. */
-  board?: PracticeBoard;
-  onBoardChange?: (board: PracticeBoard) => void;
 }
-
-/** Practice prototype: today's board vs the sparse setting. */
-export type PracticeBoard = "standard" | "sparse";
-const BOARD_LABEL: Record<PracticeBoard, string> = { standard: "Standard", sparse: "Fewer letters" };
 
 /** Human position for narration and toasts: "row 2, column 4". */
 const where = (cell: number) => `row ${Math.floor(cell / N) + 1}, column ${(cell % N) + 1}`;
 
-export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, board, onBoardChange }: Props) {
+export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, abandonSession } =
     useSixfoldGame(mode);
   const isTutorial = mode.kind === "tutorial";
@@ -99,6 +97,27 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
   const tutorialStep = useTutorialProgress(tutorialStepIndex(state));
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Last input was a key (vs a pointer): only then does a hint pull focus
+  // back to the grid — on touch it would just draw a focus ring.
+  const keyboardRef = useRef(false);
+  useEffect(() => {
+    const onKey = () => (keyboardRef.current = true);
+    const onPointer = () => (keyboardRef.current = false);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, []);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  // A solve made here moves focus to the results, so a screen reader hears
+  // the words and time and a keyboard lands on Share. (A day that loads
+  // already solved leaves focus alone.)
+  useEffect(() => {
+    if (showResults && state.solved && !hydratedAsSolved) resultsRef.current?.focus({ preventScroll: true });
+  }, [showResults, state.solved, hydratedAsSolved]);
   const [coachOpen, setCoachOpen] = useState(false);
   const [replayOpen, setReplayOpen] = useState(false);
   const [hintAskOpen, setHintAskOpen] = useState(false);
@@ -127,15 +146,16 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
       ? state.entries[state.selected]
       : null;
 
+  // One name per line, everywhere: the clue card, its readout, toasts.
   const rowLabel = `Row ${puzzle.row + 1}`;
-  const hiddenLabel = puzzle.col < 0 ? "Diagonal" : "Down";
+  const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
   // The clue card echoes only what the PLAYER has placed: a given letter
   // echoed there spells half the word before the clue is even read.
   const readoutText = (cells: number[]) =>
     state.solved ? lineText(cells) : cells.map((c) => (puzzle.givens.includes(c) ? BLANK : state.entries[c])).join("");
   const lineLabel = (l: "clued" | "hidden") =>
-    l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : `Column ${puzzle.col + 1}`;
+    l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : hiddenLabel;
 
   const takeHint = () => {
     trackHint("sixfold");
@@ -200,10 +220,15 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
         setNarration(`Cleared ${where(f.cell)}.`);
         break;
       case "hint":
-        show(`Hint: ${where(f.cell)}`, 1600);
-        setNarration(
-          `Hint: ${state.entries[f.cell].toUpperCase()} at ${where(f.cell)}.`,
-        );
+        // The toast region already announces it: narrating too said it twice.
+        show(`Hint: ${state.entries[f.cell].toUpperCase()} at ${where(f.cell)}`, 1600);
+        // Back to the board: the hint dialog hands focus to the Hint
+        // button, where letters and arrows do nothing.
+        if (keyboardRef.current) {
+          requestAnimationFrame(() =>
+            rootRef.current?.querySelector<HTMLElement>(`[data-cell="${f.cell}"]`)?.focus({ preventScroll: true }),
+          );
+        }
         break;
       case "locked":
         show("Given letters can't change", 1600);
@@ -213,7 +238,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
         break;
       case "full": {
         const bad = wrongLines(puzzle, state.entries);
-        if (bad.length) {
+        if (bad.length === 2) {
+          show(`${rowLabel} and ${lineLabel("hidden").toLowerCase()} aren't the words`, 4000);
+        } else if (bad.length) {
           const l = bad[0];
           const cells = l === "clued" ? cluedCells(puzzle) : hiddenCells(puzzle);
           show(`${lineLabel(l)} spells ${lineText(cells).toUpperCase()} — not the word`, 4000);
@@ -224,6 +251,11 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
       }
       case "solved":
         show("Solved!", 1600);
+        setNarration(
+          `Solved. ${puzzle.cluedWord.toUpperCase()} across, ${puzzle.hiddenWord.toUpperCase()} ${
+            puzzle.col < 0 ? "on the diagonal" : "down"
+          }.`,
+        );
         break;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -236,10 +268,11 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
 
   return (
     <div
+      ref={rootRef}
       data-level="sixfold"
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 [@media(max-height:720px)]:pb-3"
     >
-      <header className="flex items-center justify-between pt-5 pb-1 [@media(max-height:720px)]:pt-3">
+      <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
           <Link to="/games/sixfold/archive" className="text-sm font-semibold text-ink-soft">
             ← Archive
@@ -279,12 +312,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
           cryptic clue wraps to three lines, which at Huge text left the
           board on its touch floor and the page scrolling. */}
       <div
-        className={`flex items-baseline gap-2.5 pb-2 ${
+        className={`flex items-baseline gap-2.5 pb-3 [@media(max-height:720px)]:pb-2 ${
           isTutorial ? "[@media(max-height:720px)]:hidden" : "[@media(max-height:600px)]:sr-only"
         }`}
       >
         <h1 className="font-game text-2xl font-normal tracking-tight">{GAME_NAME}</h1>
-        {/* The mark: a clued row crossing a hidden column. */}
+        {/* The mark: a die's six — six pips in the board's 2×3 box shape. */}
         <svg
           role="img"
           aria-label="sixfold"
@@ -293,8 +326,15 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
           viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent"
         >
-          <rect x="12" y="1" width="5" height="18" rx="1.2" fill="currentColor" opacity="0.6" />
-          <rect x="1" y="7.5" width="18" height="5" rx="1.2" fill="currentColor" />
+          <rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" strokeWidth="2" />
+          <g fill="currentColor">
+            <circle cx="7" cy="6.25" r="1.6" />
+            <circle cx="13" cy="6.25" r="1.6" />
+            <circle cx="7" cy="10" r="1.6" />
+            <circle cx="13" cy="10" r="1.6" />
+            <circle cx="7" cy="13.75" r="1.6" />
+            <circle cx="13" cy="13.75" r="1.6" />
+          </g>
         </svg>
         {mode.kind === "archive" && (
           <span className="text-base font-semibold text-ink-soft">{formatDateKey(mode.dateKey)}</span>
@@ -302,25 +342,6 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
         {mode.kind === "practice" && <span className="text-base font-semibold text-ink-soft">practice</span>}
         {isTutorial && <span className="text-base font-semibold text-ink-soft">tutorial</span>}
       </div>
-
-      {board !== undefined && onBoardChange && (
-        <div className="flex gap-1 pb-2 [@media(max-height:720px)]:pb-1" role="group" aria-label="Board">
-          {(["standard", "sparse"] as const).map((b) => (
-            <button
-              key={b}
-              type="button"
-              aria-pressed={b === board}
-              className={`relative rounded-full px-3.5 py-1 text-sm font-semibold touch-manipulation select-none transition-colors after:absolute after:-inset-x-1 after:-inset-y-2.5 ${
-                b === board ? "bg-accent text-surface" : "bg-surface-tint text-ink-soft"
-              }`}
-              onPointerDown={(e) => e.preventDefault()}
-              onClick={() => onBoardChange(b)}
-            >
-              {BOARD_LABEL[b]}
-            </button>
-          ))}
-        </div>
-      )}
 
       {isTutorial && <TutorialBanner steps={TUTORIAL_STEPS} index={tutorialStep} />}
 
@@ -332,22 +353,23 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
 
       {/* The clue, and both word lines as blanks that fill as you go. */}
       <div className="flex flex-col gap-1.5 rounded-2xl bg-surface-tint px-4 py-2.5">
-        <p className="text-sm leading-snug">
+        <p className="text-base leading-snug [@media(max-height:640px)]:text-sm">
           <span className="font-semibold text-accent">{rowLabel}:</span> {puzzle.clue}
           {puzzle.clueCryptic && (
             // A cryptic reads as nonsense to anyone expecting a definition;
             // saying so up front is the difference between a puzzle and a bug.
-            <span className="ml-1.5 inline-block rounded-full border border-accent/40 px-1.5 text-[0.7rem] font-semibold tracking-wide text-accent uppercase">
+            <span className="ml-1.5 inline-block rounded-full border border-accent/60 px-1.5 text-[0.7rem] font-semibold tracking-wide text-accent uppercase">
               Cryptic
             </span>
           )}
         </p>
         {/* The tutorial's steps point at the board's own shading, and it
             needs the height at Huge text. */}
-        {!isTutorial && (
+        {/* Once solved, the results line under the board names both words. */}
+        {!isTutorial && !state.solved && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <LineBlanks label="Across" text={readoutText(cluedCells(puzzle))} />
-            <LineBlanks label={hiddenLabel} text={readoutText(hiddenCells(puzzle))} />
+            <LineBlanks label={rowLabel} text={readoutText(cluedCells(puzzle))} wrong={badLines.includes("clued")} />
+            <LineBlanks label={hiddenLabel} text={readoutText(hiddenCells(puzzle))} wrong={badLines.includes("hidden")} />
           </div>
         )}
       </div>
@@ -367,7 +389,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
           onFocusCell={(cell) => dispatch({ type: "select", cell })}
           onMove={(dRow, dCol) => dispatch({ type: "move", dRow, dCol })}
         />
-        <GameToast toast={toast} />
+        <GameToast
+          toast={toast}
+          className="top-0 [@media(max-height:640px)]:top-auto [@media(max-height:640px)]:bottom-full"
+        />
       </div>
 
       <AnimatePresence mode="wait">
@@ -378,36 +403,51 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
         ) : state.solved && showResults ? (
           <motion.div
             key="results"
+            ref={resultsRef}
+            tabIndex={-1}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-2 pb-1"
+            className="flex flex-col items-center gap-2 pb-1 outline-none"
           >
             <p className="text-center text-sm text-ink-soft">
               <span className="font-semibold text-ink">{puzzle.cluedWord.toUpperCase()}</span> across ·{" "}
               <span className="font-semibold text-ink">{puzzle.hiddenWord.toUpperCase()}</span>{" "}
               {puzzle.col < 0 ? "on the diagonal" : "down"}
-              {puzzle.family.length > 2 &&
-                ` · also ${puzzle.family
-                  .filter((w) => w !== puzzle.cluedWord && w !== puzzle.hiddenWord)
-                  .map((w) => w.toUpperCase())
-                  .join(" · ")}`}
             </p>
+            {puzzle.family.length > 2 && (
+              <p className="text-center text-xs text-ink-soft">
+                Other words from these letters:{" "}
+                <span className="font-semibold text-ink">
+                  {puzzle.family
+                    .filter((w) => w !== puzzle.cluedWord && w !== puzzle.hiddenWord)
+                    .map((w) => w.toUpperCase())
+                    .join(" · ")}
+                </span>
+              </p>
+            )}
             {puzzle.clueCryptic && puzzle.clueHow && (
               <p className="text-center text-xs text-ink-soft">
                 The cryptic: <span className="font-semibold text-ink">{puzzle.clueHow}</span>
               </p>
             )}
-            {solvedElapsedMs !== null && (
-              <p className="font-game text-2xl text-accent">{formatDuration(solvedElapsedMs)}</p>
-            )}
-            {state.hints > 0 && (
-              <p className="text-xs text-ink-soft">
-                {state.hints} {state.hints === 1 ? "hint" : "hints"}
+            {(solvedElapsedMs !== null || state.hints > 0) && (
+              <p className="flex items-baseline gap-2">
+                {solvedElapsedMs !== null && (
+                  <span className="font-game text-2xl text-accent">{formatDuration(solvedElapsedMs)}</span>
+                )}
+                {state.hints > 0 && (
+                  <span className="text-xs text-ink-soft">
+                    {state.hints} {state.hints === 1 ? "hint" : "hints"}
+                  </span>
+                )}
               </p>
             )}
             {hasDate && solvedElapsedMs !== null && (
               <ShareButton
-                text={buildShareText(mode.dateKey, solvedElapsedMs, state.hints)}
+                text={buildShareText(mode.dateKey, solvedElapsedMs, state.hints, {
+                  cryptic: puzzle.clueCryptic === true,
+                  diagonal: puzzle.col < 0,
+                })}
                 gameId="sixfold"
               />
             )}
@@ -423,7 +463,6 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
             {mode.kind === "practice" && onNewPuzzle && (
               <button
                 type="button"
-                data-autofocus
                 onClick={onNewPuzzle}
                 className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
               >
@@ -586,6 +625,17 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
                 ),
               },
               {
+                Icon: Puzzle,
+                title: "Cryptic clues",
+                body: (
+                  <>
+                    Some days the clue is <Key>cryptic</Key>: one end defines
+                    the word, the rest builds it from parts. How it works is
+                    shown when you finish.
+                  </>
+                ),
+              },
+              {
                 Icon: Lightbulb,
                 title: "Hints",
                 body: (
@@ -624,20 +674,29 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle, boa
 }
 
 /** A word line as monospaced blanks: letters where filled, `?` where not. */
-function LineBlanks({ label, text }: { label: string; text: string }) {
+function LineBlanks({ label, text, wrong = false }: { label: string; text: string; wrong?: boolean }) {
+  // aria-label is ignored on a plain span, so the spoken version is real
+  // (visually hidden) text beside the glyphs.
+  const spoken = `${label}: ${[...text].map((ch) => (ch === BLANK ? "blank" : ch.toUpperCase())).join(", ")}${
+    wrong ? ". Not the word" : ""
+  }.`;
   return (
     <span className="flex items-center gap-1.5">
-      <span>{label}</span>
-      <span
-        className="font-game text-ink"
-        aria-label={`${label}: ${[...text].map((ch) => (ch === BLANK ? "blank" : ch.toUpperCase())).join(" ")}`}
-      >
+      <span aria-hidden>{label}</span>
+      <span className="font-game text-ink" aria-hidden>
         {[...text].map((ch, i) => (
-          <span key={i} data-glyph aria-hidden>
+          <span key={i} data-glyph>
             {ch === BLANK ? "?" : ch.toUpperCase()}
           </span>
         ))}
       </span>
+      {wrong && (
+        <span className="flex items-center gap-0.5 font-semibold text-warn" aria-hidden>
+          <TriangleAlert className="h-3.5 w-3.5" />
+          not the word
+        </span>
+      )}
+      <span className="sr-only">{spoken}</span>
     </span>
   );
 }

@@ -34,6 +34,8 @@ Later rounds override earlier ones.
 | Clues *(r2)* | **Crossword-grade, cryptic-lite** (double definitions, misdirection, `?` puns, fill-ins) — the one place wordplay is allowed; the rest of the UI stays plain. **2–3 per word, rotating** each time a family returns. |
 | Word tier | Answers are common-tier; uniqueness is proven against both tiers. |
 | Input *(r2)* | **Cell first only** (letter-first dropped): tap a cell, then a letter. |
+| Core loop *(r4, settled)* | After a five-persona review found words-first play skips the stall, an interview settled on **anagram detective** with the clue shown from the start, both lines marked, the pool unchanged, today's board. "Harder sudoku after the words" was prototyped and is impossible on 6×6 (0/40 families: a full row plus a full column leaves only singles). The readout now echoes only letters the PLAYER placed (given letters there spelled the word, e.g. RE??O?). |
+| Selection *(r4)* | A solid accent tile (a tint sat within 1.3:1 of the word-line shading). Tapping the selected cell keeps it; a letter with nothing selected says "Tap a cell first" — the playtest's "keys need 2-3 taps" was the old toggle-off. |
 | Highlights *(r2)* | **Rings, not fills:** thick ring on the selection, thin ring on matching letters; fills only for the word lines; the selection's row/column/box is a wash layered over the fill. |
 | Mistakes *(r2)* | Repeats get a **corner mark** plus the warn color, on the player's letters only — a given is never "the mistake". A full, repeat-free, wrong board names the line that isn't its word. |
 | Hints *(r2)* | Reveal the **next cell the player's toolkit would deduce** (not the first gap in reading order). The **first hint of the day asks** ("Use a hint?"). |
@@ -118,6 +120,12 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 - **Highlight tokens:** `--sixfold-line` (15% light / 30% dark — dark
   needs double to separate from an empty cell), `--sixfold-peer`,
   `--sixfold-match`.
+- **Mark:** a die's six (six pips in the 2×3 box shape); the docs glyph matches. Text contexts use ⚅.
+- **Lines are named once:** "Row N", "Column N" or "Diagonal" on the clue card, readout, toasts and cell labels.
+- **Board:** measured, rounded, box rules `--sixfold-box` (stepped down in dark) and cell rules `--sixfold-hair` (translucent, so they show on the tint). A solved board drops the 44px touch floor so the results fit; letters cap at `30px × rem/16`.
+- **Hints** are ink with an accent dot (grey read as disabled).
+- **Practice** never deals a family scheduled from a week back to 60 days ahead (`practiceAvoid`).
+- **Frozen boards:** `schedule.test.ts` pins every day's `puzzleKey` + clue for 120 days from `ARCHIVE_EPOCH`, not just the family order.
 - **Keyboard / screen readers:** one Tab stop for the grid (roving
   tabindex), arrows move focus with the selection; cell labels name the
   word lines; every placement, erase and hint is narrated.
@@ -130,5 +138,5 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 - **Tutorial:** LISTEN across, SILENT down. Four one-gap rows (sudoku),
   then an E/T rectangle only a word settles (the stall), then the clue.
   `tutorial.test.ts` checks every claim against the real solver.
-- **Share:** `🔠 Sixfold — <date>` / `⏱️ 4:32 · 😎 0` / URL.
-  **Roundup:** unit `letters`, value = cells the player filled.
+- **Share:** `🔠 Sixfold — <date>` / `Cryptic clue · diagonal · ⏱️ 4:32 · 😎 0` / URL.
+  **Roundup:** unit `letters`, value = cells the player filled themselves (hint-filled cells don't count).

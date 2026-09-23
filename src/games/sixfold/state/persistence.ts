@@ -90,6 +90,10 @@ export const loadStaleDailyProgress = (
 export const isDaySolved = async (dateKey: string): Promise<boolean> =>
   (await base.loadDayRecord(dateKey))?.solved === true;
 
+/** The day's record as saved, whatever puzzle version wrote it. */
+export const loadDayRecord = (dateKey: string): Promise<DailyProgress | null> =>
+  base.loadDayRecord(dateKey);
+
 export const { loadCoachSeen, markCoachSeen, loadStats } = base;
 export const { loadTutorialSeen, markTutorialSeen } = base;
 export const recordDailyStarted = base.recordStarted;

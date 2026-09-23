@@ -238,7 +238,7 @@
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
 
-/* Sixfold (working title) — indigo, the one hue the palette lacked. */
+/* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {
   --color-accent: var(--level-sixfold);
   /* The word lines' shading. Dark mode needs about twice the mix: 15%
@@ -253,6 +253,15 @@
   --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
   /* Ring on every cell holding the selected cell's letter. */
   --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
+  /* Grid rules. The 2px box lines step down in dark, where full ink was a
+     near-white cage brighter than the letters; the 1px cell lines are
+     translucent ink, so they darken a white cell and a tinted word-line
+     cell by the same step (solid grey vanished on the tint). */
+  --sixfold-box: light-dark(
+    var(--color-ink),
+    color-mix(in oklab, var(--color-ink) 55%, var(--color-surface))
+  );
+  --sixfold-hair: color-mix(in oklab, var(--color-ink) 14%, transparent);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

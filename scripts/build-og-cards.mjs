@@ -51,6 +51,39 @@ async function useHints(page, n) {
   }
 }
 
+// Sixfold mid-play WITHOUT hints on screen: hints are the only way the
+// script can learn correct letters, so take a few, note where they went,
+// wipe that save, reload, and type the same letters in as the player —
+// indigo player letters and a plain "Hint", not grey hint letters.
+async function playSixfold(page, n) {
+  await useHints(page, n);
+  const placed = await page.evaluate(() =>
+    [...document.querySelectorAll('[role="gridcell"]')]
+      .map((el) => ({ cell: el.dataset.cell, label: el.getAttribute("aria-label") ?? "" }))
+      .filter((c) => c.label.includes(", hint"))
+      .map((c) => ({ cell: c.cell, letter: c.label.split(": ")[1][0] })),
+  );
+  // Leave first: the game flushes its save on the way out, which would
+  // write the hinted board straight back over a wipe made in place.
+  const url = page.url();
+  await page.goto(new URL("/", url).href, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    for (const k of Object.keys(localStorage)) if (/sixfold:(daily|stats)/.test(k)) localStorage.removeItem(k);
+  });
+  await page.goto(url, { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+  for (const { cell, letter } of placed) {
+    await page.locator(`[data-cell="${cell}"]`).click();
+    await page.getByRole("button", { name: `letter ${letter}` }).click();
+  }
+  // Leave the selection in the clued row, on an empty cell.
+  const empty = await page.evaluate(() =>
+    [...document.querySelectorAll('[role="gridcell"]')].find((el) => /clued row: empty/.test(el.getAttribute("aria-label") ?? ""))?.dataset.cell,
+  );
+  if (empty) await page.locator(`[data-cell="${empty}"]`).click();
+  await page.waitForTimeout(1800); // let the last toast clear
+}
+
 // `prep(page)` leaves each game mid-play so the card reads as an active game
 // rather than a blank start. Word-list games (polygram, crosshatch) show
 // progress in the GRID, so they type on the board rather than using hints
@@ -82,8 +115,7 @@ const GAMES = [
   },
   {
     id: "sixfold", name: "Sixfold", tagline: "Solve the square. Find the words.", accent: "#818cf8",
-    // Hints fill the cells sudoku would deduce next — a board mid-solve.
-    prep: (page) => useHints(page, 6),
+    prep: (page) => playSixfold(page, 6),
   },
 ];
 

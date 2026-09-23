@@ -20,7 +20,9 @@ export function SixfoldPreview() {
           {[...row].map((ch, c) => {
             const style = { width: TILE, height: TILE, marginLeft: c === 3 ? 3 : 0 };
             if (c === HIDDEN_COL && r !== CLUED_ROW) {
-              return <TileSocket key={c} className="rounded border-[1.5px]" style={style} />;
+              // `!` beats TileSocket's own rounded-lg/border-2, which on a
+              // 13px box clamped to a circle; subdued, as it sits on tint.
+              return <TileSocket key={c} subdued className="!rounded-[3px] !border-[1.5px]" style={style} />;
             }
             return (
               <Tile

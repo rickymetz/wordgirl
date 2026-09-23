@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { GameDefinition } from "../types";
-import { isDaySolved, loadDailyProgress } from "./state/persistence";
+import { isDaySolved, loadDayRecord } from "./state/persistence";
 import { SixfoldPreview } from "./ui/SixfoldPreview";
 import { SixfoldStatus } from "./ui/SixfoldStatus";
 
@@ -11,15 +11,19 @@ export const sixfold: GameDefinition = {
   themeColor: "var(--color-accent)",
   Preview: SixfoldPreview,
   Status: SixfoldStatus,
-  solvedToday: async (today) => (await loadDailyProgress(today))?.solved === true,
+  // Records, not the version-sensitive load, so these agree with solvedOn
+  // even after a dictionary bump mid-day.
+  solvedToday: (today) => isDaySolved(today),
   roundupEntry: async (today) => {
-    const d = await loadDailyProgress(today);
+    const d = await loadDayRecord(today);
     if (!d?.solved) return null;
     return {
       emoji: "🔠",
       name: "Sixfold",
       unit: "letters",
-      value: d.filled ?? 0,
+      // Letters the player placed: hint-filled cells don't count, so the
+      // number says something about the solve, not just the board size.
+      value: Math.max(0, (d.filled ?? 0) - (d.revealed?.length ?? 0)),
       elapsedMs: d.elapsedMs,
       hints: d.hints ?? 0,
     };

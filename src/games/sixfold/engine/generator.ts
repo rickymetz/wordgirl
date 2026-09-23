@@ -296,30 +296,47 @@ function withClue(a: Attempt, turn: number): Attempt {
 }
 
 /** A practice seed: its own namespace, so it can never replay a daily. */
-export function practiceSeed(random: string, difficulty: Difficulty = DAILY_DIFFICULTY): string {
-  return difficulty === DAILY_DIFFICULTY ? `practice:${random}` : `practice:${difficulty}:${random}`;
+export function practiceSeed(random: string): string {
+  return `practice:${random}`;
+}
+
+/** Days either side of today whose families practice leaves alone. */
+const PRACTICE_GUARD = { before: 7, after: 60 };
+
+/**
+ * The families practice must not deal around `today`: this week's
+ * and the next two months' dailies. A practice board is the day's whole
+ * word content, so dealing an upcoming family spoils that daily.
+ */
+export function practiceAvoid(today: string): ReadonlySet<string> {
+  const [y, m, d] = today.split("-").map(Number);
+  const out = new Set<string>();
+  for (let k = -PRACTICE_GUARD.before; k <= PRACTICE_GUARD.after; k++) {
+    const key = new Date(Date.UTC(y, m - 1, d + k)).toISOString().slice(0, 10);
+    const s = scheduleSlot(key);
+    out.add(s.order[s.index]);
+  }
+  return out;
 }
 
 /**
- * An unsaved practice board: any scheduled family, at the daily's
- * difficulty unless asked otherwise, with any of its word's three clues.
+ * An unsaved practice board: a scheduled family that isn't a daily
+ * near `today` (see `practiceAvoid`), at the daily's difficulty, with any
+ * of its word's three clues.
  */
-export function practicePuzzle(
-  dict: Dictionary,
-  seed: string,
-  difficulty: Difficulty = DAILY_DIFFICULTY,
-): Attempt {
+export function practicePuzzle(dict: Dictionary, seed: string, today?: string): Attempt {
   const rand = seededRandom(seed);
   const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
+  const avoid = today ? practiceAvoid(today) : new Set<string>();
   const order = shuffle(
-    SCHEDULE.map((f) => f.letters),
+    SCHEDULE.map((f) => f.letters).filter((l) => !avoid.has(l)),
     rand,
   );
   const turn = Math.floor(rand() * 3);
   for (const letters of order) {
     const family = byLetters.get(letters);
     if (!family) continue;
-    const a = generateForFamily(dict, family, `${seed}:${letters}`, difficulty);
+    const a = generateForFamily(dict, family, `${seed}:${letters}`, DAILY_DIFFICULTY);
     if (a) return withClue(a, turn);
   }
   throw new Error(`sixfold: no family makes a practice board for ${seed}`);

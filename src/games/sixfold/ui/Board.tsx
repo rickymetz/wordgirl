@@ -7,10 +7,17 @@ import { BLANK } from "../state/reducer";
 
 /** Smallest tappable cell — past this the page scrolls instead. */
 const MIN_CELL = 44;
-/** Largest cell, so a tablet doesn't get a billboard. */
+/** A solved board is never tapped again, so it may shrink past the touch
+ *  floor to make room for the results (it used to push Share off-screen). */
+const SOLVED_MIN_CELL = 26;
+/** Largest cell at default text, so a tablet doesn't get a billboard. */
 const MAX_CELL = 64;
-/** A letter never outgrows this share of its cell (see CLAUDE.md). */
+/** The letter's size at default text; it scales with the Text-size setting. */
+const LETTER_PX = 30;
+/** ...but never outgrows this share of its cell (a CAP, see CLAUDE.md). */
 const LETTER_MAX_RATIO = 0.52;
+/** The board's outer rule, drawn by the grid so its corners can round. */
+const FRAME = 2;
 
 const MOVES: Record<string, [number, number]> = {
   ArrowUp: [-1, 0],
@@ -69,7 +76,7 @@ export function Board({
   onFocusCell,
   onMove,
 }: Props) {
-  const { vw } = useViewport();
+  const { vw, rem } = useViewport();
   const wrapRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -92,16 +99,18 @@ export function Board({
     grid.querySelector<HTMLElement>(`[data-cell="${selected}"]`)?.focus();
   }, [selected]);
 
-  const widthCap = box.w > 0 ? box.w / N : (vw - 40) / N;
-  const heightCap = box.h > 0 ? box.h / N : Infinity;
+  const maxCell = (MAX_CELL * rem) / 16;
+  const floorCell = solved ? SOLVED_MIN_CELL : MIN_CELL;
+  const widthCap = ((box.w > 0 ? box.w : vw - 40) - 2 * FRAME) / N;
+  const heightCap = box.h > 0 ? (box.h - 2 * FRAME) / N : Infinity;
   // Height gives way only down to a tappable cell; width always binds.
   // Whole pixels, so the board is never a fraction taller than its box.
-  const cellPx = Math.floor(Math.min(MAX_CELL, widthCap, Math.max(heightCap, MIN_CELL)));
+  const cellPx = Math.floor(Math.min(maxCell, widthCap, Math.max(heightCap, floorCell)));
   // The floor the column must keep: derived from WIDTH only, or it
   // feeds back into the height it is measured against.
-  const minBoardH = Math.floor(Math.min(MAX_CELL, widthCap, MIN_CELL)) * N;
-  const boardPx = cellPx * N;
-  const letterPx = Math.floor(cellPx * LETTER_MAX_RATIO);
+  const minBoardH = Math.floor(Math.min(maxCell, widthCap, floorCell)) * N + 2 * FRAME;
+  const boardPx = cellPx * N + 2 * FRAME;
+  const letterPx = Math.floor(Math.min((LETTER_PX * rem) / 16, cellPx * LETTER_MAX_RATIO));
   const markPx = Math.max(7, Math.round(cellPx * 0.2));
 
   const hidden = new Set(hiddenCells(puzzle));
@@ -110,7 +119,7 @@ export function Board({
   const hinted = new Set(revealed);
   const { regions } = puzzle;
   const tabCell = selected ?? 0;
-  const lineName = puzzle.col < 0 ? "diagonal" : "hidden column";
+  const lineName = puzzle.col < 0 ? "diagonal" : `column ${puzzle.col + 1}, hidden word`;
 
   const onKeyDown = (e: KeyboardEvent) => {
     const move = MOVES[e.key];
@@ -159,7 +168,7 @@ export function Board({
           : given.has(c)
             ? "text-ink"
             : hinted.has(c)
-              ? "text-ink-soft"
+              ? "text-ink"
               : "text-accent";
       const wash =
         !solved && !isSel && peers.has(c)
@@ -171,7 +180,9 @@ export function Board({
           ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
           : "";
 
-      const line = clued.has(c) ? ", clued row" : hidden.has(c) ? `, ${lineName}` : "";
+      const line =
+        (clued.has(c) ? ", clued row" : hidden.has(c) ? `, ${lineName}` : "") +
+        (wrong.has(c) ? ", not the word" : "");
       const what = filled
         ? `${ch.toUpperCase()}${given.has(c) ? ", given" : hinted.has(c) ? ", hint" : ""}${
             repeat ? ", repeats" : ""
@@ -189,14 +200,23 @@ export function Board({
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => onTap(c)}
           onFocus={() => onFocusCell(c)}
-          className={`relative flex items-center justify-center font-game outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-ink ${fill} ${tone} ${wash} ${ring} ${
-            top ? "border-t-2 border-t-ink" : "border-t border-t-line"
-          } ${left ? "border-l-2 border-l-ink" : "border-l border-l-line"} ${
-            col === N - 1 ? "border-r-2 border-r-ink" : ""
-          } ${r === N - 1 ? "border-b-2 border-b-ink" : ""}`}
+          className={`relative box-border flex items-center justify-center font-game focus:outline-none focus-visible:z-10 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-6px] ${
+            isSel && !solved ? "focus-visible:outline-surface" : "focus-visible:outline-ink"
+          } ${fill} ${tone} ${wash} ${ring} ${
+            r === 0 ? "" : top ? "border-t-2 border-t-(--sixfold-box)" : "border-t border-t-(--sixfold-hair)"
+          } ${col === 0 ? "" : left ? "border-l-2 border-l-(--sixfold-box)" : "border-l border-l-(--sixfold-hair)"}`}
           style={{ width: cellPx, height: cellPx, fontSize: letterPx, lineHeight: 1 }}
         >
           {filled ? ch.toUpperCase() : ""}
+          {hinted.has(c) && !solved && !isSel && (
+            // A hint is locked like a given; the dot says where it came
+            // from (grey letters read as disabled or pencilled in).
+            <span
+              aria-hidden
+              className="absolute rounded-full bg-accent"
+              style={{ width: Math.max(4, Math.round(cellPx * 0.09)), height: Math.max(4, Math.round(cellPx * 0.09)), right: Math.round(cellPx * 0.1), bottom: Math.round(cellPx * 0.1) }}
+            />
+          )}
           {repeat && (
             // The corner mark: a repeat reads without color, too.
             <span
@@ -225,7 +245,7 @@ export function Board({
         // only programmatically focusable.
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="absolute inset-0 m-auto flex flex-col touch-manipulation select-none"
+        className="absolute inset-0 m-auto flex flex-col overflow-hidden rounded-xl border-2 border-(--sixfold-box) touch-manipulation select-none"
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}

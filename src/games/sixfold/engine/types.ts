@@ -1,8 +1,5 @@
 /**
- * Working id `sixfold` — the name is still open, and renaming is a
- * folder move plus the registry entry.
- *
- * A 6×6 letter sudoku over the six letters of an anagram family: every
+ * Sixfold: a 6×6 letter sudoku over the six letters of an anagram family: every
  * row, column and region holds each letter once, one clued row spells
  * a family word and a second line — the main diagonal, or a crossing
  * column — spells another, hidden until solved. The daily rule is that

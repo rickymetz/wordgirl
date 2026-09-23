@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { PROMOTED_WORDS, anagramFamilies, lineWords } from "./families";
-import { DAILY_DIFFICULTY, dailyPuzzle, practicePuzzle, practiceSeed } from "./generator";
+import { DAILY_DIFFICULTY, dailyPuzzle, practiceAvoid, practicePuzzle, practiceSeed } from "./generator";
 import { layoutById } from "./layouts";
 import type { WordConstraint } from "./solver";
 import { buildUnits, countSolutions, logicSolve } from "./solver";
@@ -124,9 +124,8 @@ describe("practicePuzzle", () => {
     expect(boards.some((p) => !p.clueCryptic)).toBe(true);
   });
 
-  it("holds to the daily's guarantees, on the sparse board too", () => {
-    const sparse = seeds.slice(0, 4).map((s) => practicePuzzle(dict, practiceSeed(s, "hard"), "hard").puzzle);
-    for (const p of [...boards, ...sparse]) {
+  it("holds to the daily's guarantees", () => {
+    for (const p of boards) {
       const units = buildUnits(layoutById(p.layoutId)!.regions);
       const all = idx(p, lineWords(dict, p.letters));
       const strict: WordConstraint[] = [
@@ -139,6 +138,18 @@ describe("practicePuzzle", () => {
         { cells: rowCells(p), words: idx(p, [p.cluedWord]) },
       ];
       expect(logicSolve(givenGrid(p), units, player).solved).toBe(true);
+    }
+  });
+});
+
+describe("practice never spoils a daily", () => {
+  it("skips this week's and the next two months' families", () => {
+    const today = "2026-10-01";
+    const avoid = practiceAvoid(today);
+    expect(avoid.has(dailyPuzzle(dict, today).puzzle.letters)).toBe(true);
+    expect(avoid.has(dailyPuzzle(dict, "2026-11-20").puzzle.letters)).toBe(true);
+    for (let i = 0; i < 12; i++) {
+      expect(avoid.has(practicePuzzle(dict, practiceSeed(`s${i}`), today).puzzle.letters)).toBe(false);
     }
   });
 });

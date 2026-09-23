@@ -405,7 +405,8 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `::after` that is the right size but CLIPPED by a scrolling ancestor
   (the dictionary's bookmark button was exactly that). Two standing
   exceptions: Crosshatch's keyboard keys are ~30px wide because ten of
-  them cannot be 44px on a 390px screen, and a control behind an open
+  them cannot be 44px on a 390px screen (Sixfold's seven letter keys
+  likewise dip to ~39px, at 320px only), and a control behind an open
   sheet fails the hit test by design. Blind spot: the audit never
   SOLVES a board, so post-solve results controls (Pierglass' par
   toggle) are outside its reach — measure those by hand.

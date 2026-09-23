@@ -6,6 +6,7 @@ import { parseDictionary } from "../../../lib/words/dictionary";
 import { CLUES, clueFor } from "./clues";
 import { anagramFamilies } from "./families";
 import { clueTurn, dailyPuzzle, scheduleSlot } from "./generator";
+import { ARCHIVE_EPOCH, sixfoldPuzzleKey } from "../state/persistence";
 import { SCHEDULE, type ScheduledFamily } from "./schedule";
 
 const dict = parseDictionary(
@@ -39,6 +40,22 @@ describe("SCHEDULE", () => {
     const seq = dateKeyRange("2026-01-01", "2027-12-31").map((d) => familyAt(d));
     expect(puzzleKey(seq)).toBe("ub3us3");
   });
+});
+
+describe("past boards", () => {
+  it("are FROZEN: every day's board and clue from the archive's first day on", () => {
+    // The family hash above doesn't cover the BOARD: a tuning edit
+    // (DAILY_DIFFICULTY, MAX_GRIDS), a generator change or a dictionary
+    // edit regenerates past days, and every saved day then loads as a
+    // different puzzle. If this moves, it must be on purpose, pre-launch.
+    const [y, m, d] = ARCHIVE_EPOCH.split("-").map(Number);
+    const end = new Date(Date.UTC(y, m - 1, d + 119)).toISOString().slice(0, 10);
+    const days = dateKeyRange(ARCHIVE_EPOCH, end).map((k) => {
+      const p = dailyPuzzle(dict, k).puzzle;
+      return `${sixfoldPuzzleKey(p)}|${p.clue}`;
+    });
+    expect(puzzleKey(days)).toBe("mkrldy");
+  }, 120_000);
 });
 
 describe("scheduleSlot", () => {
