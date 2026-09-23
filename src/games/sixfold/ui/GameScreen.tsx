@@ -150,10 +150,6 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
-  // The clue card echoes only what the PLAYER has placed: a given letter
-  // echoed there spells half the word before the clue is even read.
-  const readoutText = (cells: number[]) =>
-    state.solved ? lineText(cells) : cells.map((c) => (puzzle.givens.includes(c) ? BLANK : state.entries[c])).join("");
   const lineLabel = (l: "clued" | "hidden") =>
     l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : hiddenLabel;
 
@@ -368,8 +364,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         {/* Once solved, the results line under the board names both words. */}
         {!isTutorial && !state.solved && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <LineBlanks label={rowLabel} text={readoutText(cluedCells(puzzle))} wrong={badLines.includes("clued")} />
-            <LineBlanks label={hiddenLabel} text={readoutText(hiddenCells(puzzle))} wrong={badLines.includes("hidden")} />
+            <LineBlanks label={rowLabel} text={lineText(cluedCells(puzzle))} wrong={badLines.includes("clued")} />
+            <LineBlanks label={hiddenLabel} text={lineText(hiddenCells(puzzle))} wrong={badLines.includes("hidden")} />
           </div>
         )}
       </div>
