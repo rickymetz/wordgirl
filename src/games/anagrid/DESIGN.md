@@ -37,7 +37,8 @@ Later rounds override earlier ones.
 | Results card | Both words, the rest of the family, time, hints, streak, Share. |
 | Tagline | Decided with the name ("Sudoku, spelled." breaks the no-wordplay rule). |
 | Pool *(r3)* | **168 families**, frozen. 127 promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
-| Clue rotation *(r3)* | **3 clues per new word**; a family's clue advances each cycle it returns (`cycle - since`), so a repeat day never shows the last clue again. |
+| Clue rotation *(r3)* | **Two straight clues + one cryptic per word**, rotating straight, straight, cryptic. A family's clue advances each cycle it returns (`cycle - since`), so a repeat day never shows the last clue again. Each family starts on its own rung (`clueTurn`: letters hash % 3), so every cycle is about a third cryptic rather than whole cycles going all-cryptic. |
+| Cryptics *(r3)* | Real cryptic clues (`cryptic.ts`) — charades, containers, hidden words, homophones, deletions, double definitions; **never anagram wordplay** (the pad already shows the letters). The clue card carries a "Cryptic" tag; the results card shows the parse (`how`). |
 
 ## Findings
 
@@ -90,10 +91,13 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 ## Before launch
 
-- **Clue review.** `engine/clues.ts` is AI-drafted: 2–3 clues per original
-  word, 3 per promoted word, ~890 in all.
+- **Clue review.** `engine/clues.ts` + `engine/cryptic.ts` are AI-drafted:
+  2 straight clues and 1 cryptic (with its parse) per word, 386 words,
+  ~1,150 clues. Check each against its SIBLING too — a clue that also fits
+  the other family word breaks nothing (uniqueness doesn't rest on it) but
+  reads as unfair.
 - **Growing the pool later** means: promote in `families.ts`, clue in
-  `clues.ts`, and APPEND to `schedule.ts` with a `since` past the current
+  `clues.ts` and `cryptic.ts`, and APPEND to `schedule.ts` with a `since` past the current
   cycle. `schedule.test.ts` fails on anything else.
 - **Name + tagline.** Then teaser/OG images and a README section.
 - **`ARCHIVE_EPOCH`** to the launch date; teach `?demo-history` the game.
@@ -112,6 +116,10 @@ a player who knows a rare one (DEASIL) never finds a second grid.
   word lines; every placement, erase and hint is narrated.
 - **Keys:** the pad borrows 6px of the page gutter each side so all seven
   keys clear 44px from a 375px screen (36-38px at 320px).
+- **Cryptic days** carry the longest clues (≤ 38 chars scheduled through
+  2027): no scroll at 375×667 Huge in either font. At 320×568 Huge the
+  clue wraps to three lines and the board sits on its 44px floor, so the
+  page scrolls 17-41px — the app-wide known gap, touch floor winning.
 - **Tutorial:** LISTEN across, SILENT down. Four one-gap rows (sudoku),
   then an E/T rectangle only a word settles (the stall), then the clue.
   `tutorial.test.ts` checks every claim against the real solver.

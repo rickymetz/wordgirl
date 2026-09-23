@@ -151,7 +151,7 @@ export function tryBoard(
       family: family.words,
       hiddenWord: pairing.hiddenWord,
       cluedWord: pairing.cluedWord,
-      clue: clueFor(pairing.cluedWord),
+      clue: clueFor(pairing.cluedWord).text,
       row: pairing.row,
       col: pairing.col,
       layoutId: layout.id,
@@ -246,6 +246,19 @@ export function scheduleSlot(
 }
 
 /**
+ * Which clue a family shows on its `returns`-th appearance. Each family
+ * starts its rotation at a fixed offset from its own letters: without it
+ * every family would sit on the same rung together, and a whole cycle
+ * (five months) would be cryptic days. With it, any cycle is roughly a
+ * third cryptic, and every family still moves one rung per return.
+ */
+export function clueTurn(letters: string, returns: number): number {
+  let h = 0;
+  for (const ch of letters) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (h % 3) + returns;
+}
+
+/**
  * The day's board. A family that can't make a board today (none has yet —
  * every family is measured) is skipped for the next in the cycle's order.
  * The clue rotates with how many cycles the family has played through.
@@ -259,7 +272,15 @@ export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
     const a = generateForFamily(dict, family, `daily:${dateKey}:${cycle}:${k}`, difficultyFor(dateKey));
     if (!a) continue;
     const since = SCHEDULE.find((f) => f.letters === family.letters)?.since ?? 0;
-    return { ...a, puzzle: { ...a.puzzle, clue: clueFor(a.puzzle.cluedWord, cycle - since) } };
+    const clue = clueFor(a.puzzle.cluedWord, clueTurn(family.letters, cycle - since));
+    return {
+      ...a,
+      puzzle: {
+        ...a.puzzle,
+        clue: clue.text,
+        ...(clue.cryptic && { clueCryptic: true, clueHow: clue.how }),
+      },
+    };
   }
   throw new Error(`anagrid: no family makes a board for ${dateKey}`);
 }

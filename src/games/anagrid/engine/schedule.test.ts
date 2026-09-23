@@ -5,7 +5,7 @@ import { puzzleKey } from "../../../lib/puzzleKey";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { CLUES, clueFor } from "./clues";
 import { anagramFamilies } from "./families";
-import { dailyPuzzle, scheduleSlot } from "./generator";
+import { clueTurn, dailyPuzzle, scheduleSlot } from "./generator";
 import { SCHEDULE, type ScheduledFamily } from "./schedule";
 
 const dict = parseDictionary(
@@ -61,6 +61,18 @@ describe("scheduleSlot", () => {
 });
 
 describe("clue rotation", () => {
+  it("mixes the kinds within a cycle: roughly a third of days are cryptic", () => {
+    // The trap this pins: with every family on the same rung, whole
+    // five-month cycles went all-straight, then all-cryptic.
+    const F = SCHEDULE.length;
+    for (const start of ["2026-01-01", "2026-06-18", "2026-12-03"]) {
+      const days = dateKeyRange(start, "2027-12-31").slice(0, F);
+      const share = days.filter((d) => dailyPuzzle(dict, d).puzzle.clueCryptic).length / F;
+      expect(share, start).toBeGreaterThan(0.2);
+      expect(share, start).toBeLessThan(0.47);
+    }
+  }, 120_000);
+
   it("a family's clue advances each cycle it returns", () => {
     const F = SCHEDULE.length;
     const day0 = "2026-01-01";
@@ -71,8 +83,8 @@ describe("clue rotation", () => {
     const again = dateKeyRange(plus(F), plus(2 * F - 1)).find((k) => familyAt(k) === first)!;
     const a = dailyPuzzle(dict, day0).puzzle;
     const b = dailyPuzzle(dict, again).puzzle;
-    expect(a.clue).toBe(clueFor(a.cluedWord, 0));
-    expect(b.clue).toBe(clueFor(b.cluedWord, 1));
+    expect(a.clue).toBe(clueFor(a.cluedWord, clueTurn(a.letters, 0)).text);
+    expect(b.clue).toBe(clueFor(b.cluedWord, clueTurn(b.letters, 1)).text);
     // Same clued word both times -> guaranteed different clue.
     if (a.cluedWord === b.cluedWord) expect(b.clue).not.toBe(a.clue);
   });

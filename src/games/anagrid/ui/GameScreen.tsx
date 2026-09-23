@@ -294,6 +294,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       <div className="flex flex-col gap-1.5 rounded-2xl bg-surface-tint px-4 py-2.5">
         <p className="text-sm leading-snug">
           <span className="font-semibold text-accent">{rowLabel}:</span> {puzzle.clue}
+          {puzzle.clueCryptic && (
+            // A cryptic reads as nonsense to anyone expecting a definition;
+            // saying so up front is the difference between a puzzle and a bug.
+            <span className="ml-1.5 inline-block rounded-full border border-accent/40 px-1.5 text-[0.7rem] font-semibold tracking-wide text-accent uppercase">
+              Cryptic
+            </span>
+          )}
         </p>
         {/* The tutorial's steps point at the board's own shading, and it
             needs the height at Huge text. */}
@@ -345,6 +352,11 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
                   .map((w) => w.toUpperCase())
                   .join(" · ")}`}
             </p>
+            {puzzle.clueCryptic && puzzle.clueHow && (
+              <p className="text-center text-xs text-ink-soft">
+                The cryptic: <span className="font-semibold text-ink">{puzzle.clueHow}</span>
+              </p>
+            )}
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">{formatDuration(solvedElapsedMs)}</p>
             )}
