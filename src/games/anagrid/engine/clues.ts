@@ -106,7 +106,7 @@ export const CLUES: Readonly<Record<string, readonly string[]>> = {
   warned: ["Cautioned", "Tipped off"],
   // Promoted families (pool growth, round 3).
   actors: ["Cast members", "They take the stage"],
-  costar: ["Shares top billing", "Fellow lead in a film"],
+  costar: ["Share top billing", "Fellow lead in a film"],
   castor: ["___ oil", "Pollux's twin"],
   aliens: ["Visitors from space", "E.T. and friends"],
   saline: ["Salty", "IV bag solution"],
@@ -274,7 +274,7 @@ export const CLUES: Readonly<Record<string, readonly string[]>> = {
   paltry: ["Meager", "Pitifully small"],
   patron: ["Regular customer", "Sponsor"],
   tarpon: ["Big game fish", "Silver king fish"],
-  planes: ["Aircraft", "Flat surfaces"],
+  planes: ["Aircraft", "Woodworkers' smoothing tools"],
   panels: ["Solar ___", "Discussion groups"],
   planet: ["World", "Mars, e.g."],
   platen: ["Typewriter roller", "Printing-press part"],

@@ -40,7 +40,7 @@ export const CRYPTIC: Readonly<Record<string, Cryptic>> = {
   denial: { clue: "Refusal: study, one, and Al", how: "DEN (study) + I (one) + AL" },
   nailed: { clue: "Aced: new, felt poorly", how: "N (new) + AILED (felt poorly)" },
   depart: { clue: "Leave \"of,\" in Paris, a role", how: "DE (French \"of\") + PART (role)" },
-  parted: { clue: "Split average with Ted", how: "PAR (average) + TED" },
+  parted: { clue: "Separated: average with Ted", how: "PAR (average) + TED" },
   design: { clue: "Plan of, in Paris, an omen", how: "DE (French \"of\") + SIGN (omen)" },
   signed: { clue: "Autographed notice for the editor", how: "SIGN (notice) + ED (editor)" },
   duties: { clue: "Tasks: \"of the,\" in Paris, draws", how: "DU (French \"of the\") + TIES (draws)" },
