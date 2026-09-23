@@ -7,7 +7,6 @@ import {
   Delete,
   Grid3x3,
   Lightbulb,
-  MousePointerClick,
   Rows3,
   SpellCheck,
   TriangleAlert,
@@ -37,7 +36,14 @@ import {
   loadTutorialSeen,
   markTutorialSeen,
 } from "../state/persistence";
-import { BLANK, ERASER, conflictCells, peers as peersOf } from "../state/reducer";
+import {
+  BLANK,
+  conflictCells,
+  isLocked,
+  peers as peersOf,
+  wrongLines,
+  type Feedback,
+} from "../state/reducer";
 import { useAnagridGame, type GameMode } from "../state/useAnagridGame";
 import { cluedCells, hiddenCells } from "../engine/hints";
 import { Board } from "./Board";
@@ -70,6 +76,9 @@ interface Props {
   onReplay?: () => Promise<void>;
 }
 
+/** Human position for narration and toasts: "row 2, column 4". */
+const where = (cell: number) => `row ${Math.floor(cell / N) + 1}, column ${(cell % N) + 1}`;
+
 export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, abandonSession } =
     useAnagridGame(mode);
@@ -83,34 +92,50 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
 
   const [coachOpen, setCoachOpen] = useState(false);
   const [replayOpen, setReplayOpen] = useState(false);
+  const [hintAskOpen, setHintAskOpen] = useState(false);
 
-  const conflicts = useMemo(
-    () => conflictCells(puzzle.regions, state.entries),
-    [puzzle.regions, state.entries],
+  // Only the PLAYER's letters carry the repeat mark: a given is never the
+  // mistake, even when it is one half of the clash.
+  const repeats = useMemo(() => {
+    const all = conflictCells(puzzle.regions, state.entries);
+    return new Set([...all].filter((c) => !isLocked(state, c)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzle.regions, state.entries, state.revealed]);
+  const badLines = useMemo(() => wrongLines(puzzle, state.entries), [puzzle, state.entries]);
+  const wrongCells = useMemo(
+    () =>
+      new Set(
+        badLines.flatMap((l) => (l === "clued" ? cluedCells(puzzle) : hiddenCells(puzzle))),
+      ),
+    [badLines, puzzle],
   );
   const peers = useMemo(
-    () =>
-      state.selected === null
-        ? new Set<number>()
-        : peersOf(puzzle.regions, state.selected),
+    () => (state.selected === null ? new Set<number>() : peersOf(puzzle.regions, state.selected)),
     [puzzle.regions, state.selected],
   );
-  // Letter-first highlights the tool's letter; cell-first, the letter in
-  // the selected cell — "where else is this letter?" either way.
   const focusLetter =
-    state.mode === "letter" && state.tool !== null && state.tool !== ERASER
-      ? state.tool
-      : state.selected !== null && state.entries[state.selected] !== BLANK
-        ? state.entries[state.selected]
-        : null;
+    state.selected !== null && state.entries[state.selected] !== BLANK
+      ? state.entries[state.selected]
+      : null;
 
-  const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
   const rowLabel = `Row ${puzzle.row + 1}`;
-  const lineText = (cells: number[]) =>
-    cells.map((c) => state.entries[c]).join("");
+  const hiddenLabel = puzzle.col < 0 ? "Diagonal" : "Down";
+  const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
+  const lineLabel = (l: "clued" | "hidden") =>
+    l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : `Column ${puzzle.col + 1}`;
 
-  // Physical keyboard: letters write, arrows move, Backspace erases.
-  const modalOpen = coachOpen || replayOpen;
+  const takeHint = () => {
+    trackHint("anagrid");
+    dispatch({ type: "revealHint" });
+  };
+  // The first hint of the day asks: a stray tap would otherwise cost the
+  // hint-free day (and the roundup's grand confetti) with no way back.
+  const askHint = () => (state.hints === 0 ? setHintAskOpen(true) : takeHint());
+
+  // Physical keyboard. The grid handles its own arrows (focus moves with
+  // them); letters and Backspace work from anywhere except another
+  // control, which keeps its own keys.
+  const modalOpen = coachOpen || replayOpen || hintAskOpen;
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -121,43 +146,68 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
         return;
       }
       if (modalOpen) return;
-      const moves: Record<string, [number, number]> = {
-        ArrowUp: [-1, 0],
-        ArrowDown: [1, 0],
-        ArrowLeft: [0, -1],
-        ArrowRight: [0, 1],
-      };
-      if (moves[e.key]) {
+      const onGrid = !!target?.closest('[role="grid"]');
+      if (!onGrid && target?.closest("button, a, input, select, textarea")) return;
+      if (!onGrid && e.key.startsWith("Arrow")) {
         e.preventDefault();
-        const [dRow, dCol] = moves[e.key];
+        const d: Record<string, [number, number]> = {
+          ArrowUp: [-1, 0],
+          ArrowDown: [1, 0],
+          ArrowLeft: [0, -1],
+          ArrowRight: [0, 1],
+        };
+        const [dRow, dCol] = d[e.key] ?? [0, 0];
         dispatch({ type: "move", dRow, dCol });
       } else if (e.key === "Backspace" || e.key === "Delete") {
-        if (state.mode === "cell") dispatch({ type: "erase" });
-      } else if (/^[a-zA-Z]$/.test(e.key) && state.mode === "cell") {
+        dispatch({ type: "erase" });
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
         dispatch({ type: "pressLetter", letter: e.key });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [modalOpen, dispatch, state.mode]);
+  }, [modalOpen, dispatch]);
 
-  // Feedback over the board, narrated via the live region below.
+  // Feedback: the toast shows what needs eyes; the live region narrates
+  // every write, since a tap on a letter key never moves focus.
   const { toast, show } = useToast();
+  const [narration, setNarration] = useState("");
   useEffect(() => {
-    const f = state.feedback;
+    const f: Feedback | null = state.feedback;
     if (!f) return;
-    if (f.type === "full") {
-      // Name the actual problem: repeats are visible in red; without
-      // any, the only way to be wrong is a line that isn't the word.
-      show(
-        conflicts.size > 0
-          ? "Every cell is full — some letters repeat"
-          : "Every cell is full — but a word line isn't the word yet",
-        3200,
-      );
+    switch (f.type) {
+      case "placed":
+        setNarration(
+          `${f.letter.toUpperCase()}, ${where(f.cell)}${f.repeats ? " — repeats" : ""}.`,
+        );
+        break;
+      case "cleared":
+        setNarration(`Cleared ${where(f.cell)}.`);
+        break;
+      case "hint":
+        show(`Hint: ${where(f.cell)}`, 1600);
+        setNarration(
+          `Hint: ${state.entries[f.cell].toUpperCase()} at ${where(f.cell)}.`,
+        );
+        break;
+      case "locked":
+        show("Given letters can't change", 1600);
+        break;
+      case "full": {
+        const bad = wrongLines(puzzle, state.entries);
+        if (bad.length) {
+          const l = bad[0];
+          const cells = l === "clued" ? cluedCells(puzzle) : hiddenCells(puzzle);
+          show(`${lineLabel(l)} spells ${lineText(cells).toUpperCase()} — not the word`, 4000);
+        } else {
+          show("Every cell is full — some letters repeat", 3200);
+        }
+        break;
+      }
+      case "solved":
+        show("Solved!", 1600);
+        break;
     }
-    else if (f.type === "hint") show("Hint placed", 1400);
-    else if (f.type === "solved") show("Solved!", 1600);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.feedback]);
 
@@ -185,10 +235,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
               type="button"
               className="relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-soft touch-manipulation select-none active:scale-95 after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => {
-                trackHint("anagrid");
-                dispatch({ type: "revealHint" });
-              }}
+              onClick={askHint}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
@@ -221,13 +268,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
         <svg
           role="img"
           aria-label="anagrid"
-          width="18"
-          height="18"
-          viewBox="0 0 18 18"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent"
         >
-          <rect x="1" y="7" width="16" height="4" rx="1" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <rect x="11" y="1" width="4" height="16" rx="1" fill="currentColor" opacity="0.35" />
+          <rect x="12" y="1" width="5" height="18" rx="1.2" fill="currentColor" opacity="0.6" />
+          <rect x="1" y="7.5" width="18" height="5" rx="1.2" fill="currentColor" />
         </svg>
         {mode.kind === "archive" && (
           <span className="text-base font-semibold text-ink-soft">{formatDateKey(mode.dateKey)}</span>
@@ -246,21 +293,14 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       {/* The clue, and both word lines as blanks that fill as you go. */}
       <div className="flex flex-col gap-1.5 rounded-2xl bg-surface-tint px-4 py-2.5">
         <p className="text-sm leading-snug">
-          <span className="font-semibold text-accent">{rowLabel}:</span>{" "}
-          {puzzle.clue}
+          <span className="font-semibold text-accent">{rowLabel}:</span> {puzzle.clue}
         </p>
-        {/* The tutorial's steps point at the board's own shading and
-            shading, and it needs the height at Huge text. */}
+        {/* The tutorial's steps point at the board's own shading, and it
+            needs the height at Huge text. */}
         {!isTutorial && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <LineBlanks
-              label={rowLabel}
-              text={lineText(cluedCells(puzzle))}
-            />
-            <LineBlanks
-              label={hiddenLabel}
-              text={lineText(hiddenCells(puzzle))}
-            />
+            <LineBlanks label="Across" text={lineText(cluedCells(puzzle))} />
+            <LineBlanks label={hiddenLabel} text={lineText(hiddenCells(puzzle))} />
           </div>
         )}
       </div>
@@ -273,9 +313,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
           selected={state.selected}
           peers={peers}
           focusLetter={focusLetter}
-          conflicts={conflicts}
+          repeats={repeats}
+          wrong={wrongCells}
           solved={state.solved}
           onTap={(cell) => dispatch({ type: "tapCell", cell })}
+          onFocusCell={(cell) => dispatch({ type: "select", cell })}
+          onMove={(dRow, dCol) => dispatch({ type: "move", dRow, dCol })}
         />
         <GameToast toast={toast} />
       </div>
@@ -328,71 +371,28 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
             {isDaily && <DailyOutro gameId="anagrid" loadStreak={outroStreak} />}
           </motion.div>
         ) : !state.solved ? (
-          <motion.div
-            key="controls"
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col gap-2.5"
-          >
-            {/* The tutorial teaches cell-first only; the toggle is day chrome. */}
-            {!isTutorial && (
-            <div
-              role="radiogroup"
-              aria-label="Entry order"
-              className="flex self-center rounded-full bg-tile p-1"
-            >
-              {(
-                [
-                  ["cell", "Cell first"],
-                  ["letter", "Letter first"],
-                ] as const
-              ).map(([value, label]) => (
+          <motion.div key="controls" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            {/* Seven keys a row: the pad borrows 6px of the page gutter
+                each side so every key clears 44px from a 375px screen. */}
+            <div className="-mx-1.5 flex gap-1">
+              {letters.map((l) => (
                 <button
-                  key={value}
+                  key={l}
                   type="button"
-                  role="radio"
-                  aria-checked={state.mode === value}
+                  aria-label={`letter ${l.toUpperCase()}`}
                   onPointerDown={(e) => e.preventDefault()}
-                  onClick={() => dispatch({ type: "setMode", mode: value })}
-                  className={`relative rounded-full px-4 py-1.5 text-xs font-semibold touch-manipulation after:absolute after:inset-x-0 after:-inset-y-2.5 ${
-                    state.mode === value ? "bg-ink text-surface" : "text-ink-soft"
-                  }`}
+                  onClick={() => dispatch({ type: "pressLetter", letter: l })}
+                  className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile font-game text-xl text-ink touch-manipulation select-none active:scale-95"
                 >
-                  {label}
+                  {l.toUpperCase()}
                 </button>
               ))}
-            </div>
-            )}
-            <div className="flex gap-1.5">
-              {letters.map((l) => {
-                const active = state.mode === "letter" && state.tool === l;
-                return (
-                  <button
-                    key={l}
-                    type="button"
-                    aria-pressed={state.mode === "letter" ? active : undefined}
-                    aria-label={`letter ${l.toUpperCase()}`}
-                    onPointerDown={(e) => e.preventDefault()}
-                    onClick={() => dispatch({ type: "pressLetter", letter: l })}
-                    className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg font-game text-xl touch-manipulation select-none active:scale-95 ${
-                      active ? "bg-accent text-surface" : "bg-tile text-ink"
-                    }`}
-                  >
-                    {l.toUpperCase()}
-                  </button>
-                );
-              })}
               <button
                 type="button"
                 aria-label="erase"
-                aria-pressed={state.mode === "letter" ? state.tool === ERASER : undefined}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => dispatch({ type: "erase" })}
-                className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg touch-manipulation select-none active:scale-95 ${
-                  state.mode === "letter" && state.tool === ERASER
-                    ? "bg-accent text-surface"
-                    : "bg-tile text-ink"
-                }`}
+                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
               >
                 <Delete aria-hidden className="h-5 w-5" />
               </button>
@@ -402,6 +402,42 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {hintAskOpen && (
+        <ModalDialog labelledBy="hint-dialog-title" onClose={() => setHintAskOpen(false)} className="text-center">
+          <div>
+            <h2 id="hint-dialog-title" className="text-lg font-bold">
+              Use a hint?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              The next cell you could work out gets filled in, and today's
+              result will note{" "}
+              <span className="font-semibold text-ink">how many hints you used</span>.
+              Streaks are safe — hints never break them.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setHintAskOpen(false);
+                  takeHint();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Use hint
+              </button>
+              <button
+                type="button"
+                onClick={() => setHintAskOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       {replayOpen && (
         <ModalDialog labelledBy="replay-dialog-title" onClose={() => setReplayOpen(false)} className="text-center">
@@ -449,8 +485,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
                 title: "One of each letter",
                 body: (
                   <>
-                    Every <Key>row</Key>, <Key>column</Key> and{" "}
-                    <Key>box</Key> holds each of the six letters exactly once.
+                    Every <Key>row</Key>, <Key>column</Key> and <Key>box</Key>{" "}
+                    holds each of the six letters exactly once. Tap a cell,
+                    then a letter.
                   </>
                 ),
               },
@@ -470,29 +507,29 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
                 title: "The words matter",
                 body: (
                   <>
-                    Sudoku logic alone always leaves a choice somewhere. The
-                    two words settle it.
-                  </>
-                ),
-              },
-              {
-                Icon: MousePointerClick,
-                title: "Two ways to enter",
-                body: (
-                  <>
-                    <Key>Cell first</Key>: tap a cell, then a letter.{" "}
-                    <Key>Letter first</Key>: pick a letter, then tap every
-                    cell it goes in.
+                    Sudoku logic carries you most of the way, then stalls.
+                    The two words settle it.
                   </>
                 ),
               },
               {
                 Icon: TriangleAlert,
-                title: "Repeats turn red",
+                title: "Repeats are flagged",
                 body: (
                   <>
-                    A letter twice in a row, column or box shows in red.
-                    Nothing else is checked until the board is full.
+                    A letter twice in a row, column or box gets a{" "}
+                    <Key>corner mark</Key>. If a full board still isn't
+                    right, the line that isn't its word is named.
+                  </>
+                ),
+              },
+              {
+                Icon: Lightbulb,
+                title: "Hints",
+                body: (
+                  <>
+                    A hint fills in the next cell you could work out. Your
+                    result notes how many you used.
                   </>
                 ),
               },
@@ -512,6 +549,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       <div aria-live="polite" role="status" className="sr-only">
         {toast && <span key={toast.nonce}>{toast.text}</span>}
       </div>
+      <div aria-live="polite" className="sr-only">
+        {narration}
+      </div>
       {!isTutorial && (
         <p className="sr-only">
           {filledByPlayer} of {N * N - puzzle.givens.length} letters placed.
@@ -522,23 +562,16 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
 }
 
 /** A word line as monospaced blanks: letters where filled, `?` where not. */
-function LineBlanks({
-  label,
-  text,
-}: {
-  label: string;
-  text: string;
-}) {
+function LineBlanks({ label, text }: { label: string; text: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span
-        aria-hidden
-        className="inline-block h-3 w-3 rounded-sm bg-accent/40"
-      />
       <span>{label}</span>
-      <span className="font-game text-ink" aria-label={`${label}: ${text.replaceAll(BLANK, " blank ")}`}>
+      <span
+        className="font-game text-ink"
+        aria-label={`${label}: ${[...text].map((ch) => (ch === BLANK ? "blank" : ch.toUpperCase())).join(" ")}`}
+      >
         {[...text].map((ch, i) => (
-          <span key={i} data-glyph>
+          <span key={i} data-glyph aria-hidden>
             {ch === BLANK ? "?" : ch.toUpperCase()}
           </span>
         ))}

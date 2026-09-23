@@ -2,125 +2,113 @@
 
 A 6×6 letter sudoku built on an anagram family. Two lines of the solved
 grid spell two different common words with the same six letters: one
-**clued** row, and one **hidden** line revealed at the finish. Sudoku
-rules alone never pin the grid down — the words have to do some of the
-work. That is the difference from plain Wordoku, where the letters are
-digits in costume and the word is decoration.
+**clued** row, and one **hidden** line (a crossing column, or the main
+diagonal) revealed at the finish. Sudoku carries the player most of the
+way and then **stalls**; the words break the stall. That is the
+difference from plain Wordoku, where the letters are digits in costume
+and the word is decoration.
 
-Status: playable — daily, archive, stats, tutorial, hub card and
-roundup entry, per the CLAUDE.md new-game checklist. The name is
-undecided; `anagrid` is a working id (a folder move plus the registry
-entry to rename). See "Build notes" below for what shipped and what
-didn't.
+Status: playable — daily, archive, stats, tutorial, hub card and roundup
+entry, per the CLAUDE.md new-game checklist. Not launchable yet: see
+"Before launch". `anagrid` is a working id (renaming is a folder move
+plus the registry entry).
 
-## Decisions (requirements interview)
+## Decisions
+
+Two requirements interviews: the first shaped v1, the second came out of
+a design / UX / game-design review of v1 (round 2 overrides round 1).
 
 | Area | Decision |
 | --- | --- |
-| Board | One 6×6 daily, classic 2×3 boxes. Other sizes and practice deferred. Jigsaw regions dropped for v1 (see findings). |
-| Letters | The six distinct letters of a common-tier anagram family. The letter pad shows them sorted, so it spoils nothing. |
-| Word lines | **Mixed geometry:** hidden word on the main diagonal when the family allows it, otherwise a crossword-style across (clued row) + down (hidden column). |
-| Clue | One short clue for the clued row, visible from the start. Written with AI offline, reviewed by hand, shipped as data — no runtime network. |
-| Hidden word | Not clued, not marked as spelled out; revealed on the results card. |
-| Word tier | Answers are common-tier only. Uniqueness is proven against BOTH tiers (see below). |
-| Word dependence | Every daily must be ambiguous under sudoku rules alone. A family that can't manage it is skipped for the next in line. |
-| Givens | The fewest that keep the board unique and solvable with the player's toolkit. |
-| Difficulty | Easy-medium, 3-6 min: the toolkit is singles plus word lines, no pencil-mark chains. |
-| Input | Letter pad; cell-first by default with a letter-first toggle. |
-| Assists | Highlight same letter; highlight the selected cell's row/column/box. No pencil marks. |
-| Mistakes | Conflicts only (duplicate in a row/column/box turns red). No wrong-vs-solution check, no lives. |
-| Word lines on screen | Outlined on the board AND listed as `?` blanks (`data-glyph`). |
-| Hints | Reveal one cell; each counts toward the roundup hint total. |
-| Result | Time only (+ hints). Board freezes on solve. |
-| Results card | Time, hints, streak, hidden word revealed, and the whole family ("LADIES · IDEALS · also SAILED"). |
-| Share | `emoji name · time hints` + `SHARE_URL`, per house format. |
-| Hub | Last in registry order. Accent: whatever passes `validate_palette.js`. |
-| Tutorial | Sudoku rule first, then the clue, then "only one real word fits the hidden line", then finish. |
-| Seed repeats | Families cycle in a fixed shuffled order with a fresh board each cycle; grow the pool with a hand-reviewed allowlist (`PROMOTED_WORDS`). |
+| Board | One 6×6 daily, classic 2×3 boxes. Practice, other sizes, jigsaw layouts deferred. |
+| Letters | The six distinct letters of a common-tier anagram family, sorted on the pad (spoils nothing). |
+| Word lines | **Mixed geometry:** hidden word on the main diagonal when the family allows it, otherwise an across (clued row) + down (hidden column). Both lines shaded. |
+| Core loop *(r2)* | **Late stall.** Givens stay until sudoku alone would leave more than N grids, so singles fill most of the board, then stall on a spot a word settles. |
+| Difficulty *(r2)* | **Weekday curve** by N: Mon–Tue easy (2), Wed–Thu medium (6), Fri–Sat hard (24), Sun medium. |
+| Uniqueness *(r2)* | **Strict:** unique even if BOTH lines may be any dictionary anagram — the other family word in the clued row always hits a repeat. |
+| Clues *(r2)* | **Crossword-grade, cryptic-lite** (double definitions, misdirection, `?` puns, fill-ins) — the one place wordplay is allowed; the rest of the UI stays plain. **2–3 per word, rotating** each time a family returns. |
+| Word tier | Answers are common-tier; uniqueness is proven against both tiers. |
+| Input *(r2)* | **Cell first only** (letter-first dropped): tap a cell, then a letter. |
+| Highlights *(r2)* | **Rings, not fills:** thick ring on the selection, thin ring on matching letters; fills only for the word lines; the selection's row/column/box is a wash layered over the fill. |
+| Mistakes *(r2)* | Repeats get a **corner mark** plus the warn color, on the player's letters only — a given is never "the mistake". A full, repeat-free, wrong board names the line that isn't its word. |
+| Hints *(r2)* | Reveal the **next cell the player's toolkit would deduce** (not the first gap in reading order). The **first hint of the day asks** ("Use a hint?"). |
+| Finish *(r2)* | The two words **light up** on the solved board. Share stays time + hints. |
+| Results card | Both words, the rest of the family, time, hints, streak, Share. |
+| Tagline | Decided with the name ("Sudoku, spelled." breaks the no-wordplay rule). |
+| Pool *(r2)* | **Grow first, then freeze:** review promotions to 60+ families, then freeze the schedule as an append-only list. |
 
-## Findings from the spike
+## Findings
 
-Run `MEASURE=1 npx vitest run src/games/anagrid/engine/measure` to
-reproduce (`MEASURE=diagonal|cross` forces a geometry,
-`MEASURE_PROOF=open` drops the clue from the uniqueness proof).
+Reproduce with `MEASURE=1 npx vitest run src/games/anagrid/engine/measure`.
 
 **The diagonal geometry is structurally rare.** A clued row `r` crosses
-the diagonal at `(r, r)`, so the two words must share that letter — but
-row cell `(r, j)` also shares column `j` with diagonal cell `(j, j)`, so
-at every other position the letters must DIFFER. Two anagrams that
-agree in exactly one place are uncommon: SACRED/SCARED agree in four
-and can never pair. Of the 45 common-tier families, 8 allow a diagonal
-pairing; 6 of those make a box board.
+the diagonal at `(r, r)`, so the words share that letter — but row cell
+`(r, j)` also shares column `j` with diagonal cell `(j, j)`, so at every
+other position the letters must DIFFER. 8 of 45 common-tier families
+allow it (SACRED/SCARED agree in four places and never can). An across +
+down pair shares only its crossing cell, so every family allows that.
+Pool: **42 families** after excluding DAVIES/REGINA/FOWLER (proper nouns
+the frequency list let in); 6 play the diagonal, the rest across + down.
 
-**Across + down works for every family.** A row and a column share only
-their crossing cell, so any two family words pair wherever the across's
-letter `c` equals the down's letter `r`.
+**v1 minimized givens, and the words became the opening, not the
+payoff** (from the game-design review, 90 dailies): sudoku placed a
+median of 0 cells before the words, both words filled first, and singles
+finished every day. Round 2's late-stall generator fixes that:
 
-| Geometry (common tier) | Families that can pair | Box boards made |
+| Difficulty | Givens (median) | Empties sudoku fills before the stall |
 | --- | --- | --- |
-| Diagonal + row | 8 / 45 | 6 |
-| Across + down | 45 / 45 | 45 |
-| Two parallel rows | 14 / 45 | not built |
-| Diagonal + anti-diagonal | 2 / 45 | not built |
+| Easy (Mon–Tue) | 10 | ~78% |
+| Medium (Wed–Thu, Sun) | 9 | ~46% |
+| Hard (Fri–Sat) | 9 | ~25% |
 
-With the mixed rule every family makes a board: **6 diagonal days,
-the rest across + down**. Three "common" words turned out to be proper
-nouns from the subtitle-frequency list (DAVIES, REGINA, FOWLER); they
-are excluded (`EXCLUDED_WORDS`), which orphans their families, so the
-live pool is **42 families**. Diagonal boards need 1-3 givens; across + down
-boards 3-7. Both pass the stricter `open` proof too.
+All 42 families make boards at every level; ~18 ms per daily.
 
-**Two models of the player, deliberately different.**
-- *Solvability* uses what a person actually knows: the clue gives its
-  row, and the hidden line is one of the family's COMMON words. The
-  first spike let the solver search every dictionary anagram (DEASIL,
-  GANDER…), which no player does.
-- *Uniqueness* is proven against every dictionary anagram, both tiers,
-  so a player who does know DEASIL never finds a second valid grid.
+**v1 allowed the anagram swap** on 16% of days (the other family word in
+the clued row still filled a full, repeat-free grid). v1 generated under
+a clue-assumed proof; round 2 proves uniqueness with both lines free.
 
-**Jigsaw regions weren't needed.** Planned as a fallback for families
-that can't make a word-dependent box board; with across + down, none
-can't. 40 candidate layouts were generated and measured, then dropped.
-`isValidLayout` stays for when irregular layouts return for variety.
+**A "the clue must be needed" rule can't coexist with strict
+uniqueness.** Strict uniqueness means the wrong anagram always hits a
+repeat, and the player's toolkit sees that repeat without reading the
+clue: 1 board in 378 managed both. So the clue is the fast road to the
+row, not the only one; `clueNeeded` is still measured. If the clue must
+carry more weight, the lever is the clue's difficulty (done: cryptic-lite),
+not the generator.
 
-## Open items
+**Two models of the player, deliberately different.** *Solvability* uses
+what a person knows: the clue's row, and a COMMON family word on the
+hidden line. *Uniqueness* is proven against every dictionary anagram, so
+a player who knows a rare one (DEASIL) never finds a second grid.
 
-- **Pool size vs repeat gap.** 42 families means a family returns every
-  42 days; the interview asked for a 60-day minimum gap. That needs 15+
-  more families via `PROMOTED_WORDS` (hand-reviewed bonus-tier words —
-  471 all-tier families allow a diagonal, 1,216 allow across + down).
-- **Clues.** `engine/clues.ts` holds AI-drafted clues for all 86 pool
-  words, marked as drafts: they need the human review pass before
-  launch. `clues.test.ts` enforces coverage, length, and that no clue
-  names its own family.
-- **Difficulty tuning.** Diagonal days run on 1-3 givens and lean
-  harder on word knowledge than across + down days. Measure real solve
-  times before deciding whether to floor the givens.
-- **Name.** Still open.
-- **Everything else** follows the CLAUDE.md new-game checklist:
-  persistence, clock, archive, trends, roundup entry, coach sheet,
-  tutorial, the three test files.
+## Before launch
+
+- **Pool to 60+ families.** Review `PROMOTION_CANDIDATES.md` (301
+  families one promotion away), add picks to `PROMOTED_WORDS`, write
+  their clues.
+- **Then freeze the schedule.** `dailyPuzzle` shuffles the whole family
+  list, so any pool change today reshuffles every past day (and marks
+  archive saves stale). Freeze it as an append-only list of family ids,
+  the way `SHAPES`/`THEME_POOLS` work, before launch.
+- **Clue review.** `engine/clues.ts` is AI-drafted, 2–3 per word.
+- **Name + tagline.** Then teaser/OG images and a README section.
+- **`ARCHIVE_EPOCH`** to the launch date; teach `?demo-history` the game.
 
 ## Build notes
 
-- **Deferred per the interview:** Practice mode (no route, no bento
-  tile), other board sizes, jigsaw layouts.
-- **Accent:** indigo (`--level-anagrid`, #4338ca / #818cf8) — 7.9:1 and
-  5.7:1, and CVD-distinct from all five game accents.
-  `validate_palette.js` only resolved numeric `--level-N` tokens, so it
-  never checked ANY named game accent; it now does, and all six pass.
-  The roundup rainbow gains a sixth stop.
+- **Accent:** indigo (`--level-anagrid`, #4338ca / #818cf8), CVD-distinct
+  from all five game accents. `validate_palette.js` now resolves named
+  game tokens (it silently skipped every game after Polygram). The
+  roundup rainbow has a sixth stop.
+- **Highlight tokens:** `--anagrid-line` (15% light / 30% dark — dark
+  needs double to separate from an empty cell), `--anagrid-peer`,
+  `--anagrid-match`.
+- **Keyboard / screen readers:** one Tab stop for the grid (roving
+  tabindex), arrows move focus with the selection; cell labels name the
+  word lines; every placement, erase and hint is narrated.
+- **Keys:** the pad borrows 6px of the page gutter each side so all seven
+  keys clear 44px from a 375px screen (36-38px at 320px).
+- **Tutorial:** LISTEN across, SILENT down. Four one-gap rows (sudoku),
+  then an E/T rectangle only a word settles (the stall), then the clue.
+  `tutorial.test.ts` checks every claim against the real solver.
 - **Share:** `🔠 Anagrid — <date>` / `⏱️ 4:32 · 😎 0` / URL.
-- **Roundup:** unit `letters`, value = cells the player filled.
-- **Wrong-but-full board:** a full grid with no repeats that isn't the
-  solution (a word line isn't a word) gets a toast rather than a solve;
-  nothing else is checked, per "conflicts only".
-- **Tutorial:** LISTEN across, SILENT down, one E/T rectangle only the
-  clue resolves. At Huge text on a 375×667 it drops the blanks legend
-  and the entry-order toggle and hides the title row, or it scrolls
-  145px. 320×568 at Huge still scrolls — the documented app-wide gap.
-- **Replay:** solved archive days offer "Play again" behind a
-  `ModalDialog`.
-- **Not done:** the `?demo-history` seeder doesn't know this game yet,
-  and there are no teaser/OG images or README section until it has a
-  name.
+  **Roundup:** unit `letters`, value = cells the player filled.

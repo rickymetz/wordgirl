@@ -1,22 +1,18 @@
+import { cluedCells, hiddenCells, hintCell } from "../engine/hints";
 import type { AnagridPuzzle } from "../engine/types";
 import { CELLS, N } from "../engine/types";
 
 /** An empty cell in `entries`. */
 export const BLANK = ".";
 
-/**
- * cell: tap a cell, then a letter. letter: pick a letter (or the
- * eraser), then stamp it into cells. Same board, two orders of taps.
- */
-export type EntryMode = "cell" | "letter";
-
-/** The letter-first tool: a letter, or the eraser. */
-export type Tool = string | typeof ERASER;
-export const ERASER = "erase";
-
+/** What a write placed — narrated for screen readers, and the toast. */
 export type Feedback =
+  | { type: "placed"; cell: number; letter: string; repeats: boolean; nonce: number }
+  | { type: "cleared"; cell: number; nonce: number }
   | { type: "hint"; cell: number; nonce: number }
-  /** Every cell filled, but not the solution — a word line isn't a word. */
+  /** A letter pressed on a given or hinted cell, which can't change. */
+  | { type: "locked"; cell: number; nonce: number }
+  /** Every cell filled, but not the solution. */
   | { type: "full"; nonce: number }
   | { type: "solved"; nonce: number };
 
@@ -27,8 +23,6 @@ export interface GameState {
   /** Cells a hint filled — locked like givens. */
   revealed: number[];
   selected: number | null;
-  mode: EntryMode;
-  tool: Tool | null;
   solved: boolean;
   hints: number;
   /** Placements that created a duplicate in a row/column/box (trends). */
@@ -37,10 +31,12 @@ export interface GameState {
 }
 
 export type Action =
+  /** A tap: selects the cell, or deselects it when it already is. */
   | { type: "tapCell"; cell: number }
+  /** Keyboard focus landed on a cell: select it (never toggles off). */
+  | { type: "select"; cell: number }
   | { type: "pressLetter"; letter: string }
   | { type: "erase" }
-  | { type: "setMode"; mode: EntryMode }
   | { type: "move"; dRow: number; dCol: number }
   | { type: "revealHint" }
   | {
@@ -64,8 +60,6 @@ export function initialState(puzzle: AnagridPuzzle): GameState {
     entries: initialEntries(puzzle),
     revealed: [],
     selected: null,
-    mode: "cell",
-    tool: null,
     solved: false,
     hints: 0,
     conflicts: 0,
@@ -73,7 +67,7 @@ export function initialState(puzzle: AnagridPuzzle): GameState {
   };
 }
 
-export function isLocked(state: GameState, cell: number): boolean {
+export function isLocked(state: Pick<GameState, "puzzle" | "revealed">, cell: number): boolean {
   return state.puzzle.givens.includes(cell) || state.revealed.includes(cell);
 }
 
@@ -83,11 +77,7 @@ export function peers(regions: readonly number[], cell: number): Set<number> {
   const c = cell % N;
   const out = new Set<number>();
   for (let i = 0; i < CELLS; i++) {
-    if (
-      Math.floor(i / N) === r ||
-      i % N === c ||
-      regions[i] === regions[cell]
-    ) {
+    if (Math.floor(i / N) === r || i % N === c || regions[i] === regions[cell]) {
       out.add(i);
     }
   }
@@ -95,10 +85,7 @@ export function peers(regions: readonly number[], cell: number): Set<number> {
 }
 
 /** Cells whose letter repeats somewhere in one of their units. */
-export function conflictCells(
-  regions: readonly number[],
-  entries: string,
-): Set<number> {
+export function conflictCells(regions: readonly number[], entries: string): Set<number> {
   const out = new Set<number>();
   for (let a = 0; a < CELLS; a++) {
     const ch = entries[a];
@@ -113,37 +100,63 @@ export function conflictCells(
   return out;
 }
 
+export type LineName = "clued" | "hidden";
+
+/**
+ * On a full board with no repeats that still isn't the solution, the
+ * word lines that don't spell their word. (By strict uniqueness at least
+ * one of them is wrong; naming it is the only way a player can find a
+ * mistake the board doesn't otherwise show.)
+ */
+export function wrongLines(puzzle: AnagridPuzzle, entries: string): LineName[] {
+  if (entries.includes(BLANK) || entries === puzzle.solution) return [];
+  if (conflictCells(puzzle.regions, entries).size > 0) return [];
+  const spell = (cells: number[]) => cells.map((c) => entries[c]).join("");
+  const out: LineName[] = [];
+  if (spell(cluedCells(puzzle)) !== puzzle.cluedWord) out.push("clued");
+  if (spell(hiddenCells(puzzle)) !== puzzle.hiddenWord) out.push("hidden");
+  return out;
+}
+
 function nextNonce(state: GameState): number {
   return (state.feedback?.nonce ?? 0) + 1;
 }
 
 /** Write one cell and settle what the write means. */
 function write(state: GameState, cell: number, letter: string): GameState {
-  if (isLocked(state, cell) || state.entries[cell] === letter) return state;
-  const entries =
-    state.entries.slice(0, cell) + letter + state.entries.slice(cell + 1);
-  const createsConflict =
-    letter !== BLANK &&
-    conflictCells(state.puzzle.regions, entries).has(cell);
-  const next: GameState = {
+  if (isLocked(state, cell)) {
+    return letter === BLANK
+      ? state
+      : { ...state, feedback: { type: "locked", cell, nonce: nextNonce(state) } };
+  }
+  if (state.entries[cell] === letter) return state;
+  const entries = state.entries.slice(0, cell) + letter + state.entries.slice(cell + 1);
+  const repeats = letter !== BLANK && conflictCells(state.puzzle.regions, entries).has(cell);
+  const nonce = nextNonce(state);
+  return settle({
     ...state,
     entries,
-    conflicts: state.conflicts + (createsConflict ? 1 : 0),
-  };
-  return settle(next);
+    conflicts: state.conflicts + (repeats ? 1 : 0),
+    feedback:
+      letter === BLANK
+        ? { type: "cleared", cell, nonce }
+        : { type: "placed", cell, letter, repeats, nonce },
+  });
 }
 
-function settle(state: GameState): GameState {
+/** A full board is either the solve or a "full" message — unless the
+ *  write was a hint, whose own feedback is the more useful news. */
+function settle(state: GameState, keepFeedback = false): GameState {
   if (state.entries.includes(BLANK)) return state;
   if (state.entries === state.puzzle.solution) {
     return {
       ...state,
       solved: true,
       selected: null,
-      tool: null,
       feedback: { type: "solved", nonce: nextNonce(state) },
     };
   }
+  if (keepFeedback) return state;
   return { ...state, feedback: { type: "full", nonce: nextNonce(state) } };
 }
 
@@ -155,75 +168,50 @@ export function gameReducer(state: GameState, action: Action): GameState {
     case "tapCell": {
       const { cell } = action;
       if (cell < 0 || cell >= CELLS) return state;
-      if (state.mode === "letter" && state.tool !== null) {
-        const letter = state.tool === ERASER ? BLANK : state.tool;
-        // Tapping a cell that already holds the tool's letter clears it,
-        // so a mis-stamp is undone by the same tap.
-        const target =
-          letter !== BLANK && state.entries[cell] === letter ? BLANK : letter;
-        return write({ ...state, selected: cell }, cell, target);
-      }
       return { ...state, selected: state.selected === cell ? null : cell };
+    }
+    case "select": {
+      if (action.cell < 0 || action.cell >= CELLS || state.selected === action.cell) return state;
+      return { ...state, selected: action.cell };
     }
     case "pressLetter": {
       const letter = action.letter.toLowerCase();
-      if (!state.puzzle.letters.includes(letter)) return state;
-      if (state.mode === "letter") {
-        return { ...state, tool: state.tool === letter ? null : letter };
-      }
-      if (state.selected === null) return state;
+      if (!state.puzzle.letters.includes(letter) || state.selected === null) return state;
       return write(state, state.selected, letter);
     }
     case "erase": {
-      if (state.mode === "letter") {
-        return { ...state, tool: state.tool === ERASER ? null : ERASER };
-      }
       if (state.selected === null) return state;
       return write(state, state.selected, BLANK);
     }
-    case "setMode": {
-      if (state.mode === action.mode) return state;
-      return { ...state, mode: action.mode, tool: null };
-    }
     case "move": {
-      const from = state.selected ?? 0;
-      const r = (Math.floor(from / N) + action.dRow + N) % N;
-      const c = ((from % N) + action.dCol + N) % N;
-      return { ...state, selected: state.selected === null ? 0 : r * N + c };
+      if (state.selected === null) return { ...state, selected: 0 };
+      const r = (Math.floor(state.selected / N) + action.dRow + N) % N;
+      const c = ((state.selected % N) + action.dCol + N) % N;
+      return { ...state, selected: r * N + c };
     }
     case "revealHint": {
-      const wrong = (c: number) =>
-        !isLocked(state, c) && state.entries[c] !== state.puzzle.solution[c];
-      // The selected cell if it needs help, else the first that does.
-      let cell =
-        state.selected !== null && wrong(state.selected) ? state.selected : -1;
-      if (cell < 0) {
-        for (let c = 0; c < CELLS; c++) {
-          if (wrong(c)) {
-            cell = c;
-            break;
-          }
-        }
-      }
-      if (cell < 0) return state;
+      // The next cell the player's own toolkit would deduce — a hint that
+      // teaches the next move, not the first gap in reading order.
+      const cell = hintCell(state.puzzle, state.entries);
+      if (cell === null) return state;
       const entries =
-        state.entries.slice(0, cell) +
-        state.puzzle.solution[cell] +
-        state.entries.slice(cell + 1);
-      const next: GameState = {
-        ...state,
-        entries,
-        revealed: [...state.revealed, cell],
-        hints: state.hints + 1,
-        selected: cell,
-        feedback: { type: "hint", cell, nonce: nextNonce(state) },
-      };
-      return settle(next);
+        state.entries.slice(0, cell) + state.puzzle.solution[cell] + state.entries.slice(cell + 1);
+      return settle(
+        {
+          ...state,
+          entries,
+          revealed: [...state.revealed, cell],
+          hints: state.hints + 1,
+          selected: cell,
+          feedback: { type: "hint", cell, nonce: nextNonce(state) },
+        },
+        true,
+      );
     }
     case "hydrate": {
-      // A save that doesn't fit this puzzle (length, alphabet, or a
-      // given overwritten) starts the day fresh — belt and braces
-      // behind the puzzleKey check upstream.
+      // A save that doesn't fit this puzzle (length, alphabet, or a given
+      // overwritten) starts the day fresh — belt and braces behind the
+      // puzzleKey check upstream.
       const { entries } = action;
       const letters = state.puzzle.letters + BLANK;
       if (
@@ -233,9 +221,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       ) {
         return state;
       }
-      const revealed = action.revealed.filter(
-        (c) => Number.isInteger(c) && c >= 0 && c < CELLS,
-      );
+      const revealed = action.revealed.filter((c) => Number.isInteger(c) && c >= 0 && c < CELLS);
       return {
         ...state,
         entries,
@@ -244,7 +230,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
         hints: action.hints ?? 0,
         conflicts: action.conflicts ?? 0,
         selected: null,
-        tool: null,
         feedback: null,
       };
     }

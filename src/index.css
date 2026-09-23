@@ -247,6 +247,12 @@
     color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
     color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
   );
+  /* The selection's row/column/box: a neutral wash LAYERED over whatever
+     the cell already is (plain or word-line tint), so it never punches a
+     hole in the shading. */
+  --anagrid-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
+  /* Ring on every cell holding the selected cell's letter. */
+  --anagrid-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

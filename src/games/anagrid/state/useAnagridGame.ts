@@ -42,12 +42,7 @@ export function isPersisted(mode: GameMode): boolean {
 }
 
 /** Actions that change the board itself (not selection or mode). */
-const EDITS: ReadonlySet<Action["type"]> = new Set([
-  "tapCell",
-  "pressLetter",
-  "erase",
-  "revealHint",
-]);
+const EDITS: ReadonlySet<Action["type"]> = new Set(["pressLetter", "erase", "revealHint"]);
 
 export function useAnagridGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date
