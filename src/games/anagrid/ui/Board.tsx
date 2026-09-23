@@ -10,6 +10,11 @@ const MIN_CELL = 44;
 const MAX_CELL = 64;
 /** A letter never outgrows this share of its cell (see CLAUDE.md). */
 const LETTER_MAX_RATIO = 0.52;
+/** The clued row's marker tabs: width, and their gap from the board. */
+const TAB_W = 5;
+const TAB_GAP = 4;
+// The tabs hang into the screen's 20px side padding (px-5), so they
+// cost the board no width — 9px each side fits with room to spare.
 
 export function hiddenCells(p: AnagridPuzzle): number[] {
   return Array.from({ length: N }, (_, i) => (p.col < 0 ? i * N + i : i * N + p.col));
@@ -160,18 +165,17 @@ export function Board({
             {cells.slice(r * N, r * N + N)}
           </div>
         ))}
-        {/* The clued row: outlined over the cells, so it reads as ONE
-            entry the way a crossword's across does. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute rounded-md border-[3px] border-accent"
-          style={{
-            left: -3,
-            top: puzzle.row * cellPx - 3,
-            width: boardPx + 6,
-            height: cellPx + 6,
-          }}
-        />
+        {/* The clued row: marked by tabs OUTSIDE the board, level with
+            the row. A stroke over the cells sat on the heavy box lines
+            and made the regions hard to read; the tabs touch no gridline. */}
+        {[-(TAB_W + TAB_GAP), boardPx + TAB_GAP].map((left) => (
+          <div
+            key={left}
+            aria-hidden
+            className="pointer-events-none absolute rounded-full bg-accent"
+            style={{ left, top: puzzle.row * cellPx + 4, width: TAB_W, height: cellPx - 8 }}
+          />
+        ))}
       </div>
     </div>
   );

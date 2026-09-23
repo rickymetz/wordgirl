@@ -249,13 +249,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
           <span className="font-semibold text-accent">{rowLabel}:</span>{" "}
           {clueFor(puzzle.cluedWord)}
         </p>
-        {/* The tutorial's steps point at the board's own outline and
+        {/* The tutorial's steps point at the board's own row marks and
             shading, and it needs the height at Huge text. */}
         {!isTutorial && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
             <LineBlanks
               label={rowLabel}
-              swatch="outline"
+              swatch="tab"
               text={lineText(cluedCells(puzzle))}
             />
             <LineBlanks
@@ -461,7 +461,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
                 title: "Two words",
                 body: (
                   <>
-                    The <Key>outlined row</Key> answers the clue. The{" "}
+                    The <Key>marked row</Key> answers the clue. The{" "}
                     <Key>shaded line</Key> spells another word from the same
                     letters — work it out yourself.
                   </>
@@ -530,15 +530,15 @@ function LineBlanks({
   text,
 }: {
   label: string;
-  swatch: "outline" | "tint";
+  swatch: "tab" | "tint";
   text: string;
 }) {
   return (
     <span className="flex items-center gap-1.5">
       <span
         aria-hidden
-        className={`inline-block h-3 w-3 rounded-sm ${
-          swatch === "outline" ? "border-2 border-accent" : "bg-accent/30"
+        className={`inline-block rounded-sm ${
+          swatch === "tab" ? "h-3 w-1 rounded-full bg-accent" : "h-3 w-3 bg-accent/30"
         }`}
       />
       <span>{label}</span>
