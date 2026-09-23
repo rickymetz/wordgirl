@@ -171,7 +171,7 @@ export const CLUES: Readonly<Record<string, readonly string[]>> = {
   toured: ["Went on the road", "Saw the sights of"],
   diaper: ["Baby's garment", "Pampers item"],
   paired: ["Matched up", "Twinned"],
-  repaid: ["Paid back", "Returned the favor"],
+  repaid: ["Reimbursed", "Returned the favor"],
   donate: ["Give", "Pledge during a telethon"],
   atoned: ["Made amends", "Paid for one's sins"],
   drives: ["Road trips", "Motivations"],

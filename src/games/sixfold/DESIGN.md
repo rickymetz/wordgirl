@@ -99,7 +99,7 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 - **Clue review.** `engine/clues.ts` + `engine/cryptic.ts` are AI-drafted:
   2 straight clues and 1 cryptic (with its parse) per word, 386 words,
-  ~1,150 clues. A second AI pass before launch changed 72 more (a wrong LIERS parse, a tasteless DILATE surface, the "sex appeal" clues, loose definitions). The first AI editor pass (round 4) changed 202: broken parses,
+  ~1,150 clues. A third pass restyled 269 cryptics to the owner's taste (learned from their review: word-sized pieces, a real surface, no abbreviation soup, no answer chunk in the clue), skipping the 63 clues they had approved. A second AI pass before launch changed 72 more (a wrong LIERS parse, a tasteless DILATE surface, the "sex appeal" clues, loose definitions). The first AI editor pass (round 4) changed 202: broken parses,
   missing indicators, British devices (RS, CE, lift, EST = "establishment"),
   root-reusing cryptics, tense/number slips, near-duplicate straight pairs,
   and three sibling clashes. Every charade and hidden word is checked

@@ -54,7 +54,7 @@ describe("past boards", () => {
       const p = dailyPuzzle(dict, k).puzzle;
       return `${sixfoldPuzzleKey(p)}|${p.clue}`;
     });
-    expect(puzzleKey(days)).toBe("1c4is63");
+    expect(puzzleKey(days)).toBe("iag1k1");
   }, 120_000);
 });
 
