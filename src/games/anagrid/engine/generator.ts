@@ -1,6 +1,7 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import type { Family, Geometry, Pairing } from "./families";
+import { clueFor } from "./clues";
 import { anagramFamilies, lineWords, pairings } from "./families";
 import { BOX_LAYOUT } from "./layouts";
 import type { Grid, WordConstraint } from "./solver";
@@ -147,6 +148,7 @@ export function tryBoard(
       family: family.words,
       hiddenWord: pairing.hiddenWord,
       cluedWord: pairing.cluedWord,
+      clue: clueFor(pairing.cluedWord),
       row: pairing.row,
       col: pairing.col,
       layoutId: layout.id,
@@ -220,7 +222,8 @@ export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
       `daily:${dateKey}:${cycle}:${k}`,
       difficultyFor(dateKey),
     );
-    if (a) return a;
+    // Each return of a family takes its word's next clue.
+    if (a) return { ...a, puzzle: { ...a.puzzle, clue: clueFor(a.puzzle.cluedWord, cycle) } };
   }
   throw new Error(`anagrid: no family makes a board for ${dateKey}`);
 }

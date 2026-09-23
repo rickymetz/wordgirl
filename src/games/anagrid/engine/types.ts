@@ -34,6 +34,9 @@ export interface AnagridPuzzle {
   hiddenWord: string;
   /** The clued row's answer. */
   cluedWord: string;
+  /** The clue shown for it — which of the word's clues depends on the
+   *  family's cycle (see `clueFor`). */
+  clue: string;
   /** Which row is clued (0-based). */
   row: number;
   /** The down's column for a `cross` puzzle; -1 when the hidden word is the diagonal. */

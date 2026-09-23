@@ -23,6 +23,7 @@ export const TUTORIAL_PUZZLE: AnagridPuzzle = {
   family: ["listen", "silent"],
   hiddenWord: "silent",
   cluedWord: "listen",
+  clue: "Pay attention to a sound",
   row: 3,
   col: 4,
   layoutId: BOX_LAYOUT.id,

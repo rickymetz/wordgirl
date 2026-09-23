@@ -29,7 +29,6 @@ import { SHARE_URL } from "../../../lib/share";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
-import { clueFor } from "../engine/clues";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { N } from "../engine/types";
 import {
@@ -248,7 +247,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       <div className="flex flex-col gap-1.5 rounded-2xl bg-surface-tint px-4 py-2.5">
         <p className="text-sm leading-snug">
           <span className="font-semibold text-accent">{rowLabel}:</span>{" "}
-          {clueFor(puzzle.cluedWord)}
+          {puzzle.clue}
         </p>
         {/* The tutorial's steps point at the board's own shading and
             shading, and it needs the height at Huge text. */}
