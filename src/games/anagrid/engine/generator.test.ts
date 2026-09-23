@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { anagramFamilies, lineWords } from "./families";
-import { dailyPuzzle, difficultyFor } from "./generator";
+import { DAILY_DIFFICULTY, dailyPuzzle } from "./generator";
 import { layoutById } from "./layouts";
 import type { WordConstraint } from "./solver";
 import { buildUnits, countSolutions, logicSolve } from "./solver";
@@ -42,24 +42,17 @@ describe("dailyPuzzle", () => {
     expect(dailyPuzzle(dict, DAYS[3]).puzzle).toEqual(puzzles[3][1]);
   });
 
-  it("follows the weekday curve: sudoku carries easy days further", () => {
-    const share: Record<string, number[]> = {};
+  it("stalls early every day: sudoku fills well under two thirds first", () => {
+    const share: number[] = [];
     for (const d of DAYS) {
       const a = dailyPuzzle(dict, d);
-      expect(a.difficulty).toBe(difficultyFor(d));
-      (share[a.difficulty] ??= []).push(a.preStall / a.empties);
+      expect(a.difficulty).toBe(DAILY_DIFFICULTY);
+      share.push(a.preStall / a.empties);
     }
-    const mean = (xs: number[]) => xs.reduce((x, y) => x + y, 0) / xs.length;
-    expect(mean(share.easy)).toBeGreaterThan(mean(share.medium));
-    expect(mean(share.medium)).toBeGreaterThan(mean(share.hard));
-    // Easy days are the late stall: sudoku fills over half the board first.
-    expect(mean(share.easy)).toBeGreaterThan(0.5);
-  });
-
-  it("maps weekdays to difficulty", () => {
-    expect(difficultyFor("2026-10-05")).toBe("easy"); // Monday
-    expect(difficultyFor("2026-10-09")).toBe("hard"); // Friday
-    expect(difficultyFor("2026-10-11")).toBe("medium"); // Sunday
+    const mean = share.reduce((x, y) => x + y, 0) / share.length;
+    expect(mean).toBeLessThan(0.6);
+    // ...but it IS a stall, not a word-first board: sudoku does real work.
+    expect(mean).toBeGreaterThan(0.25);
   });
 
   it("uses both geometries", () => {

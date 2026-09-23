@@ -40,4 +40,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 export const TUTORIAL_RECAP =
-  "Sudoku first, then a word to break the stall. A real day leaves more gaps, and later in the week the stall comes sooner.";
+  "Sudoku first, then a word to break the stall. A real day leaves far more gaps, and the stall comes sooner.";

@@ -37,14 +37,16 @@ export const MAX_GRIDS: Record<Difficulty, number> = {
 };
 
 /**
- * The weekly curve: easy early in the week, hardest Friday and Saturday,
- * Sunday back in the middle. Keyed by the LOCAL date's weekday, computed
- * from the dateKey itself so every timezone agrees on a date's puzzle.
+ * Every daily plays at one level. A weekday curve (easy Mon–Tue) shipped
+ * first and was dropped: at `easy`, singles fill ~78% of the board before
+ * the stall and the opening is a walk. `medium` stalls at ~46%, so the
+ * words carry more of every day. Tuning the whole game is this one line.
  */
+export const DAILY_DIFFICULTY: Difficulty = "medium";
+
 export function difficultyFor(dateKey: string): Difficulty {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sunday
-  return (["medium", "easy", "easy", "medium", "medium", "hard", "hard"] as const)[weekday];
+  void dateKey;
+  return DAILY_DIFFICULTY;
 }
 
 export interface Attempt {

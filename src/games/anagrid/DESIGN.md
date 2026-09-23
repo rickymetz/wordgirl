@@ -15,8 +15,9 @@ plus the registry entry).
 
 ## Decisions
 
-Two requirements interviews: the first shaped v1, the second came out of
-a design / UX / game-design review of v1 (round 2 overrides round 1).
+Requirements interviews: the first shaped v1, the second came out of a
+design / UX / game-design review of v1; a third note tuned difficulty.
+Later rounds override earlier ones.
 
 | Area | Decision |
 | --- | --- |
@@ -24,7 +25,7 @@ a design / UX / game-design review of v1 (round 2 overrides round 1).
 | Letters | The six distinct letters of a common-tier anagram family, sorted on the pad (spoils nothing). |
 | Word lines | **Mixed geometry:** hidden word on the main diagonal when the family allows it, otherwise an across (clued row) + down (hidden column). Both lines shaded. |
 | Core loop *(r2)* | **Late stall.** Givens stay until sudoku alone would leave more than N grids, so singles fill most of the board, then stall on a spot a word settles. |
-| Difficulty *(r2)* | **Weekday curve** by N: Mon–Tue easy (2), Wed–Thu medium (6), Fri–Sat hard (24), Sun medium. |
+| Difficulty *(r3)* | **One level every day: medium** (N = 6), sudoku fills ~46% before the stall. The r2 weekday curve was dropped — its easy days (~78% before the stall) made the opening a walk. `DAILY_DIFFICULTY` is the knob. |
 | Uniqueness *(r2)* | **Strict:** unique even if BOTH lines may be any dictionary anagram — the other family word in the clued row always hits a repeat. |
 | Clues *(r2)* | **Crossword-grade, cryptic-lite** (double definitions, misdirection, `?` puns, fill-ins) — the one place wordplay is allowed; the rest of the UI stays plain. **2–3 per word, rotating** each time a family returns. |
 | Word tier | Answers are common-tier; uniqueness is proven against both tiers. |
@@ -55,11 +56,15 @@ payoff** (from the game-design review, 90 dailies): sudoku placed a
 median of 0 cells before the words, both words filled first, and singles
 finished every day. Round 2's late-stall generator fixes that:
 
-| Difficulty | Givens (median) | Empties sudoku fills before the stall |
+| Level | Givens (median) | Empties sudoku fills before the stall |
 | --- | --- | --- |
-| Easy (Mon–Tue) | 10 | ~78% |
-| Medium (Wed–Thu, Sun) | 9 | ~46% |
-| Hard (Fri–Sat) | 9 | ~25% |
+| Easy (N = 2) | 10 | ~78% |
+| **Medium (N = 6) — every daily** | 9 | ~46% |
+| Hard (N = 24) | 9 | ~25% |
+
+Before the stall the opening is singles only, with 1–2 cells open at the
+first move. A round-3 check found easy days too easy; the fix chosen was
+an earlier stall on every day rather than harder sudoku techniques.
 
 All 42 families make boards at every level; ~18 ms per daily.
 
