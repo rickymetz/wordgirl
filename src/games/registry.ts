@@ -4,7 +4,7 @@ import { crosshatch } from "./crosshatch";
 import { pierglass } from "./pierglass";
 import { doublet } from "./doublet";
 import { serpentine } from "./serpentine";
-import { anagrid } from "./anagrid";
+import { sixfold } from "./sixfold";
 
 /** Adding a game = new folder under games/ + one line here. */
-export const games: GameDefinition[] = [polygram, crosshatch, pierglass, doublet, serpentine, anagrid];
+export const games: GameDefinition[] = [polygram, crosshatch, pierglass, doublet, serpentine, sixfold];

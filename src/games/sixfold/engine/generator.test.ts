@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { PROMOTED_WORDS, anagramFamilies, lineWords } from "./families";
-import { DAILY_DIFFICULTY, dailyPuzzle } from "./generator";
+import { DAILY_DIFFICULTY, dailyPuzzle, practicePuzzle, practiceSeed } from "./generator";
 import { layoutById } from "./layouts";
 import type { WordConstraint } from "./solver";
 import { buildUnits, countSolutions, logicSolve } from "./solver";
-import type { AnagridPuzzle } from "./types";
+import type { SixfoldPuzzle } from "./types";
 import { CELLS, N } from "./types";
 
 const dict = parseDictionary(
@@ -15,19 +15,19 @@ const dict = parseDictionary(
 );
 const required = new Set(dict.required.buckets.get(N));
 
-function hiddenCells(p: AnagridPuzzle): number[] {
+function hiddenCells(p: SixfoldPuzzle): number[] {
   return Array.from({ length: N }, (_, i) => (p.col < 0 ? i * N + i : i * N + p.col));
 }
-function rowCells(p: AnagridPuzzle): number[] {
+function rowCells(p: SixfoldPuzzle): number[] {
   return Array.from({ length: N }, (_, c) => p.row * N + c);
 }
-function spell(p: AnagridPuzzle, cells: number[]): string {
+function spell(p: SixfoldPuzzle, cells: number[]): string {
   return cells.map((c) => p.solution[c]).join("");
 }
-function idx(p: AnagridPuzzle, words: readonly string[]): number[][] {
+function idx(p: SixfoldPuzzle, words: readonly string[]): number[][] {
   return words.map((w) => [...w].map((ch) => p.letters.indexOf(ch)));
 }
-function givenGrid(p: AnagridPuzzle): Int8Array {
+function givenGrid(p: SixfoldPuzzle): Int8Array {
   const g = new Int8Array(CELLS).fill(-1);
   for (const c of p.givens) g[c] = p.letters.indexOf(p.solution[c]);
   return g;
@@ -107,5 +107,37 @@ describe("dailyPuzzle", () => {
       ];
       expect(logicSolve(givenGrid(p), units, lines).solved).toBe(true);
     });
+  });
+});
+
+describe("practicePuzzle", () => {
+  const seeds = Array.from({ length: 12 }, (_, i) => practiceSeed(`t${i}`));
+  const boards = seeds.map((s) => practicePuzzle(dict, s).puzzle);
+
+  it("is deterministic per seed", () => {
+    expect(practicePuzzle(dict, seeds[0]).puzzle).toEqual(boards[0]);
+  });
+
+  it("deals a spread of families and clue kinds", () => {
+    expect(new Set(boards.map((p) => p.letters)).size).toBeGreaterThan(8);
+    expect(boards.some((p) => p.clueCryptic)).toBe(true);
+    expect(boards.some((p) => !p.clueCryptic)).toBe(true);
+  });
+
+  it("holds to the daily's guarantees", () => {
+    for (const p of boards) {
+      const units = buildUnits(layoutById(p.layoutId)!.regions);
+      const all = idx(p, lineWords(dict, p.letters));
+      const strict: WordConstraint[] = [
+        { cells: hiddenCells(p), words: all },
+        { cells: rowCells(p), words: all },
+      ];
+      expect(countSolutions(givenGrid(p), units, strict, 2)).toBe(1);
+      const player: WordConstraint[] = [
+        { cells: hiddenCells(p), words: idx(p, p.family) },
+        { cells: rowCells(p), words: idx(p, [p.cluedWord]) },
+      ];
+      expect(logicSolve(givenGrid(p), units, player).solved).toBe(true);
+    }
   });
 });

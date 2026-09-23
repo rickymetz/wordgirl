@@ -3,7 +3,7 @@ import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import { initialEntries } from "./reducer";
 import {
-  anagridPuzzleKey,
+  sixfoldPuzzleKey,
   loadAllDailyProgress,
   loadDailyProgress,
   loadStaleDailyProgress,
@@ -15,7 +15,7 @@ import {
 } from "./persistence";
 
 const ENTRIES = initialEntries(TUTORIAL_PUZZLE);
-const KEY = anagridPuzzleKey(TUTORIAL_PUZZLE);
+const KEY = sixfoldPuzzleKey(TUTORIAL_PUZZLE);
 
 const day = (over: Partial<DailyProgress> = {}): DailyProgress => ({
   dateKey: "2026-09-23",

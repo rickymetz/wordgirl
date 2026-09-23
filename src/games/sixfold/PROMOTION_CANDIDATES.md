@@ -141,7 +141,7 @@ wolves   → vowels
 wonder   → downer
 ```
 
-# Anagrid — pool promotion shortlist
+# Sixfold — pool promotion shortlist
 
 The live pool is 42 families; the 60-day repeat gap needs 60+. This is
 the reviewed shortlist from the 301 families that were one promotion

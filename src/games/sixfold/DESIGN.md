@@ -1,4 +1,4 @@
-# Anagrid (working title) — design
+# Sixfold — design
 
 A 6×6 letter sudoku built on an anagram family. Two lines of the solved
 grid spell two different common words with the same six letters: one
@@ -10,8 +10,12 @@ and the word is decoration.
 
 Status: playable — daily, archive, stats, tutorial, hub card and roundup
 entry, per the CLAUDE.md new-game checklist. Not launchable yet: see
-"Before launch". `anagrid` is a working id (renaming is a folder move
-plus the registry entry).
+"Before launch". Built as "Anagrid", renamed *(r4)*: the house names are
+real words for a board's structure, and "anagrid" is an existing British
+crossword type (every clue an anagram). The only trace of the old id is
+the frozen cycle seed in `generator.ts`. (Another "Sixfold" exists: a
+two-player abstract strategy game on Little Golem. It isn't a word game,
+so the clash risk is low.)
 
 ## Decisions
 
@@ -21,7 +25,7 @@ Later rounds override earlier ones.
 
 | Area | Decision |
 | --- | --- |
-| Board | One 6×6 daily, classic 2×3 boxes. Practice, other sizes, jigsaw layouts deferred. |
+| Board | One 6×6 daily, classic 2×3 boxes. Other sizes and jigsaw layouts deferred. *(r4)* **Practice**: unlimited unsaved boards — a seeded random family at the daily difficulty, any of its clues; no first-hint confirm (nothing is recorded). |
 | Letters | The six distinct letters of a common-tier anagram family, sorted on the pad (spoils nothing). |
 | Word lines | **Mixed geometry:** hidden word on the main diagonal when the family allows it, otherwise an across (clued row) + down (hidden column). Both lines shaded. |
 | Core loop *(r2)* | **Late stall.** Givens stay until sudoku alone would leave more than N grids, so singles fill most of the board, then stall on a spot a word settles. |
@@ -35,14 +39,14 @@ Later rounds override earlier ones.
 | Hints *(r2)* | Reveal the **next cell the player's toolkit would deduce** (not the first gap in reading order). The **first hint of the day asks** ("Use a hint?"). |
 | Finish *(r2)* | The two words **light up** on the solved board. Share stays time + hints. |
 | Results card | Both words, the rest of the family, time, hints, streak, Share. |
-| Tagline | Decided with the name ("Sudoku, spelled." breaks the no-wordplay rule). |
-| Pool *(r3)* | **168 families**, frozen. 127 promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). *(r4)* LEARNT (British) out of the answers, ANTLER in; same letters, so the schedule is untouched. Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
+| Name + tagline *(r4)* | **Sixfold** — "Solve the square. Find the words." Share leads with 🔠. |
+| Pool *(r3)* | **168 families**, frozen: 40 made of common-tier words only, 128 that need one of the 176 words promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). *(r4)* LEARNT (British) out of the answers, ANTLER in; same letters, so the schedule is untouched. Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
 | Clue rotation *(r3)* | **Two straight clues + one cryptic per word**, rotating straight, straight, cryptic. A family's clue advances each cycle it returns (`cycle - since`), so a repeat day never shows the last clue again. Each family starts on its own rung (`clueTurn`: letters hash % 3), so every cycle is about a third cryptic rather than whole cycles going all-cryptic. |
 | Cryptics *(r3)* | Real cryptic clues (`cryptic.ts`) — charades, containers, hidden words, homophones, deletions, double definitions; **never anagram wordplay** (the pad already shows the letters). The clue card carries a "Cryptic" tag; the results card shows the parse (`how`). |
 
 ## Findings
 
-Reproduce with `MEASURE=1 npx vitest run src/games/anagrid/engine/measure`.
+Reproduce with `MEASURE=1 npx vitest run src/games/sixfold/engine/measure`.
 
 **The diagonal geometry is structurally rare.** A clued row `r` crosses
 the diagonal at `(r, r)`, so the words share that letter — but row cell
@@ -70,7 +74,7 @@ Before the stall the opening is singles only, with 1–2 cells open at the
 first move. A round-3 check found easy days too easy; the fix chosen was
 an earlier stall on every day rather than harder sudoku techniques.
 
-All 42 families make boards at every level; ~18 ms per daily.
+All 168 families make boards at every level; ~18 ms per daily.
 
 **v1 allowed the anagram swap** on 16% of days (the other family word in
 the clued row still filled a full, repeat-free grid). v1 generated under
@@ -103,18 +107,17 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 - **Growing the pool later** means: promote in `families.ts`, clue in
   `clues.ts` and `cryptic.ts`, and APPEND to `schedule.ts` with a `since` past the current
   cycle. `schedule.test.ts` fails on anything else.
-- **Name + tagline.** Then teaser/OG images and a README section.
 - **`ARCHIVE_EPOCH`** to the launch date; teach `?demo-history` the game.
 
 ## Build notes
 
-- **Accent:** indigo (`--level-anagrid`, #4338ca / #818cf8), CVD-distinct
+- **Accent:** indigo (`--level-sixfold`, #4338ca / #818cf8), CVD-distinct
   from all five game accents. `validate_palette.js` now resolves named
   game tokens (it silently skipped every game after Polygram). The
   roundup rainbow has a sixth stop.
-- **Highlight tokens:** `--anagrid-line` (15% light / 30% dark — dark
-  needs double to separate from an empty cell), `--anagrid-peer`,
-  `--anagrid-match`.
+- **Highlight tokens:** `--sixfold-line` (15% light / 30% dark — dark
+  needs double to separate from an empty cell), `--sixfold-peer`,
+  `--sixfold-match`.
 - **Keyboard / screen readers:** one Tab stop for the grid (roving
   tabindex), arrows move focus with the selection; cell labels name the
   word lines; every placement, erase and hint is narrated.
@@ -127,5 +130,5 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 - **Tutorial:** LISTEN across, SILENT down. Four one-gap rows (sudoku),
   then an E/T rectangle only a word settles (the stall), then the clue.
   `tutorial.test.ts` checks every claim against the real solver.
-- **Share:** `🔠 Anagrid — <date>` / `⏱️ 4:32 · 😎 0` / URL.
+- **Share:** `🔠 Sixfold — <date>` / `⏱️ 4:32 · 😎 0` / URL.
   **Roundup:** unit `letters`, value = cells the player filled.

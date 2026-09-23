@@ -5,13 +5,13 @@ import {
   displayStreak,
   loadAllDailyProgress,
   loadStats,
-  type AnagridStats,
+  type SixfoldStats,
   type ArchivedDay,
 } from "../state/persistence";
 
-const config: GameArchiveConfig<ArchivedDay, AnagridStats> = {
-  gameId: "anagrid",
-  accent: "anagrid",
+const config: GameArchiveConfig<ArchivedDay, SixfoldStats> = {
+  gameId: "sixfold",
+  accent: "sixfold",
   epoch: ARCHIVE_EPOCH,
   loadAllDays: loadAllDailyProgress,
   loadStats,

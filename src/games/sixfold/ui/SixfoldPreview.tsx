@@ -12,7 +12,7 @@ const ROWS = ["tlinse", "senlit", "ntesli", "listen"];
 const CLUED_ROW = 3;
 const HIDDEN_COL = 4;
 
-export function AnagridPreview() {
+export function SixfoldPreview() {
   return (
     <div className="flex flex-col gap-[2px] pt-1" aria-hidden>
       {ROWS.map((row, r) => (

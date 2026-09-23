@@ -65,7 +65,7 @@ function seed(id: string, solved: boolean) {
         });
       }
       break;
-    case "anagrid":
+    case "sixfold":
       put(id, DAY, {
         dateKey: DAY, dictVersion: V, solved,
         elapsedMs: 240000, entries: "a".repeat(36), revealed: [], filled: 30, hints: 0,

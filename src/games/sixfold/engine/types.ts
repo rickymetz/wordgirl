@@ -1,5 +1,5 @@
 /**
- * Working id `anagrid` — the name is still open, and renaming is a
+ * Working id `sixfold` — the name is still open, and renaming is a
  * folder move plus the registry entry.
  *
  * A 6×6 letter sudoku over the six letters of an anagram family: every
@@ -25,7 +25,7 @@ export interface Layout {
   regions: readonly number[];
 }
 
-export interface AnagridPuzzle {
+export interface SixfoldPuzzle {
   /** The family's six letters, sorted — the letter pad's order, so it spoils nothing. */
   letters: string;
   /** Every common-tier word in the family (the results card lists them). */

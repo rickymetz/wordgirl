@@ -1,5 +1,5 @@
 import { cluedCells, hiddenCells, hintCell } from "../engine/hints";
-import type { AnagridPuzzle } from "../engine/types";
+import type { SixfoldPuzzle } from "../engine/types";
 import { CELLS, N } from "../engine/types";
 
 /** An empty cell in `entries`. */
@@ -17,7 +17,7 @@ export type Feedback =
   | { type: "solved"; nonce: number };
 
 export interface GameState {
-  puzzle: AnagridPuzzle;
+  puzzle: SixfoldPuzzle;
   /** One char per cell, row-major: a letter or BLANK. Givens included. */
   entries: string;
   /** Cells a hint filled — locked like givens. */
@@ -48,13 +48,13 @@ export type Action =
       conflicts?: number;
     };
 
-export function initialEntries(puzzle: AnagridPuzzle): string {
+export function initialEntries(puzzle: SixfoldPuzzle): string {
   const out = Array<string>(CELLS).fill(BLANK);
   for (const c of puzzle.givens) out[c] = puzzle.solution[c];
   return out.join("");
 }
 
-export function initialState(puzzle: AnagridPuzzle): GameState {
+export function initialState(puzzle: SixfoldPuzzle): GameState {
   return {
     puzzle,
     entries: initialEntries(puzzle),
@@ -108,7 +108,7 @@ export type LineName = "clued" | "hidden";
  * one of them is wrong; naming it is the only way a player can find a
  * mistake the board doesn't otherwise show.)
  */
-export function wrongLines(puzzle: AnagridPuzzle, entries: string): LineName[] {
+export function wrongLines(puzzle: SixfoldPuzzle, entries: string): LineName[] {
   if (entries.includes(BLANK) || entries === puzzle.solution) return [];
   if (conflictCells(puzzle.regions, entries).size > 0) return [];
   const spell = (cells: number[]) => cells.map((c) => entries[c]).join("");

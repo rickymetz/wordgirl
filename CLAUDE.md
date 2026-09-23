@@ -329,7 +329,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   else the pairing appears (docs, marketing). Share strings are the one
   exception: they LEAD with the game's emoji, so the first character in
   a pasted result identifies the game (🐍 Serpentine, 👯‍♂️ Doublet,
-  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Anagrid).
+  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Sixfold).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in. That holds only in the DEFAULT

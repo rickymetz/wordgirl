@@ -44,12 +44,12 @@ import {
   wrongLines,
   type Feedback,
 } from "../state/reducer";
-import { useAnagridGame, type GameMode } from "../state/useAnagridGame";
+import { useSixfoldGame, type GameMode } from "../state/useSixfoldGame";
 import { cluedCells, hiddenCells } from "../engine/hints";
 import { Board } from "./Board";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
-export const GAME_NAME = "Anagrid";
+export const GAME_NAME = "Sixfold";
 
 /** The streak `DailyOutro` shows — this game's own, read at the finish. */
 const outroStreak = async (today: string) =>
@@ -74,14 +74,16 @@ interface Props {
   onRestartTutorial?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
   onReplay?: () => Promise<void>;
+  /** Practice: deal a fresh board. */
+  onNewPuzzle?: () => void;
 }
 
 /** Human position for narration and toasts: "row 2, column 4". */
 const where = (cell: number) => `row ${Math.floor(cell / N) + 1}, column ${(cell % N) + 1}`;
 
-export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
+export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: Props) {
   const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, abandonSession } =
-    useAnagridGame(mode);
+    useSixfoldGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
   const hasDate = mode.kind === "daily" || mode.kind === "archive";
@@ -125,12 +127,14 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
     l === "clued" ? rowLabel : puzzle.col < 0 ? "The diagonal" : `Column ${puzzle.col + 1}`;
 
   const takeHint = () => {
-    trackHint("anagrid");
+    trackHint("sixfold");
     dispatch({ type: "revealHint" });
   };
   // The first hint of the day asks: a stray tap would otherwise cost the
   // hint-free day (and the roundup's grand confetti) with no way back.
-  const askHint = () => (state.hints === 0 ? setHintAskOpen(true) : takeHint());
+  // The confirm is about the day's record; practice keeps none.
+  const askHint = () =>
+    state.hints === 0 && mode.kind !== "practice" ? setHintAskOpen(true) : takeHint();
 
   // Physical keyboard. The grid handles its own arrows (focus moves with
   // them); letters and Backspace work from anywhere except another
@@ -218,12 +222,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
 
   return (
     <div
-      data-level="anagrid"
+      data-level="sixfold"
       className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 [@media(max-height:720px)]:pb-3"
     >
       <header className="flex items-center justify-between pt-5 pb-1 [@media(max-height:720px)]:pt-3">
         {mode.kind === "archive" ? (
-          <Link to="/games/anagrid/archive" className="text-sm font-semibold text-ink-soft">
+          <Link to="/games/sixfold/archive" className="text-sm font-semibold text-ink-soft">
             ← Archive
           </Link>
         ) : (
@@ -241,11 +245,11 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
               Hint{state.hints > 0 ? ` (${state.hints})` : ""}
             </button>
           )}
-          {hasDate && <DictionaryLink gameId="anagrid" />}
+          {hasDate && <DictionaryLink gameId="sixfold" />}
           <button
             type="button"
             onClick={() => {
-              trackCoach("anagrid");
+              trackCoach("sixfold");
               setCoachOpen(true);
             }}
             aria-label="how to play"
@@ -256,18 +260,20 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
         </span>
       </header>
 
-      {/* On a short screen the tutorial banner already says where you
-          are; the title row is the height it needs at Huge text. */}
+      {/* The title row gives way first on a short screen: the tutorial
+          banner already says where you are, and on the smallest phones a
+          cryptic clue wraps to three lines, which at Huge text left the
+          board on its touch floor and the page scrolling. */}
       <div
         className={`flex items-baseline gap-2.5 pb-2 ${
-          isTutorial ? "[@media(max-height:720px)]:hidden" : ""
+          isTutorial ? "[@media(max-height:720px)]:hidden" : "[@media(max-height:600px)]:sr-only"
         }`}
       >
         <h1 className="font-game text-2xl font-normal tracking-tight">{GAME_NAME}</h1>
         {/* The mark: a clued row crossing a hidden column. */}
         <svg
           role="img"
-          aria-label="anagrid"
+          aria-label="sixfold"
           width="20"
           height="20"
           viewBox="0 0 20 20"
@@ -279,6 +285,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
         {mode.kind === "archive" && (
           <span className="text-base font-semibold text-ink-soft">{formatDateKey(mode.dateKey)}</span>
         )}
+        {mode.kind === "practice" && <span className="text-base font-semibold text-ink-soft">practice</span>}
         {isTutorial && <span className="text-base font-semibold text-ink-soft">tutorial</span>}
       </div>
 
@@ -333,7 +340,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
       <AnimatePresence mode="wait">
         {state.solved && showResults && isTutorial ? (
           <motion.div key="tutorial-done" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <TutorialDone gameId="anagrid" recap={TUTORIAL_RECAP} onRestart={onRestartTutorial} />
+            <TutorialDone gameId="sixfold" recap={TUTORIAL_RECAP} onRestart={onRestartTutorial} />
           </motion.div>
         ) : state.solved && showResults ? (
           <motion.div
@@ -368,7 +375,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
             {hasDate && solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(mode.dateKey, solvedElapsedMs, state.hints)}
-                gameId="anagrid"
+                gameId="sixfold"
               />
             )}
             {mode.kind === "archive" && onReplay && (
@@ -380,7 +387,17 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
                 Play again
               </button>
             )}
-            {isDaily && <DailyOutro gameId="anagrid" loadStreak={outroStreak} />}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                data-autofocus
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New board
+              </button>
+            )}
+            {isDaily && <DailyOutro gameId="sixfold" loadStreak={outroStreak} />}
           </motion.div>
         ) : !state.solved ? (
           <motion.div key="controls" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
@@ -490,7 +507,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
         {coachOpen && (
           <CoachSheet
             onClose={() => setCoachOpen(false)}
-            tutorialTo={isTutorial ? undefined : "/games/anagrid/tutorial"}
+            tutorialTo={isTutorial ? undefined : "/games/sixfold/tutorial"}
             rules={[
               {
                 Icon: Grid3x3,
@@ -552,7 +569,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay }: Props) {
 
       <TutorialPrompt
         enabled={isDaily}
-        gameId="anagrid"
+        gameId="sixfold"
         gameName={GAME_NAME}
         loadSeen={loadTutorialSeen}
         markSeen={markTutorialSeen}

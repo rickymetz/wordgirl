@@ -1,6 +1,6 @@
 import { clueFor } from "./clues";
 import { BOX_LAYOUT } from "./layouts";
-import type { AnagridPuzzle } from "./types";
+import type { SixfoldPuzzle } from "./types";
 
 /**
  * The tutorial board teaches the daily's shape — sudoku first, then a
@@ -18,7 +18,7 @@ import type { AnagridPuzzle } from "./types";
  * above against the real solver and dictionary, so the script can't
  * drift into teaching something the board doesn't do.
  */
-export const TUTORIAL_PUZZLE: AnagridPuzzle = {
+export const TUTORIAL_PUZZLE: SixfoldPuzzle = {
   letters: "eilnst",
   family: ["listen", "silent"],
   hiddenWord: "silent",

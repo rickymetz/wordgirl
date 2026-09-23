@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactElement } from "react";
 import { useViewport } from "../../../lib/useViewport";
 import { cluedCells, hiddenCells } from "../engine/hints";
-import type { AnagridPuzzle } from "../engine/types";
+import type { SixfoldPuzzle } from "../engine/types";
 import { N } from "../engine/types";
 import { BLANK } from "../state/reducer";
 
@@ -20,7 +20,7 @@ const MOVES: Record<string, [number, number]> = {
 };
 
 interface Props {
-  puzzle: AnagridPuzzle;
+  puzzle: SixfoldPuzzle;
   entries: string;
   revealed: readonly number[];
   selected: number | null;
@@ -142,7 +142,7 @@ export function Board({
         : wrong.has(c)
           ? "bg-warn/15"
           : onLine
-            ? "bg-(--anagrid-line)"
+            ? "bg-(--sixfold-line)"
             : "bg-surface";
       const tone = solved
         ? onLine
@@ -157,12 +157,12 @@ export function Board({
               : "text-accent";
       const wash =
         !solved && !isSel && peers.has(c)
-          ? "[background-image:linear-gradient(var(--anagrid-peer),var(--anagrid-peer))]"
+          ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
           : "";
       const ring = isSel
         ? "shadow-[inset_0_0_0_3px_var(--color-accent)]"
         : match
-          ? "shadow-[inset_0_0_0_2px_var(--anagrid-match)]"
+          ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
           : "";
 
       const line = clued.has(c) ? ", clued row" : hidden.has(c) ? `, ${lineName}` : "";

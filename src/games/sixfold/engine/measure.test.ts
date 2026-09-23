@@ -9,7 +9,7 @@ import { MAX_GRIDS, dailyPuzzle, generateForFamily } from "./generator";
 /**
  * The seed-pool and difficulty measurements behind DESIGN.md. Slow, so it
  * only runs on request:
- *   MEASURE=1 npx vitest run src/games/anagrid/engine/measure
+ *   MEASURE=1 npx vitest run src/games/sixfold/engine/measure
  */
 const dict = parseDictionary(
   readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
@@ -20,7 +20,7 @@ const median = (xs: number[]) => {
   return s.length ? s[Math.floor(s.length / 2)] : NaN;
 };
 
-describe.runIf(process.env.MEASURE)("anagrid measurements", () => {
+describe.runIf(process.env.MEASURE)("sixfold measurements", () => {
   it("every family, every difficulty", () => {
     const families = anagramFamilies(dict);
     for (const difficulty of Object.keys(MAX_GRIDS) as Difficulty[]) {

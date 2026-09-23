@@ -2,7 +2,7 @@ import { GameStatus } from "../../../components/GameStatus";
 import { displayStreak, loadDailyProgress, loadStats } from "../state/persistence";
 
 /** Hub-card status: today's date plus play state (shared GameStatus). */
-export function AnagridStatus() {
+export function SixfoldStatus() {
   return (
     <GameStatus
       loadState={async (today) => {

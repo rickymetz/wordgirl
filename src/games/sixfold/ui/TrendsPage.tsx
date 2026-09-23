@@ -3,8 +3,8 @@ import { formatDuration } from "../../../lib/date";
 import { ARCHIVE_EPOCH, loadAllDailyProgress, type ArchivedDay } from "../state/persistence";
 
 const config: GameTrendsConfig<ArchivedDay> = {
-  gameId: "anagrid",
-  accent: "anagrid",
+  gameId: "sixfold",
+  accent: "sixfold",
   epoch: ARCHIVE_EPOCH,
   loadAllDays: loadAllDailyProgress,
   metrics: [

@@ -8,7 +8,7 @@ import {
 } from "../../../lib/daily/persistence";
 import { puzzleKey as makePuzzleKey } from "../../../lib/puzzleKey";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import type { AnagridPuzzle } from "../engine/types";
+import type { SixfoldPuzzle } from "../engine/types";
 import { CELLS } from "../engine/types";
 
 export interface DailyProgress extends DailyBase {
@@ -32,14 +32,14 @@ export interface DailyProgress extends DailyBase {
   hiddenWord?: string;
 }
 
-export interface AnagridStats extends StreakStats {
+export interface SixfoldStats extends StreakStats {
   /** Fastest daily solve. */
   bestTimeMs: number | null;
   /** Days solved without a hint. */
   hintFreeSolves: number;
 }
 
-const EMPTY_STATS: AnagridStats = {
+const EMPTY_STATS: SixfoldStats = {
   played: 0,
   solved: 0,
   currentStreak: 0,
@@ -52,8 +52,8 @@ const EMPTY_STATS: AnagridStats = {
 /** The first daily puzzle — the archive reaches back to here. */
 export const ARCHIVE_EPOCH = "2026-09-23";
 
-const base = createDailyPersistence<DailyProgress, AnagridStats>({
-  gameId: "anagrid",
+const base = createDailyPersistence<DailyProgress, SixfoldStats>({
+  gameId: "sixfold",
   emptyStats: EMPTY_STATS,
   validDay: (s) =>
     typeof s.entries === "string" &&
@@ -72,7 +72,7 @@ const base = createDailyPersistence<DailyProgress, AnagridStats>({
 
 /** The solution and givens ARE the puzzle — an unrelated DICT_VERSION
  *  bump keeps saves valid while the board is unchanged. */
-export function anagridPuzzleKey(p: AnagridPuzzle): string {
+export function sixfoldPuzzleKey(p: SixfoldPuzzle): string {
   return makePuzzleKey([p.solution, p.givens, p.row, p.col]);
 }
 
@@ -162,7 +162,7 @@ export function recordDailySolved(
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it.
   allowGrace = true,
-): Promise<AnagridStats> {
+): Promise<SixfoldStats> {
   return base.updateStats((stats) => {
     if (stats.lastSolvedDate === dateKey) return stats; // already recorded
     return {

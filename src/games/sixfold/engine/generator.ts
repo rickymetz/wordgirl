@@ -7,7 +7,7 @@ import { BOX_LAYOUT } from "./layouts";
 import { SCHEDULE, type ScheduledFamily } from "./schedule";
 import type { Grid, WordConstraint } from "./solver";
 import { buildUnits, countSolutions, emptyGrid, logicSolve } from "./solver";
-import type { AnagridPuzzle, Layout } from "./types";
+import type { SixfoldPuzzle, Layout } from "./types";
 import { CELLS } from "./types";
 
 /** Full-grid draws per pairing before moving on. */
@@ -51,7 +51,7 @@ export function difficultyFor(dateKey: string): Difficulty {
 }
 
 export interface Attempt {
-  puzzle: AnagridPuzzle;
+  puzzle: SixfoldPuzzle;
   difficulty: Difficulty;
   /** Deduction rounds the player's toolkit needed — difficulty proxy. */
   rounds: number;
@@ -200,6 +200,12 @@ export function generateForFamily(
 }
 
 const EPOCH_UTC = Date.UTC(2026, 0, 1);
+/**
+ * Seeds each cycle's shuffle. FROZEN: it keeps the working title the game
+ * was built under ("anagrid") because changing it reshuffles every day,
+ * and the schedule's pinned hash would move with it.
+ */
+const CYCLE_SEED = "anagrid:cycle:";
 
 function dayIndex(dateKey: string): number {
   const [y, m, d] = dateKey.split("-").map(Number);
@@ -229,7 +235,7 @@ export function scheduleSlot(
   const poolFor = (c: number) =>
     schedule.filter((f) => f.since <= c).map((f) => f.letters);
   if (d < 0) {
-    const order = shuffle(poolFor(0), seededRandom("anagrid:cycle:0"));
+    const order = shuffle(poolFor(0), seededRandom(`${CYCLE_SEED}0`));
     return { cycle: 0, order, index: ((d % order.length) + order.length) % order.length };
   }
   let cycle = 0;
@@ -237,7 +243,7 @@ export function scheduleSlot(
   for (;;) {
     const pool = poolFor(cycle);
     if (d < start + pool.length) {
-      const order = shuffle(pool, seededRandom(`anagrid:cycle:${cycle}`));
+      const order = shuffle(pool, seededRandom(`${CYCLE_SEED}${cycle}`));
       return { cycle, order, index: d - start };
     }
     start += pool.length;
@@ -272,15 +278,45 @@ export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
     const a = generateForFamily(dict, family, `daily:${dateKey}:${cycle}:${k}`, difficultyFor(dateKey));
     if (!a) continue;
     const since = SCHEDULE.find((f) => f.letters === family.letters)?.since ?? 0;
-    const clue = clueFor(a.puzzle.cluedWord, clueTurn(family.letters, cycle - since));
-    return {
-      ...a,
-      puzzle: {
-        ...a.puzzle,
-        clue: clue.text,
-        ...(clue.cryptic && { clueCryptic: true, clueHow: clue.how }),
-      },
-    };
+    return withClue(a, clueTurn(family.letters, cycle - since));
   }
-  throw new Error(`anagrid: no family makes a board for ${dateKey}`);
+  throw new Error(`sixfold: no family makes a board for ${dateKey}`);
+}
+
+function withClue(a: Attempt, turn: number): Attempt {
+  const clue = clueFor(a.puzzle.cluedWord, turn);
+  return {
+    ...a,
+    puzzle: {
+      ...a.puzzle,
+      clue: clue.text,
+      ...(clue.cryptic && { clueCryptic: true, clueHow: clue.how }),
+    },
+  };
+}
+
+/** A practice seed: its own namespace, so it can never replay a daily. */
+export function practiceSeed(random: string): string {
+  return `practice:${random}`;
+}
+
+/**
+ * An unsaved practice board: any scheduled family, at the daily's
+ * difficulty, with any of its word's three clues.
+ */
+export function practicePuzzle(dict: Dictionary, seed: string): Attempt {
+  const rand = seededRandom(seed);
+  const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
+  const order = shuffle(
+    SCHEDULE.map((f) => f.letters),
+    rand,
+  );
+  const turn = Math.floor(rand() * 3);
+  for (const letters of order) {
+    const family = byLetters.get(letters);
+    if (!family) continue;
+    const a = generateForFamily(dict, family, `${seed}:${letters}`, DAILY_DIFFICULTY);
+    if (a) return withClue(a, turn);
+  }
+  throw new Error(`sixfold: no family makes a practice board for ${seed}`);
 }

@@ -6,7 +6,7 @@ import { GameScreen } from "./GameScreen";
 export default function TutorialPage() {
   return (
     <TutorialShell
-      gameId="anagrid"
+      gameId="sixfold"
       markSeen={markTutorialSeen}
       renderScreen={(runId, restart) => (
         <GameScreen key={runId} mode={{ kind: "tutorial" }} onRestartTutorial={restart} />

@@ -135,7 +135,7 @@
   --level-pierglass: light-dark(#a21caf, #e879f9);  /* fuchsia */
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
-  --level-anagrid: light-dark(#4338ca, #818cf8);    /* indigo */
+  --level-sixfold: light-dark(#4338ca, #818cf8);    /* indigo */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -238,21 +238,21 @@
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
 
-/* Anagrid (working title) — indigo, the one hue the palette lacked. */
-[data-level="anagrid"] {
-  --color-accent: var(--level-anagrid);
+/* Sixfold (working title) — indigo, the one hue the palette lacked. */
+[data-level="sixfold"] {
+  --color-accent: var(--level-sixfold);
   /* The word lines' shading. Dark mode needs about twice the mix: 15%
      indigo on near-black barely separates from an empty cell. */
-  --anagrid-line: light-dark(
+  --sixfold-line: light-dark(
     color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
     color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
   );
   /* The selection's row/column/box: a neutral wash LAYERED over whatever
      the cell already is (plain or word-line tint), so it never punches a
      hole in the shading. */
-  --anagrid-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
+  --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
   /* Ring on every cell holding the selected cell's letter. */
-  --anagrid-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
+  --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

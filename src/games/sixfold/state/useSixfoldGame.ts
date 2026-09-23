@@ -11,10 +11,10 @@ import { trackSolved, trackStarted } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { dailyPuzzle } from "../engine/generator";
+import { dailyPuzzle, practicePuzzle } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
-  anagridPuzzleKey,
+  sixfoldPuzzleKey,
   loadDailyProgress,
   loadStaleDailyProgress,
   recordDailySolved,
@@ -33,6 +33,7 @@ import {
 export type GameMode =
   | { kind: "daily"; dateKey: string }
   | { kind: "archive"; dateKey: string }
+  | { kind: "practice"; seed: string }
   | { kind: "tutorial" };
 
 /** Modes whose progress is written to storage. An allowlist, so a new
@@ -44,7 +45,7 @@ export function isPersisted(mode: GameMode): boolean {
 /** Actions that change the board itself (not selection or mode). */
 const EDITS: ReadonlySet<Action["type"]> = new Set(["pressLetter", "erase", "revealHint"]);
 
-export function useAnagridGame(mode: GameMode) {
+export function useSixfoldGame(mode: GameMode) {
   // The dateKey is FROZEN per mount (pages key the component by date
   // and remount on rollover) — it must never drift mid-session.
   const persisted = isPersisted(mode);
@@ -53,12 +54,17 @@ export function useAnagridGame(mode: GameMode) {
 
   // Suspends until the dictionary asset loads (router Suspense boundary).
   const dict = use(loadDictionary());
+  const seed = mode.kind === "practice" ? mode.seed : "";
   const puzzle = useMemo(
     () =>
-      mode.kind === "tutorial" ? TUTORIAL_PUZZLE : dailyPuzzle(dict, dateKey).puzzle,
-    [dict, dateKey, mode.kind],
+      mode.kind === "tutorial"
+        ? TUTORIAL_PUZZLE
+        : mode.kind === "practice"
+          ? practicePuzzle(dict, seed).puzzle
+          : dailyPuzzle(dict, dateKey).puzzle,
+    [dict, dateKey, seed, mode.kind],
   );
-  const pKey = useMemo(() => anagridPuzzleKey(puzzle), [puzzle]);
+  const pKey = useMemo(() => sixfoldPuzzleKey(puzzle), [puzzle]);
   const [state, rawDispatch] = useReducer(gameReducer, puzzle, initialState);
 
   // This tab changed its OWN board: its entries are the truth, and the
@@ -180,7 +186,7 @@ export function useAnagridGame(mode: GameMode) {
           return;
         }
         void recordDailyStarted();
-        trackStarted("anagrid");
+        trackStarted("sixfold");
         sessionsRef.current = 1;
         // Write the initial save immediately so re-opening an untouched
         // day never counts as another "play".
@@ -201,7 +207,7 @@ export function useAnagridGame(mode: GameMode) {
   useEffect(() => {
     if (state.solved && !solveTrackedRef.current && !hydratedSolvedRef.current) {
       solveTrackedRef.current = true;
-      trackSolved("anagrid");
+      trackSolved("sixfold");
     }
   }, [state.solved]);
 
