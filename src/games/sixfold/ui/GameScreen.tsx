@@ -317,7 +317,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         }`}
       >
         <h1 className="font-game text-2xl font-normal tracking-tight">{GAME_NAME}</h1>
-        {/* The mark: a die's six — six pips in the board's 2×3 box shape. */}
+        {/* The mark: the board's two word lines crossing — the clued row
+            solid, the hidden line lighter — inside a rounded frame. */}
         <svg
           role="img"
           aria-label="sixfold"
@@ -326,15 +327,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           viewBox="0 0 20 20"
           className="shrink-0 self-center text-accent"
         >
-          <rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" strokeWidth="2" />
-          <g fill="currentColor">
-            <circle cx="7" cy="6.25" r="1.6" />
-            <circle cx="13" cy="6.25" r="1.6" />
-            <circle cx="7" cy="10" r="1.6" />
-            <circle cx="13" cy="10" r="1.6" />
-            <circle cx="7" cy="13.75" r="1.6" />
-            <circle cx="13" cy="13.75" r="1.6" />
-          </g>
+          <rect x="2" y="2" width="16" height="16" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
+          <rect x="2" y="8" width="16" height="4.5" fill="currentColor" />
+          <rect x="11.5" y="2" width="4.5" height="16" fill="currentColor" opacity="0.45" />
         </svg>
         {mode.kind === "archive" && (
           <span className="text-base font-semibold text-ink-soft">{formatDateKey(mode.dateKey)}</span>

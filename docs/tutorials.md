@@ -340,7 +340,7 @@ the refusal rather than describing it.
 
 <a id="sixfold"></a>
 
-## Sixfold ⚅
+## Sixfold ⊞
 
 **The puzzle:** **LISTEN** across, **SILENT** down, eight gaps — 3 steps.
 

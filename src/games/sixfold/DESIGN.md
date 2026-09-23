@@ -120,7 +120,7 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 - **Highlight tokens:** `--sixfold-line` (15% light / 30% dark — dark
   needs double to separate from an empty cell), `--sixfold-peer`,
   `--sixfold-match`.
-- **Mark:** a die's six (six pips in the 2×3 box shape); the docs glyph matches. Text contexts use ⚅.
+- **Mark:** the two word lines crossing in a rounded frame — the clued row solid, the hidden line at 45% (picked from five candidates over a die's six); the docs glyph matches. Text contexts use ⊞.
 - **Lines are named once:** "Row N", "Column N" or "Diagonal" on the clue card, readout, toasts and cell labels.
 - **Board:** measured, rounded, box rules `--sixfold-box` (stepped down in dark) and cell rules `--sixfold-hair` (translucent, so they show on the tint). A solved board drops the 44px touch floor so the results fit; letters cap at `30px × rem/16`.
 - **Hints** are ink with an accent dot (grey read as disabled).
