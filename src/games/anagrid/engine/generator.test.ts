@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
-import { anagramFamilies, lineWords } from "./families";
+import { PROMOTED_WORDS, anagramFamilies, lineWords } from "./families";
 import { DAILY_DIFFICULTY, dailyPuzzle } from "./generator";
 import { layoutById } from "./layouts";
 import type { WordConstraint } from "./solver";
@@ -75,12 +75,12 @@ describe("dailyPuzzle", () => {
       }
     });
 
-    it("spells two different common words from the family", () => {
+    it("spells two different answer-pool words from the family", () => {
       expect(spell(p, rowCells(p))).toBe(p.cluedWord);
       expect(spell(p, hiddenCells(p))).toBe(p.hiddenWord);
       expect(p.cluedWord).not.toBe(p.hiddenWord);
       for (const w of [p.cluedWord, p.hiddenWord]) {
-        expect(required.has(w), w).toBe(true);
+        expect(required.has(w) || PROMOTED_WORDS.includes(w), w).toBe(true);
         expect(p.family).toContain(w);
       }
     });

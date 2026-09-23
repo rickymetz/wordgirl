@@ -36,7 +36,8 @@ Later rounds override earlier ones.
 | Finish *(r2)* | The two words **light up** on the solved board. Share stays time + hints. |
 | Results card | Both words, the rest of the family, time, hints, streak, Share. |
 | Tagline | Decided with the name ("Sudoku, spelled." breaks the no-wordplay rule). |
-| Pool *(r2)* | **Grow first, then freeze:** review promotions to 60+ families, then freeze the schedule as an append-only list. |
+| Pool *(r3)* | **168 families**, frozen. 127 promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
+| Clue rotation *(r3)* | **3 clues per new word**; a family's clue advances each cycle it returns (`cycle - since`), so a repeat day never shows the last clue again. |
 
 ## Findings
 
@@ -48,8 +49,10 @@ the diagonal at `(r, r)`, so the words share that letter — but row cell
 other position the letters must DIFFER. 8 of 45 common-tier families
 allow it (SACRED/SCARED agree in four places and never can). An across +
 down pair shares only its crossing cell, so every family allows that.
-Pool: **42 families** after excluding DAVIES/REGINA/FOWLER (proper nouns
-the frequency list let in); 6 play the diagonal, the rest across + down.
+The common tier alone gave 42 families (after excluding DAVIES/REGINA/
+FOWLER, proper nouns the frequency list let in); 127 hand-promoted
+families take the pool to **168**, all verified to generate at every
+level. A family returns every ~5½ months.
 
 **v1 minimized givens, and the words became the opening, not the
 payoff** (from the game-design review, 90 dailies): sudoku placed a
@@ -87,15 +90,11 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 ## Before launch
 
-- **Pool to 60+ families.** `PROMOTION_CANDIDATES.md` has a reviewed
-  shortlist: Tier A (115 everyday families, all verified to generate)
-  and Tier B (40 rarer). Approve picks, add them to `PROMOTED_WORDS`,
-  write their clues.
-- **Then freeze the schedule.** `dailyPuzzle` shuffles the whole family
-  list, so any pool change today reshuffles every past day (and marks
-  archive saves stale). Freeze it as an append-only list of family ids,
-  the way `SHAPES`/`THEME_POOLS` work, before launch.
-- **Clue review.** `engine/clues.ts` is AI-drafted, 2–3 per word.
+- **Clue review.** `engine/clues.ts` is AI-drafted: 2–3 clues per original
+  word, 3 per promoted word, ~890 in all.
+- **Growing the pool later** means: promote in `families.ts`, clue in
+  `clues.ts`, and APPEND to `schedule.ts` with a `since` past the current
+  cycle. `schedule.test.ts` fails on anything else.
 - **Name + tagline.** Then teaser/OG images and a README section.
 - **`ARCHIVE_EPOCH`** to the launch date; teach `?demo-history` the game.
 

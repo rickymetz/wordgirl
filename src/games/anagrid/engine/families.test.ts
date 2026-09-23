@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import type { Family } from "./families";
-import { anagramFamilies, lineWords, pairings } from "./families";
+import { PROMOTED_WORDS, anagramFamilies, lineWords, pairings } from "./families";
 import { N } from "./types";
 
 const dict = parseDictionary(
@@ -18,7 +18,8 @@ describe("anagramFamilies", () => {
     for (const f of families) {
       expect(f.words.length).toBeGreaterThanOrEqual(2);
       for (const w of f.words) {
-        expect(required.has(w), w).toBe(true);
+        // Common tier, or hand-promoted from the bonus tier.
+        expect(required.has(w) || PROMOTED_WORDS.includes(w), w).toBe(true);
         expect(new Set(w).size).toBe(N);
         expect([...w].sort().join("")).toBe(f.letters);
       }

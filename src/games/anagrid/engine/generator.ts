@@ -4,6 +4,7 @@ import type { Family, Geometry, Pairing } from "./families";
 import { clueFor } from "./clues";
 import { anagramFamilies, lineWords, pairings } from "./families";
 import { BOX_LAYOUT } from "./layouts";
+import { SCHEDULE, type ScheduledFamily } from "./schedule";
 import type { Grid, WordConstraint } from "./solver";
 import { buildUnits, countSolutions, emptyGrid, logicSolve } from "./solver";
 import type { AnagridPuzzle, Layout } from "./types";
@@ -205,27 +206,60 @@ function dayIndex(dateKey: string): number {
   return Math.round((Date.UTC(y, m - 1, d) - EPOCH_UTC) / 86_400_000);
 }
 
+/** Where a day falls in the schedule. */
+export interface ScheduleSlot {
+  cycle: number;
+  /** Families in this cycle's order (their letters). */
+  order: string[];
+  /** The day's position in `order`. */
+  index: number;
+}
+
 /**
- * Families cycle in one fixed shuffled order, so a family returns
- * exactly `families.length` days later with a fresh board (the cycle
- * number is in the board seed). A family that can't make a
- * word-dependent board today is skipped for the next in line.
+ * Walk the cycles (see schedule.ts) to find a day's slot. Cycle c holds
+ * the families with `since` <= c, shuffled by a seed that names only the
+ * cycle, so a family appended with a future `since` changes nothing before
+ * that cycle. Days before the epoch wrap into cycle 0.
+ */
+export function scheduleSlot(
+  dateKey: string,
+  schedule: readonly ScheduledFamily[] = SCHEDULE,
+): ScheduleSlot {
+  const d = dayIndex(dateKey);
+  const poolFor = (c: number) =>
+    schedule.filter((f) => f.since <= c).map((f) => f.letters);
+  if (d < 0) {
+    const order = shuffle(poolFor(0), seededRandom("anagrid:cycle:0"));
+    return { cycle: 0, order, index: ((d % order.length) + order.length) % order.length };
+  }
+  let cycle = 0;
+  let start = 0;
+  for (;;) {
+    const pool = poolFor(cycle);
+    if (d < start + pool.length) {
+      const order = shuffle(pool, seededRandom(`anagrid:cycle:${cycle}`));
+      return { cycle, order, index: d - start };
+    }
+    start += pool.length;
+    cycle++;
+  }
+}
+
+/**
+ * The day's board. A family that can't make a board today (none has yet —
+ * every family is measured) is skipped for the next in the cycle's order.
+ * The clue rotates with how many cycles the family has played through.
  */
 export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
-  const families = shuffle(anagramFamilies(dict), seededRandom("anagrid:families"));
-  const F = families.length;
-  const d = dayIndex(dateKey);
-  const cycle = Math.floor(d / F);
-  for (let k = 0; k < F; k++) {
-    const family = families[(((d + k) % F) + F) % F];
-    const a = generateForFamily(
-      dict,
-      family,
-      `daily:${dateKey}:${cycle}:${k}`,
-      difficultyFor(dateKey),
-    );
-    // Each return of a family takes its word's next clue.
-    if (a) return { ...a, puzzle: { ...a.puzzle, clue: clueFor(a.puzzle.cluedWord, cycle) } };
+  const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
+  const { cycle, order, index } = scheduleSlot(dateKey);
+  for (let k = 0; k < order.length; k++) {
+    const family = byLetters.get(order[(index + k) % order.length]);
+    if (!family) continue;
+    const a = generateForFamily(dict, family, `daily:${dateKey}:${cycle}:${k}`, difficultyFor(dateKey));
+    if (!a) continue;
+    const since = SCHEDULE.find((f) => f.letters === family.letters)?.since ?? 0;
+    return { ...a, puzzle: { ...a.puzzle, clue: clueFor(a.puzzle.cluedWord, cycle - since) } };
   }
   throw new Error(`anagrid: no family makes a board for ${dateKey}`);
 }

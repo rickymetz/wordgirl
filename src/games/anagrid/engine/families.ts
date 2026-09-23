@@ -15,14 +15,39 @@ export interface Family {
 
 /**
  * Bonus-tier words promoted into this game's answer pool, reviewed by
- * hand: everyday words the frequency cut left out. Empty until that
- * review happens — the measurement suite prints candidates.
+ * hand (PROMOTION_CANDIDATES.md): everyday words the frequency cut left
+ * out, each completing a family with a common word. Adding one creates a
+ * family — which must ALSO be appended to SCHEDULE (schedule.ts) with a
+ * future `since` cycle, and clued in clues.ts; tests enforce both.
  */
-export const PROMOTED_WORDS: readonly string[] = [];
+export const PROMOTED_WORDS: readonly string[] = [
+  "afield", "ageism", "aligns", "anemic", "arches", "ascend", "ascent", "aspire",
+  "atoned", "averts", "barest", "barged", "barley", "bather", "bedlam", "biters",
+  "bleary", "bluest", "brides", "brutes", "buries", "busier", "bustle", "canoed",
+  "canoes", "canter", "capers", "caster", "castor", "chants", "chaser", "chinas",
+  "claret", "cleats", "coders", "costar", "craned", "crates", "creams", "credos",
+  "crudes", "damsel", "dasher", "debuts", "decors", "deform", "delist", "deltas",
+  "depots", "despot", "dilate", "divers", "downer", "earths", "entrap", "fakers",
+  "fidget", "filets", "finder", "fliers", "fresco", "fringe", "girths", "haters",
+  "hoarse", "hornet", "hovels", "iceman", "infest", "kindle", "lament", "lanced",
+  "lemons", "lifers", "lifter", "livers", "loader", "longed", "lowers", "luster",
+  "mantle", "maples", "median", "melons", "merits", "minder", "minuet", "molars",
+  "nebula", "nectar", "niches", "nosier", "outlay", "pacers", "pagers", "paired",
+  "palest", "paltry", "panels", "pastel", "pearly", "petals", "pincer", "placer",
+  "platen", "pleats", "presto", "prides", "ramble", "reacts", "reboil", "rebuts",
+  "recant", "recaps", "recast", "redact", "relays", "reload", "relock", "remits",
+  "repaid", "replay", "retina", "ribald", "rioted", "ripest", "routed", "rubies",
+  "rustle", "sailer", "saline", "scaler", "shiner", "skater", "slayer", "sleuth",
+  "sliver", "sloven", "snored", "solver", "spacer", "sprint", "sprite", "staple",
+  "starch", "stifle", "stoker", "strafe", "stripe", "strove", "strung", "sublet",
+  "sunlit", "tailed", "takers", "tarpon", "throes", "timers", "toughs", "toured",
+  "trades", "trails", "treads", "trifle", "trikes", "triode", "tropes", "troves",
+  "tubers", "twiner", "unreal", "unwary", "vowels", "waster", "worsen",
+];
 
 /**
- * Common-tier words that can't be a clued answer: proper nouns the
- * subtitle-frequency cut let in. Dropping one can orphan its family
+ * Common-tier words that can't be an answer: proper nouns the
+ * subtitle-frequency cut let in, and pairs the pool rules turned away. Dropping one can orphan its family
  * (ADVISE loses DAVIES) — that's the point; a family needs two REAL
  * words.
  */
@@ -30,6 +55,9 @@ export const EXCLUDED_WORDS: ReadonlySet<string> = new Set([
   "davies",
   "fowler",
   "regina",
+  // Pool rule (round 3): a verb form only pairs with a base word, and
+  // SORTED/STORED is two verb forms.
+  "stored",
 ]);
 
 function sortedLetters(word: string): string {

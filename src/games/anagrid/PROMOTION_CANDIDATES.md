@@ -1,4 +1,7 @@
-# Approved promotions
+# Approved promotions — LIVE
+
+Wired in: `PROMOTED_WORDS` (families.ts), 3 clues per word (clues.ts),
+and frozen in `schedule.ts`.
 
 Decided by interview: pool size "everything that passes the filters";
 plurals allowed; a past-tense or -ing word only when paired with a base
