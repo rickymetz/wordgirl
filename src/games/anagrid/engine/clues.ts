@@ -63,7 +63,7 @@ export const CLUES: Readonly<Record<string, readonly string[]>> = {
   region: ["Area of a country", "Zone"],
   insect: ["Six-legged creature", "Ant or bee"],
   nicest: ["Most pleasant", "Kindest"],
-  learnt: ["Studied, in London", "Picked up, as a Brit might say"],
+  antler: ["Branching horn on a deer", "Moose headgear part"],
   rental: ["Something you lease, like a car", "Apartment you don't own"],
   lights: ["Lamps and bulbs", "Traffic signals"],
   slight: ["Small", "A snub"],

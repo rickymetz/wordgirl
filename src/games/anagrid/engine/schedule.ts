@@ -93,7 +93,7 @@ export const SCHEDULE: readonly ScheduledFamily[] = [
   { letters: "aelmps", since: 0 }, // maples/sample
   { letters: "aelnps", since: 0 }, // panels/planes
   { letters: "aelnpt", since: 0 }, // planet/platen
-  { letters: "aelnrt", since: 0 }, // learnt/rental
+  { letters: "aelnrt", since: 0 }, // antler/rental
   { letters: "aelnru", since: 0 }, // neural/unreal
   { letters: "aelpry", since: 0 }, // pearly/player/replay
   { letters: "aelpst", since: 0 }, // palest/pastel/petals/plates/pleats/staple

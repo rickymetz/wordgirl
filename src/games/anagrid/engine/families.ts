@@ -21,7 +21,7 @@ export interface Family {
  * future `since` cycle, and clued in clues.ts; tests enforce both.
  */
 export const PROMOTED_WORDS: readonly string[] = [
-  "afield", "ageism", "aligns", "anemic", "arches", "ascend", "ascent", "aspire",
+  "afield", "ageism", "aligns", "anemic", "antler", "arches", "ascend", "ascent", "aspire",
   "atoned", "averts", "barest", "barged", "barley", "bather", "bedlam", "biters",
   "bleary", "bluest", "brides", "brutes", "buries", "busier", "bustle", "canoed",
   "canoes", "canter", "capers", "caster", "castor", "chants", "chaser", "chinas",
@@ -58,6 +58,10 @@ export const EXCLUDED_WORDS: ReadonlySet<string> = new Set([
   // Pool rule (round 3): a verb form only pairs with a base word, and
   // SORTED/STORED is two verb forms.
   "stored",
+  // American spelling (round 4): LEARNT is the British past tense.
+  // ANTLER, promoted, keeps the family. The proof still knows LEARNT
+  // (lineWords reads the raw tiers), so a player who types it hits a repeat.
+  "learnt",
 ]);
 
 function sortedLetters(word: string): string {

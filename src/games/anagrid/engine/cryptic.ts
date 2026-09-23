@@ -64,7 +64,7 @@ export const CRYPTIC: Readonly<Record<string, Cryptic>> = {
   region: { clue: "Area about soldier on", how: "RE (about) + GI (soldier) + ON" },
   insect: { clue: "Bug at home with a cult", how: "IN (at home) + SECT (cult)" },
   nicest: { clue: "Kindest French city, street", how: "NICE + ST (street)" },
-  learnt: { clue: "Studied, in UK: king with New Testament", how: "LEAR (king) + NT (New Testament)" },
+  antler: { clue: "Stag's horn: worker, left, then hesitation", how: "ANT (worker) + L (left) + ER (hesitation)" },
   rental: { clue: "Leased home: tear with Al", how: "RENT (tear) + AL" },
   lights: { clue: "Lamps: not heavy, son", how: "LIGHT (not heavy) + S (son)" },
   slight: { clue: "Snub: small lamp", how: "S (small) + LIGHT (lamp)" },

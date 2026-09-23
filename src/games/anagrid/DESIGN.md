@@ -36,7 +36,7 @@ Later rounds override earlier ones.
 | Finish *(r2)* | The two words **light up** on the solved board. Share stays time + hints. |
 | Results card | Both words, the rest of the family, time, hints, streak, Share. |
 | Tagline | Decided with the name ("Sudoku, spelled." breaks the no-wordplay rule). |
-| Pool *(r3)* | **168 families**, frozen. 127 promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
+| Pool *(r3)* | **168 families**, frozen. 127 promoted by interview (plurals in; a verb form only pairs with a base word, so SORTED/STORED left). *(r4)* LEARNT (British) out of the answers, ANTLER in; same letters, so the schedule is untouched. Frozen as a cycle schedule (`schedule.ts`): append-only with a future `since`, pinned by a test. |
 | Clue rotation *(r3)* | **Two straight clues + one cryptic per word**, rotating straight, straight, cryptic. A family's clue advances each cycle it returns (`cycle - since`), so a repeat day never shows the last clue again. Each family starts on its own rung (`clueTurn`: letters hash % 3), so every cycle is about a third cryptic rather than whole cycles going all-cryptic. |
 | Cryptics *(r3)* | Real cryptic clues (`cryptic.ts`) — charades, containers, hidden words, homophones, deletions, double definitions; **never anagram wordplay** (the pad already shows the letters). The clue card carries a "Cryptic" tag; the results card shows the parse (`how`). |
 
@@ -93,9 +93,13 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 - **Clue review.** `engine/clues.ts` + `engine/cryptic.ts` are AI-drafted:
   2 straight clues and 1 cryptic (with its parse) per word, 386 words,
-  ~1,150 clues. Check each against its SIBLING too — a clue that also fits
-  the other family word breaks nothing (uniqueness doesn't rest on it) but
-  reads as unfair.
+  ~1,150 clues. An AI editor pass (round 4) changed 202: broken parses,
+  missing indicators, British devices (RS, CE, lift, EST = "establishment"),
+  root-reusing cryptics, tense/number slips, near-duplicate straight pairs,
+  and three sibling clashes. Every charade and hidden word is checked
+  mechanically against its answer. A HUMAN read is still owed before
+  launch — sibling-fit first, since that is the one failure that makes a
+  day unfair.
 - **Growing the pool later** means: promote in `families.ts`, clue in
   `clues.ts` and `cryptic.ts`, and APPEND to `schedule.ts` with a `since` past the current
   cycle. `schedule.test.ts` fails on anything else.
