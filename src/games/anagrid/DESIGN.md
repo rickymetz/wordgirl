@@ -87,9 +87,10 @@ a player who knows a rare one (DEASIL) never finds a second grid.
 
 ## Before launch
 
-- **Pool to 60+ families.** Review `PROMOTION_CANDIDATES.md` (301
-  families one promotion away), add picks to `PROMOTED_WORDS`, write
-  their clues.
+- **Pool to 60+ families.** `PROMOTION_CANDIDATES.md` has a reviewed
+  shortlist: Tier A (115 everyday families, all verified to generate)
+  and Tier B (40 rarer). Approve picks, add them to `PROMOTED_WORDS`,
+  write their clues.
 - **Then freeze the schedule.** `dailyPuzzle` shuffles the whole family
   list, so any pool change today reshuffles every past day (and marks
   archive saves stale). Freeze it as an append-only list of family ids,

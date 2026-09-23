@@ -1,20 +1,200 @@
-# Anagrid — pool promotion candidates (for review)
+# Anagrid — pool promotion shortlist
 
-The live pool is 42 families; the 60-day repeat gap needs 60+. Each line
-below is a common-tier word whose anagram family would join the pool if
-ONE of the listed bonus-tier words were promoted into `PROMOTED_WORDS`
-(`engine/families.ts`). Most listed words are obscure; the job is to pick
-the everyday ones (HOARSE, BARLEY, DEBUTS...) and leave the rest.
+The live pool is 42 families; the 60-day repeat gap needs 60+. This is
+the reviewed shortlist from the 301 families that were one promotion
+away (full list at the bottom).
 
-For each word you promote:
-1. add it to `PROMOTED_WORDS`;
-2. add 2-3 clues for it — and for its partner — in `engine/clues.ts`
-   (`clues.test.ts` fails until every family word has them);
-3. once the pool is big enough, freeze the family order as an
-   append-only list (see DESIGN.md, "Before launch") — after that,
-   promoting a word must never reorder past days.
+**Tier A — recommended (115 families).** Everyday words on both sides.
+Every family here was run through the real generator and makes a
+strict, late-stall daily. Promoting all of Tier A takes the pool from
+42 to **157 families** — a family returns every 157 days. Take any 18+
+to clear the 60-day bar.
 
-Format: `common word + bonus candidates`.
+**Tier B — your call (40 families).** Real words, but rarer, dated,
+regional or jargon-ish (CLARET, TARPON, PLATEN...). Fine as extra
+variety, not needed for the gap.
+
+**Excluded.** Everything else in the full list, for one of:
+- the partner is obscure (DAUBES, SCROTA, TAROCS, GNOMIC...);
+- the common word is a proper noun the frequency list let in (GERMAN,
+  DANISH, GIBSON, HOLDEN, MERLIN, MARCEL, PALMER, HECTOR, SLATER, SIGNOR);
+- a sensitive or unpleasant answer (RACIST, RECTAL, SCROTA);
+- British spelling (LUSTRE, OCHRES, MITRES, NITRES, LIVRES, BISTRE, AFTERS).
+
+For each family you keep: its promoted words go in `PROMOTED_WORDS`
+(`engine/families.ts`), and BOTH sides need 2-3 clues in
+`engine/clues.ts` (`clues.test.ts` enforces it) — the common side was
+never in a family before, so it has none yet. Then freeze the schedule
+(DESIGN.md, "Before launch").
+
+Format: `common word → promoted word(s)`.
+
+## Tier A — recommended
+
+```
+actors   → costar
+aliens   → saline
+ashore   → hoarse
+barely   → barley, bleary
+blamed   → ambled, bedlam
+breast   → barest
+bruise   → buries, busier, rubies
+busted   → debuts
+buster   → brutes, tubers
+carved   → craved
+castle   → cleats
+caused   → sauced
+charts   → starch
+chased   → cashed
+cinema   → anemic
+dancer   → craned
+dances   → ascend
+deacon   → canoed
+debris   → brides
+detail   → dilate, tailed
+detour   → routed, toured
+diaper   → paired, repaid
+donate   → atoned
+drives   → divers
+drones   → snored
+failed   → afield
+faster   → strafe
+filter   → lifter, trifle
+finest   → infest
+finger   → fringe
+forces   → fresco
+formed   → deform
+framed   → farmed
+friend   → finder
+gifted   → fidget
+golden   → longed
+grapes   → pagers
+grunts   → strung
+hearts   → earths, haters
+hustle   → sleuth
+images   → ageism
+inches   → niches
+insult   → sunlit
+itself   → stifle
+lasted   → salted, slated, deltas
+layers   → relays, slayer
+layout   → outlay
+linked   → kindle
+lovers   → solver
+maiden   → median
+marble   → ramble
+mashed   → shamed
+mating   → taming
+medals   → damsel
+mental   → lament, mantle
+minute   → minuet
+mister   → merits, timers
+morals   → molars
+neural   → unreal
+oceans   → canoes
+ordeal   → loader, reload
+others   → throes
+owners   → worsen
+parent   → entrap
+partly   → paltry
+planes   → panels
+plates   → staple, petals, pastel, pleats
+player   → replay
+posted   → depots, despot
+poster   → presto, tropes
+praise   → aspire
+priest   → stripe, sprite
+prince   → pincer
+prints   → sprint
+remind   → minder
+result   → luster, rustle
+retain   → retina
+rifles   → fliers
+rights   → girths
+ruling   → luring
+runway   → unwary
+sample   → maples
+scored   → decors, coders
+scrape   → capers, recaps, spacer
+scream   → creams
+search   → arches, chaser
+senior   → nosier
+shaped   → phased
+shovel   → hovels
+shrine   → shiner
+signal   → aligns
+silver   → livers, sliver
+slower   → lowers
+smiled   → misled
+snatch   → chants
+solemn   → lemons, melons
+spider   → prides
+stance   → ascent
+stared   → trades, treads
+starve   → averts
+streak   → skater, takers
+stroke   → stoker
+subtle   → bustle, bluest, sublet
+throne   → hornet
+traced   → carted, crated, redact
+traces   → crates, caster, reacts, recast
+trance   → nectar, canter, recant
+trials   → trails
+tribes   → biters
+unable   → nebula
+united   → untied
+voters   → strove, troves
+waters   → waster
+wolves   → vowels
+wonder   → downer
+```
+
+## Tier B — your call
+
+```
+actors   → castor
+badger   → barged
+boiler   → reboil
+boring   → robing
+breath   → bather
+bridal   → ribald
+buster   → rebuts
+candle   → lanced
+cartel   → claret
+chains   → chinas
+choked   → hocked
+cinema   → iceman
+clears   → scaler
+cursed   → crudes
+editor   → rioted, triode
+freaks   → fakers
+itself   → filets
+listed   → silted, delist
+locker   → relock
+mental   → mantel
+mister   → remits
+novels   → sloven
+parcel   → placer
+patron   → tarpon
+planet   → platen
+plates   → palest
+player   → parley, pearly
+prices   → precis
+priest   → ripest
+rifles   → lifers
+scored   → credos
+scrape   → pacers
+serial   → sailer
+shared   → dasher
+sought   → toughs
+stance   → secant
+starve   → vaster
+strike   → trikes
+throne   → nother
+winter   → twiner
+```
+
+## Full candidate list
 
 ```
 abused   + daubes
