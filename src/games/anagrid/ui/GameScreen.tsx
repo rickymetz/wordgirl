@@ -40,7 +40,8 @@ import {
 } from "../state/persistence";
 import { BLANK, ERASER, conflictCells, peers as peersOf } from "../state/reducer";
 import { useAnagridGame, type GameMode } from "../state/useAnagridGame";
-import { Board, cluedCells, hiddenCells } from "./Board";
+import { cluedCells, hiddenCells } from "../engine/hints";
+import { Board } from "./Board";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 export const GAME_NAME = "Anagrid";

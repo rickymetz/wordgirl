@@ -180,6 +180,8 @@ export function logicSolve(
   start: Grid,
   units: Units,
   words: readonly WordConstraint[] = [],
+  /** Receives each placed cell, in the order the toolkit found it. */
+  trace?: number[],
 ): LogicResult {
   const grid = Int8Array.from(start);
   let singles = 0;
@@ -203,6 +205,7 @@ export function logicSolve(
     for (let c = 0; c < CELLS; c++) {
       if (grid[c] < 0 && popcount(m[c]) === 1) {
         grid[c] = 31 - Math.clz32(m[c]);
+        trace?.push(c);
         singles++;
         progress = true;
       }
@@ -223,6 +226,7 @@ export function logicSolve(
         }
         if (!placed && n === 1) {
           grid[spot] = v;
+          trace?.push(spot);
           singles++;
           progress = true;
           m = cands();
@@ -243,6 +247,7 @@ export function logicSolve(
         const v = live[0][i];
         if (live.every((w) => w[i] === v)) {
           grid[c] = v;
+          trace?.push(c);
           wordPlacements++;
           progress = true;
         }

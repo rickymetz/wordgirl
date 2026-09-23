@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { anagramFamilies, lineWords } from "./families";
-import { dailyPuzzle } from "./generator";
+import { dailyPuzzle, difficultyFor } from "./generator";
 import { layoutById } from "./layouts";
 import type { WordConstraint } from "./solver";
 import { buildUnits, countSolutions, logicSolve } from "./solver";
@@ -42,6 +42,26 @@ describe("dailyPuzzle", () => {
     expect(dailyPuzzle(dict, DAYS[3]).puzzle).toEqual(puzzles[3][1]);
   });
 
+  it("follows the weekday curve: sudoku carries easy days further", () => {
+    const share: Record<string, number[]> = {};
+    for (const d of DAYS) {
+      const a = dailyPuzzle(dict, d);
+      expect(a.difficulty).toBe(difficultyFor(d));
+      (share[a.difficulty] ??= []).push(a.preStall / a.empties);
+    }
+    const mean = (xs: number[]) => xs.reduce((x, y) => x + y, 0) / xs.length;
+    expect(mean(share.easy)).toBeGreaterThan(mean(share.medium));
+    expect(mean(share.medium)).toBeGreaterThan(mean(share.hard));
+    // Easy days are the late stall: sudoku fills over half the board first.
+    expect(mean(share.easy)).toBeGreaterThan(0.5);
+  });
+
+  it("maps weekdays to difficulty", () => {
+    expect(difficultyFor("2026-10-05")).toBe("easy"); // Monday
+    expect(difficultyFor("2026-10-09")).toBe("hard"); // Friday
+    expect(difficultyFor("2026-10-11")).toBe("medium"); // Sunday
+  });
+
   it("uses both geometries", () => {
     const geos = new Set(puzzles.map(([, p]) => (p.col < 0 ? "diagonal" : "cross")));
     expect(geos).toEqual(new Set(["diagonal", "cross"]));
@@ -76,10 +96,13 @@ describe("dailyPuzzle", () => {
       expect(countSolutions(givenGrid(p), units, [], 2)).toBe(2);
     });
 
-    it("is unique once the clue is solved, against ANY dictionary anagram", () => {
+    it("is unique even with NEITHER word known — any anagram in either line", () => {
+      // Strict: the other family word in the clued row must hit a repeat,
+      // never fill a full, repeat-free grid.
+      const all = idx(p, lineWords(dict, p.letters));
       const lines: WordConstraint[] = [
-        { cells: hiddenCells(p), words: idx(p, lineWords(dict, p.letters)) },
-        { cells: rowCells(p), words: idx(p, [p.cluedWord]) },
+        { cells: hiddenCells(p), words: all },
+        { cells: rowCells(p), words: all },
       ];
       expect(countSolutions(givenGrid(p), units, lines, 2)).toBe(1);
     });

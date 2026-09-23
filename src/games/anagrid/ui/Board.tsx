@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactElement } from "react";
 import { useViewport } from "../../../lib/useViewport";
+import { cluedCells, hiddenCells } from "../engine/hints";
 import type { AnagridPuzzle } from "../engine/types";
 import { CELLS, N } from "../engine/types";
 import { BLANK } from "../state/reducer";
@@ -10,14 +11,6 @@ const MIN_CELL = 44;
 const MAX_CELL = 64;
 /** A letter never outgrows this share of its cell (see CLAUDE.md). */
 const LETTER_MAX_RATIO = 0.52;
-export function hiddenCells(p: AnagridPuzzle): number[] {
-  return Array.from({ length: N }, (_, i) => (p.col < 0 ? i * N + i : i * N + p.col));
-}
-
-export function cluedCells(p: AnagridPuzzle): number[] {
-  return Array.from({ length: N }, (_, c) => p.row * N + c);
-}
-
 interface Props {
   puzzle: AnagridPuzzle;
   entries: string;

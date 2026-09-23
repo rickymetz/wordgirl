@@ -16,25 +16,84 @@ function toIndices(word: string, letters: string): number[] {
 }
 
 /**
- * What uniqueness is proven under. `clue`: the clued row is known
- * (the clue has one answer) and the hidden line is any dictionary
- * anagram. `open`: neither line is known beyond "some anagram" — the
- * stricter bar, for a player who can't crack the clue.
+ * How far sudoku carries the player before the words have to take over.
+ *
+ * The board is stripped of givens only while sudoku ALONE still leaves at
+ * most `maxGrids` complete grids. A small cap keeps more givens, so plain
+ * singles fill most of the board and then stall on one small ambiguity
+ * that only a word settles — the tutorial's E/T rectangle, at day scale.
+ * A larger cap strips further: the stall comes earlier and more of the
+ * solve leans on the words. (The first spike minimized givens outright;
+ * sudoku then placed nothing at all before the words, and every day
+ * played as "type both words, then an easy sudoku".)
  */
-export type UniquenessProof = "clue" | "open";
+export type Difficulty = "easy" | "medium" | "hard";
+
+export const MAX_GRIDS: Record<Difficulty, number> = {
+  easy: 2,
+  medium: 6,
+  hard: 24,
+};
+
+/**
+ * The weekly curve: easy early in the week, hardest Friday and Saturday,
+ * Sunday back in the middle. Keyed by the LOCAL date's weekday, computed
+ * from the dateKey itself so every timezone agrees on a date's puzzle.
+ */
+export function difficultyFor(dateKey: string): Difficulty {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sunday
+  return (["medium", "easy", "easy", "medium", "medium", "hard", "hard"] as const)[weekday];
+}
 
 export interface Attempt {
   puzzle: AnagridPuzzle;
+  difficulty: Difficulty;
   /** Deduction rounds the player's toolkit needed — difficulty proxy. */
   rounds: number;
   wordPlacements: number;
+  /** Cells sudoku singles place before stalling (no words). */
+  preStall: number;
+  /** Empty cells at the start. */
+  empties: number;
+  /** The toolkit can't finish without the clue. */
+  clueNeeded: boolean;
+}
+
+function linesFor(
+  pairing: Pairing,
+  letters: string,
+  hiddenWords: readonly string[],
+  cluedWords: readonly string[],
+): WordConstraint[] {
+  const idx = (ws: readonly string[]) => ws.map((w) => toIndices(w, letters));
+  return [
+    { cells: pairing.hiddenCells, words: idx(hiddenWords) },
+    { cells: pairing.cluedCells, words: idx(cluedWords) },
+  ];
 }
 
 /**
- * One try at a board: draw a random full grid with both word lines
- * fixed, strip givens while the player's toolkit (singles + word
- * lines) still finishes it, then keep it only if sudoku rules ALONE
- * leave more than one grid — the words must be load-bearing.
+ * One try at a board. Draw a random full grid with both word lines
+ * fixed, then strip givens (random order) while ALL of these hold:
+ *
+ * 1. The player's toolkit finishes it: singles, the clue's word on its
+ *    row, and a COMMON family word on the hidden line.
+ * 2. It is unique even if both lines may be ANY dictionary anagram — so
+ *    the other family word in the clued row always runs into a repeat,
+ *    and a player who knows a rare anagram never finds a second grid.
+ * 3. Sudoku alone leaves at most `maxGrids` grids (see `Difficulty`).
+ *
+ * Then keep it only if the words are load-bearing (sudoku alone leaves
+ * two or more grids). With `requireClue`, also only if the CLUE is: the
+ * toolkit, knowing just "both lines are family words", must stall.
+ *
+ * The daily never sets `requireClue`: it fights rule 2. Strict
+ * uniqueness means the wrong anagram in the clued row always hits a
+ * repeat somewhere, and a repeat is exactly what the toolkit sees without
+ * reading the clue — measured, 1 board in 378 managed both. So the clue
+ * is the fast road to the row, not the only one; `clueNeeded` is still
+ * recorded so the measurement suite can watch it.
  */
 export function tryBoard(
   letters: string,
@@ -43,7 +102,8 @@ export function tryBoard(
   layout: Layout,
   allWords: readonly string[],
   rand: () => number,
-  proof: UniquenessProof = "clue",
+  difficulty: Difficulty = "medium",
+  requireClue = false,
 ): Attempt | null {
   const units = buildUnits(layout.regions);
   const start = emptyGrid();
@@ -55,21 +115,10 @@ export function tryBoard(
   const full: Grid = emptyGrid();
   if (countSolutions(start, units, [], 1, rand, full) === 0) return null;
 
-  const idx = (ws: readonly string[]) => ws.map((w) => toIndices(w, letters));
-  // What the player reasons with: the clue gives its line, and the
-  // hidden line is one of the family's COMMON words.
-  const player: WordConstraint[] = [
-    { cells: pairing.hiddenCells, words: idx(family.words) },
-    { cells: pairing.cluedCells, words: idx([pairing.cluedWord]) },
-  ];
-  // What the grid must be unique under: the hidden line may be ANY
-  // dictionary anagram (a player who knows DEASIL mustn't find a
-  // second grid), and under "open" the clued line may be too.
-  const all = idx(allWords);
-  const proofLines: WordConstraint[] = [
-    { cells: pairing.hiddenCells, words: all },
-    { cells: pairing.cluedCells, words: proof === "clue" ? idx([pairing.cluedWord]) : all },
-  ];
+  const player = linesFor(pairing, letters, family.words, [pairing.cluedWord]);
+  const noClue = linesFor(pairing, letters, family.words, family.words);
+  const proof = linesFor(pairing, letters, allWords, allWords);
+  const maxGrids = MAX_GRIDS[difficulty];
 
   const board = Int8Array.from(full);
   const order = shuffle(
@@ -81,10 +130,13 @@ export function tryBoard(
     board[c] = -1;
     const ok =
       logicSolve(board, units, player).solved &&
-      countSolutions(board, units, proofLines, 2) === 1;
+      countSolutions(board, units, proof, 2) === 1 &&
+      countSolutions(board, units, [], maxGrids + 1) <= maxGrids;
     if (!ok) board[c] = v;
   }
   if (countSolutions(board, units, [], 2) < 2) return null;
+  const clueNeeded = !logicSolve(board, units, noClue).solved;
+  if (requireClue && !clueNeeded) return null;
 
   const result = logicSolve(board, units, player);
   const givens: number[] = [];
@@ -102,8 +154,12 @@ export function tryBoard(
       solution: [...full].map((v) => letters[v]).join(""),
       givens,
     },
+    difficulty,
     rounds: result.rounds,
     wordPlacements: result.wordPlacements,
+    preStall: logicSolve(board, units, []).singles,
+    empties: CELLS - givens.length,
+    clueNeeded,
   };
 }
 
@@ -121,16 +177,16 @@ export function generateForFamily(
   dict: Dictionary,
   family: Family,
   seed: string,
-  layout: Layout = BOX_LAYOUT,
-  proof: UniquenessProof = "clue",
+  difficulty: Difficulty = "medium",
   geometries: readonly Geometry[] = geometriesFor(family),
+  layout: Layout = BOX_LAYOUT,
 ): Attempt | null {
   const rand = seededRandom(seed);
   const known = lineWords(dict, family.letters);
   for (const geometry of geometries) {
     for (const p of shuffle(pairings(family, geometry), rand)) {
       for (let i = 0; i < DRAWS_PER_PAIRING; i++) {
-        const a = tryBoard(family.letters, family, p, layout, known, rand, proof);
+        const a = tryBoard(family.letters, family, p, layout, known, rand, difficulty);
         if (a) return a;
       }
     }
@@ -158,7 +214,12 @@ export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
   const cycle = Math.floor(d / F);
   for (let k = 0; k < F; k++) {
     const family = families[(((d + k) % F) + F) % F];
-    const a = generateForFamily(dict, family, `daily:${dateKey}:${cycle}:${k}`);
+    const a = generateForFamily(
+      dict,
+      family,
+      `daily:${dateKey}:${cycle}:${k}`,
+      difficultyFor(dateKey),
+    );
     if (a) return a;
   }
   throw new Error(`anagrid: no family makes a board for ${dateKey}`);
