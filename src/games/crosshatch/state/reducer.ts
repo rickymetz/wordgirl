@@ -1,6 +1,6 @@
 import type { CrosshatchPuzzle, Slot, SlotDir } from "../engine/types";
 import { cellKey, comboKey, slotCells } from "../engine/types";
-import { isSolved, uniqueWords } from "../engine/scoring";
+import { isSolved, targetWords } from "../engine/scoring";
 
 export interface Cursor {
   row: number;
@@ -80,7 +80,7 @@ function firstEditableCursor(puzzle: CrosshatchPuzzle): Cursor | null {
 /** The day's full word list, shortest first then alphabetical — the
  * order of the words panel, blanks included. */
 export function allWords(state: GameState): string[] {
-  return uniqueWords(state.puzzle.combos).sort(
+  return [...targetWords(state.puzzle)].sort(
     (a, b) => a.length - b.length || a.localeCompare(b),
   );
 }
@@ -293,14 +293,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.puzzle.combos.some((c) => comboKey(c) === key)) {
         return fail("noFit", firstNonComboWord(state, words));
       }
-      // A valid grid banks every word not yet credited. Words are the
-      // unit of progress — re-arranging already-found words earns
-      // nothing, so there's no cross-product sweeping.
-      const newWords = words.filter((w) => !state.found.includes(w));
+      // A valid grid banks every listed word not yet credited. Words are
+      // the unit of progress — re-arranging already-found words earns
+      // nothing, so there's no cross-product sweeping. A bonus-tier fill
+      // (see BONUS_FILLS_EPOCH), and a word that only fits beside one,
+      // make the grid valid but are never banked.
+      const listed = targetWords(state.puzzle);
+      const newWords = words.filter(
+        (w) => listed.includes(w) && !state.found.includes(w),
+      );
       if (newWords.length === 0) return fail("nothingNew");
 
       const found = [...state.found, ...newWords];
-      const total = uniqueWords(state.puzzle.combos).length;
+      const total = listed.length;
       return {
         ...state,
         found,
@@ -341,7 +346,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         found,
         solved:
           state.solved ||
-          isSolved(found.length, uniqueWords(state.puzzle.combos).length),
+          isSolved(found.length, targetWords(state.puzzle).length),
         lastResult: { type: "correct", newWords: [target], nonce },
       };
     }
@@ -354,10 +359,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         revealed: action.revealed,
         solved:
           action.solved ||
-          isSolved(
-            action.found.length,
-            uniqueWords(state.puzzle.combos).length,
-          ),
+          isSolved(action.found.length, targetWords(state.puzzle).length),
         lastResult: null,
         invalids: action.invalids ?? 0,
       };

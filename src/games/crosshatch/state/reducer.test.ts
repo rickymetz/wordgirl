@@ -160,6 +160,30 @@ describe("submit", () => {
     expect(s.solved).toBe(true);
   });
 
+  it("a bonus-tier fill makes the grid valid but is never banked", () => {
+    // "cab" stands in for a bonus fill (HAZY beside EASY): it completes a
+    // combo, so its partner "bab" is listed and banks, but "cab" itself
+    // is off the list — not counted, not solving the day.
+    const bonus: CrosshatchPuzzle = {
+      ...puzzle,
+      combos: [...puzzle.combos, ["bab", "cab"]],
+      targets: ["bab", "bad", "bud", "dab", "dud"],
+    };
+    let s = play(
+      initialState(bonus),
+      ...type("ab"), // across -> "bab"
+      { type: "focusCell", row: 0, col: 1 },
+      ...type("cab"),
+      { type: "submit" },
+    );
+    expect(s.lastResult).toMatchObject({ type: "correct", newWords: ["bab"] });
+    expect(s.found).toEqual(["bab"]);
+    // Resubmitting earns nothing: the bonus word never becomes new.
+    s = gameReducer(s, { type: "submit" });
+    expect(s.lastResult?.type).toBe("nothingNew");
+    expect(hintTarget(s)).toBe("bad");
+  });
+
   it("hints reveal letters of the target word and bank it when full", () => {
     // Default target: first unfound in list order (bad).
     let s = gameReducer(initialState(puzzle), {

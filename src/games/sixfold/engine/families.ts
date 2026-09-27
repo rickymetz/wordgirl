@@ -14,6 +14,11 @@ export interface Family {
 }
 
 /**
+ * (The shared dictionary correction, lib/words/overlay.ts, promotes more
+ * from its epoch on; dailyPuzzle applies it. Of its words only SOFTER
+ * reaches a family — it joins FOREST/FOSTER — and it is clued in
+ * clues.ts/cryptic.ts like any other answer.)
+ *
  * Bonus-tier words promoted into this game's answer pool, reviewed by
  * hand (PROMOTION_CANDIDATES.md): everyday words the frequency cut left
  * out, each completing a family with a common word. Adding one creates a
@@ -105,6 +110,56 @@ export function lineWords(dict: Dictionary, letters: string): string[] {
     }
   }
   return [...new Set(out)].sort();
+}
+
+/**
+ * What the unclued line may spell for a board to count as SOLVED: every
+ * dictionary word (both tiers) whose letters all come from `letters`.
+ * Wider than `lineWords` on purpose: the diagonal is not a sudoku unit,
+ * so it can repeat a letter, and the rules only ask it to spell "another
+ * word from the same letters". The generator proves uniqueness against
+ * exact anagrams only, so a handful of days (2026-03-19 PAPERS for
+ * PAGERS, 05-17 OTTERS for OTHERS...) have a second grid whose diagonal
+ * is a real repeat-letter word — the reducer accepts it rather than call
+ * a rule-abiding board wrong. Read-only: never feeds derivation.
+ */
+export function acceptedLineWords(dict: Dictionary, letters: string): string[] {
+  const out = new Set<string>();
+  for (const tier of [dict.required, dict.bonus]) {
+    for (const w of tier.buckets.get(N) ?? []) {
+      if ([...w].every((ch) => letters.includes(ch))) out.add(w);
+    }
+  }
+  return [...out].sort();
+}
+
+/**
+ * Everyday bonus-tier anagrams of scheduled families, hand-picked for the
+ * results card's "Other words" list. DISPLAY ONLY: `Family.words` feeds
+ * the generator and the hint toolkit, so widening IT would re-deal every
+ * day; this list touches neither. The rest of the bonus tier's anagrams
+ * are ENABLE Scrabble words (GAPERS, SCLERA, TANREC...), British
+ * spellings (MITRES, LUSTRE, SPOILT), proper nouns (BERTHA, MEDINA) or a
+ * word the answer pool already turned away (RECTAL, LEARNT); they still
+ * count on a line, they just aren't advertised.
+ */
+export const DISPLAY_EXTRA_WORDS: readonly string[] = [
+  "airmen", "ambled", "arcing", "bakers", "binges", "bleats", "cadres", "carted",
+  "caters", "cedars", "corset", "crated", "dearth", "deigns", "drapes", "enacts",
+  "enlist", "esprit", "feints", "gander", "gleans", "inlets", "manors", "mantel",
+  "miters", "padres", "parley", "parsed", "ranged", "rasped", "reigns", "salted",
+  "sarong", "signer", "singed", "slated", "softer", "tamers", "tinsel",
+];
+
+/** The results card's "Other words": the family plus its display extras, minus the day's two. */
+export function otherWords(p: {
+  letters: string;
+  family: readonly string[];
+  cluedWord: string;
+  hiddenWord: string;
+}, shown: readonly string[] = [p.cluedWord, p.hiddenWord]): string[] {
+  const extras = DISPLAY_EXTRA_WORDS.filter((w) => sortedLetters(w) === p.letters);
+  return [...new Set([...p.family, ...extras])].filter((w) => !shown.includes(w)).sort();
 }
 
 /**

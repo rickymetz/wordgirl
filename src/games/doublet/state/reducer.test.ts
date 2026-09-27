@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
-import type { DoubletPuzzle } from "../engine/types";
-import { gameReducer, initialState, type GameState } from "./reducer";
+import type { DoubletPuzzle, Orientation } from "../engine/types";
+import { gameReducer, initialState, nextHint, type GameState } from "./reducer";
 
 // A 2x2 board, two horizontal dominoes, both rows two-letter words —
 // small enough to drive the reducer by hand.
@@ -276,5 +276,136 @@ describe("action counters", () => {
     expect(legacy.rotations).toBe(0);
     expect(legacy.removals).toBe(0);
     expect(legacy.invalidBoards).toBe(0);
+  });
+});
+
+describe("revealHint", () => {
+  const placeO = (
+    s: GameState,
+    dominoId: number,
+    row: number,
+    col: number,
+    orientation: Orientation,
+  ) =>
+    gameReducer(s, {
+      type: "placeDomino",
+      cell: { row, col },
+      dict,
+      dominoId,
+      orientation,
+    });
+  const hint = (s: GameState) => gameReducer(s, { type: "revealHint", dict });
+
+  it("acts on a misplaced domino when the board is full but wrong", () => {
+    // Both pieces flipped: "TA" / "NO" — full, nothing valid.
+    let s = placeO(initialState(puzzle), 0, 0, 0, 2);
+    s = placeO(s, 1, 1, 0, 2);
+    expect(s.grid.size).toBe(4);
+    expect(s.solved).toBe(false);
+
+    expect(nextHint(s)).not.toBeNull();
+    const h = hint(s);
+    expect(h).not.toBe(s);
+    expect(h.hints).toBe(1);
+    // Domino 0 moved to its solution spot, displacing nothing else it
+    // didn't have to (domino 1 is off row 0 already).
+    expect(h.placed).toContainEqual(puzzle.solution[0]);
+    expect(h.grid.get("0,0")).toBe("A");
+    expect(h.grid.get("0,1")).toBe("T");
+
+    // A second hint finishes it.
+    const h2 = hint(h);
+    expect(h2.solved).toBe(true);
+    expect(h2.hints).toBe(2);
+  });
+
+  it("always converges to solved from any full wrong board", () => {
+    const oris: Orientation[] = [0, 2];
+    for (const o0 of oris)
+      for (const o1 of oris)
+        for (const swap of [false, true]) {
+          let s = placeO(initialState(puzzle), 0, swap ? 1 : 0, 0, o0);
+          s = placeO(s, 1, swap ? 0 : 1, 0, o1);
+          let n = 0;
+          while (!s.solved && n < 4) {
+            const next = hint(s);
+            expect(next).not.toBe(s);
+            s = next;
+            n++;
+          }
+          expect(s.solved).toBe(true);
+          expect(s.hints).toBe(n);
+        }
+  });
+
+  it("is a no-op (and uncounted) on a solved board", () => {
+    let s = place(initialState(puzzle), 0, 0, 0);
+    s = place(s, 1, 1, 0);
+    expect(s.solved).toBe(true);
+    expect(nextHint(s)).toBeNull();
+    const h = hint(s);
+    expect(h).toBe(s);
+    expect(h.hints).toBe(0);
+  });
+
+  it("is a no-op when the board already matches the solution letters", () => {
+    // Solved by letters, but the flag isn't set (e.g. a stale hydrate):
+    // there is nothing to hint, so nothing is counted.
+    const s = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      placed: puzzle.solution,
+      solved: false,
+      dict,
+    });
+    expect(nextHint(s)).toBeNull();
+    expect(hint(s)).toBe(s);
+  });
+
+  it("does not evict the player's correct domino on a partial board", () => {
+    // Domino 1 already right; the hint places 0 and leaves 1 alone.
+    const s = place(initialState(puzzle), 1, 1, 0);
+    const h = hint(s);
+    expect(h.placed).toContainEqual(puzzle.solution[1]);
+    expect(h.placed).toContainEqual(puzzle.solution[0]);
+    expect(h.solved).toBe(true);
+  });
+
+  it("treats a twin piece in its sibling's spot as correct", () => {
+    // Two identical AT pieces; the player laid #1 where the solution has
+    // #0. The old hint evicted it to put #0 there; now #0 goes to row 1.
+    const twins: DoubletPuzzle = {
+      ...puzzle,
+      dominoes: [
+        { id: 0, letters: ["A", "T"] },
+        { id: 1, letters: ["A", "T"] },
+      ],
+    };
+    const s = gameReducer(initialState(twins), {
+      type: "placeDomino",
+      cell: { row: 0, col: 0 },
+      dict,
+      dominoId: 1,
+      orientation: 0,
+    });
+    expect(nextHint(s)).toEqual({
+      dominoId: 0,
+      anchor: { row: 1, col: 0 },
+      orientation: 0,
+    });
+    const h = hint(s);
+    expect(h.placed).toContainEqual({
+      dominoId: 1,
+      anchor: { row: 0, col: 0 },
+      orientation: 0,
+    });
+    expect(h.solved).toBe(true);
+  });
+
+  it("prefers a tray piece over moving one already on the board", () => {
+    // Domino 0 flipped on row 0 ("TA", wrong); domino 1 still in tray.
+    const s = placeO(initialState(puzzle), 0, 0, 0, 2);
+    const h = nextHint(s);
+    expect(h?.dominoId).toBe(1);
+    expect(h?.anchor).toEqual({ row: 1, col: 0 });
   });
 });

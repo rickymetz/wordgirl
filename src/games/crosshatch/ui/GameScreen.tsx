@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -34,7 +34,6 @@ import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
-import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
   displayStreak,
@@ -112,11 +111,11 @@ export function GameScreen({
     state,
     dispatch,
     puzzle,
+    dict,
     totalWords: total,
     solvedElapsedMs,
     hydratedAsSolved,
   } = useCrosshatchGame(mode);
-  const dict = use(loadDictionary());
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
 
@@ -389,11 +388,10 @@ export function GameScreen({
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       // The two ways a line can be wrong, said apart — the second is
-      // the one players hit holding a word they KNOW is real. It is:
-      // the generator enumerates answers from the `required` tier, but
-      // dict.has() also accepts `bonus`, so a real-but-rarer word is
-      // rejected here. Naming the crossings for that would be a lie —
-      // the word simply isn't one of this puzzle's answers.
+      // the one players hit holding a word they KNOW is real. Before
+      // BONUS_FILLS_EPOCH answers came from the `required` tier only, so
+      // a real-but-rarer word landed here outright; from it on, a real
+      // word lands here only when no filling of its crossings works.
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`

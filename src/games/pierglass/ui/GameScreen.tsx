@@ -134,7 +134,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   // reflection's slots — typing INTO the mirror. resolvePlacement is
   // the same seam the reducer's commit uses, so preview and commit
   // can never disagree.
-  const resolved = resolvePlacement(state.lexicon, state.current);
+  const resolved = resolvePlacement(state.lexicon, state.current, state.rows);
   const currentStraddle = !!resolved.def && isStraddle(resolved.def);
   const activePlace = resolved.place;
 

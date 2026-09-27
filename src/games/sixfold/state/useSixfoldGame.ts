@@ -13,6 +13,7 @@ import { localDateKey } from "../../../lib/date";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dailyPuzzle, practicePuzzle } from "../engine/generator";
+import { hiddenCells } from "../engine/hints";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
   sixfoldPuzzleKey,
@@ -131,7 +132,9 @@ export function useSixfoldGame(mode: GameMode) {
         hints: s.hints,
         conflicts: s.conflicts,
         cluedWord: puzzle.cluedWord,
-        hiddenWord: puzzle.hiddenWord,
+        // A solve may spell a different allowed word on the hidden line
+        // (see isSolvedBoard); the archive lists what the player found.
+        hiddenWord: s.solved ? hiddenCells(puzzle).map((c) => s.entries[c]).join("") : puzzle.hiddenWord,
         ...(sessionsRef.current !== null && { sessions: sessionsRef.current }),
         ...(solvedHourRef.current !== null && {
           solvedHour: solvedHourRef.current,

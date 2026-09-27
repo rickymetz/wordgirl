@@ -11,7 +11,12 @@ import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
-import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
+import {
+  buildLexicon,
+  commonWords,
+  lexiconItems,
+  lexiconVersionFor,
+} from "../engine/lexicon";
 import { dailySeed, generatePierglass } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
@@ -58,8 +63,20 @@ export function usePierglassGame(mode: GameMode) {
   // The tutorial's bank is hand-picked, but the lexicon is still needed:
   // the reducer resolves every placement through it.
   const dict = use(loadDictionary());
-  const lexicon = useMemo(() => buildLexicon(dict), [dict]);
-  const words = useMemo(() => commonWords(dict), [dict]);
+  // Days before LEXICON_V2_EPOCH play (and derive from) the v1 word
+  // list, so a past puzzle never changes; the tutorial stays on v1 too.
+  const lexVersion =
+    mode.kind === "tutorial"
+      ? 1
+      : lexiconVersionFor(mode.kind === "practice" ? null : dateKey);
+  const lexicon = useMemo(
+    () => buildLexicon(dict, lexVersion),
+    [dict, lexVersion],
+  );
+  const words = useMemo(
+    () => commonWords(dict, lexVersion),
+    [dict, lexVersion],
+  );
   const items = useMemo(() => lexiconItems(lexicon), [lexicon]);
   const puzzle = useMemo(
     () =>

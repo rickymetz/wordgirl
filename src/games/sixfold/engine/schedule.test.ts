@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { puzzleKey } from "../../../lib/puzzleKey";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { CLUES, clueFor } from "./clues";
 import { anagramFamilies } from "./families";
 import { clueTurn, dailyPuzzle, scheduleSlot } from "./generator";
@@ -13,6 +14,7 @@ const dict = parseDictionary(
   readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
 );
 const families = anagramFamilies(dict);
+const corrected = anagramFamilies(dictionaryOn(dict, null));
 const familyAt = (dateKey: string, schedule?: readonly ScheduledFamily[]) => {
   const s = scheduleSlot(dateKey, schedule);
   return s.order[s.index];
@@ -23,6 +25,9 @@ describe("SCHEDULE", () => {
     // Promoting a word without scheduling its family (or the reverse)
     // fails here, not silently at runtime.
     expect(SCHEDULE.map((f) => f.letters).sort()).toEqual(families.map((f) => f.letters).sort());
+    // The shared correction (from its epoch) must not make a family the
+    // schedule doesn't know: a new one needs a future-`since` entry.
+    expect(corrected.map((f) => f.letters).sort()).toEqual(families.map((f) => f.letters).sort());
   });
 
   it("has no duplicates and whole-number cycles", () => {
@@ -31,7 +36,9 @@ describe("SCHEDULE", () => {
   });
 
   it("gives every scheduled word at least two clues to rotate", () => {
-    for (const f of families) for (const w of f.words) expect(CLUES[w]?.length, w).toBeGreaterThanOrEqual(2);
+    for (const f of [...families, ...corrected]) {
+      for (const w of f.words) expect(CLUES[w]?.length, w).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it("is FROZEN: the day-by-day sequence through 2027 never moves", () => {
@@ -54,7 +61,11 @@ describe("past boards", () => {
       const p = dailyPuzzle(dict, k).puzzle;
       return `${sixfoldPuzzleKey(p)}|${p.clue}`;
     });
-    expect(puzzleKey(days)).toBe("iag1k1");
+    // Moved once, on purpose, before its day: the shared dictionary
+    // correction (DICT_OVERLAY_EPOCH, 2026-09-28) gave FOREST/FOSTER a
+    // third word, re-dealing 2026-10-18 only — every day before the epoch
+    // was checked identical.
+    expect(puzzleKey(days)).toBe("edl20g");
   }, 120_000);
 });
 

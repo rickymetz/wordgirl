@@ -30,6 +30,7 @@ import { SHARE_URL } from "../../../lib/share";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
+import { otherWords } from "../engine/families";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { N } from "../engine/types";
 import {
@@ -151,6 +152,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
+  // The results name the word the PLAYER's board spells: a solve may
+  // have a different (repeat-letter) diagonal than the setter's grid.
+  const solvedHidden = state.solved ? lineText(hiddenCells(puzzle)) : puzzle.hiddenWord;
+  const others = otherWords(puzzle, [puzzle.cluedWord, solvedHidden]);
   // Which of a line's letters the player typed (indigo on the board, so
   // indigo in the readout too); givens and hints stay ink.
   const typedIn = (cells: number[]) =>
@@ -398,17 +403,14 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
             <p className="text-center text-sm text-ink-soft [@media(max-height:720px)]:text-xs">
               <span className="font-semibold text-ink">{puzzle.cluedWord.toUpperCase()}</span> in{" "}
               {rowLabel.toLowerCase()} ·{" "}
-              <span className="font-semibold text-ink">{puzzle.hiddenWord.toUpperCase()}</span>{" "}
+              <span className="font-semibold text-ink">{solvedHidden.toUpperCase()}</span>{" "}
               {puzzle.col < 0 ? "on the diagonal" : `in ${hiddenLabel.toLowerCase()}`}
             </p>
-            {puzzle.family.length > 2 && (
+            {others.length > 0 && (
               <p className="text-center text-xs text-ink-soft">
                 Other words from these letters:{" "}
                 <span className="font-semibold text-ink">
-                  {puzzle.family
-                    .filter((w) => w !== puzzle.cluedWord && w !== puzzle.hiddenWord)
-                    .map((w) => w.toUpperCase())
-                    .join(" · ")}
+                  {others.map((w) => w.toUpperCase()).join(" · ")}
                 </span>
               </p>
             )}

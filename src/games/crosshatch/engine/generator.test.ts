@@ -2,14 +2,18 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { puzzleKey } from "../../../lib/puzzleKey";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import {
+  BONUS_FILLS_EPOCH,
   MAX_SLOT_WORDS,
   MAX_WORDS,
   MIN_WORDS,
+  acceptsBonusFills,
   dailySeed,
   enumerateCombos,
   generateCrosshatch,
   parseLevel,
+  practiceSeed,
 } from "./generator";
 import type { Shape } from "./types";
 import { cellKey, comboKey, LEVELS, slotCells } from "./types";
@@ -20,13 +24,12 @@ const rawDict = readFileSync(
 );
 const dict = parseDictionary(rawDict);
 
-/** Bonus-tier words: "+"-prefixed lines in the shipped dictionary. */
-const bonusWords = new Set(
-  rawDict
-    .split("\n")
-    .filter((line) => line.startsWith("+"))
-    .map((line) => line.trim().slice(1)),
-);
+/** The dictionary a date's board is built against — as the game hook
+ * picks it (the correction applies from its epoch on). */
+const dictOn = (date: string) => dictionaryOn(dict, date);
+/** Bonus-tier words on a date: the shipped "+" lines, corrected. */
+const bonusOn = (date: string) =>
+  new Set([...dictOn(date).bonus.buckets.values()].flat());
 
 describe("enumerateCombos", () => {
   // Tiny fixture: a plus of two 3-letter slots crossing at the middle.
@@ -85,47 +88,114 @@ describe("generateCrosshatch", () => {
     // but it's a migration: bump DICT_VERSION and raise
     // GENERATOR_VERSION in state/persistence.ts (which marks older
     // saves retired) before updating these fingerprints.
+    //
+    // The dates before BONUS_FILLS_EPOCH are history and must never move;
+    // the ones after it pin the bonus-fill derivation.
     const pinned = [
       ["2026-07-06", "kkvr3k"],
-      ["2026-12-25", "gvd3mp"],
-      ["2027-06-01", "1o6lk8"],
+      ["2026-09-27", "8tnfep"],
+      ["2026-12-25", "1dtqsfp"],
+      ["2027-06-01", "t2mezn"],
     ];
     for (const [date, fingerprint] of pinned) {
-      const p = generateCrosshatch(dict, dailySeed(date));
+      const p = generateCrosshatch(dictOn(date), dailySeed(date));
       expect(puzzleKey([p.givens, p.combos]), date).toBe(fingerprint);
     }
   });
 
   it("never requires a bonus-tier word", () => {
-    // Every enumerated word gates the solve and can be hinted, so all
-    // of them must come from the common tier — no ENABLE obscurities
-    // (kagu, habu, vatu) among the day's mandatory finds.
+    // Every LISTED word gates the solve and can be hinted, so all of
+    // them must come from the common tier — no ENABLE obscurities (kagu,
+    // habu, vatu) among the day's mandatory finds. Before the epoch the
+    // fills are common-tier too; from it on a bonus word may FILL a line
+    // (HAZY beside EASY) but is never listed.
+    let bonusFilled = 0;
     for (let i = 0; i < 120; i++) {
       const date = new Date(2026, 6, 6 + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       for (const level of LEVELS) {
-        const words = new Set(
-          generateCrosshatch(dict, dailySeed(key, level)).combos.flat(),
-        );
-        const bonus = [...words].filter((w) => bonusWords.has(w));
-        expect(bonus, `${key} ${level}: bonus-tier words required`).toEqual([]);
+        const p = generateCrosshatch(dictOn(key), dailySeed(key, level));
+        const bonusWords = bonusOn(key);
+        const listed = p.targets!.filter((w) => bonusWords.has(w));
+        expect(listed, `${key} ${level}: bonus-tier words required`).toEqual([]);
+        const fills = new Set(p.combos.flat());
+        const filled = [...fills].filter((w) => bonusWords.has(w));
+        if (key < BONUS_FILLS_EPOCH) {
+          expect(filled, `${key} ${level}: bonus fill pre-epoch`).toEqual([]);
+          expect(p.targets).toEqual([...fills].sort());
+        } else {
+          // The list is exactly the words of the all-required grids, so
+          // every listed word banks without an obscurity: a listed word
+          // that only fit beside a bonus fill would make that fill
+          // mandatory (LEGS beside ENOL).
+          const clean = p.combos.filter((c) => !c.some((w) => bonusWords.has(w)));
+          expect(p.targets).toEqual([...new Set(clean.flat())].sort());
+          bonusFilled += filled.length;
+        }
       }
     }
+    expect(bonusFilled).toBeGreaterThan(0);
   }, 60_000);
 
-  it.each(LEVELS)(
-    "%s: sweep over 200 consecutive dates, all constraints hold",
-    (level) => {
-    const start = Date.now();
+  it("a common word that only fits beside a bonus fill is accepted", () => {
+    // The report that prompted bonus fills: E?S? along the bottom with
+    // HA?? down the right. EASY forces HA?Y, which only HAZY (bonus)
+    // fills — so EASY used to be refused as "doesn't work here".
+    const corner: Shape = {
+      id: "test-corner",
+      slots: [
+        { dir: "across", row: 3, col: 0, len: 4 },
+        { dir: "down", row: 0, col: 3, len: 4 },
+      ],
+    };
+    const givens = new Map([
+      [cellKey(0, 3), "h"],
+      [cellKey(1, 3), "a"],
+      [cellKey(3, 0), "e"],
+      [cellKey(3, 2), "s"],
+    ]);
+    const pre = enumerateCombos(corner, dict, givens);
+    expect(pre.some((c) => c[0] === "easy")).toBe(false);
+    const post = enumerateCombos(corner, dict, givens, Infinity, "all");
+    expect(post.map(comboKey)).toContain("easy|hazy");
+    // And from the dictionary correction on, HAZY is required-tier, so
+    // the pair is an all-required grid and EASY is listed outright.
+    const corrected = dictOn(BONUS_FILLS_EPOCH);
+    const listed = enumerateCombos(corner, corrected, givens);
+    expect(listed.map(comboKey)).toContain("easy|hazy");
+  });
+
+  it("bonus fills start at the epoch, and in every practice board", () => {
+    expect(acceptsBonusFills(dailySeed("2026-09-27"))).toBe(false);
+    expect(acceptsBonusFills(dailySeed("2026-09-27", "hard"))).toBe(false);
+    expect(acceptsBonusFills(dailySeed(BONUS_FILLS_EPOCH))).toBe(true);
+    expect(acceptsBonusFills(dailySeed(BONUS_FILLS_EPOCH, "hard"))).toBe(true);
+    expect(acceptsBonusFills(practiceSeed("abc123"))).toBe(true);
+    expect(acceptsBonusFills(practiceSeed("abc123", "hard"))).toBe(true);
+  });
+
+  it.each(
+    LEVELS.flatMap((level) => [
+      [level, "2026-01-01"],
+      [level, BONUS_FILLS_EPOCH],
+    ]),
+  )(
+    "%s: sweep over 200 consecutive dates from %s, all constraints hold",
+    (level, from) => {
+    let generating = 0;
+    const [y, m, d] = from.split("-").map(Number);
     for (let i = 0; i < 200; i++) {
-      const date = new Date(2026, 0, 1 + i);
+      const date = new Date(y, m - 1, d + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const puzzle = generateCrosshatch(dict, dailySeed(key, level));
+      const t0 = Date.now();
+      const puzzle = generateCrosshatch(dictOn(key), dailySeed(key, level));
+      generating += Date.now() - t0;
       const { shape, givens, combos } = puzzle;
       expect(puzzle.level).toBe(level);
+      const listed = new Set(puzzle.targets);
 
-      // Distinct-word count in band; combos unique.
-      const wordCount = new Set(combos.flat()).size;
+      // Distinct listed-word count in band; combos unique.
+      const wordCount = listed.size;
       expect(wordCount).toBeGreaterThanOrEqual(MIN_WORDS);
       expect(wordCount).toBeLessThanOrEqual(MAX_WORDS);
       expect(new Set(combos.map(comboKey)).size).toBe(combos.length);
@@ -146,38 +216,40 @@ describe("generateCrosshatch", () => {
       // At most one slot admits a single word across all combos, and
       // no slot hoards more than its share of the day's words.
       const variety = shape.slots.map(
-        (_, s) => new Set(combos.map((c) => c[s])).size,
+        (_, s) =>
+          new Set(combos.map((c) => c[s]).filter((w) => listed.has(w))).size,
       );
       expect(variety.filter((v) => v < 2).length).toBeLessThanOrEqual(1);
       expect(Math.max(...variety)).toBeLessThanOrEqual(MAX_SLOT_WORDS);
 
+      // Checked by hand and asserted once: a post-epoch day has up to
+      // FILL_CAP combos, and an expect() per letter dwarfs generation.
+      const problems: string[] = [];
       for (const combo of combos) {
-        expect(combo).toHaveLength(shape.slots.length);
+        if (combo.length !== shape.slots.length) problems.push("arity");
         // No repeated word within a combo.
-        expect(new Set(combo).size).toBe(combo.length);
+        if (new Set(combo).size !== combo.length) problems.push("repeat");
         // Lay the combo on the grid: intersections and givens agree,
         // and every word is a dictionary word of exact slot length.
         const grid = new Map<string, string>(Object.entries(givens));
         shape.slots.forEach((slot, s) => {
           const word = combo[s];
-          expect(word).toHaveLength(slot.len);
-          expect(
-            dict.has(word),
-            `${key}: "${word}" not in dictionary`,
-          ).toBe(true);
+          if (word.length !== slot.len) problems.push(`${word}: length`);
+          if (!dictOn(key).has(word)) problems.push(`"${word}" not in dictionary`);
           slotCells(slot).forEach((c, j) => {
             const k = cellKey(c.row, c.col);
             const existing = grid.get(k);
-            if (existing !== undefined) {
-              expect(existing, `${key}: conflict at ${k}`).toBe(word[j]);
+            if (existing !== undefined && existing !== word[j]) {
+              problems.push(`conflict at ${k}`);
             }
             grid.set(k, word[j]);
           });
         });
       }
+      expect(problems, key).toEqual([]);
     }
     // Generation happens on-device at load — the sweep must stay quick.
-    expect(Date.now() - start).toBeLessThan(30_000);
+    expect(generating).toBeLessThan(30_000);
     },
     60_000,
   );

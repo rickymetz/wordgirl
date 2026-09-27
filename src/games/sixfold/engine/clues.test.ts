@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { CLUES, clueFor } from "./clues";
 import { CRYPTIC } from "./cryptic";
 import { anagramFamilies } from "./families";
@@ -8,7 +9,15 @@ import { anagramFamilies } from "./families";
 const dict = parseDictionary(
   readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
 );
-const families = anagramFamilies(dict);
+// Every family any date plays: the shipped dictionary's, plus what the
+// shared correction adds from its epoch on (SOFTER joins FOREST/FOSTER).
+const families = [
+  ...new Map(
+    [...anagramFamilies(dict), ...anagramFamilies(dictionaryOn(dict, null))].map(
+      (f) => [f.words.join("/"), f],
+    ),
+  ).values(),
+];
 const allWords = families.flatMap((f) => f.words);
 const british = /\b(lorr(y|ies)|colour|favour|travell|centre|theatre|organis|realis|tyre|sombre)/i;
 

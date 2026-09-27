@@ -12,7 +12,7 @@ export type Feedback =
   | { type: "hint"; cell: number; nonce: number }
   /** A letter pressed on a given or hinted cell, which can't change. */
   | { type: "locked"; cell: number; nonce: number }
-  /** Every cell filled, but not the solution. */
+  /** Every cell filled, but not a solve (see `isSolvedBoard`). */
   | { type: "full"; nonce: number }
   /** A letter or erase with no cell selected: nothing to write into. */
   | { type: "noCell"; nonce: number }
@@ -104,19 +104,49 @@ export function conflictCells(regions: readonly number[], entries: string): Set<
 
 export type LineName = "clued" | "hidden";
 
+const spellLine = (entries: string, cells: readonly number[]) => cells.map((c) => entries[c]).join("");
+
+/** Whether the unclued line's letters are a word the rules allow there:
+ *  "another word from the same letters" — any dictionary word made from
+ *  them (`puzzle.lineWords`), other than the clued answer. */
+function hiddenLineOk(puzzle: SixfoldPuzzle, word: string): boolean {
+  if (word === puzzle.cluedWord) return false;
+  return word === puzzle.hiddenWord || (puzzle.lineWords ?? puzzle.family).includes(word);
+}
+
 /**
- * On a full board with no repeats that still isn't the solution, the
- * word lines that don't spell their word. (By strict uniqueness at least
- * one of them is wrong; naming it is the only way a player can find a
- * mistake the board doesn't otherwise show.)
+ * Whether a board meets every stated rule: full, no letter twice in a
+ * row, column or box, the clued row spelling its answer, and the other
+ * line spelling another word from the letters. Usually that is exactly
+ * `puzzle.solution`, but not always — the diagonal is not a sudoku unit,
+ * so a few days admit a second grid whose diagonal is a real
+ * repeat-letter word (2026-03-19: PAPERS where the setter had PAGERS).
+ * Such a grid breaks no rule the player was told, so it is a solve.
+ */
+export function isSolvedBoard(puzzle: SixfoldPuzzle, entries: string): boolean {
+  if (entries === puzzle.solution) return true;
+  if (entries.length !== CELLS || entries.includes(BLANK)) return false;
+  if (conflictCells(puzzle.regions, entries).size > 0) return false;
+  return (
+    spellLine(entries, cluedCells(puzzle)) === puzzle.cluedWord &&
+    hiddenLineOk(puzzle, spellLine(entries, hiddenCells(puzzle)))
+  );
+}
+
+/**
+ * On a full board with no repeats that still isn't a solve, the word
+ * lines that break their rule: the clued row not spelling its answer,
+ * or the other line not spelling an allowed word. A line that spells an
+ * acceptable word is never named, even if it differs from the setter's
+ * grid. (On such a board at least one line is named — naming it is the
+ * only way a player can find a mistake the board doesn't otherwise show.)
  */
 export function wrongLines(puzzle: SixfoldPuzzle, entries: string): LineName[] {
-  if (entries.includes(BLANK) || entries === puzzle.solution) return [];
+  if (entries.includes(BLANK) || isSolvedBoard(puzzle, entries)) return [];
   if (conflictCells(puzzle.regions, entries).size > 0) return [];
-  const spell = (cells: number[]) => cells.map((c) => entries[c]).join("");
   const out: LineName[] = [];
-  if (spell(cluedCells(puzzle)) !== puzzle.cluedWord) out.push("clued");
-  if (spell(hiddenCells(puzzle)) !== puzzle.hiddenWord) out.push("hidden");
+  if (spellLine(entries, cluedCells(puzzle)) !== puzzle.cluedWord) out.push("clued");
+  if (!hiddenLineOk(puzzle, spellLine(entries, hiddenCells(puzzle)))) out.push("hidden");
   return out;
 }
 
@@ -150,7 +180,7 @@ function write(state: GameState, cell: number, letter: string): GameState {
  *  write was a hint, whose own feedback is the more useful news. */
 function settle(state: GameState, keepFeedback = false): GameState {
   if (state.entries.includes(BLANK)) return state;
-  if (state.entries === state.puzzle.solution) {
+  if (isSolvedBoard(state.puzzle, state.entries)) {
     return {
       ...state,
       solved: true,
@@ -233,7 +263,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         ...state,
         entries,
         revealed,
-        solved: action.solved && entries === state.puzzle.solution,
+        solved: action.solved && isSolvedBoard(state.puzzle, entries),
         hints: action.hints ?? 0,
         conflicts: action.conflicts ?? 0,
         selected: null,

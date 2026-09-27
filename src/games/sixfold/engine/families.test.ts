@@ -2,7 +2,17 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import type { Family } from "./families";
-import { PROMOTED_WORDS, anagramFamilies, lineWords, pairings } from "./families";
+import {
+  DISPLAY_EXTRA_WORDS,
+  PROMOTED_WORDS,
+  acceptedLineWords,
+  anagramFamilies,
+  lineWords,
+  otherWords,
+  pairings,
+} from "./families";
+import { SCHEDULE } from "./schedule";
+import { TUTORIAL_PUZZLE } from "./tutorial";
 import { N } from "./types";
 
 const dict = parseDictionary(
@@ -67,5 +77,39 @@ describe("pairings", () => {
       expect(x.cluedCells).toEqual(Array.from({ length: N }, (_, c) => x.row * N + c));
       expect(x.hiddenCells).toEqual(Array.from({ length: N }, (_, r) => r * N + x.col));
     }
+  });
+});
+
+describe("the results card's other words", () => {
+  const families = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
+  const sorted = (w: string) => [...w].sort().join("");
+
+  it("extras are bonus-tier anagrams of a scheduled family, not already in it", () => {
+    const scheduled = new Set(SCHEDULE.map((f) => f.letters));
+    for (const w of DISPLAY_EXTRA_WORDS) {
+      expect(required.has(w)).toBe(false);
+      expect(dict.has(w)).toBe(true);
+      expect(scheduled.has(sorted(w))).toBe(true);
+      expect(families.get(sorted(w))?.words).not.toContain(w);
+      expect(lineWords(dict, sorted(w))).toContain(w);
+    }
+  });
+
+  it("lists the family plus its everyday extras, minus the day's two words", () => {
+    const f = families.get("acders")!;
+    const list = otherWords({ letters: f.letters, family: f.words, cluedWord: "sacred", hiddenWord: "scared" });
+    expect(list).toContain("cedars");
+    expect(list).toContain("cadres");
+    expect(list).not.toContain("sacred");
+    expect(list).not.toContain("scared");
+    // The tutorial's family is only LISTEN/SILENT; its extras still show.
+    expect(otherWords(TUTORIAL_PUZZLE)).toEqual(["enlist", "inlets", "tinsel"]);
+  });
+
+  it("the words a line may spell include repeat-letter words, all from the letters", () => {
+    const ws = acceptedLineWords(dict, "aegprs");
+    expect(ws).toContain("papers");
+    expect(ws).toContain("grapes");
+    for (const w of ws) expect([...w].every((ch) => "aegprs".includes(ch))).toBe(true);
   });
 });

@@ -3,10 +3,11 @@ import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { dailySeed, generateCrosshatch, parseLevel } from "../engine/generator";
 import type { Level } from "../engine/types";
 import { tutorialPuzzle } from "../engine/tutorial";
-import { isSolved, uniqueWords } from "../engine/scoring";
+import { isSolved, targetWords } from "../engine/scoring";
 import {
   crosshatchPuzzleKey,
   loadDailyProgress,
@@ -50,7 +51,14 @@ export function useCrosshatchGame(mode: GameMode) {
       : "tutorial";
 
   // Suspends until the dictionary asset loads (router Suspense boundary).
-  const dict = use(loadDictionary());
+  // From DICT_OVERLAY_EPOCH (and in practice) the board plays the
+  // corrected dictionary; earlier dates and the tutorial keep the one
+  // they were built against.
+  const baseDict = use(loadDictionary());
+  const dict =
+    mode.kind === "tutorial"
+      ? baseDict
+      : dictionaryOn(baseDict, persisted ? dateKey : null);
   const puzzle = useMemo(
     () =>
       mode.kind === "tutorial"
@@ -60,7 +68,7 @@ export function useCrosshatchGame(mode: GameMode) {
   );
   const pKey = useMemo(() => crosshatchPuzzleKey(puzzle), [puzzle]);
   const totalWords = useMemo(
-    () => uniqueWords(puzzle.combos).length,
+    () => targetWords(puzzle).length,
     [puzzle],
   );
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);
@@ -300,5 +308,5 @@ export function useCrosshatchGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, totalWords, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
+  return { state, dispatch, puzzle, dict, totalWords, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
 }

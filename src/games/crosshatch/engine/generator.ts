@@ -1,6 +1,8 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
+import { DICT_OVERLAY_EPOCH } from "../../../lib/words/overlay";
+import { uniqueWords } from "./scoring";
 import { shapesFor } from "./shapes";
 import type { Combo, CrosshatchPuzzle, Level, Shape, Slot } from "./types";
 import { cellKey, slotCells } from "./types";
@@ -22,6 +24,10 @@ const ENUM_CAP = 200;
 /** All but at most this many slots must admit ≥2 different words. */
 const MAX_FIXED_SLOTS = 1;
 
+/** The same looseness guard once bonus words count as fills: ENABLE
+ * multiplies the fillings of every line, not the word list. */
+const FILL_CAP = 1000;
+
 const MAX_ATTEMPTS = 300;
 const MAX_EXTRA_GIVENS = 6;
 
@@ -30,6 +36,35 @@ const MAX_EXTRA_GIVENS = 6;
  * it was before the hard board existed — every archived day has to keep
  * regenerating into the same puzzle it was solved on.
  */
+/**
+ * The first date whose puzzles accept BONUS-tier words as fills. Before
+ * it, a grid counted only if every line held a required-tier word, so a
+ * real, common word could be refused for its crossing: EASY along the
+ * bottom forces HA?Y down the side, and HAZY is bonus-tier, so EASY got
+ * an X. From here on any dictionary word fills a line, so that grid is
+ * accepted. The LIST is unchanged in kind: only words that fit in some
+ * all-required grid. EASY is accepted but not listed, like HAZY — it
+ * can't be, because the solve needs every listed word and a word
+ * banked only beside a bonus fill makes that fill mandatory (LEGS
+ * beside ENOL, MEAT beside YLEM: 18% of listed words, by measurement).
+ *
+ * Gated by date because the fills change which words a day lists:
+ * every earlier date must keep regenerating into the puzzle it was
+ * played on. It is the day AFTER this shipped, so a board already in
+ * progress on ship day doesn't change under the player. It is the
+ * dictionary correction's epoch, so a day changes rules only once.
+ */
+export const BONUS_FILLS_EPOCH = DICT_OVERLAY_EPOCH;
+
+/** Does this seed's puzzle accept bonus-tier fills? Dailies from the
+ * epoch on, and every practice board (they're minted fresh). */
+export function acceptsBonusFills(seed: string): boolean {
+  const parts = seed.split(":");
+  if (parts[0] === "practice") return true;
+  if (parts[0] !== "daily") return false;
+  return parts[parts.length - 1] >= BONUS_FILLS_EPOCH;
+}
+
 export function dailySeed(dateKey: string, level: Level = "normal"): string {
   return level === "normal" ? `daily:${dateKey}` : `daily:${level}:${dateKey}`;
 }
@@ -75,11 +110,13 @@ export function generateCrosshatch(
   const rand = seededRandom(`crosshatch:v1:${seed}`);
   const index = buildLetterIndex(dict);
   const level = parseLevel(seed);
+  const bonusFills = acceptsBonusFills(seed);
+  const required = requiredWords(dict);
   const shapes = shapesFor(level);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const shape = shapes[Math.floor(rand() * shapes.length)];
-    const solution = solveRandomFill(shape, dict, rand, index);
+    const solution = solveRandomFill(shape, rand, index);
     if (!solution) continue;
 
     // Letters of the seed solution laid on the grid.
@@ -119,14 +156,21 @@ export function generateCrosshatch(
     // Tighten with extra givens until the distinct-word count AND the
     // per-line share fit.
     for (let extra = 0; extra <= MAX_EXTRA_GIVENS; extra++) {
-      const combos = enumerateCombos(shape, dict, givens, ENUM_CAP, index);
-      const wordCount = new Set(combos.flat()).size;
+      const combos = bonusFills
+        ? enumerateCombos(shape, dict, givens, FILL_CAP, "all")
+        : enumerateCombos(shape, dict, givens, ENUM_CAP);
+      // The word list: every word a filling uses, minus bonus-tier fills
+      // (only ever present with bonusFills — see BONUS_FILLS_EPOCH).
+      const targets = listedWords(combos, bonusFills ? required : null);
+      const listed = new Set(targets);
+      const wordCount = targets.length;
       const slotVariety = shape.slots.map(
-        (_, i) => new Set(combos.map((c) => c[i])).size,
+        (_, i) =>
+          new Set(combos.map((c) => c[i]).filter((w) => listed.has(w))).size,
       );
       const fattest = slotVariety.indexOf(Math.max(...slotVariety));
       if (
-        combos.length >= ENUM_CAP ||
+        combos.length >= (bonusFills ? FILL_CAP : ENUM_CAP) ||
         wordCount > MAX_WORDS ||
         slotVariety[fattest] > MAX_SLOT_WORDS
       ) {
@@ -150,7 +194,11 @@ export function generateCrosshatch(
         continue;
       }
       if (wordCount < MIN_WORDS) break; // over-tightened: retry
-      if (fixedSlotCount(shape, combos) > MAX_FIXED_SLOTS) break;
+      if (
+        slotVariety.filter((n) => n < 2).length > MAX_FIXED_SLOTS
+      ) {
+        break;
+      }
 
       const { rows, cols } = gridSize(shape);
       return {
@@ -162,6 +210,7 @@ export function generateCrosshatch(
         cols,
         givens: Object.fromEntries(givens),
         combos,
+        targets,
       };
     }
   }
@@ -186,42 +235,68 @@ function wouldFullyLockSlot(
   });
 }
 
-/** Slots that admit only a single word across all combos. */
-function fixedSlotCount(shape: Shape, combos: Combo[]): number {
-  let fixed = 0;
-  for (let i = 0; i < shape.slots.length; i++) {
-    if (new Set(combos.map((c) => c[i])).size < 2) fixed++;
+/**
+ * The distinct words a set of fillings lists, sorted. With `required`,
+ * only words from fillings made ENTIRELY of required words are listed:
+ * every listed word must be bankable without an obscurity, or the solve
+ * (which needs them all) would require one. Other fills are accepted,
+ * never listed.
+ */
+export function listedWords(
+  combos: readonly Combo[],
+  required: ReadonlySet<string> | null,
+): string[] {
+  return uniqueWords(
+    required ? combos.filter((c) => c.every((w) => required.has(w))) : combos,
+  );
+}
+
+const requiredCache = new WeakMap<Dictionary, Set<string>>();
+
+function requiredWords(dict: Dictionary): Set<string> {
+  let set = requiredCache.get(dict);
+  if (!set) {
+    set = new Set([...dict.required.buckets.values()].flat());
+    requiredCache.set(dict, set);
   }
-  return fixed;
+  return set;
 }
 
 /**
- * Generation draws from the REQUIRED tier only. Crosshatch validates a
- * submission by combo membership, never by dictionary lookup, so every
- * word the generator enumerates is mandatory to solve and hintable —
- * there is no "accepted but optional" state to put a bonus word in.
- * Enumerating from `all` therefore made ENABLE obscurities (kagu, habu,
- * vatu) compulsory: two thirds of a day's list, by measurement.
+ * Generation draws its WORD LIST from the REQUIRED tier only. Until
+ * BONUS_FILLS_EPOCH crosshatch validated a submission by combo
+ * membership alone, so every enumerated word was mandatory to solve and
+ * hintable — there was no "accepted but optional" state to put a bonus
+ * word in. Enumerating from `all` therefore made ENABLE obscurities
+ * (kagu, habu, vatu) compulsory: two thirds of a day's list, by
+ * measurement. From the epoch on, bonus words are accepted as FILLS
+ * (see `acceptsBonusFills`) but still never join the list.
  */
-const TIER = "required" as const;
+type FillTier = "required" | "all";
 
 /**
  * Position-indexed word lookup: for each (length, position, letter),
  * the set of words with that letter at that position. Lets candidatesFor
  * intersect small sets instead of scanning the full bucket.
  */
-type LetterIndex = ReadonlyMap<number, ReadonlyMap<number, ReadonlyMap<string, readonly string[]>>>;
+interface LetterIndex {
+  tier: Dictionary[FillTier];
+  byLen: ReadonlyMap<number, ReadonlyMap<number, ReadonlyMap<string, readonly string[]>>>;
+}
 
 // Keyed by the TIER INDEX, not the dictionary: an index built from one
-// tier must never be served for another if this ever reads a second one.
-const indexCache = new WeakMap<Dictionary[typeof TIER], LetterIndex>();
+// tier must never be served for another.
+const indexCache = new WeakMap<Dictionary[FillTier], LetterIndex>();
 
-function buildLetterIndex(dict: Dictionary): LetterIndex {
-  const tier = dict[TIER];
+function buildLetterIndex(
+  dict: Dictionary,
+  fillTier: FillTier = "required",
+): LetterIndex {
+  const tier = dict[fillTier];
   const cached = indexCache.get(tier);
   if (cached) return cached;
 
-  const idx = new Map<number, Map<number, Map<string, string[]>>>();
+  const byLen = new Map<number, Map<number, Map<string, string[]>>>();
   for (const [len, bucket] of tier.buckets) {
     const byPos = new Map<number, Map<string, string[]>>();
     for (let pos = 0; pos < len; pos++) {
@@ -239,8 +314,9 @@ function buildLetterIndex(dict: Dictionary): LetterIndex {
         list.push(word);
       }
     }
-    idx.set(len, byPos);
+    byLen.set(len, byPos);
   }
+  const idx = { tier, byLen };
   indexCache.set(tier, idx);
   return idx;
 }
@@ -248,12 +324,11 @@ function buildLetterIndex(dict: Dictionary): LetterIndex {
 /** Words that fit the slot against the current grid letters. */
 function candidatesFor(
   slot: Slot,
-  dict: Dictionary,
   grid: ReadonlyMap<string, string>,
   index: LetterIndex,
 ): string[] {
   const cells = slotCells(slot);
-  const byPos = index.get(slot.len);
+  const byPos = index.byLen.get(slot.len);
   if (!byPos) return [];
 
   let smallest: readonly string[] | undefined;
@@ -270,7 +345,7 @@ function candidatesFor(
   }
 
   if (constraints.length === 0) {
-    return [...(dict[TIER].buckets.get(slot.len) ?? [])];
+    return [...(index.tier.buckets.get(slot.len) ?? [])];
   }
 
   const out: string[] = [];
@@ -286,16 +361,16 @@ function candidatesFor(
 /**
  * Depth-first enumeration over slots, most-constrained first. Combos
  * never repeat a word across slots (crossword convention). Fills come
- * from the required tier only — see TIER.
+ * from the required tier unless `fillTier` says `all` — see FillTier.
  */
 export function enumerateCombos(
   shape: Shape,
   dict: Dictionary,
   givens: ReadonlyMap<string, string>,
   cap = Infinity,
-  index?: LetterIndex,
+  fillTier: FillTier = "required",
 ): Combo[] {
-  const idx = index ?? buildLetterIndex(dict);
+  const idx = buildLetterIndex(dict, fillTier);
   const grid = new Map(givens);
   const assigned = new Array<string | null>(shape.slots.length).fill(null);
   const used = new Set<string>();
@@ -307,7 +382,7 @@ export function enumerateCombos(
     let bestCands: string[] | null = null;
     for (let i = 0; i < shape.slots.length; i++) {
       if (assigned[i] !== null) continue;
-      const cands = candidatesFor(shape.slots[i], dict, grid, idx);
+      const cands = candidatesFor(shape.slots[i], grid, idx);
       if (bestCands === null || cands.length < bestCands.length) {
         best = i;
         bestCands = cands;
@@ -346,7 +421,6 @@ export function enumerateCombos(
 /** One random complete filling, or null if the shape can't be filled. */
 function solveRandomFill(
   shape: Shape,
-  dict: Dictionary,
   rand: () => number,
   index: LetterIndex,
 ): Combo | null {
@@ -359,7 +433,7 @@ function solveRandomFill(
     let bestCands: string[] | null = null;
     for (let i = 0; i < shape.slots.length; i++) {
       if (assigned[i] !== null) continue;
-      const cands = candidatesFor(shape.slots[i], dict, grid, index);
+      const cands = candidatesFor(shape.slots[i], grid, index);
       if (bestCands === null || cands.length < bestCands.length) {
         best = i;
         bestCands = cands;

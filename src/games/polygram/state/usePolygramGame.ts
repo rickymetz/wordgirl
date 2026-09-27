@@ -17,6 +17,7 @@ import {
   saveDailyProgress,
 } from "./persistence";
 import { loadDictionary } from "../../../lib/words/loader";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { gameReducer, initialState, type GameState } from "./reducer";
 
 export type GameMode =
@@ -78,7 +79,9 @@ export function usePolygramGame(mode: GameMode) {
   // Suspends until the dictionary asset loads (router Suspense boundary).
   // The tutorial's puzzle is hand-written and needs no dictionary, but the
   // call has to stay unconditional — and the asset is precached anyway.
-  const dict = use(loadDictionary());
+  // From DICT_OVERLAY_EPOCH (and in practice) levels play the corrected
+  // dictionary; earlier dates keep the one they were played against.
+  const dict = dictionaryOn(use(loadDictionary()), persisted ? dateKey : null);
   const puzzle = useMemo(
     () =>
       mode.kind === "tutorial"

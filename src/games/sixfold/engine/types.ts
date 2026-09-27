@@ -29,6 +29,15 @@ export interface SixfoldPuzzle {
   family: readonly string[];
   /** The unclued word (main diagonal, or the down); revealed at the finish. */
   hiddenWord: string;
+  /**
+   * Every word the unclued line may spell and still count as solved:
+   * any dictionary word (both tiers) made from these letters. On the
+   * diagonal — not a sudoku unit — that includes words with a repeated
+   * letter (PAPERS over AEGPRS). Display/acceptance only: attached after
+   * generation, so it never feeds puzzle derivation. Absent (tutorial,
+   * a bare `tryBoard`) means `family`.
+   */
+  lineWords?: readonly string[];
   /** The clued row's answer. */
   cluedWord: string;
   /** The clue shown for it — which of the word's clues depends on the

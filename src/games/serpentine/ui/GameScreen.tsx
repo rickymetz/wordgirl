@@ -31,7 +31,7 @@ import { SnakeText } from "./SnakeText";
 import { SerpentineCoach } from "./Overlays";
 import { PoemCredit } from "./PoemCredit";
 import { cellKey, type Difficulty } from "../engine/types";
-import { nextHintIndex, replayHints } from "../engine/hints";
+import { nextHint, replayHints, type HintedCell } from "../engine/hints";
 import { wordStartIndices } from "../engine/phrase";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
 import { TutorialBanner } from "../../../components/game/TutorialBanner";
@@ -94,9 +94,21 @@ export function GameScreen({
   const tutorialStep = tutorialStepIndex(state);
 
   const [coachOpen, setCoachOpen] = useState(false);
-  const [hintedSet, setHintedSet] = useState<Set<number>>(new Set());
-  const hintedRef = useRef(hintedSet);
-  const hintCount = hintedSet.size;
+  // Cells revealed by hints, in the order taken — each with its place in
+  // the phrase as it stood on the route the hint followed. Keyed by CELL,
+  // not by index into the stored path: a board can spell its phrase along
+  // more than one route, and the hint follows the player's (see hints.ts).
+  const [hinted, setHinted] = useState<HintedCell[]>([]);
+  const hintedRef = useRef(hinted);
+  // Hints SPENT. Usually hinted.length, but a hint that finds the snake
+  // off track reveals no cell — it says where to back up to — and still
+  // counts, and a save restored onto an off-track snake keeps its count
+  // with nothing to show yet.
+  const [hintCount, setHintCount] = useState(0);
+  const hintCountRef = useRef(0);
+  // The mistake the last back-up hint was paid for, so tapping Hint
+  // again on the same one repeats the message without charging.
+  const backtrackPaidFor = useRef<string | null>(null);
 
   const { toast, show } = useToast();
 
@@ -114,39 +126,38 @@ export function GameScreen({
   useEffect(() => {
     if (hintsRestored.current || hydratedHints <= 0) return;
     hintsRestored.current = true;
-    const set = replayHints(
-      puzzle.path.length,
-      state.cells.length,
-      hydratedHints,
-    );
-    hintedRef.current = set;
-    setHintedSet(set);
-  }, [hydratedHints, puzzle.path.length, state.cells.length]);
+    const restored = replayHints(puzzle, state.cells, hydratedHints);
+    hintedRef.current = restored;
+    setHinted(restored);
+    hintCountRef.current = hydratedHints;
+    setHintCount(hydratedHints);
+  }, [hydratedHints, puzzle, state.cells]);
 
   // The readout shows given letters and hinted ones alike — both are
   // letters known but not yet placed. The GRID marks hinted cells only:
   // a given letter says what, never where.
   const revealed = useMemo(() => {
     const set = new Set(givenIndices);
-    for (const idx of hintedSet) set.add(idx);
+    for (const h of hinted) set.add(h.index);
     return set;
-  }, [givenIndices, hintedSet]);
+  }, [givenIndices, hinted]);
 
-  const hintCellKeys = useMemo(() => {
-    if (hintedSet.size === 0) return undefined;
-    const keys = new Set<string>();
-    for (const idx of hintedSet) {
-      keys.add(cellKey(puzzle.path[idx]));
-    }
-    return keys;
-  }, [hintedSet, puzzle]);
+  const hintCellKeys = useMemo(
+    () => (hinted.length === 0 ? undefined : new Set(hinted.map((h) => h.key))),
+    [hinted],
+  );
 
-  const canHint = useMemo(() => {
-    for (let i = state.cells.length; i < puzzle.path.length; i++) {
-      if (!hintedSet.has(i)) return true;
-    }
-    return false;
-  }, [state.cells.length, puzzle.path.length, hintedSet]);
+  // What the Hint button would do right now. A search over the board —
+  // cheap (boards are small and every step is pinned to one letter), but
+  // memoised so it runs once per move, not once per render.
+  const hintTarget = useMemo(
+    () =>
+      state.solved || isTutorial
+        ? null
+        : nextHint(puzzle, state.cells, hintCellKeys ?? new Set<string>()),
+    [state.solved, isTutorial, puzzle, state.cells, hintCellKeys],
+  );
+  const canHint = hintTarget !== null;
 
   // The coach sheet opens on demand only — the first-run introduction is
   // now the tutorial offer (see TutorialPrompt).
@@ -167,6 +178,17 @@ export function GameScreen({
     if (state.solved) show("Solved!", 2000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.solved]);
+
+  // Every cell covered but the phrase does not read: without this the
+  // counter just says "N / N letters" and nothing says it is wrong. Fires
+  // each time the snake FILLS the board, so undoing one and trying again
+  // says it again.
+  const fullButWrong =
+    !state.solved && puzzle.path.length > 0 && state.cells.length >= puzzle.path.length;
+  useEffect(() => {
+    if (fullButWrong) show("Not quite — the order is off", 2500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullButWrong]);
 
   const onTapCell = useCallback(
     (row: number, col: number) => dispatch({ type: "tapCell", row, col }),
@@ -211,21 +233,40 @@ export function GameScreen({
                 // The set is now player-driven; block any late restore.
                 hintsRestored.current = true;
                 const current = hintedRef.current;
-                const idx = nextHintIndex(
-                  puzzle.path.length,
-                  state.cells.length,
-                  current,
+                const target = nextHint(
+                  puzzle,
+                  state.cells,
+                  new Set(current.map((h) => h.key)),
                 );
                 // After the early return, not before it: with every cell
                 // already hinted there is nothing left to reveal, and a
                 // tap that spends nothing is not a hint.
-                if (idx === null) return;
+                if (target === null) return;
+                if (target.kind === "backtrack") {
+                  // The snake has left every route. No cell ahead of it
+                  // is worth revealing, and a route cell under the snake
+                  // cannot be shown on the grid — so say where it went
+                  // wrong. Letter numbers are 1-based, as the readout
+                  // reads; `keep` is how many cells are still good.
+                  show(`Off track — back up to letter ${target.keep}`, 2500);
+                  // One charge per MISTAKE — the good cells plus the
+                  // first wrong one — however the snake wanders after it.
+                  const signature = state.cells
+                    .slice(0, target.keep + 1)
+                    .map(cellKey)
+                    .join(" ");
+                  if (backtrackPaidFor.current === signature) return;
+                  backtrackPaidFor.current = signature;
+                } else {
+                  const next = [...current, { key: target.key, index: target.index }];
+                  hintedRef.current = next;
+                  setHinted(next);
+                }
                 trackHint("serpentine");
-                const next = new Set(current);
-                next.add(idx);
-                hintedRef.current = next;
-                setHintedSet(next);
-                setHints(next.size);
+                const spent = hintCountRef.current + 1;
+                hintCountRef.current = spent;
+                setHintCount(spent);
+                setHints(spent);
               }}
             >
               <Lightbulb aria-hidden className="h-3.5 w-3.5" />
