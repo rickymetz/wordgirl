@@ -27,12 +27,20 @@ const OUT_FILE = new URL(
   import.meta.url,
 ).pathname;
 
+// Both sources are pinned to a commit: a rebuild from a moving branch
+// would silently re-derive every puzzle. These pins reproduce the
+// shipped dictionary.txt byte for byte EXCEPT the v13 promotions (doze,
+// ooze, skied, misdeed, missive), which were hand-edited in place: their
+// "+" was dropped where they sit in the bonus section. Re-apply that by
+// hand after a rebuild — listing them in REQUIRED_ALLOWLIST instead
+// moves them up the required buckets, and bucket order is part of
+// puzzle derivation.
 const ENABLE_URL =
-  "https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt";
+  "https://raw.githubusercontent.com/dolph/dictionary/c65f04b0b5b27a981f437b940cf62fe71320d5ec/enable1.txt";
 // OpenSubtitles-derived frequency list, pre-sorted by descending frequency,
 // "word count" per line. Conversational frequencies suit a casual game well.
 const FREQ_URL =
-  "https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt";
+  "https://raw.githubusercontent.com/hermitdave/FrequencyWords/525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/en/en_50k.txt";
 
 // Two tiers. REQUIRED words gate level advancement, so they must be
 // common — this is the frustration dial. BONUS words score extra points
