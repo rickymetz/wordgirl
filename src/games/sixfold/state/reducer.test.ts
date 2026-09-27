@@ -1,11 +1,17 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { parseDictionary } from "../../../lib/words/dictionary";
+import { dailyPuzzle } from "../engine/generator";
+import { cluedCells, hiddenCells } from "../engine/hints";
 import { TUTORIAL_PUZZLE as P } from "../engine/tutorial";
+import type { SixfoldPuzzle } from "../engine/types";
 import {
   BLANK,
   conflictCells,
   gameReducer,
   initialState,
   isLocked,
+  isSolvedBoard,
   wrongLines,
   type Action,
   type GameState,
@@ -166,5 +172,104 @@ describe("hydrate", () => {
   it("only trusts `solved` when the entries really are the solution", () => {
     const s0 = initialState(P);
     expect(run([{ type: "hydrate", entries: s0.entries, revealed: [], solved: true }]).solved).toBe(false);
+  });
+});
+
+/** Every sudoku-valid completion of a puzzle's givens (sudoku alone
+ *  leaves only a handful — that's the difficulty cap). */
+function completions(p: SixfoldPuzzle): string[] {
+  const cells = [...p.solution].map((ch, c) => (p.givens.includes(c) ? ch : BLANK));
+  const out: string[] = [];
+  const rec = (c: number) => {
+    if (c === cells.length) return void out.push(cells.join(""));
+    if (cells[c] !== BLANK) return rec(c + 1);
+    for (const ch of p.letters) {
+      cells[c] = ch;
+      if (!conflictCells(p.regions, cells.join("")).has(c)) rec(c + 1);
+    }
+    cells[c] = BLANK;
+  };
+  rec(0);
+  return out;
+}
+
+describe("a second grid that keeps every rule", () => {
+  const dict = parseDictionary(
+    readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
+  );
+  const spell = (e: string, cells: number[]) => cells.map((c) => e[c]).join("");
+
+  // The diagonal is not a sudoku unit, so it may repeat a letter; these
+  // days have a completion whose clued row is right and whose diagonal is
+  // a real repeat-letter word the setter's grid doesn't use.
+  const DAYS: [string, string, string][] = [
+    ["2026-03-19", "pagers", "papers"],
+    ["2026-05-17", "others", "otters"],
+    ["2026-07-10", "pagers", "parers"],
+    ["2026-08-09", "hoarse", "hearse"],
+    ["2026-11-23", "sailer", "siller"],
+  ];
+
+  it.each(DAYS)("%s: accepts %s's alternative, %s, as a solve", (date, setter, alt) => {
+    const p = dailyPuzzle(dict, date).puzzle;
+    expect(p.col).toBe(-1);
+    expect(p.hiddenWord).toBe(setter);
+    const grids = completions(p);
+    const second = grids.find(
+      (e) => spell(e, cluedCells(p)) === p.cluedWord && spell(e, hiddenCells(p)) === alt,
+    );
+    expect(second).toBeDefined();
+    expect(second).not.toBe(p.solution);
+    expect(isSolvedBoard(p, second!)).toBe(true);
+    expect(wrongLines(p, second!)).toEqual([]);
+
+    // Played in, not just checked: typing the second grid solves the day.
+    const blanksHere = [...Array(36).keys()].filter((c) => !p.givens.includes(c));
+    const s = blanksHere.reduce<GameState>(
+      (st, c) =>
+        gameReducer(gameReducer(st, { type: "select", cell: c }), {
+          type: "pressLetter",
+          letter: second![c],
+        }),
+      initialState(p),
+    );
+    expect(s.solved).toBe(true);
+    expect(s.feedback?.type).toBe("solved");
+    // ...and a save of it hydrates as solved.
+    const h = gameReducer(initialState(p), { type: "hydrate", entries: second!, revealed: [], solved: true });
+    expect(h.solved).toBe(true);
+
+    // Every other completion breaks a stated rule, and wrongLines names
+    // exactly the lines that do — never one that spells an allowed word.
+    const allowed = new Set(p.lineWords);
+    for (const e of grids) {
+      const clueOk = spell(e, cluedCells(p)) === p.cluedWord;
+      const hid = spell(e, hiddenCells(p));
+      const hiddenOk = hid !== p.cluedWord && allowed.has(hid);
+      expect(isSolvedBoard(p, e)).toBe(clueOk && hiddenOk);
+      const named = wrongLines(p, e);
+      expect(named.includes("clued")).toBe(!clueOk);
+      expect(named.includes("hidden")).toBe(!hiddenOk);
+    }
+  });
+
+  it("the allowed diagonal words are real dictionary words, from these letters only", () => {
+    const p = dailyPuzzle(dict, "2026-03-19").puzzle;
+    expect(p.lineWords).toContain("papers");
+    expect(p.lineWords).toContain("pagers");
+    for (const w of p.lineWords ?? []) {
+      expect(dict.has(w)).toBe(true);
+      expect([...w].every((ch) => p.letters.includes(ch))).toBe(true);
+    }
+  });
+
+  it("still refuses a full board whose diagonal is no word", () => {
+    const p = dailyPuzzle(dict, "2026-03-19").puzzle;
+    const bad = completions(p).find(
+      (e) => spell(e, cluedCells(p)) === p.cluedWord && !isSolvedBoard(p, e),
+    );
+    expect(bad).toBeDefined();
+    expect(wrongLines(p, bad!)).toEqual(["hidden"]);
+    expect(isSolvedBoard(p, p.solution)).toBe(true);
   });
 });

@@ -2,7 +2,7 @@ import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import type { Family, Geometry, Pairing } from "./families";
 import { clueFor } from "./clues";
-import { anagramFamilies, lineWords, pairings } from "./families";
+import { acceptedLineWords, anagramFamilies, lineWords, pairings } from "./families";
 import { BOX_LAYOUT } from "./layouts";
 import { SCHEDULE, type ScheduledFamily } from "./schedule";
 import type { Grid, WordConstraint } from "./solver";
@@ -192,7 +192,10 @@ export function generateForFamily(
     for (const p of shuffle(pairings(family, geometry), rand)) {
       for (let i = 0; i < DRAWS_PER_PAIRING; i++) {
         const a = tryBoard(family.letters, family, p, layout, known, rand, difficulty);
-        if (a) return a;
+        // What the hidden line may spell to count as solved (see
+        // `acceptedLineWords`). Attached after the draw, so it consumes
+        // no randomness and changes no board.
+        if (a) return { ...a, puzzle: { ...a.puzzle, lineWords: acceptedLineWords(dict, family.letters) } };
       }
     }
   }
