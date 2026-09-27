@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { PROMOTED_WORDS, anagramFamilies, lineWords } from "./families";
 import { DAILY_DIFFICULTY, dailyPuzzle, practiceAvoid, practicePuzzle, practiceSeed } from "./generator";
 import { layoutById } from "./layouts";
@@ -13,7 +14,10 @@ import { CELLS, N } from "./types";
 const dict = parseDictionary(
   readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
 );
-const required = new Set(dict.required.buckets.get(N));
+/** The required tier a date plays against (the shared correction
+ * promotes words from its epoch on — SOFTER joins FOREST/FOSTER). */
+const requiredOn = (dateKey: string) =>
+  new Set(dictionaryOn(dict, dateKey).required.buckets.get(N));
 
 function hiddenCells(p: SixfoldPuzzle): number[] {
   return Array.from({ length: N }, (_, i) => (p.col < 0 ? i * N + i : i * N + p.col));
@@ -66,7 +70,7 @@ describe("dailyPuzzle", () => {
     expect(new Set(window).size).toBe(window.length);
   });
 
-  describe.each(puzzles)("%s", (_date, p) => {
+  describe.each(puzzles)("%s", (date, p) => {
     const units = buildUnits(layoutById(p.layoutId)!.regions);
 
     it("is a valid sudoku solution", () => {
@@ -80,7 +84,7 @@ describe("dailyPuzzle", () => {
       expect(spell(p, hiddenCells(p))).toBe(p.hiddenWord);
       expect(p.cluedWord).not.toBe(p.hiddenWord);
       for (const w of [p.cluedWord, p.hiddenWord]) {
-        expect(required.has(w) || PROMOTED_WORDS.includes(w), w).toBe(true);
+        expect(requiredOn(date).has(w) || PROMOTED_WORDS.includes(w), w).toBe(true);
         expect(p.family).toContain(w);
       }
     });

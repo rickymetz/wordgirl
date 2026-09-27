@@ -14,6 +14,11 @@ export interface Family {
 }
 
 /**
+ * (The shared dictionary correction, lib/words/overlay.ts, promotes more
+ * from its epoch on; dailyPuzzle applies it. Of its words only SOFTER
+ * reaches a family — it joins FOREST/FOSTER — and it is clued in
+ * clues.ts/cryptic.ts like any other answer.)
+ *
  * Bonus-tier words promoted into this game's answer pool, reviewed by
  * hand (PROMOTION_CANDIDATES.md): everyday words the frequency cut left
  * out, each completing a family with a common word. Adding one creates a

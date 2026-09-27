@@ -52,6 +52,8 @@ export const CLUES: Readonly<Record<string, readonly string[]>> = {
   sector: ["A part of the economy", "Pie-slice shape, in geometry"],
   forest: ["Land thick with trees", "Can't see it for the trees?"],
   foster: ["Care for a child not your own", "Encourage, as growth"],
+  // Joins the family from DICT_OVERLAY_EPOCH (lib/words/overlay.ts).
+  softer: ["Less firm", "Gentler, as a voice"],
   groans: ["Sounds of pain or complaint", "Reactions to bad puns"],
   organs: ["Heart and lungs, for two", "Church instruments"],
   hatred: ["Intense dislike", "Loathing"],

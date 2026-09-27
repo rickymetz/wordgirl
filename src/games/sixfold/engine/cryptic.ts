@@ -53,6 +53,7 @@ export const CRYPTIC: Readonly<Record<string, Cryptic>> = {
   sector: { clue: "Zone: cult with gold", how: "SECT (cult) + OR (gold)" },
   forest: { clue: "Golf warning by street leads to woods", how: "FORE (golf warning) + ST (street)" },
   foster: { clue: "Promote actress Jodie", how: "Double definition (promote / Jodie FOSTER)" },
+  softer: { clue: "Less harsh: easy, with a hesitation", how: "SOFT (easy) + ER (hesitation)" },
   groans: { clue: "Moans: good horses", how: "G (good) + ROANS (horses)" },
   organs: { clue: "Hearts, say, found in Morgan Stanley", how: "Hidden in mORGAN Stanley" },
   hatred: { clue: "Loathing hidden in chat, redacted", how: "Hidden in cHAT REDacted (H-A-T-R-E-D)" },

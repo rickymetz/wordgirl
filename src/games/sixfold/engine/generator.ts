@@ -1,5 +1,6 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import type { Family, Geometry, Pairing } from "./families";
 import { clueFor } from "./clues";
 import { acceptedLineWords, anagramFamilies, lineWords, pairings } from "./families";
@@ -273,6 +274,10 @@ export function clueTurn(letters: string, returns: number): number {
  * The clue rotates with how many cycles the family has played through.
  */
 export function dailyPuzzle(dict: Dictionary, dateKey: string): Attempt {
+  // The shared dictionary correction applies from its epoch (see
+  // lib/words/overlay.ts): applied HERE, so every caller — hook, archive,
+  // tests — sees the board the date really plays.
+  dict = dictionaryOn(dict, dateKey);
   const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
   const { cycle, order, index } = scheduleSlot(dateKey);
   for (let k = 0; k < order.length; k++) {
@@ -328,6 +333,7 @@ export function practiceAvoid(today: string): ReadonlySet<string> {
  * of its word's three clues.
  */
 export function practicePuzzle(dict: Dictionary, seed: string, today?: string): Attempt {
+  dict = dictionaryOn(dict, null);
   const rand = seededRandom(seed);
   const byLetters = new Map(anagramFamilies(dict).map((f) => [f.letters, f]));
   const avoid = today ? practiceAvoid(today) : new Set<string>();

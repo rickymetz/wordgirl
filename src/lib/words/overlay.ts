@@ -9,9 +9,9 @@ import { letterMask, type Dictionary } from "./dictionary";
  * practice, which is minted fresh), the untouched one before it.
  *
  * It is the day AFTER this shipped, so a board already in progress on
- * ship day doesn't change under the player. Sixfold stays on the base
- * dictionary for good: its families are a dated SCHEDULE with a clue
- * per word, so a promoted word would need a clue it doesn't have.
+ * ship day doesn't change under the player. Every dictionary game reads
+ * it; a Sixfold family that gains a promoted word (SOFTER joins
+ * FOREST/FOSTER) needs that word clued, which sixfold's tests enforce.
  */
 export const DICT_OVERLAY_EPOCH = "2026-09-28";
 
