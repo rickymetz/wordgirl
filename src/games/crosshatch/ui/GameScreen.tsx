@@ -1,5 +1,5 @@
 import "@fontsource/rubik-mono-one/latin-400.css";
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -34,7 +34,6 @@ import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
-import { loadDictionary } from "../../../lib/words/loader";
 import { useCrosshatchGame, type GameMode } from "../state/useCrosshatchGame";
 import {
   displayStreak,
@@ -112,11 +111,11 @@ export function GameScreen({
     state,
     dispatch,
     puzzle,
+    dict,
     totalWords: total,
     solvedElapsedMs,
     hydratedAsSolved,
   } = useCrosshatchGame(mode);
-  const dict = use(loadDictionary());
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
 

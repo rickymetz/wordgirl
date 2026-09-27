@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { puzzleKey } from "../../../lib/puzzleKey";
 import { parseDictionary } from "../../../lib/words/dictionary";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import {
   BONUS_FILLS_EPOCH,
   MAX_SLOT_WORDS,
@@ -23,13 +24,12 @@ const rawDict = readFileSync(
 );
 const dict = parseDictionary(rawDict);
 
-/** Bonus-tier words: "+"-prefixed lines in the shipped dictionary. */
-const bonusWords = new Set(
-  rawDict
-    .split("\n")
-    .filter((line) => line.startsWith("+"))
-    .map((line) => line.trim().slice(1)),
-);
+/** The dictionary a date's board is built against — as the game hook
+ * picks it (the correction applies from its epoch on). */
+const dictOn = (date: string) => dictionaryOn(dict, date);
+/** Bonus-tier words on a date: the shipped "+" lines, corrected. */
+const bonusOn = (date: string) =>
+  new Set([...dictOn(date).bonus.buckets.values()].flat());
 
 describe("enumerateCombos", () => {
   // Tiny fixture: a plus of two 3-letter slots crossing at the middle.
@@ -94,11 +94,11 @@ describe("generateCrosshatch", () => {
     const pinned = [
       ["2026-07-06", "kkvr3k"],
       ["2026-09-27", "8tnfep"],
-      ["2026-12-25", "4a1o1g"],
-      ["2027-06-01", "zqci4d"],
+      ["2026-12-25", "1dtqsfp"],
+      ["2027-06-01", "t2mezn"],
     ];
     for (const [date, fingerprint] of pinned) {
-      const p = generateCrosshatch(dict, dailySeed(date));
+      const p = generateCrosshatch(dictOn(date), dailySeed(date));
       expect(puzzleKey([p.givens, p.combos]), date).toBe(fingerprint);
     }
   });
@@ -114,7 +114,8 @@ describe("generateCrosshatch", () => {
       const date = new Date(2026, 6, 6 + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       for (const level of LEVELS) {
-        const p = generateCrosshatch(dict, dailySeed(key, level));
+        const p = generateCrosshatch(dictOn(key), dailySeed(key, level));
+        const bonusWords = bonusOn(key);
         const listed = p.targets!.filter((w) => bonusWords.has(w));
         expect(listed, `${key} ${level}: bonus-tier words required`).toEqual([]);
         const fills = new Set(p.combos.flat());
@@ -157,6 +158,11 @@ describe("generateCrosshatch", () => {
     expect(pre.some((c) => c[0] === "easy")).toBe(false);
     const post = enumerateCombos(corner, dict, givens, Infinity, "all");
     expect(post.map(comboKey)).toContain("easy|hazy");
+    // And from the dictionary correction on, HAZY is required-tier, so
+    // the pair is an all-required grid and EASY is listed outright.
+    const corrected = dictOn(BONUS_FILLS_EPOCH);
+    const listed = enumerateCombos(corner, corrected, givens);
+    expect(listed.map(comboKey)).toContain("easy|hazy");
   });
 
   it("bonus fills start at the epoch, and in every practice board", () => {
@@ -182,7 +188,7 @@ describe("generateCrosshatch", () => {
       const date = new Date(y, m - 1, d + i);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       const t0 = Date.now();
-      const puzzle = generateCrosshatch(dict, dailySeed(key, level));
+      const puzzle = generateCrosshatch(dictOn(key), dailySeed(key, level));
       generating += Date.now() - t0;
       const { shape, givens, combos } = puzzle;
       expect(puzzle.level).toBe(level);
@@ -229,7 +235,7 @@ describe("generateCrosshatch", () => {
         shape.slots.forEach((slot, s) => {
           const word = combo[s];
           if (word.length !== slot.len) problems.push(`${word}: length`);
-          if (!dict.has(word)) problems.push(`"${word}" not in dictionary`);
+          if (!dictOn(key).has(word)) problems.push(`"${word}" not in dictionary`);
           slotCells(slot).forEach((c, j) => {
             const k = cellKey(c.row, c.col);
             const existing = grid.get(k);

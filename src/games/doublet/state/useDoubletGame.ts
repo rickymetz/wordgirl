@@ -3,6 +3,7 @@ import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
+import { dictionaryOn } from "../../../lib/words/overlay";
 import { dailySeed, generateDoublet } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import type { Difficulty } from "../engine/types";
@@ -37,7 +38,14 @@ export function useDoubletGame(mode: GameMode) {
       ? mode.seed
       : TUTORIAL_PUZZLE.seed;
 
-  const dict = use(loadDictionary());
+  // From DICT_OVERLAY_EPOCH (and in practice) the board plays the
+  // corrected dictionary; earlier dates and the tutorial keep the one
+  // they were built against.
+  const baseDict = use(loadDictionary());
+  const dict =
+    mode.kind === "tutorial"
+      ? baseDict
+      : dictionaryOn(baseDict, persisted ? dateKey : null);
   const puzzle = useMemo(
     () =>
       mode.kind === "tutorial"

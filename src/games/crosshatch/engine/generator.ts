@@ -1,6 +1,7 @@
 import { seededRandom, shuffle } from "../../../lib/random";
 import type { Dictionary } from "../../../lib/words/dictionary";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
+import { DICT_OVERLAY_EPOCH } from "../../../lib/words/overlay";
 import { uniqueWords } from "./scoring";
 import { shapesFor } from "./shapes";
 import type { Combo, CrosshatchPuzzle, Level, Shape, Slot } from "./types";
@@ -50,9 +51,10 @@ const MAX_EXTRA_GIVENS = 6;
  * Gated by date because the fills change which words a day lists:
  * every earlier date must keep regenerating into the puzzle it was
  * played on. It is the day AFTER this shipped, so a board already in
- * progress on ship day doesn't change under the player.
+ * progress on ship day doesn't change under the player. It is the
+ * dictionary correction's epoch, so a day changes rules only once.
  */
-export const BONUS_FILLS_EPOCH = "2026-09-28";
+export const BONUS_FILLS_EPOCH = DICT_OVERLAY_EPOCH;
 
 /** Does this seed's puzzle accept bonus-tier fills? Dailies from the
  * epoch on, and every practice board (they're minted fresh). */
