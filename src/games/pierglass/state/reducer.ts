@@ -1,4 +1,13 @@
-import { reverse, fitsIn, toMultiset, type Puzzle, type RowDef } from "../engine/types";
+import {
+  reverse,
+  fitsIn,
+  multisetSize,
+  subtract,
+  toMultiset,
+  type Multiset,
+  type Puzzle,
+  type RowDef,
+} from "../engine/types";
 import { lexiconItems } from "../engine/lexicon";
 import { solveBank } from "../engine/generator";
 
@@ -90,16 +99,55 @@ export function initialState(init: {
 const rowKey = (def: RowDef) => [...def.words].sort().join("/");
 
 /**
+ * The pair row that READS `place` left of the glass (MAD -> MAD|DAM),
+ * even where a palindrome owns that lexicon key as its half (MAD ->
+ * MADAM: the palindrome wins the key, see buildLexicon). The pair is
+ * still reachable through its other orientation's key.
+ */
+function pairReading(
+  lexicon: Map<string, RowDef>,
+  place: string,
+): RowDef | undefined {
+  const rev = reverse(place);
+  const other = lexicon.get(rev);
+  if (other?.kind !== "pair" || other.place !== rev) return undefined;
+  return { ...other, place, words: [place, rev] };
+}
+
+/**
  * Resolve staged letters to their row: aliases (POO or POOP -> the
  * POOP row) keep the canonical placement and hand the extras back.
  * The single seam the board preview AND the commit path both use.
+ *
+ * A placement can read as MORE than one row (PO -> POP or POOP; MAD
+ * -> MADAM or MAD|DAM). When the lexicon's reading is already on the
+ * board, the mirror offers the next unplaced one instead of
+ * stonewalling — otherwise a bank without spare letters could never
+ * reach the other row after placing the first. `def` is then only
+ * still-placed when no alternative exists (the caller's duplicate).
  */
 export function resolvePlacement(
   lexicon: Map<string, RowDef>,
   staged: string,
+  rows: readonly CommittedRow[] = [],
 ): { def: RowDef | undefined; place: string; extra: string } {
-  const def = lexicon.get(staged);
+  let def = lexicon.get(staged);
   const place = def && staged.startsWith(def.place) ? def.place : staged;
+  const placed = new Set(rows.map((r) => rowKey(r.def)));
+  if (def && placed.has(rowKey(def))) {
+    let next: RowDef | undefined;
+    for (const d of lexicon.values()) {
+      if (d.place === def.place && !placed.has(rowKey(d))) {
+        next = d;
+        break;
+      }
+    }
+    if (!next && def.kind === "palindrome") {
+      const pair = pairReading(lexicon, def.place);
+      if (pair && !placed.has(rowKey(pair))) next = pair;
+    }
+    def = next ?? def;
+  }
   return { def, place, extra: staged.slice(place.length) };
 }
 
@@ -121,7 +169,18 @@ function commitPlaces(
   const rows: CommittedRow[] = [];
   const placed = new Set<string>();
   for (const key of saved) {
-    const def = state.lexicon.get(key);
+    let def = state.lexicon.get(key);
+    // A half key normally reads as its palindrome (legacy saves stored
+    // halves), but when the save ALSO holds that palindrome's full word
+    // (rowSaveKey), the half was saved by the pair it spells: MADAM
+    // then MAD|DAM saves as ["madam", "mad"].
+    if (
+      def?.kind === "palindrome" &&
+      key !== def.words[0] &&
+      saved.includes(def.words[0])
+    ) {
+      def = pairReading(state.lexicon, key) ?? def;
+    }
     if (!def) return null;
     // A corrupt or ambiguous save must not fabricate duplicate rows.
     if (placed.has(rowKey(def))) return null;
@@ -187,8 +246,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (state.current.length === 0) {
         return { ...state, lastResult: { type: "empty", nonce } };
       }
-      const resolved = resolvePlacement(state.lexicon, state.current);
-      let def = resolved.def;
+      const { def, extra } = resolvePlacement(
+        state.lexicon,
+        state.current,
+        state.rows,
+      );
       if (!def) {
         const place = state.current;
         const rev = reverse(place);
@@ -215,32 +277,17 @@ export function gameReducer(state: GameState, action: Action): GameState {
           },
         };
       }
-      const placedKeys = new Set(state.rows.map((r) => rowKey(r.def)));
-      if (placedKeys.has(rowKey(def))) {
-        // A placement can read as MORE than one word (PO -> POP or
-        // POOP). When this reading is already on the board, the
-        // mirror offers the next unplaced sibling instead of
-        // stonewalling — otherwise a bank without spare letters could
-        // never reach the longer word after placing the shorter.
-        let sibling: RowDef | undefined;
-        for (const d of state.lexicon.values()) {
-          if (d.place === def.place && !placedKeys.has(rowKey(d))) {
-            sibling = d;
-            break;
-          }
-        }
-        if (!sibling) {
-          return {
-            ...state,
-            lastResult: { type: "duplicate", place: state.current, nonce },
-          };
-        }
-        def = sibling;
+      // resolvePlacement already moved past a placed reading to any
+      // unplaced sibling; still placed means there is none.
+      if (state.rows.some((r) => rowKey(r.def) === rowKey(def))) {
+        return {
+          ...state,
+          lastResult: { type: "duplicate", place: state.current, nonce },
+        };
       }
       // An aliased placement staged more letters than the mirror
       // needs: the row keeps the canonical placement and the extras
       // go home to the rack.
-      const { extra } = resolvePlacement(state.lexicon, state.current);
       const bank = extra ? [...state.bank, ...extra].sort() : state.bank;
       const rows = [...state.rows, { place: def.place, def }];
       const solved = bank.length === 0;
@@ -268,11 +315,23 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const bankWithCurrent = [...state.bank, ...state.current].sort();
       const bankMs = toMultiset(bankWithCurrent);
 
+      const items = lexiconItems(state.lexicon).filter(
+        (d) => !placedKeys.has(rowKey(d)),
+      );
+      // A hint must never strand the player: a row is offered only if
+      // the letters it leaves can still be cleared by unplaced rows.
+      const completes = (d: RowDef, left: Multiset) =>
+        multisetSize(left) === 0 ||
+        solveBank(left, items.filter((i) => rowKey(i) !== rowKey(d)), 1)
+          .length > 0;
+
       // Try seedRows first — fast path when the player hasn't diverged.
       let def: RowDef | undefined;
       for (const key of state.puzzle.seedRows) {
         const d = state.lexicon.get(key);
-        if (d && !placedKeys.has(rowKey(d)) && fitsIn(toMultiset(d.cost), bankMs)) {
+        if (!d || placedKeys.has(rowKey(d))) continue;
+        const cost = toMultiset(d.cost);
+        if (fitsIn(cost, bankMs) && completes(d, subtract(bankMs, cost))) {
           def = d;
           break;
         }
@@ -280,9 +339,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
       // Fallback: find any row from a valid completion of the current bank.
       if (!def) {
-        const items = lexiconItems(state.lexicon).filter(
-          (d) => !placedKeys.has(rowKey(d)),
-        );
         const completions = solveBank(bankMs, items, 1);
         if (completions.length > 0) def = completions[0][0];
       }

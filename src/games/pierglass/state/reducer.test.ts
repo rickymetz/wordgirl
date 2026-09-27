@@ -1,13 +1,16 @@
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
-import { buildLexicon, commonWords } from "../engine/lexicon";
-import type { Puzzle } from "../engine/types";
+import { buildLexicon, commonWords, lexiconItems } from "../engine/lexicon";
+import { dailySeed, generatePierglass, solveBank } from "../engine/generator";
+import { toMultiset, type Puzzle } from "../engine/types";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import {
   gameReducer,
   glyphRowCount,
   initialState,
+  resolvePlacement,
+  rowSaveKey,
   type GameState,
 } from "./reducer";
 
@@ -292,5 +295,96 @@ describe("pierglass reducer", () => {
     run({ type: "hydrate", places: ["mo"], solved: false });
     expect(state.takeBacks).toBe(0);
     expect(state.invalids).toBe(0);
+  });
+
+  it("a hint never strands the bank (2026-09-01: HE|EH then DEEP)", () => {
+    // The day's seedRows are DEEP, YAH, ER. After the player spends
+    // H+E on HE|EH, DEEP still FITS — but it leaves A R Y, which no
+    // row clears. The hint must skip it for a row that completes.
+    const day = generatePierglass(
+      dict,
+      dailySeed("2026-09-01"),
+      lexiconItems(lexicon),
+    );
+    expect(day.seedRows[0]).toBe("deep");
+    state = initialState({ puzzle: day, lexicon, words, isWord });
+    run(...type("he"), { type: "commit" });
+    expect(state.rows.map((r) => r.def.words)).toEqual([["he", "eh"]]);
+    expect(solveBank(toMultiset("ary"), lexiconItems(lexicon), 1)).toEqual([]);
+
+    run({ type: "revealHint" });
+    expect(state.rows).toHaveLength(2);
+    expect(state.rows[1].def.words[0]).not.toBe("deep");
+    // Hints alone now carry the board home.
+    for (let i = 0; i < 6 && !state.solved; i++) run({ type: "revealHint" });
+    expect(state.solved).toBe(true);
+  });
+
+  it("a palindrome's half still reaches the pair it spells (MAD)", () => {
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."madmad"].sort() },
+      lexicon,
+      words,
+      isWord,
+    });
+    // MADAM owns the "mad" key (palindrome wins the collision)…
+    run(...type("mad"), { type: "commit" });
+    expect(state.rows.map((r) => r.def.words)).toEqual([["madam"]]);
+    // …so a second MAD, with MADAM on the board, is MAD|DAM — not
+    // "Already placed". The preview agrees before the commit.
+    run(...type("mad"));
+    expect(resolvePlacement(lexicon, "mad", state.rows).def?.words).toEqual([
+      "mad",
+      "dam",
+    ]);
+    run({ type: "commit" });
+    expect(state.solved).toBe(true);
+    expect(state.rows[1].place).toBe("mad");
+    expect(state.rows[1].def.words).toEqual(["mad", "dam"]);
+
+    // Round trip in either row order: the half key is the pair when
+    // the save also names MADAM in full.
+    const saved = state.rows.map(rowSaveKey);
+    expect(saved).toEqual(["madam", "mad"]);
+    for (const places of [saved, [...saved].reverse()]) {
+      state = initialState({
+        puzzle: { ...puzzle, bank: [..."madmad"].sort() },
+        lexicon,
+        words,
+        isWord,
+      });
+      run({ type: "hydrate", places, solved: true });
+      expect(state.solved).toBe(true);
+      expect(state.rows.map((r) => r.def.words.join("|")).sort()).toEqual([
+        "madam",
+        "mad|dam",
+      ]);
+    }
+  });
+
+  it("names the rare reading, not just the typed one", () => {
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."dewspan"].sort() },
+      lexicon,
+      words,
+      isWord,
+    });
+    // WED is common; its mirror DEW is the rare side (v1 lexicon).
+    run(...type("wed"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({ badWord: "dew", reason: "rare" });
+    run({ type: "clearRow" }, ...type("dew"), { type: "commit" });
+    expect(state.lastResult).toMatchObject({ badWord: "dew", reason: "rare" });
+  });
+
+  it("plays everyday v2 pairs under the v2 lexicon", () => {
+    const lexV2 = buildLexicon(dict, 2);
+    state = initialState({
+      puzzle: { ...puzzle, bank: [..."dewspan"].sort() },
+      lexicon: lexV2,
+      words: commonWords(dict, 2),
+      isWord,
+    });
+    run(...type("wed"), { type: "commit" }, ...type("span"), { type: "commit" });
+    expect(state.solved).toBe(true);
   });
 });

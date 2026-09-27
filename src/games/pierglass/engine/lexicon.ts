@@ -1,4 +1,5 @@
 import type { Dictionary } from "../../../lib/words/dictionary";
+import { DICT_OVERLAY_EPOCH, PROMOTED_WORDS } from "../../../lib/words/overlay";
 import { reverse, type RowDef } from "./types";
 
 /**
@@ -89,8 +90,52 @@ export const MIRROR_WORDS: readonly string[] = [
   "reviver", "rotator",
 ];
 
+/**
+ * The second hand-picked batch, under the same both-readings rule:
+ * everyday pairs the first list still refused as "too rare" (DEW|WED,
+ * DIVA|AVID, LOOPS|SPOOL, SPAN|NAPS…). Played only from
+ * LEXICON_V2_EPOCH on — see `lexiconVersionFor`.
+ */
+export const MIRROR_WORDS_V2: readonly string[] = [
+  // One side is already playable: NAB|BAN, SAP|PAS, DEW|WED, GOB|BOG…
+  "nab", "sap", "dew", "gob", "nub", "gnus", "macs", "oohs", "slipup",
+  // …and both sides new: DIVA|AVID, DRAB|BARD, TRAM|MART…
+  "diva", "avid", "drab", "bard", "dual", "laud", "span", "naps",
+  "tram", "mart", "spar", "raps", "keel", "leek", "abut", "tuba",
+  "buts", "stub", "ergo", "ogre", "snit", "tins", "spay", "yaps",
+  "saps", "spas", "tort", "trot", "loops", "spool", "denim", "mined",
+  "rebut", "tuber", "lager", "regal", "decal", "laced", "repel",
+  "leper", "keels", "sleek", "pacer", "recap", "relit", "tiler",
+  "snips", "spins", "sprat", "tarps", "looter", "retool", "recaps",
+  "spacer", "redraw", "warder", "retros", "sorter", "sloops", "spools",
+  "snoops", "spoons", "dialer", "relaid",
+  // Palindromes.
+  "tat", "sagas", "sexes", "deified",
+];
+
+/**
+ * Which word list a puzzle plays under. Adding words changes puzzle
+ * derivation (the generator draws from the lexicon), and a past day
+ * must never change under a player — so the extension is gated by
+ * DATE rather than shipped through DICT_VERSION: days before the epoch
+ * keep the v1 lexicon byte for byte, days from it on (and practice,
+ * which is never saved) get v2. The tutorial's hand-picked board is
+ * asserted against v1 and stays there.
+ */
+export type LexiconVersion = 1 | 2;
+/** The shared dictionary correction's date, so a day changes once. */
+export const LEXICON_V2_EPOCH = DICT_OVERLAY_EPOCH;
+
+/** A daily/archive dateKey's lexicon; `null` (practice) is the newest. */
+export function lexiconVersionFor(dateKey: string | null): LexiconVersion {
+  return dateKey === null || dateKey >= LEXICON_V2_EPOCH ? 2 : 1;
+}
+
 /** The words pierglass plays with: the common tier plus MIRROR_WORDS. */
-export function commonWords(dict: Dictionary): Set<string> {
+export function commonWords(
+  dict: Dictionary,
+  version: LexiconVersion = 1,
+): Set<string> {
   const common = new Set<string>();
   for (const bucket of dict.required.buckets.values()) {
     for (const w of bucket) common.add(w);
@@ -98,6 +143,14 @@ export function commonWords(dict: Dictionary): Set<string> {
   // Gate on the dictionary: an entry that no longer parses as a word
   // must not play just because it is listed here.
   for (const w of MIRROR_WORDS) if (dict.has(w)) common.add(w);
+  // Appended AFTER v1's words: set order is lexicon order is the
+  // generator's item order, so v1 days see exactly the v1 sequence.
+  if (version >= 2) {
+    for (const w of MIRROR_WORDS_V2) if (dict.has(w)) common.add(w);
+    // The shared dictionary correction's promotions count as common
+    // from the same date (see lib/words/overlay.ts), appended last.
+    for (const w of PROMOTED_WORDS) if (dict.has(w)) common.add(w);
+  }
   return common;
 }
 
@@ -110,8 +163,11 @@ export function commonWords(dict: Dictionary): Set<string> {
  * under both orientations; palindromes under their visible half
  * (middle letter included for odd lengths).
  */
-export function buildLexicon(dict: Dictionary): Map<string, RowDef> {
-  const common = commonWords(dict);
+export function buildLexicon(
+  dict: Dictionary,
+  version: LexiconVersion = 1,
+): Map<string, RowDef> {
+  const common = commonWords(dict, version);
 
   const byPlace = new Map<string, RowDef>();
   const addPlacement = (place: string, def: RowDef) => {

@@ -1,15 +1,27 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseDictionary } from "../../../lib/words/dictionary";
 import { seededRandom, shuffle } from "../../../lib/random";
-import { buildLexicon, lexiconItems, MIRROR_WORDS } from "./lexicon";
+import { dateKeyRange } from "../../../lib/date";
+import {
+  buildLexicon,
+  commonWords,
+  LEXICON_V2_EPOCH,
+  lexiconItems,
+  lexiconVersionFor,
+  MIRROR_WORDS,
+  MIRROR_WORDS_V2,
+} from "./lexicon";
 import {
   dailySeed,
   generatePierglass,
   minRows,
   parSolution,
+  practiceSeed,
   solveBank,
 } from "./generator";
+import { pierglassPuzzleKey } from "../state/persistence";
 import { toMultiset } from "./types";
 
 const dict = parseDictionary(
@@ -217,4 +229,89 @@ describe("generatePierglass", () => {
       expect(solutions.length).toBe(1);
     }
   });
+});
+
+describe("lexicon v2 (dated extension)", () => {
+  const lexiconV2 = buildLexicon(dict, 2);
+  const itemsV2 = lexiconItems(lexiconV2);
+
+  it("gates the extension by date, practice on the newest", () => {
+    expect(lexiconVersionFor("2026-09-27")).toBe(1);
+    expect(lexiconVersionFor(LEXICON_V2_EPOCH)).toBe(2);
+    expect(lexiconVersionFor("2027-01-01")).toBe(2);
+    expect(lexiconVersionFor(null)).toBe(2);
+  });
+
+  it("keeps every v2 word real, new, and paired", () => {
+    const v1 = commonWords(dict, 1);
+    const v2 = commonWords(dict, 2);
+    for (const w of MIRROR_WORDS_V2) {
+      expect(dict.has(w), `${w} is not in the dictionary`).toBe(true);
+      expect(v1.has(w), `${w} already plays in v1`).toBe(false);
+      // Both readings play: a row shows both, so a half-admitted pair
+      // would still say "too rare" for the side left out.
+      const r = [...w].reverse().join("");
+      expect(v2.has(r), `${w}'s reflection ${r} doesn't play`).toBe(true);
+    }
+    expect(new Set(MIRROR_WORDS_V2).size).toBe(MIRROR_WORDS_V2.length);
+  });
+
+  it("admits the everyday pairs v1 refused, and only from v2", () => {
+    for (const w of ["dew", "diva", "loops", "span", "tram", "keel", "sap"]) {
+      expect(lexicon.get(w), `${w} plays in v1`).toBeUndefined();
+      expect(lexiconV2.get(w)?.kind, `${w} missing from v2`).toBe("pair");
+    }
+    expect(lexiconV2.get("sag")?.words).toEqual(["sagas"]);
+  });
+
+  // Fingerprints computed from the lexicon BEFORE v2 existed. Pre-epoch
+  // days are history — saves hydrate against these exact banks, and a
+  // change here means a past day changed under its players.
+  it("derives every pre-epoch day byte-identically to before v2", () => {
+    const pinned: Record<string, [string, string, string[], number]> = {
+      "2026-07-09": ["1elxhol", "aadilprst", ["laid", "parts"], 2],
+      "2026-08-01": ["1udgu76", "aaajmrrst", ["smart", "raja"], 2],
+      "2026-09-01": ["de2gck", "adeeehpry", ["deep", "yah", "er"], 3],
+      "2026-09-15": ["ms5gf8", "bdeelopstu", ["spot", "lee", "bud"], 3],
+      "2026-09-27": ["1sqzo2c", "abdeipttuy", ["tide", "but", "pay"], 3],
+    };
+    for (const [key, [pKey, bank, seedRows, par]] of Object.entries(pinned)) {
+      const lex = buildLexicon(dict, lexiconVersionFor(key));
+      const p = generatePierglass(dict, dailySeed(key), lexiconItems(lex));
+      expect(pierglassPuzzleKey(p.bank), key).toBe(pKey);
+      expect(p.bank.join(""), key).toBe(bank);
+      expect(p.seedRows, key).toEqual(seedRows);
+      expect(p.parRows, key).toBe(par);
+    }
+    // …and every day from launch up to the epoch, in one digest.
+    const days = dateKeyRange("2026-06-01", "2026-09-27").map((key) => {
+      const lex = buildLexicon(dict, lexiconVersionFor(key));
+      const p = generatePierglass(dict, dailySeed(key), lexiconItems(lex));
+      return [key, p.bank.join(""), p.seedRows.join(","), p.parRows,
+        p.solutionCount, p.rowCounts.join(",")].join("|");
+    });
+    const digest = createHash("sha256").update(days.join("\n")).digest("hex");
+    expect(digest.slice(0, 16)).toBe("642ab74a11175092");
+  }, 60_000);
+
+  it("plays the new pairs from the epoch on", () => {
+    const p = generatePierglass(dict, dailySeed(LEXICON_V2_EPOCH), itemsV2);
+    // ERGO|OGRE is v2-only: the epoch day already reaches for it.
+    expect(p.seedRows).toContain("ergo");
+    expect(lexicon.get("ergo")).toBeUndefined();
+  });
+
+  it("holds the quality bands on v2 dailies and practice", () => {
+    const seeds = [
+      ...dateKeyRange(LEXICON_V2_EPOCH, "2026-11-15").map(dailySeed),
+      ...Array.from({ length: 20 }, (_, i) => practiceSeed(`t${i}`)),
+    ];
+    for (const seed of seeds) {
+      const p = generatePierglass(dict, seed, itemsV2);
+      expect(p.bank.length).toBeGreaterThanOrEqual(8);
+      expect(p.bank.length).toBeLessThanOrEqual(12);
+      expect(p.rowCounts.length, seed).toBeGreaterThanOrEqual(2);
+      expect(p.parRows).toBeLessThanOrEqual(p.rowCounts[0]);
+    }
+  }, 60_000);
 });
