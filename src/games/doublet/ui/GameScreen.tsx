@@ -11,7 +11,7 @@ import { HomeLink } from "../../../components/HomeLink";
 import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { useDoubletGame, type GameMode } from "../state/useDoubletGame";
-import { placedDominoIds } from "../state/reducer";
+import { nextHint, placedDominoIds } from "../state/reducer";
 import type { Cell, Difficulty, Orientation } from "../engine/types";
 import { dominoCells, dominoLetters, cellKey, slotWord } from "../engine/types";
 import { Board } from "./Board";
@@ -425,6 +425,9 @@ export function GameScreen({
                          after:absolute after:inset-x-0 after:-inset-y-2.5"
               onPointerDown={(e) => e.preventDefault()}
               onClick={() => {
+                // Count only a hint the reducer will act on — a no-op
+                // must not reach analytics.
+                if (!nextHint(state)) return;
                 trackHint("doublet");
                 dispatch({ type: "revealHint", dict });
               }}

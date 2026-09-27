@@ -136,6 +136,94 @@ function judgeSlots(
   };
 }
 
+/** The other orientation on the same axis: RIGHT<->LEFT, DOWN<->UP. */
+function flipped(o: Orientation): Orientation {
+  return ((o + 2) % 4) as Orientation;
+}
+
+/**
+ * The placement the Hint button would make, or null when it has nothing
+ * to do (solved, or the board already matches the solution). The UI asks
+ * this before counting a hint, so a hint is only ever tracked when the
+ * reducer will actually act on it.
+ *
+ * "Correct" is judged by LETTERS against the stored solution, not by
+ * domino id: a player who laid a twin piece (same two letters) where the
+ * solution has its sibling is right, and must not be told otherwise.
+ *
+ * The hint picks a solution spot that is not yet correctly covered and a
+ * piece that can fill it, ranked by:
+ *  1. fewest correctly-placed dominoes displaced (the player's right
+ *     answers are kept whenever the board allows it — they are only lost
+ *     when the player tiled correct letters along a different seam than
+ *     the solution, so no spot can be filled without cutting one);
+ *  2. a piece still in the tray before one already on the board (on a
+ *     full-but-wrong board there is none, so a misplaced domino moves);
+ *  3. solution order, so repeated hints walk the board predictably.
+ */
+export function nextHint(state: GameState): PlacedDomino | null {
+  if (state.solved) return null;
+  const { puzzle, placed } = state;
+  const solGrid = buildGrid(puzzle.solution, puzzle);
+  const byId = new Map(puzzle.dominoes.map((d) => [d.id, d]));
+
+  const cellsOf = (p: PlacedDomino) =>
+    dominoCells(p.anchor, p.orientation).map((c) => cellKey(c.row, c.col));
+  const isConsistent = (p: PlacedDomino) => {
+    const piece = byId.get(p.dominoId);
+    if (!piece) return false;
+    const letters = dominoLetters(piece, p.orientation);
+    return cellsOf(p).every((k, i) => solGrid.get(k) === letters[i]);
+  };
+
+  const consistent = new Set(placed.filter(isConsistent).map((p) => p.dominoId));
+  const placedById = new Map(placed.map((p) => [p.dominoId, p]));
+  const settledCells = new Set(
+    placed.filter((p) => consistent.has(p.dominoId)).flatMap(cellsOf),
+  );
+
+  // Strict "<" below keeps the earliest candidate on a tie — solution order.
+  let best: { move: PlacedDomino; cost: number; onBoard: number } | null = null;
+
+  for (const spot of puzzle.solution) {
+    const spotCells = cellsOf(spot);
+    if (spotCells.every((k) => settledCells.has(k))) continue;
+    const target = byId.get(spot.dominoId);
+    if (!target) continue;
+    const want = dominoLetters(target, spot.orientation);
+
+    for (const piece of puzzle.dominoes) {
+      // Which orientation (if either) lays this piece's letters on the spot?
+      const ori = [spot.orientation, flipped(spot.orientation)].find((o) => {
+        const got = dominoLetters(piece, o);
+        return got[0] === want[0] && got[1] === want[1];
+      });
+      if (ori === undefined) continue;
+
+      const current = placedById.get(piece.id);
+      let cost = current && consistent.has(piece.id) ? 1 : 0;
+      for (const p of placed) {
+        if (p.dominoId === piece.id || !consistent.has(p.dominoId)) continue;
+        if (cellsOf(p).some((k) => spotCells.includes(k))) cost++;
+      }
+      const onBoard = current ? 1 : 0;
+      if (
+        !best ||
+        cost < best.cost ||
+        (cost === best.cost && onBoard < best.onBoard)
+      ) {
+        best = {
+          move: { dominoId: piece.id, anchor: spot.anchor, orientation: ori },
+          cost,
+          onBoard,
+        };
+      }
+    }
+  }
+
+  return best?.move ?? null;
+}
+
 export function gameReducer(
   state: GameState,
   action: GameAction,
@@ -327,15 +415,15 @@ export function gameReducer(
     }
 
     case "revealHint": {
-      if (state.solved) return state;
-      const placedIds = new Set(state.placed.map((p) => p.dominoId));
-      const hint = state.puzzle.solution.find((s) => !placedIds.has(s.dominoId));
+      const hint = nextHint(state);
       if (!hint) return state;
-      // Remove any domino currently occupying the hint's target cells.
+      // Lift the hinted domino from wherever it sits now (if anywhere),
+      // then displace whatever occupies the hint's target cells.
       const [hc1, hc2] = dominoCells(hint.anchor, hint.orientation);
       const hk1 = cellKey(hc1.row, hc1.col);
       const hk2 = cellKey(hc2.row, hc2.col);
       let newPlaced = state.placed.filter((p) => {
+        if (p.dominoId === hint.dominoId) return false;
         const [c1, c2] = dominoCells(p.anchor, p.orientation);
         const k1 = cellKey(c1.row, c1.col);
         const k2 = cellKey(c2.row, c2.col);
