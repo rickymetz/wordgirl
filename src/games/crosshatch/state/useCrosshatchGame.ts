@@ -6,7 +6,7 @@ import { loadDictionary } from "../../../lib/words/loader";
 import { dailySeed, generateCrosshatch, parseLevel } from "../engine/generator";
 import type { Level } from "../engine/types";
 import { tutorialPuzzle } from "../engine/tutorial";
-import { isSolved, uniqueWords } from "../engine/scoring";
+import { isSolved, targetWords } from "../engine/scoring";
 import {
   crosshatchPuzzleKey,
   loadDailyProgress,
@@ -60,7 +60,7 @@ export function useCrosshatchGame(mode: GameMode) {
   );
   const pKey = useMemo(() => crosshatchPuzzleKey(puzzle), [puzzle]);
   const totalWords = useMemo(
-    () => uniqueWords(puzzle.combos).length,
+    () => targetWords(puzzle).length,
     [puzzle],
   );
   const [state, dispatch] = useReducer(gameReducer, puzzle, initialState);

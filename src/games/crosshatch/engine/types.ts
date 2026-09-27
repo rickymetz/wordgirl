@@ -51,6 +51,14 @@ export interface CrosshatchPuzzle {
   givens: Record<string, string>;
   /** Every valid filling, enumerated at generation. Never persisted. */
   combos: Combo[];
+  /**
+   * The day's word list — what progress counts, the panel lists and
+   * hints reveal: the words of the all-required `combos`. A puzzle from
+   * BONUS_FILLS_EPOCH on also holds combos with bonus-tier fills, which
+   * make a grid valid but list nothing. Absent
+   * on hand-built puzzles (tests): read it through `targetWords`.
+   */
+  targets?: string[];
 }
 
 export function cellKey(row: number, col: number): string {

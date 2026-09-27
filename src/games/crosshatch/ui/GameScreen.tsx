@@ -389,11 +389,10 @@ export function GameScreen({
       incomplete: "Fill every cell",
       repeat: `${r.word?.toUpperCase()} is used twice`,
       // The two ways a line can be wrong, said apart — the second is
-      // the one players hit holding a word they KNOW is real. It is:
-      // the generator enumerates answers from the `required` tier, but
-      // dict.has() also accepts `bonus`, so a real-but-rarer word is
-      // rejected here. Naming the crossings for that would be a lie —
-      // the word simply isn't one of this puzzle's answers.
+      // the one players hit holding a word they KNOW is real. Before
+      // BONUS_FILLS_EPOCH answers came from the `required` tier only, so
+      // a real-but-rarer word landed here outright; from it on, a real
+      // word lands here only when no filling of its crossings works.
       noFit: r.word
         ? !dict.has(r.word)
           ? `${r.word.toUpperCase()} isn't in the word list`

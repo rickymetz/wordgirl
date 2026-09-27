@@ -1,4 +1,5 @@
 import { Check, CircleCheck, MoveDown, MoveRight, X } from "lucide-react";
+import { targetWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
 import {
@@ -11,9 +12,10 @@ import {
 /**
  * One chip per line showing its current content plus a verdict icon:
  * an X when the word doesn't work there, a grey check when it's
- * counted already (a normal state — winning grids reuse found words),
- * a green circled check for a new word. Tapping a chip aims the
- * cursor at its line.
+ * counted already (a normal state — winning grids reuse found words)
+ * or fits only through a bonus-tier fill (accepted, never listed), a green
+ * circled check for a new word. Tapping a chip aims the cursor at its
+ * line.
  */
 export function SlotChips({
   state,
@@ -24,6 +26,7 @@ export function SlotChips({
 }) {
   const { puzzle } = state;
   const found = new Set(state.found);
+  const listed = new Set(targetWords(puzzle));
   const active = cursorSlot(state);
 
   // Group by direction, keeping each slot's original index (verdicts
@@ -70,7 +73,17 @@ export function SlotChips({
                       tone: "text-ink-soft",
                       label: "counted already",
                     }
-                  : { Icon: CircleCheck, tone: "text-good", label: "new word" };
+                  : !listed.has(word)
+                    ? {
+                        Icon: Check,
+                        tone: "text-ink-soft",
+                        label: "fits, not on the list",
+                      }
+                    : {
+                        Icon: CircleCheck,
+                        tone: "text-good",
+                        label: "new word",
+                      };
             const Arrow = slot.dir === "across" ? MoveRight : MoveDown;
             return (
               <button
