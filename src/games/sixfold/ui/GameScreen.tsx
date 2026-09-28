@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  ArrowRightLeft,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   Delete,
   Grid3x3,
@@ -43,6 +46,10 @@ import {
   BLANK,
   conflictCells,
   isLocked,
+  keyUse,
+  lineOf,
+  sameLine,
+  wordLines,
   peers as peersOf,
   wrongLines,
   type Feedback,
@@ -126,6 +133,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
 
   // Only the PLAYER's letters carry the repeat mark: a given is never the
   // mistake, even when it is one half of the clash.
+  // Every clash on the board, givens included — the keypad reads it to
+  // keep a key with a clashing letter out of the greyed "done" look.
+  const clashes = useMemo(
+    () => conflictCells(puzzle.regions, state.entries),
+    [puzzle.regions, state.entries],
+  );
   const repeats = useMemo(() => {
     const all = conflictCells(puzzle.regions, state.entries);
     return new Set([...all].filter((c) => !isLocked(state, c)));
@@ -151,6 +164,15 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   // One name per line, everywhere: the clue card, its readout, toasts.
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
+  // The word stepper's label: the active line, and which word it holds.
+  const activeLineLabel = (() => {
+    if (state.selected === null) return null;
+    const line = lineOf(state.selected, state.dir);
+    const name =
+      line.dir === "diagonal" ? "Diagonal" : `${line.dir === "across" ? "Row" : "Column"} ${line.index + 1}`;
+    const [clued, hidden] = wordLines(puzzle);
+    return sameLine(line, clued) ? `${name} · clued` : sameLine(line, hidden) ? `${name} · hidden word` : name;
+  })();
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
   // The results name the word the PLAYER's board spells: a solve may
   // have a different (repeat-letter) diagonal than the setter's grid.
@@ -188,7 +210,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
       }
       if (modalOpen) return;
       const onGrid = !!target?.closest('[role="grid"]');
-      if (!onGrid && target?.closest("button, a, input, select, textarea")) return;
+      // The word stepper hands letters and Backspace on to the board, so
+      // stepping with the keyboard doesn't strand typing on a button.
+      const onStepper = !!target?.closest("[data-stepper]");
+      if (!onGrid && !onStepper && target?.closest("button, a, input, select, textarea")) return;
       if (!onGrid && e.key.startsWith("Arrow")) {
         e.preventDefault();
         const d: Record<string, [number, number]> = {
@@ -200,7 +225,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         const [dRow, dCol] = d[e.key] ?? [0, 0];
         dispatch({ type: "move", dRow, dCol });
       } else if (e.key === "Backspace" || e.key === "Delete") {
-        dispatch({ type: "erase" });
+        // Delete clears where it is; only Backspace undoes an advance.
+        dispatch({ type: "erase", here: e.key === "Delete" });
       } else if (/^[a-zA-Z]$/.test(e.key)) {
         dispatch({ type: "pressLetter", letter: e.key });
       }
@@ -229,15 +255,19 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         // The toast region already announces it: narrating too said it twice.
         show(`Hint: ${state.entries[f.cell].toUpperCase()} at ${where(f.cell)}`, 1600);
         // Back to the board: the hint dialog hands focus to the Hint
-        // button, where letters and arrows do nothing.
+        // button, where letters and arrows do nothing. Back to the
+        // player's own square — a hint no longer moves the selection.
         if (keyboardRef.current) {
+          // Focusing the hinted cell would SELECT it (a locked square);
+          // with nothing selected, the grid itself takes focus.
+          const target = state.selected === null ? '[role="grid"]' : `[data-cell="${state.selected}"]`;
           requestAnimationFrame(() =>
-            rootRef.current?.querySelector<HTMLElement>(`[data-cell="${f.cell}"]`)?.focus({ preventScroll: true }),
+            rootRef.current?.querySelector<HTMLElement>(target)?.focus({ preventScroll: true }),
           );
         }
         break;
       case "locked":
-        show("Given letters can't change", 1600);
+        show(state.revealed.includes(f.cell) ? "Hint letters can't change" : "Given letters can't change", 1600);
         break;
       case "noCell":
         show("Select a cell first", 1600);
@@ -369,6 +399,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           entries={state.entries}
           revealed={state.revealed}
           selected={state.selected}
+          dir={state.dir}
           peers={peers}
           focusLetter={focusLetter}
           repeats={repeats}
@@ -462,25 +493,70 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           </motion.div>
         ) : !state.solved ? (
           <motion.div key="controls" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            {/* Word stepper: jumps between the clued row and the hidden
+                word (a column or the diagonal). The label names the active
+                line. Not in the tutorial: four gaps need no stepping, and
+                its banner already spends the height (375x667 Huge). Nor
+                under 600px tall: at 320x568 Huge half the practice boards
+                scrolled for it, and taps reach both words anyway. */}
+            {!isTutorial && (
+            <div data-stepper className="-mx-1.5 mb-1.5 flex touch-none items-center gap-1 [@media(max-height:600px)]:hidden [@media(max-height:720px)]:mb-0.5">
+              <button
+                type="button"
+                aria-label="Previous word"
+                {...pressHandlers(() => dispatch({ type: "stepLine", delta: -1 }))}
+                className="flex h-11 w-12 shrink-0 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+              >
+                <ChevronLeft aria-hidden className="h-5 w-5" />
+              </button>
+              {/* Not a live region: the selected cell's own label
+                  already names the line and direction, so announcing this
+                  too said every move twice. */}
+              <p className="line-clamp-2 min-w-0 flex-1 text-center text-sm leading-tight font-semibold text-ink">
+                {activeLineLabel ?? <span className="font-normal text-ink-soft">Tap a square</span>}
+              </p>
+              <button
+                type="button"
+                aria-label="Next word"
+                {...pressHandlers(() => dispatch({ type: "stepLine", delta: 1 }))}
+                className="flex h-11 w-12 shrink-0 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+              >
+                <ChevronRight aria-hidden className="h-5 w-5" />
+              </button>
+            </div>
+            )}
             {/* Seven keys a row: the pad borrows 6px of the page gutter
                 each side so every key clears 44px from a 375px screen. */}
             <div className="-mx-1.5 flex touch-none gap-1">
-              {letters.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  aria-label={`letter ${l.toUpperCase()}`}
-                  {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
-                  className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile font-game text-xl text-ink touch-manipulation select-none active:scale-95"
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
+              {letters.map((l) => {
+                // A used-up letter greys out but still types, so a wrong
+                // square can be overwritten without erasing first.
+                const use = keyUse(state.entries, l, clashes);
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    aria-label={`letter ${l.toUpperCase()}${
+                      use === "done" ? ", all six placed" : use === "over" ? ", more than six placed" : ""
+                    }`}
+                    {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
+                    className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg font-game text-xl [@media(max-height:720px)]:h-11 touch-manipulation select-none transition-colors active:scale-95 ${
+                      use === "done"
+                        ? "bg-surface text-ink-soft ring-1 ring-inset ring-line"
+                        : use === "over"
+                          ? "bg-surface text-(--sixfold-warn) ring-2 ring-inset ring-(--sixfold-warn)"
+                          : "bg-tile text-ink"
+                    }`}
+                  >
+                    {l.toUpperCase()}
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 aria-label="erase"
                 {...pressHandlers(() => dispatch({ type: "erase" }))}
-                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation [@media(max-height:720px)]:h-11 select-none active:scale-95"
               >
                 <Delete aria-hidden className="h-5 w-5" />
               </button>
@@ -574,8 +650,25 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                 body: (
                   <>
                     Every <Key>row</Key>, <Key>column</Key> and <Key>box</Key>{" "}
-                    holds each of the six letters exactly once. Tap a cell,
+                    holds each of the six letters exactly once. Tap a square,
                     then a letter.
+                  </>
+                ),
+              },
+              {
+                Icon: ArrowRightLeft,
+                title: "Moving around",
+                body: (
+                  <>
+                    Typing in a shaded word moves on to its next empty
+                    square. Tap the selected square again to switch between
+                    its row and column.
+                    {!isTutorial && (
+                      // Hidden with the stepper itself under 600px tall.
+                      <span className="[@media(max-height:600px)]:hidden">
+                        {" "}The arrows above the letters jump between the two words.
+                      </span>
+                    )}
                   </>
                 ),
               },

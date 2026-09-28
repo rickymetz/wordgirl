@@ -241,18 +241,25 @@
 /* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {
   --color-accent: var(--level-sixfold);
-  /* The word lines' shading. Dark mode needs about twice the mix: 15%
-     indigo on near-black barely separates from an empty cell. */
+  /* The word lines' shading. Raised from 15/30% when it read as too
+     subtle, which also made an outline around them redundant. Dark needs
+     about twice the mix: indigo on near-black barely separates. */
   --sixfold-line: light-dark(
-    color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
-    color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
+    color-mix(in oklab, var(--color-accent) 22%, var(--color-surface)),
+    color-mix(in oklab, var(--color-accent) 38%, var(--color-surface))
   );
   /* The selection's row/column/box: a neutral wash LAYERED over whatever
      the cell already is (plain or word-line tint), so it never punches a
      hole in the shading. */
   --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
-  /* Ring on every cell holding the selected cell's letter. */
-  --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
+  /* Ring on every cell holding the selected cell's letter — full accent:
+     at 60% it was the faintest mark on the board (2.2:1 on the word tint)
+     and it is the most useful sudoku cue. */
+  --sixfold-match: var(--color-accent);
+  /* A repeated letter, on the board and an over-used key. Light steps
+     down from --color-warn, which fell to 2.95:1 on the stronger word
+     tint under the peer wash. */
+  --sixfold-warn: light-dark(#78350f, var(--color-warn));
   /* Grid rules. The 2px box lines step down in dark, where full ink was a
      near-white cage brighter than the letters; the 1px cell lines are
      translucent ink, so they darken a white cell and a tinted word-line
@@ -263,8 +270,9 @@
   );
   --sixfold-hair: color-mix(in oklab, var(--color-ink) 14%, transparent);
   /* The player's own letters. Dark lifts off the accent: #818cf8 on the
-     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc clears it. */
-  --sixfold-typed: light-dark(var(--color-accent), #a5b4fc);
+     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc cleared
+     the old tint, and #c7d2fe clears the stronger one. */
+  --sixfold-typed: light-dark(var(--color-accent), #c7d2fe);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

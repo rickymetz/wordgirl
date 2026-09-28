@@ -12,6 +12,10 @@ import {
   initialState,
   isLocked,
   isSolvedBoard,
+  keyUse,
+  lineCells,
+  nextOpenCell,
+  wordLines,
   wrongLines,
   type Action,
   type GameState,
@@ -271,5 +275,185 @@ describe("a second grid that keeps every rule", () => {
     expect(bad).toBeDefined();
     expect(wrongLines(p, bad!)).toEqual(["hidden"]);
     expect(isSolvedBoard(p, p.solution)).toBe(true);
+  });
+});
+
+describe("keyUse", () => {
+  const R = P.regions;
+  it("a letter on six squares with no clash is done", () => {
+    for (const l of P.letters) expect(keyUse(P.solution, l, conflictCells(R, P.solution)), l).toBe("done");
+    const s = initialState(P);
+    expect([...P.letters].some((l) => keyUse(s.entries, l, conflictCells(R, s.entries)) === "open")).toBe(true);
+    expect(keyUse(BLANK.repeat(P.solution.length), P.letters[0], conflictCells(R, BLANK.repeat(P.solution.length)))).toBe("open");
+  });
+
+  it("six with a clash, or more than six, is over — never greyed as finished", () => {
+    // Swap two squares of row 1: every count stays six, but each of the
+    // two letters now repeats in its new column.
+    const [a, b] = [P.solution[0], P.solution[1]];
+    const swapped = b + a + P.solution.slice(2);
+    expect(keyUse(swapped, a, conflictCells(R, swapped))).toBe("over");
+    expect(keyUse(swapped, b, conflictCells(R, swapped))).toBe("over");
+    const other = [...P.solution].findIndex((ch) => ch !== a);
+    const seven = P.solution.slice(0, other) + a + P.solution.slice(other + 1);
+    expect(keyUse(seven, a, conflictCells(R, seven))).toBe("over");
+    expect(keyUse(seven, P.solution[other], conflictCells(R, seven))).toBe("open");
+  });
+});
+
+describe("crossword navigation", () => {
+  const dict = parseDictionary(
+    readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
+  );
+  const day = dailyPuzzle(dict, "2026-09-01").puzzle; // hidden word down a column
+  const diag = dailyPuzzle(dict, "2026-09-04").puzzle; // hidden word on the diagonal
+  const fresh = (p = day) => initialState(p);
+  const open = (s: GameState, c: number) => s.entries[c] === BLANK && !isLocked(s, c);
+  const [cluedLine, hiddenLine] = wordLines(day);
+  const cluedOpen = (s: GameState) => lineCells(cluedLine).filter((c) => open(s, c));
+  const right = (s: GameState, c: number) => s.puzzle.solution[c];
+  // A square on neither word.
+  const plain = [...Array(36).keys()].find(
+    (c) =>
+      open(fresh(), c) &&
+      !lineCells(cluedLine).includes(c) &&
+      !lineCells(hiddenLine).includes(c),
+  )!;
+
+  it("re-tapping the selected square flips across/down", () => {
+    const s = run([{ type: "tapCell", cell: plain }], fresh());
+    expect(s.dir).toBe("across");
+    expect(run([{ type: "tapCell", cell: plain }], s).dir).toBe("down");
+    expect(run([{ type: "tapCell", cell: plain }, { type: "tapCell", cell: plain }], s).dir).toBe("across");
+  });
+
+  it("typing on a word advances to its next empty square, and stays in the word", () => {
+    const [first, second] = cluedOpen(fresh());
+    expect(second).toBeDefined();
+    let s = run([{ type: "tapCell", cell: first }], fresh());
+    expect(s.dir).toBe("across");
+    s = run([{ type: "pressLetter", letter: right(s, first) }], s);
+    expect(s.selected).toBe(second);
+    expect(s.advancedFrom).toEqual({ cell: first, dir: "across" });
+    // Fill the rest of the word: the cursor never leaves the row.
+    for (let i = 0; i < 6 && s.selected !== null && open(s, s.selected); i++) {
+      s = run([{ type: "pressLetter", letter: right(s, s.selected!) }], s);
+      expect(lineCells(cluedLine)).toContain(s.selected);
+    }
+  });
+
+  it("typing off the words, or over a filled square, leaves the cursor put", () => {
+    let s = run([{ type: "tapCell", cell: plain }, { type: "pressLetter", letter: right(fresh(), plain) }], fresh());
+    expect(s.selected).toBe(plain);
+    // Overwrite on the clued row: the fix keeps the cursor.
+    const [first] = cluedOpen(fresh());
+    s = run([{ type: "tapCell", cell: first }, { type: "pressLetter", letter: day.letters[0] }], fresh());
+    s = run([{ type: "tapCell", cell: first }, { type: "pressLetter", letter: day.letters[1] }], s);
+    expect(s.selected).toBe(first);
+  });
+
+  it("the first tap on the square auto-advance moved to doesn't flip; the next does", () => {
+    const [first, second] = cluedOpen(fresh());
+    let s = run([{ type: "tapCell", cell: first }, { type: "pressLetter", letter: right(fresh(), first) }], fresh());
+    expect(s.selected).toBe(second);
+    s = run([{ type: "tapCell", cell: second }], s);
+    expect(s.dir).toBe("across");
+    expect(run([{ type: "tapCell", cell: second }], s).dir).toBe("down");
+  });
+
+  it("backspace undoes only the letter auto-advance just moved past", () => {
+    const [first, second] = cluedOpen(fresh());
+    const typed = run(
+      [{ type: "tapCell", cell: first }, { type: "pressLetter", letter: right(fresh(), first) }],
+      fresh(),
+    );
+    const back = run([{ type: "erase" }], typed);
+    expect(back.selected).toBe(first);
+    expect(back.dir).toBe("across");
+    expect(back.entries[first]).toBe(BLANK);
+    // With nothing to undo, backspace on an empty square does nothing.
+    expect(run([{ type: "erase" }], back)).toBe(back);
+    // Delete clears where it is and never steps back.
+    const del = run([{ type: "erase", here: true }], typed);
+    expect(del.selected).toBe(second);
+    expect(del.entries[first]).toBe(right(fresh(), first));
+  });
+
+  it("selecting a square on one word turns to follow that word", () => {
+    const c = lineCells(hiddenLine).find((x) => open(fresh(), x) && !lineCells(cluedLine).includes(x))!;
+    const s = run([{ type: "tapCell", cell: c }], fresh());
+    expect(s.dir).toBe("down");
+  });
+
+  it("the stepper jumps between the two words, landing on an empty square", () => {
+    let s = run([{ type: "stepLine", delta: 1 }], fresh());
+    expect(lineCells(cluedLine)).toContain(s.selected);
+    expect(open(s, s.selected!)).toBe(true);
+    s = run([{ type: "stepLine", delta: 1 }], s);
+    expect(lineCells(hiddenLine)).toContain(s.selected);
+    expect(s.dir).toBe("down");
+    s = run([{ type: "stepLine", delta: -1 }], s);
+    expect(lineCells(cluedLine)).toContain(s.selected);
+  });
+
+  it("on a diagonal day the diagonal is a direction and a stepper stop", () => {
+    const [, diagLine] = wordLines(diag);
+    expect(diagLine.dir).toBe("diagonal");
+    const onDiag = lineCells(diagLine).find((c) => open(fresh(diag), c) && Math.floor(c / 6) !== diag.row)!;
+    // Arriving on the diagonal turns to it.
+    let s = run([{ type: "tapCell", cell: onDiag }], fresh(diag));
+    expect(s.dir).toBe("diagonal");
+    // Re-tapping cycles through all three.
+    s = run([{ type: "tapCell", cell: onDiag }], s);
+    expect(s.dir).toBe("across");
+    s = run([{ type: "tapCell", cell: onDiag }], s);
+    expect(s.dir).toBe("down");
+    s = run([{ type: "tapCell", cell: onDiag }], s);
+    expect(s.dir).toBe("diagonal");
+    // Typing runs along the diagonal.
+    const next = nextOpenCell({ ...s, entries: s.entries.slice(0, onDiag) + "x" + s.entries.slice(onDiag + 1) }, onDiag, "diagonal");
+    s = run([{ type: "pressLetter", letter: right(s, onDiag) }], s);
+    if (next !== null) expect(s.selected).toBe(next);
+    const stepped = run([{ type: "stepLine", delta: 1 }, { type: "stepLine", delta: 1 }], fresh(diag));
+    expect(stepped.dir).toBe("diagonal");
+  });
+
+  it("a hint that fills the selected square steps the selection on along its line", () => {
+    // Find a board state where the hint lands on the selected square.
+    const s = fresh();
+    let hit: GameState | null = null;
+    for (let c = 0; c < 36 && !hit; c++) {
+      if (!open(s, c)) continue;
+      const sel = run([{ type: "tapCell", cell: c }], s);
+      const after = run([{ type: "revealHint" }], sel);
+      if (after.revealed.includes(c)) hit = after;
+    }
+    expect(hit).not.toBeNull();
+    const h = hit!;
+    expect(isLocked(h, h.selected!)).toBe(false);
+  });
+
+  it("on a diagonal day, arriving at the row/diagonal crossing takes a word direction", () => {
+    const [clued] = wordLines(diag);
+    const crossing = diag.row * 6 + diag.row;
+    const above = ((diag.row + 5) % 6) * 6 + diag.row;
+    const s = run(
+      [
+        { type: "tapCell", cell: above },
+        { type: "tapCell", cell: above },
+        { type: "tapCell", cell: above },
+        { type: "move", dRow: 1, dCol: 0 },
+      ],
+      fresh(diag),
+    );
+    expect(s.selected).toBe(crossing);
+    expect(["across", "diagonal"]).toContain(s.dir);
+    expect(clued.dir).toBe("across");
+  });
+
+  it("a hint leaves the player's selection where it was", () => {
+    const s = run([{ type: "tapCell", cell: plain }, { type: "revealHint" }], fresh());
+    expect(s.selected).toBe(plain);
+    expect(s.revealed).toHaveLength(1);
   });
 });

@@ -4,7 +4,7 @@ import { useViewport } from "../../../lib/useViewport";
 import { cluedCells, hiddenCells } from "../engine/hints";
 import type { SixfoldPuzzle } from "../engine/types";
 import { N } from "../engine/types";
-import { BLANK } from "../state/reducer";
+import { BLANK, lineCells, lineOf, type Dir } from "../state/reducer";
 
 /** Smallest tappable cell — past this the page scrolls instead. */
 const MIN_CELL = 44;
@@ -32,6 +32,8 @@ interface Props {
   entries: string;
   revealed: readonly number[];
   selected: number | null;
+  /** Across/down: the selection's line is outlined as the active word. */
+  dir: Dir;
   /** Cells sharing a unit with the selection. */
   peers: ReadonlySet<number>;
   /** The selected cell's letter — ringed wherever else it sits. */
@@ -55,10 +57,12 @@ interface Props {
  * of its own — a measurement, not a feedback loop.
  *
  * Layers, so no state hides another: FILLS are for the word lines only
- * (and the solved words); the selection is a thick inset RING, a matching
- * letter a thin one; the selection's row/column/box is a wash layered on
- * top of the fill; a repeat is warn-colored with a corner mark, so it
- * never relies on color alone.
+ * (and the solved words; the selection is a solid accent tile); the
+ * selection's row/column/box is a wash layered on top of the fill; a
+ * matching letter gets a thin accent ring, and the active line and the
+ * selection 3px ink strokes, all drawn as overlays (see strokeBox); a
+ * repeat is warn-colored with a corner mark, so it never relies on
+ * color alone.
  *
  * Keyboard: one Tab stop (roving tabindex on the selected cell); arrows
  * move the selection and focus with it.
@@ -68,6 +72,7 @@ export function Board({
   entries,
   revealed,
   selected,
+  dir,
   peers,
   focusLetter,
   repeats,
@@ -116,6 +121,9 @@ export function Board({
 
   const hidden = new Set(hiddenCells(puzzle));
   const clued = new Set(cluedCells(puzzle));
+  // The line the selection travels along — crossword's active word.
+  const activeLine =
+    selected !== null && !solved ? lineOf(selected, dir) : null;
   const given = new Set(puzzle.givens);
   const hinted = new Set(revealed);
   const { regions } = puzzle;
@@ -130,6 +138,8 @@ export function Board({
     onMove(move[0], move[1]);
   };
 
+  // Cells ringed for holding the selected letter — drawn as overlays below.
+  const matches: number[] = [];
   const rows: ReactElement[] = [];
   for (let r = 0; r < N; r++) {
     const cells: ReactElement[] = [];
@@ -166,23 +176,25 @@ export function Board({
         : isSel
           ? "text-surface"
           : repeat
-          ? "text-warn"
+          ? "text-(--sixfold-warn)"
           : given.has(c)
             ? "text-ink"
             : hinted.has(c)
               ? "text-ink"
               : "text-(--sixfold-typed)";
+      // The selection's row/column/box. The active line gets no wash of
+      // its own: a darker one measured 1.15:1 against this and sank typed
+      // letters on the word tint — its ink outline carries it alone.
       const wash =
         !solved && !isSel && peers.has(c)
           ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
           : "";
-      const ring = isSel
-        ? ""
-        : match
-          ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
-          : "";
+      if (match) matches.push(c);
 
+      // The selection says which way typing runs — the outline is visual.
+      const heading = isSel && !solved ? `, typing ${dir === "diagonal" ? "along the diagonal" : dir}` : "";
       const line =
+        heading +
         (clued.has(c) ? ", clued row" : hidden.has(c) ? `, ${lineName}` : "") +
         (wrong.has(c) ? ", not the word" : "");
       const what = filled
@@ -203,7 +215,7 @@ export function Board({
           onFocus={() => onFocusCell(c)}
           className={`relative box-border flex items-center justify-center font-game focus:outline-none focus-visible:z-10 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-6px] ${
             isSel && !solved ? "focus-visible:outline-surface" : "focus-visible:outline-ink"
-          } ${fill} ${tone} ${wash} ${ring} ${
+          } ${fill} ${tone} ${wash} ${
             r === 0 ? "" : top ? "border-t-2 border-t-(--sixfold-box)" : "border-t border-t-(--sixfold-hair)"
           } ${col === 0 ? "" : left ? "border-l-2 border-l-(--sixfold-box)" : "border-l border-l-(--sixfold-hair)"}`}
           style={{ width: cellPx, height: cellPx, fontSize: letterPx, lineHeight: 1 }}
@@ -222,7 +234,7 @@ export function Board({
             // The corner mark: a repeat reads without color, too.
             <span
               aria-hidden
-              className="absolute top-0 right-0 border-t-warn border-l-transparent"
+              className="absolute top-0 right-0 border-t-(--sixfold-warn) border-l-transparent"
               style={{ borderTopWidth: markPx, borderLeftWidth: markPx }}
             />
           )}
@@ -250,7 +262,98 @@ export function Board({
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}
+        {/* Matching-letter rings: overlays on each cell's full box, not
+            inset shadows, which sat inside the cell's own top/left rule
+            only and read heavier on those sides. */}
+        {matches.map((c) => (
+          <div
+            key={`m${c}`}
+            aria-hidden
+            className="pointer-events-none absolute rounded-xs border-2 border-(--sixfold-match)"
+            style={lineBox([c], cellPx)}
+          />
+        ))}
       </div>
+      {/* The active line's outline and the selection frame. A layer over
+          the grid rather than inside it, so a frame can reach over the
+          board's outer rule (the grid clips its children): each edge
+          grows over the rule just outside it — a box line, a hairline, or
+          the frame — so that rule and the 3px stroke read as ONE stroke.
+          Laid inside the cells only, a stroke beside a 2px box line read
+          5px on that side and 3px on the others. */}
+      {!solved && (activeLine || selected !== null) && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 m-auto" style={{ width: boardPx, height: boardPx }}>
+          {activeLine &&
+            (activeLine.dir === "diagonal" ? lineCells(activeLine).map((c) => [c]) : [lineCells(activeLine)]).map(
+              (cells) => (
+                <div
+                  key={cells[0]}
+                  className="absolute border-[3px] border-ink"
+                  style={strokeBox(cells, cellPx, regions, rem)}
+                />
+              ),
+            )}
+          {selected !== null && (
+            <div className="absolute border-[3px] border-ink" style={strokeBox([selected], cellPx, regions, rem)} />
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+/** The board frame's outer corner radius at default text: Tailwind
+ *  rounded-xl is 0.75rem, so it scales with the Text-size setting. */
+const FRAME_RADIUS = 12;
+
+/**
+ * A 3px stroke's box around `cells`, in outer board pixels (frame
+ * included). A cell owns its top and left rule, so those sit INSIDE the
+ * box and the stroke covers them; the rules past the bottom and right
+ * edges (and the frame on any edge at the board's rim) sit OUTSIDE, so
+ * the box grows over them. Corners on the board's rim follow its round.
+ */
+function strokeBox(cells: number[], cellPx: number, regions: readonly number[], rem: number) {
+  const rs = cells.map((c) => Math.floor(c / N));
+  const cs = cells.map((c) => c % N);
+  const [r0, r1, c0, c1] = [Math.min(...rs), Math.max(...rs), Math.min(...cs), Math.max(...cs)];
+  const ruleBelow = () => {
+    let w = 1;
+    for (let c = c0; c <= c1; c++) if (regions[r1 * N + c] !== regions[(r1 + 1) * N + c]) w = 2;
+    return w;
+  };
+  const ruleRight = () => {
+    let w = 1;
+    for (let r = r0; r <= r1; r++) if (regions[r * N + c1] !== regions[r * N + c1 + 1]) w = 2;
+    return w;
+  };
+  const up = r0 === 0 ? FRAME : 0;
+  const lf = c0 === 0 ? FRAME : 0;
+  const dn = r1 === N - 1 ? FRAME : ruleBelow();
+  const rt = c1 === N - 1 ? FRAME : ruleRight();
+  const corner = (atRim: boolean) => (atRim ? (FRAME_RADIUS * rem) / 16 : 2);
+  return {
+    top: FRAME + r0 * cellPx - up,
+    left: FRAME + c0 * cellPx - lf,
+    width: (c1 - c0 + 1) * cellPx + lf + rt,
+    height: (r1 - r0 + 1) * cellPx + up + dn,
+    borderTopLeftRadius: corner(r0 === 0 && c0 === 0),
+    borderTopRightRadius: corner(r0 === 0 && c1 === N - 1),
+    borderBottomLeftRadius: corner(r1 === N - 1 && c0 === 0),
+    borderBottomRightRadius: corner(r1 === N - 1 && c1 === N - 1),
+  };
+}
+
+/** A straight line's box in grid pixels (inside the frame). */
+function lineBox(cells: number[], cellPx: number) {
+  const rs = cells.map((c) => Math.floor(c / N));
+  const cs = cells.map((c) => c % N);
+  const top = Math.min(...rs);
+  const left = Math.min(...cs);
+  return {
+    top: top * cellPx,
+    left: left * cellPx,
+    width: (Math.max(...cs) - left + 1) * cellPx,
+    height: (Math.max(...rs) - top + 1) * cellPx,
+  };
 }
