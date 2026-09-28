@@ -281,10 +281,10 @@ describe("a second grid that keeps every rule", () => {
 describe("keyUse", () => {
   const R = P.regions;
   it("a letter on six squares with no clash is done", () => {
-    for (const l of P.letters) expect(keyUse(R, P.solution, l), l).toBe("done");
+    for (const l of P.letters) expect(keyUse(P.solution, l, conflictCells(R, P.solution)), l).toBe("done");
     const s = initialState(P);
-    expect([...P.letters].some((l) => keyUse(R, s.entries, l) === "open")).toBe(true);
-    expect(keyUse(R, BLANK.repeat(P.solution.length), P.letters[0])).toBe("open");
+    expect([...P.letters].some((l) => keyUse(s.entries, l, conflictCells(R, s.entries)) === "open")).toBe(true);
+    expect(keyUse(BLANK.repeat(P.solution.length), P.letters[0], conflictCells(R, BLANK.repeat(P.solution.length)))).toBe("open");
   });
 
   it("six with a clash, or more than six, is over — never greyed as finished", () => {
@@ -292,12 +292,12 @@ describe("keyUse", () => {
     // two letters now repeats in its new column.
     const [a, b] = [P.solution[0], P.solution[1]];
     const swapped = b + a + P.solution.slice(2);
-    expect(keyUse(R, swapped, a)).toBe("over");
-    expect(keyUse(R, swapped, b)).toBe("over");
+    expect(keyUse(swapped, a, conflictCells(R, swapped))).toBe("over");
+    expect(keyUse(swapped, b, conflictCells(R, swapped))).toBe("over");
     const other = [...P.solution].findIndex((ch) => ch !== a);
     const seven = P.solution.slice(0, other) + a + P.solution.slice(other + 1);
-    expect(keyUse(R, seven, a)).toBe("over");
-    expect(keyUse(R, seven, P.solution[other])).toBe("open");
+    expect(keyUse(seven, a, conflictCells(R, seven))).toBe("over");
+    expect(keyUse(seven, P.solution[other], conflictCells(R, seven))).toBe("open");
   });
 });
 
@@ -416,6 +416,39 @@ describe("crossword navigation", () => {
     if (next !== null) expect(s.selected).toBe(next);
     const stepped = run([{ type: "stepLine", delta: 1 }, { type: "stepLine", delta: 1 }], fresh(diag));
     expect(stepped.dir).toBe("diagonal");
+  });
+
+  it("a hint that fills the selected square steps the selection on along its line", () => {
+    // Find a board state where the hint lands on the selected square.
+    const s = fresh();
+    let hit: GameState | null = null;
+    for (let c = 0; c < 36 && !hit; c++) {
+      if (!open(s, c)) continue;
+      const sel = run([{ type: "tapCell", cell: c }], s);
+      const after = run([{ type: "revealHint" }], sel);
+      if (after.revealed.includes(c)) hit = after;
+    }
+    expect(hit).not.toBeNull();
+    const h = hit!;
+    expect(isLocked(h, h.selected!)).toBe(false);
+  });
+
+  it("on a diagonal day, arriving at the row/diagonal crossing takes a word direction", () => {
+    const [clued] = wordLines(diag);
+    const crossing = diag.row * 6 + diag.row;
+    const above = ((diag.row + 5) % 6) * 6 + diag.row;
+    const s = run(
+      [
+        { type: "tapCell", cell: above },
+        { type: "tapCell", cell: above },
+        { type: "tapCell", cell: above },
+        { type: "move", dRow: 1, dCol: 0 },
+      ],
+      fresh(diag),
+    );
+    expect(s.selected).toBe(crossing);
+    expect(["across", "diagonal"]).toContain(s.dir);
+    expect(clued.dir).toBe("across");
   });
 
   it("a hint leaves the player's selection where it was", () => {

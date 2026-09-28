@@ -87,7 +87,7 @@ export function lineOf(cell: number, dir: Dir): Line {
   };
 }
 
-const sameLine = (a: Line, b: Line) => a.dir === b.dir && a.index === b.index;
+export const sameLine = (a: Line, b: Line) => a.dir === b.dir && a.index === b.index;
 
 /** The day's two words: the clued row, then the hidden line. */
 export function wordLines(puzzle: SixfoldPuzzle): [Line, Line] {
@@ -139,8 +139,10 @@ function selectCell(state: GameState, cell: number): GameState {
   const dirs = dirsAt(state.puzzle, cell);
   let dir = dirs.includes(state.dir) ? state.dir : "across";
   if (!isWordLine(state.puzzle, lineOf(cell, dir))) {
+    // Not a word this way: follow a word through the square if there is
+    // one (at a crossing, the first — the clued row).
     const words = dirs.filter((d) => isWordLine(state.puzzle, lineOf(cell, d)));
-    if (words.length === 1) dir = words[0];
+    if (words.length > 0) dir = words[0];
   }
   return { ...state, selected: cell, dir, advancedFrom: null };
 }
@@ -209,12 +211,11 @@ export type LineName = "clued" | "hidden";
  */
 export type KeyUse = "open" | "done" | "over";
 
-export function keyUse(regions: readonly number[], entries: string, letter: string): KeyUse {
+export function keyUse(entries: string, letter: string, clashes: ReadonlySet<number>): KeyUse {
   let n = 0;
   for (const ch of entries) if (ch === letter) n++;
   if (n > N) return "over";
   if (n < N) return "open";
-  const clashes = conflictCells(regions, entries);
   return [...entries].some((ch, c) => ch === letter && clashes.has(c)) ? "over" : "done";
 }
 
@@ -391,14 +392,25 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (cell === null) return state;
       const entries =
         state.entries.slice(0, cell) + state.puzzle.solution[cell] + state.entries.slice(cell + 1);
+      const revealed = [...state.revealed, cell];
+      // The player's selection stays: jumping it onto the (locked) hinted
+      // square stranded the next letter on "can't change". When the hint
+      // filled the selected square itself, step on along its line.
+      let selected = state.selected;
+      if (selected === cell) {
+        const line = lineCells(lineOf(cell, state.dir));
+        const at = line.indexOf(cell);
+        const open = (c: number) =>
+          entries[c] === BLANK && !state.puzzle.givens.includes(c) && !revealed.includes(c);
+        selected = [1, 2, 3, 4, 5].map((k) => line[(at + k) % N]).find(open) ?? selected;
+      }
       return settle(
         {
           ...state,
           entries,
-          revealed: [...state.revealed, cell],
+          revealed,
+          selected,
           hints: state.hints + 1,
-          // The player's selection stays: jumping it onto the (locked)
-          // hinted square stranded the next letter on "can't change".
           advancedFrom: null,
           feedback: { type: "hint", cell, nonce: nextNonce(state) },
         },

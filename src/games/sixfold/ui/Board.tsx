@@ -57,10 +57,12 @@ interface Props {
  * of its own — a measurement, not a feedback loop.
  *
  * Layers, so no state hides another: FILLS are for the word lines only
- * (and the solved words); the selection is a thick inset RING, a matching
- * letter a thin one; the selection's row/column/box is a wash layered on
- * top of the fill; a repeat is warn-colored with a corner mark, so it
- * never relies on color alone.
+ * (and the solved words; the selection is a solid accent tile); the
+ * selection's row/column/box is a wash layered on top of the fill; a
+ * matching letter gets a thin accent ring, and the active line and the
+ * selection 3px ink strokes, all drawn as overlays (see strokeBox); a
+ * repeat is warn-colored with a corner mark, so it never relies on
+ * color alone.
  *
  * Keyboard: one Tab stop (roving tabindex on the selected cell); arrows
  * move the selection and focus with it.
@@ -187,8 +189,6 @@ export function Board({
         !solved && !isSel && peers.has(c)
           ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
           : "";
-      // The selection: a solid accent tile plus an inset ink ring, so it
-      // stands apart from the accent-tinted word lines around it.
       if (match) matches.push(c);
 
       // The selection says which way typing runs — the outline is visual.
@@ -234,7 +234,7 @@ export function Board({
             // The corner mark: a repeat reads without color, too.
             <span
               aria-hidden
-              className="absolute top-0 right-0 border-t-warn border-l-transparent"
+              className="absolute top-0 right-0 border-t-(--sixfold-warn) border-l-transparent"
               style={{ borderTopWidth: markPx, borderLeftWidth: markPx }}
             />
           )}
@@ -289,12 +289,12 @@ export function Board({
                 <div
                   key={cells[0]}
                   className="absolute border-[3px] border-ink"
-                  style={strokeBox(cells, cellPx, regions)}
+                  style={strokeBox(cells, cellPx, regions, rem)}
                 />
               ),
             )}
           {selected !== null && (
-            <div className="absolute border-[3px] border-ink" style={strokeBox([selected], cellPx, regions)} />
+            <div className="absolute border-[3px] border-ink" style={strokeBox([selected], cellPx, regions, rem)} />
           )}
         </div>
       )}
@@ -302,7 +302,8 @@ export function Board({
   );
 }
 
-/** The board frame's outer corner radius (Tailwind rounded-xl). */
+/** The board frame's outer corner radius at default text: Tailwind
+ *  rounded-xl is 0.75rem, so it scales with the Text-size setting. */
 const FRAME_RADIUS = 12;
 
 /**
@@ -312,7 +313,7 @@ const FRAME_RADIUS = 12;
  * edges (and the frame on any edge at the board's rim) sit OUTSIDE, so
  * the box grows over them. Corners on the board's rim follow its round.
  */
-function strokeBox(cells: number[], cellPx: number, regions: readonly number[]) {
+function strokeBox(cells: number[], cellPx: number, regions: readonly number[], rem: number) {
   const rs = cells.map((c) => Math.floor(c / N));
   const cs = cells.map((c) => c % N);
   const [r0, r1, c0, c1] = [Math.min(...rs), Math.max(...rs), Math.min(...cs), Math.max(...cs)];
@@ -330,7 +331,7 @@ function strokeBox(cells: number[], cellPx: number, regions: readonly number[]) 
   const lf = c0 === 0 ? FRAME : 0;
   const dn = r1 === N - 1 ? FRAME : ruleBelow();
   const rt = c1 === N - 1 ? FRAME : ruleRight();
-  const corner = (atRim: boolean) => (atRim ? FRAME_RADIUS : 2);
+  const corner = (atRim: boolean) => (atRim ? (FRAME_RADIUS * rem) / 16 : 2);
   return {
     top: FRAME + r0 * cellPx - up,
     left: FRAME + c0 * cellPx - lf,

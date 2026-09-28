@@ -48,6 +48,7 @@ import {
   isLocked,
   keyUse,
   lineOf,
+  sameLine,
   wordLines,
   peers as peersOf,
   wrongLines,
@@ -132,6 +133,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
 
   // Only the PLAYER's letters carry the repeat mark: a given is never the
   // mistake, even when it is one half of the clash.
+  // Every clash on the board, givens included — the keypad reads it to
+  // keep a key with a clashing letter out of the greyed "done" look.
+  const clashes = useMemo(
+    () => conflictCells(puzzle.regions, state.entries),
+    [puzzle.regions, state.entries],
+  );
   const repeats = useMemo(() => {
     const all = conflictCells(puzzle.regions, state.entries);
     return new Set([...all].filter((c) => !isLocked(state, c)));
@@ -164,8 +171,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
     const name =
       line.dir === "diagonal" ? "Diagonal" : `${line.dir === "across" ? "Row" : "Column"} ${line.index + 1}`;
     const [clued, hidden] = wordLines(puzzle);
-    const is = (w: typeof clued) => w.dir === line.dir && w.index === line.index;
-    return is(clued) ? `${name} · clued` : is(hidden) ? `${name} · hidden word` : name;
+    return sameLine(line, clued) ? `${name} · clued` : sameLine(line, hidden) ? `${name} · hidden word` : name;
   })();
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
   // The results name the word the PLAYER's board spells: a solve may
@@ -252,9 +258,11 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
         // button, where letters and arrows do nothing. Back to the
         // player's own square — a hint no longer moves the selection.
         if (keyboardRef.current) {
-          const back = state.selected ?? f.cell;
+          // Focusing the hinted cell would SELECT it (a locked square);
+          // with nothing selected, the grid itself takes focus.
+          const target = state.selected === null ? '[role="grid"]' : `[data-cell="${state.selected}"]`;
           requestAnimationFrame(() =>
-            rootRef.current?.querySelector<HTMLElement>(`[data-cell="${back}"]`)?.focus({ preventScroll: true }),
+            rootRef.current?.querySelector<HTMLElement>(target)?.focus({ preventScroll: true }),
           );
         }
         break;
@@ -501,7 +509,10 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
               >
                 <ChevronLeft aria-hidden className="h-5 w-5" />
               </button>
-              <p aria-live="polite" className="line-clamp-2 min-w-0 flex-1 text-center text-sm leading-tight font-semibold text-ink">
+              {/* Not a live region: the selected cell's own label
+                  already names the line and direction, so announcing this
+                  too said every move twice. */}
+              <p className="line-clamp-2 min-w-0 flex-1 text-center text-sm leading-tight font-semibold text-ink">
                 {activeLineLabel ?? <span className="font-normal text-ink-soft">Tap a square</span>}
               </p>
               <button
@@ -520,7 +531,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
               {letters.map((l) => {
                 // A used-up letter greys out but still types, so a wrong
                 // square can be overwritten without erasing first.
-                const use = keyUse(puzzle.regions, state.entries, l);
+                const use = keyUse(state.entries, l, clashes);
                 return (
                   <button
                     key={l}
@@ -652,7 +663,12 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                     Typing in a shaded word moves on to its next empty
                     square. Tap the selected square again to switch between
                     its row and column.
-                    {!isTutorial && " The arrows above the letters jump between the two words."}
+                    {!isTutorial && (
+                      // Hidden with the stepper itself under 600px tall.
+                      <span className="[@media(max-height:600px)]:hidden">
+                        {" "}The arrows above the letters jump between the two words.
+                      </span>
+                    )}
                   </>
                 ),
               },
