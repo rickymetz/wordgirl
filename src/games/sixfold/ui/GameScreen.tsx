@@ -43,6 +43,7 @@ import {
   BLANK,
   conflictCells,
   isLocked,
+  keyUse,
   peers as peersOf,
   wrongLines,
   type Feedback,
@@ -465,17 +466,30 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
             {/* Seven keys a row: the pad borrows 6px of the page gutter
                 each side so every key clears 44px from a 375px screen. */}
             <div className="-mx-1.5 flex touch-none gap-1">
-              {letters.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  aria-label={`letter ${l.toUpperCase()}`}
-                  {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
-                  className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile font-game text-xl text-ink touch-manipulation select-none active:scale-95"
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
+              {letters.map((l) => {
+                // A used-up letter greys out but still types, so a wrong
+                // square can be overwritten without erasing first.
+                const use = keyUse(state.entries, l);
+                return (
+                  <button
+                    key={l}
+                    type="button"
+                    aria-label={`letter ${l.toUpperCase()}${
+                      use === "done" ? ", all six placed" : use === "over" ? ", more than six placed" : ""
+                    }`}
+                    {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
+                    className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg font-game text-xl touch-manipulation select-none transition-colors active:scale-95 ${
+                      use === "done"
+                        ? "border border-line bg-surface text-ink-soft"
+                        : use === "over"
+                          ? "bg-tile text-warn ring-2 ring-inset ring-warn"
+                          : "bg-tile text-ink"
+                    }`}
+                  >
+                    {l.toUpperCase()}
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 aria-label="erase"

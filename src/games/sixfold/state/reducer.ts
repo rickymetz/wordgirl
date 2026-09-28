@@ -104,6 +104,19 @@ export function conflictCells(regions: readonly number[], entries: string): Set<
 
 export type LineName = "clued" | "hidden";
 
+/**
+ * How a keypad letter stands on the board: `done` once N squares show it
+ * (givens and typing alike, right or wrong — a count, never a hint),
+ * `over` past N, which means a duplicate somewhere.
+ */
+export type KeyUse = "open" | "done" | "over";
+
+export function keyUse(entries: string, letter: string): KeyUse {
+  let n = 0;
+  for (const ch of entries) if (ch === letter) n++;
+  return n > N ? "over" : n === N ? "done" : "open";
+}
+
 const spellLine = (entries: string, cells: readonly number[]) => cells.map((c) => entries[c]).join("");
 
 /** Whether the unclued line's letters are a word the rules allow there:

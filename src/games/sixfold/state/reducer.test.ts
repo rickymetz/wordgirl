@@ -12,6 +12,7 @@ import {
   initialState,
   isLocked,
   isSolvedBoard,
+  keyUse,
   wrongLines,
   type Action,
   type GameState,
@@ -271,5 +272,25 @@ describe("a second grid that keeps every rule", () => {
     expect(bad).toBeDefined();
     expect(wrongLines(p, bad!)).toEqual(["hidden"]);
     expect(isSolvedBoard(p, p.solution)).toBe(true);
+  });
+});
+
+describe("keyUse", () => {
+  it("counts every square showing the letter, givens and typing alike", () => {
+    const solved = P.solution;
+    for (const l of P.letters) expect(keyUse(solved, l), l).toBe("done");
+    const s = initialState(P);
+    const open = [...P.letters].filter((l) => keyUse(s.entries, l) === "open");
+    expect(open.length).toBeGreaterThan(0);
+  });
+
+  it("flags a letter placed more than six times", () => {
+    const l = P.letters[0];
+    const other = [...P.solution].findIndex((ch) => ch !== l);
+    const extra = P.solution.slice(0, other) + l + P.solution.slice(other + 1);
+    expect(keyUse(extra, l)).toBe("over");
+    // ...and the letter it displaced drops back to open.
+    expect(keyUse(extra, P.solution[other])).toBe("open");
+    expect(keyUse(BLANK.repeat(P.solution.length), l)).toBe("open");
   });
 });
