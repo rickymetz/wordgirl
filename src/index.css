@@ -241,9 +241,9 @@
 /* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {
   --color-accent: var(--level-sixfold);
-  /* The word lines' shading, under an accent outline (Board's
-     LineOutlines). Raised from 15/30% when it read as too subtle. Dark
-     needs about twice the mix: indigo on near-black barely separates. */
+  /* The word lines' shading. Raised from 15/30% when it read as too
+     subtle, which also made an outline around them redundant. Dark needs
+     about twice the mix: indigo on near-black barely separates. */
   --sixfold-line: light-dark(
     color-mix(in oklab, var(--color-accent) 22%, var(--color-surface)),
     color-mix(in oklab, var(--color-accent) 38%, var(--color-surface))

@@ -192,7 +192,7 @@ export function Board({
               ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
               : "";
       // The selection: a solid accent tile plus an inset ink ring, so it
-      // stands apart from the accent-outlined word lines around it.
+      // stands apart from the accent-tinted word lines around it.
       const ring = isSel
         ? solved
           ? ""
@@ -269,13 +269,15 @@ export function Board({
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}
-        {!solved && (
-          <LineOutlines
-            cellPx={cellPx}
-            clued={cluedCells(puzzle)}
-            hidden={hiddenCells(puzzle)}
-            diagonal={puzzle.col < 0}
-            active={activeLine ? lineCells(activeLine) : null}
+        {!solved && activeLine && (
+          // The active line's ink outline, drawn OVER the cells and
+          // pointer-transparent so it never fights the fills, washes and
+          // rings underneath. The word lines need no outline: their tint
+          // carries them.
+          <div
+            aria-hidden
+            className="pointer-events-none absolute rounded-md border-[3px] border-ink"
+            style={lineBox(lineCells(activeLine), cellPx)}
           />
         )}
       </div>
@@ -283,60 +285,16 @@ export function Board({
   );
 }
 
-/**
- * Outlines drawn OVER the cells (pointer-transparent), so they never
- * fight the fills, washes and rings underneath: the two word lines in
- * accent, inset a little, and the active line in ink at the edge — when
- * they coincide both frames show, one inside the other. A diagonal
- * isn't a rectangle, so it outlines cell by cell.
- */
-function LineOutlines({
-  cellPx,
-  clued,
-  hidden,
-  diagonal,
-  active,
-}: {
-  cellPx: number;
-  clued: number[];
-  hidden: number[];
-  diagonal: boolean;
-  active: number[] | null;
-}) {
-  const box = (cells: number[]) => {
-    const rs = cells.map((c) => Math.floor(c / N));
-    const cs = cells.map((c) => c % N);
-    const top = Math.min(...rs);
-    const left = Math.min(...cs);
-    return {
-      top: top * cellPx,
-      left: left * cellPx,
-      width: (Math.max(...cs) - left + 1) * cellPx,
-      height: (Math.max(...rs) - top + 1) * cellPx,
-    };
+/** A straight line's box in grid pixels (inside the frame). */
+function lineBox(cells: number[], cellPx: number) {
+  const rs = cells.map((c) => Math.floor(c / N));
+  const cs = cells.map((c) => c % N);
+  const top = Math.min(...rs);
+  const left = Math.min(...cs);
+  return {
+    top: top * cellPx,
+    left: left * cellPx,
+    width: (Math.max(...cs) - left + 1) * cellPx,
+    height: (Math.max(...rs) - top + 1) * cellPx,
   };
-  const inset = (b: ReturnType<typeof box>, d: number) => ({
-    top: b.top + d,
-    left: b.left + d,
-    width: b.width - 2 * d,
-    height: b.height - 2 * d,
-  });
-  const word = "pointer-events-none absolute rounded-md border-2 border-accent";
-  return (
-    <>
-      <div aria-hidden className={word} style={inset(box(clued), 3)} />
-      {diagonal ? (
-        hidden.map((c) => <div key={c} aria-hidden className={word} style={inset(box([c]), 3)} />)
-      ) : (
-        <div aria-hidden className={word} style={inset(box(hidden), 3)} />
-      )}
-      {active && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute rounded-md border-[3px] border-ink"
-          style={box(active)}
-        />
-      )}
-    </>
-  );
 }
