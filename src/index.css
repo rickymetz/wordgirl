@@ -252,11 +252,14 @@
      the cell already is (plain or word-line tint), so it never punches a
      hole in the shading. */
   --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
-  /* The active line (the word being typed, across or down): the same
-     neutral wash, stronger, under its ink outline. */
-  --sixfold-active: color-mix(in oklab, var(--color-ink) 16%, transparent);
-  /* Ring on every cell holding the selected cell's letter. */
-  --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
+  /* Ring on every cell holding the selected cell's letter — full accent:
+     at 60% it was the faintest mark on the board (2.2:1 on the word tint)
+     and it is the most useful sudoku cue. */
+  --sixfold-match: var(--color-accent);
+  /* A repeated letter, on the board and an over-used key. Light steps
+     down from --color-warn, which fell to 2.95:1 on the stronger word
+     tint under the peer wash. */
+  --sixfold-warn: light-dark(#78350f, var(--color-warn));
   /* Grid rules. The 2px box lines step down in dark, where full ink was a
      near-white cage brighter than the letters; the 1px cell lines are
      translucent ink, so they darken a white cell and a tinted word-line

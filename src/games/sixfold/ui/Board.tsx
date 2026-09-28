@@ -122,7 +122,6 @@ export function Board({
   // The line the selection travels along — crossword's active word.
   const activeLine =
     selected !== null && !solved ? lineOf(selected, dir) : null;
-  const active = new Set(activeLine ? lineCells(activeLine) : []);
   const given = new Set(puzzle.givens);
   const hinted = new Set(revealed);
   const { regions } = puzzle;
@@ -173,24 +172,19 @@ export function Board({
         : isSel
           ? "text-surface"
           : repeat
-          ? "text-warn"
+          ? "text-(--sixfold-warn)"
           : given.has(c)
             ? "text-ink"
             : hinted.has(c)
               ? "text-ink"
               : "text-(--sixfold-typed)";
-      // The active line washes darker than the rest of the selection's
-      // row/column/box, so it reads as the word being typed — except on a
-      // word line, whose stronger tint under the darker wash drops typed
-      // letters below 4.5:1; there the ink outline alone marks it.
+      // The selection's row/column/box. The active line gets no wash of
+      // its own: a darker one measured 1.15:1 against this and sank typed
+      // letters on the word tint — its ink outline carries it alone.
       const wash =
-        solved || isSel
-          ? ""
-          : active.has(c) && !onLine
-            ? "[background-image:linear-gradient(var(--sixfold-active),var(--sixfold-active))]"
-            : peers.has(c)
-              ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
-              : "";
+        !solved && !isSel && peers.has(c)
+          ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
+          : "";
       // The selection: a solid accent tile plus an inset ink ring, so it
       // stands apart from the accent-tinted word lines around it.
       const ring = isSel
@@ -201,7 +195,10 @@ export function Board({
           ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
           : "";
 
+      // The selection says which way typing runs — the outline is visual.
+      const heading = isSel && !solved ? `, typing ${dir === "diagonal" ? "along the diagonal" : dir}` : "";
       const line =
+        heading +
         (clued.has(c) ? ", clued row" : hidden.has(c) ? `, ${lineName}` : "") +
         (wrong.has(c) ? ", not the word" : "");
       const what = filled
@@ -273,12 +270,17 @@ export function Board({
           // The active line's ink outline, drawn OVER the cells and
           // pointer-transparent so it never fights the fills, washes and
           // rings underneath. The word lines need no outline: their tint
-          // carries them.
-          <div
-            aria-hidden
-            className="pointer-events-none absolute rounded-md border-[3px] border-ink"
-            style={lineBox(lineCells(activeLine), cellPx)}
-          />
+          // carries them. A diagonal isn't a rectangle: cell by cell.
+          (activeLine.dir === "diagonal" ? lineCells(activeLine).map((c) => [c]) : [lineCells(activeLine)]).map(
+            (cells) => (
+              <div
+                key={cells[0]}
+                aria-hidden
+                className="pointer-events-none absolute rounded-md border-[3px] border-ink"
+                style={lineBox(cells, cellPx)}
+              />
+            ),
+          )
         )}
       </div>
     </div>
