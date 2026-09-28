@@ -4,7 +4,7 @@ import { useViewport } from "../../../lib/useViewport";
 import { cluedCells, hiddenCells } from "../engine/hints";
 import type { SixfoldPuzzle } from "../engine/types";
 import { N } from "../engine/types";
-import { BLANK } from "../state/reducer";
+import { BLANK, lineCells, lineOf, type Dir } from "../state/reducer";
 
 /** Smallest tappable cell — past this the page scrolls instead. */
 const MIN_CELL = 44;
@@ -32,6 +32,8 @@ interface Props {
   entries: string;
   revealed: readonly number[];
   selected: number | null;
+  /** Across/down: the selection's line is outlined as the active word. */
+  dir: Dir;
   /** Cells sharing a unit with the selection. */
   peers: ReadonlySet<number>;
   /** The selected cell's letter — ringed wherever else it sits. */
@@ -68,6 +70,7 @@ export function Board({
   entries,
   revealed,
   selected,
+  dir,
   peers,
   focusLetter,
   repeats,
@@ -116,6 +119,10 @@ export function Board({
 
   const hidden = new Set(hiddenCells(puzzle));
   const clued = new Set(cluedCells(puzzle));
+  // The line the selection travels along — crossword's active word.
+  const activeLine =
+    selected !== null && !solved ? lineOf(selected, dir) : null;
+  const active = new Set(activeLine ? lineCells(activeLine) : []);
   const given = new Set(puzzle.givens);
   const hinted = new Set(revealed);
   const { regions } = puzzle;
@@ -172,12 +179,24 @@ export function Board({
             : hinted.has(c)
               ? "text-ink"
               : "text-(--sixfold-typed)";
+      // The active line washes darker than the rest of the selection's
+      // row/column/box, so it reads as the word being typed — except on a
+      // word line, whose stronger tint under the darker wash drops typed
+      // letters below 4.5:1; there the ink outline alone marks it.
       const wash =
-        !solved && !isSel && peers.has(c)
-          ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
-          : "";
+        solved || isSel
+          ? ""
+          : active.has(c) && !onLine
+            ? "[background-image:linear-gradient(var(--sixfold-active),var(--sixfold-active))]"
+            : peers.has(c)
+              ? "[background-image:linear-gradient(var(--sixfold-peer),var(--sixfold-peer))]"
+              : "";
+      // The selection: a solid accent tile plus an inset ink ring, so it
+      // stands apart from the accent-outlined word lines around it.
       const ring = isSel
-        ? ""
+        ? solved
+          ? ""
+          : "shadow-[inset_0_0_0_3px_var(--color-ink)]"
         : match
           ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
           : "";
@@ -250,7 +269,74 @@ export function Board({
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}
+        {!solved && (
+          <LineOutlines
+            cellPx={cellPx}
+            clued={cluedCells(puzzle)}
+            hidden={hiddenCells(puzzle)}
+            diagonal={puzzle.col < 0}
+            active={activeLine ? lineCells(activeLine) : null}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Outlines drawn OVER the cells (pointer-transparent), so they never
+ * fight the fills, washes and rings underneath: the two word lines in
+ * accent, inset a little, and the active line in ink at the edge — when
+ * they coincide both frames show, one inside the other. A diagonal
+ * isn't a rectangle, so it outlines cell by cell.
+ */
+function LineOutlines({
+  cellPx,
+  clued,
+  hidden,
+  diagonal,
+  active,
+}: {
+  cellPx: number;
+  clued: number[];
+  hidden: number[];
+  diagonal: boolean;
+  active: number[] | null;
+}) {
+  const box = (cells: number[]) => {
+    const rs = cells.map((c) => Math.floor(c / N));
+    const cs = cells.map((c) => c % N);
+    const top = Math.min(...rs);
+    const left = Math.min(...cs);
+    return {
+      top: top * cellPx,
+      left: left * cellPx,
+      width: (Math.max(...cs) - left + 1) * cellPx,
+      height: (Math.max(...rs) - top + 1) * cellPx,
+    };
+  };
+  const inset = (b: ReturnType<typeof box>, d: number) => ({
+    top: b.top + d,
+    left: b.left + d,
+    width: b.width - 2 * d,
+    height: b.height - 2 * d,
+  });
+  const word = "pointer-events-none absolute rounded-md border-2 border-accent";
+  return (
+    <>
+      <div aria-hidden className={word} style={inset(box(clued), 3)} />
+      {diagonal ? (
+        hidden.map((c) => <div key={c} aria-hidden className={word} style={inset(box([c]), 3)} />)
+      ) : (
+        <div aria-hidden className={word} style={inset(box(hidden), 3)} />
+      )}
+      {active && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute rounded-md border-[3px] border-ink"
+          style={box(active)}
+        />
+      )}
+    </>
   );
 }

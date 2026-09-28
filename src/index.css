@@ -241,16 +241,20 @@
 /* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {
   --color-accent: var(--level-sixfold);
-  /* The word lines' shading. Dark mode needs about twice the mix: 15%
-     indigo on near-black barely separates from an empty cell. */
+  /* The word lines' shading, under an accent outline (Board's
+     LineOutlines). Raised from 15/30% when it read as too subtle. Dark
+     needs about twice the mix: indigo on near-black barely separates. */
   --sixfold-line: light-dark(
-    color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)),
-    color-mix(in oklab, var(--color-accent) 30%, var(--color-surface))
+    color-mix(in oklab, var(--color-accent) 22%, var(--color-surface)),
+    color-mix(in oklab, var(--color-accent) 38%, var(--color-surface))
   );
   /* The selection's row/column/box: a neutral wash LAYERED over whatever
      the cell already is (plain or word-line tint), so it never punches a
      hole in the shading. */
   --sixfold-peer: color-mix(in oklab, var(--color-ink) 9%, transparent);
+  /* The active line (the word being typed, across or down): the same
+     neutral wash, stronger, under its ink outline. */
+  --sixfold-active: color-mix(in oklab, var(--color-ink) 16%, transparent);
   /* Ring on every cell holding the selected cell's letter. */
   --sixfold-match: color-mix(in oklab, var(--color-accent) 60%, transparent);
   /* Grid rules. The 2px box lines step down in dark, where full ink was a
@@ -263,8 +267,9 @@
   );
   --sixfold-hair: color-mix(in oklab, var(--color-ink) 14%, transparent);
   /* The player's own letters. Dark lifts off the accent: #818cf8 on the
-     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc clears it. */
-  --sixfold-typed: light-dark(var(--color-accent), #a5b4fc);
+     word-line tint (under the peer wash) fell to 3.25:1; #a5b4fc cleared
+     the old tint, and #c7d2fe clears the stronger one. */
+  --sixfold-typed: light-dark(var(--color-accent), #c7d2fe);
 }
 
 /* Serpentine — lime green, distinct from the existing palette. */

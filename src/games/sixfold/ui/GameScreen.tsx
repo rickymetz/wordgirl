@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  ArrowRightLeft,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   Delete,
   Grid3x3,
@@ -44,6 +47,7 @@ import {
   conflictCells,
   isLocked,
   keyUse,
+  lineOf,
   peers as peersOf,
   wrongLines,
   type Feedback,
@@ -152,6 +156,15 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   // One name per line, everywhere: the clue card, its readout, toasts.
   const rowLabel = `Row ${puzzle.row + 1}`;
   const hiddenLabel = puzzle.col < 0 ? "Diagonal" : `Column ${puzzle.col + 1}`;
+  // The line stepper's label: the active line, and which word it holds.
+  const activeLineLabel = (() => {
+    if (state.selected === null) return null;
+    const line = lineOf(state.selected, state.dir);
+    const name = `${line.dir === "across" ? "Row" : "Column"} ${line.index + 1}`;
+    const isClued = line.dir === "across" && line.index === puzzle.row;
+    const isHidden = line.dir === "down" && puzzle.col >= 0 && line.index === puzzle.col;
+    return isClued ? `${name} · clued` : isHidden ? `${name} · hidden word` : name;
+  })();
   const lineText = (cells: number[]) => cells.map((c) => state.entries[c]).join("");
   // The results name the word the PLAYER's board spells: a solve may
   // have a different (repeat-letter) diagonal than the setter's grid.
@@ -370,6 +383,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           entries={state.entries}
           revealed={state.revealed}
           selected={state.selected}
+          dir={state.dir}
           peers={peers}
           focusLetter={focusLetter}
           repeats={repeats}
@@ -463,6 +477,33 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           </motion.div>
         ) : !state.solved ? (
           <motion.div key="controls" exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            {/* Crossword-style line stepper: rows 1-6 across, then
+                columns 1-6 down. The label names the active line. Not in
+                the tutorial: four gaps need no stepping, and its banner
+                already spends the height (it scrolled at 375x667 Huge). */}
+            {!isTutorial && (
+            <div className="-mx-1.5 mb-1.5 flex touch-none items-center gap-1 [@media(max-height:720px)]:mb-0.5">
+              <button
+                type="button"
+                aria-label="Previous line"
+                {...pressHandlers(() => dispatch({ type: "stepLine", delta: -1 }))}
+                className="flex h-11 w-12 shrink-0 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+              >
+                <ChevronLeft aria-hidden className="h-5 w-5" />
+              </button>
+              <p aria-live="polite" className="min-w-0 flex-1 truncate text-center text-sm font-semibold text-ink">
+                {activeLineLabel ?? <span className="font-normal text-ink-soft">Tap a square</span>}
+              </p>
+              <button
+                type="button"
+                aria-label="Next line"
+                {...pressHandlers(() => dispatch({ type: "stepLine", delta: 1 }))}
+                className="flex h-11 w-12 shrink-0 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+              >
+                <ChevronRight aria-hidden className="h-5 w-5" />
+              </button>
+            </div>
+            )}
             {/* Seven keys a row: the pad borrows 6px of the page gutter
                 each side so every key clears 44px from a 375px screen. */}
             <div className="-mx-1.5 flex touch-none gap-1">
@@ -478,7 +519,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                       use === "done" ? ", all six placed" : use === "over" ? ", more than six placed" : ""
                     }`}
                     {...pressHandlers(() => dispatch({ type: "pressLetter", letter: l }))}
-                    className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg font-game text-xl touch-manipulation select-none transition-colors active:scale-95 ${
+                    className={`flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg font-game text-xl [@media(max-height:720px)]:h-11 touch-manipulation select-none transition-colors active:scale-95 ${
                       use === "done"
                         ? "border border-line bg-surface text-ink-soft"
                         : use === "over"
@@ -494,7 +535,7 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                 type="button"
                 aria-label="erase"
                 {...pressHandlers(() => dispatch({ type: "erase" }))}
-                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation select-none active:scale-95"
+                className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg bg-tile text-ink touch-manipulation [@media(max-height:720px)]:h-11 select-none active:scale-95"
               >
                 <Delete aria-hidden className="h-5 w-5" />
               </button>
@@ -590,6 +631,18 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
                     Every <Key>row</Key>, <Key>column</Key> and <Key>box</Key>{" "}
                     holds each of the six letters exactly once. Tap a cell,
                     then a letter.
+                  </>
+                ),
+              },
+              {
+                Icon: ArrowRightLeft,
+                title: "Moving around",
+                body: (
+                  <>
+                    Typing moves on to the next empty square. Tap the
+                    selected square again to switch <Key>across</Key> and{" "}
+                    <Key>down</Key>; the arrows above the letters step
+                    through every row, then every column.
                   </>
                 ),
               },

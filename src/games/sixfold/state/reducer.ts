@@ -25,6 +25,12 @@ export interface GameState {
   /** Cells a hint filled — locked like givens. */
   revealed: number[];
   selected: number | null;
+  /** Which line the selection travels along — crossword across/down.
+   *  Not saved: a fresh visit starts across. */
+  dir: Dir;
+  /** The square auto-advance just left, so a backspace on the (empty)
+   *  square it moved to undoes that letter. Cleared by any other move. */
+  advancedFrom: number | null;
   solved: boolean;
   hints: number;
   /** Placements that created a duplicate in a row/column/box (trends). */
@@ -40,6 +46,8 @@ export type Action =
   | { type: "pressLetter"; letter: string }
   | { type: "erase" }
   | { type: "move"; dRow: number; dCol: number }
+  /** The next (1) or previous (-1) line in LINES order. */
+  | { type: "stepLine"; delta: 1 | -1 }
   | { type: "revealHint" }
   | {
       type: "hydrate";
@@ -49,6 +57,62 @@ export type Action =
       hints?: number;
       conflicts?: number;
     };
+
+export type Dir = "across" | "down";
+
+/** A row (across) or column (down) the selection can travel along. */
+export interface Line {
+  dir: Dir;
+  /** Row index for across, column index for down. */
+  index: number;
+}
+
+/** Crossword order: rows 1-6 across, then columns 1-6 down. */
+export const LINES: readonly Line[] = [
+  ...Array.from({ length: N }, (_, index) => ({ dir: "across" as const, index })),
+  ...Array.from({ length: N }, (_, index) => ({ dir: "down" as const, index })),
+];
+
+export function lineCells(line: Line): number[] {
+  return Array.from({ length: N }, (_, i) =>
+    line.dir === "across" ? line.index * N + i : i * N + line.index,
+  );
+}
+
+/** The line through `cell` in direction `dir`. */
+export function lineOf(cell: number, dir: Dir): Line {
+  return { dir, index: dir === "across" ? Math.floor(cell / N) : cell % N };
+}
+
+function lineIndex(line: Line): number {
+  return (line.dir === "across" ? 0 : N) + line.index;
+}
+
+const isOpen = (state: GameState, cell: number) =>
+  state.entries[cell] === BLANK && !isLocked(state, cell);
+
+/**
+ * Where typing goes next (crossword auto-advance): the next empty square
+ * along the current line after `from`, wrapping within the line; when the
+ * line is full, the first empty square of the following lines in LINES
+ * order. Null when the board has no empty square left.
+ */
+export function nextOpenCell(state: GameState, from: number, dir: Dir): { cell: number; dir: Dir } | null {
+  const here = lineOf(from, dir);
+  const cells = lineCells(here);
+  const at = cells.indexOf(from);
+  for (let k = 1; k < N; k++) {
+    const c = cells[(at + k) % N];
+    if (isOpen(state, c)) return { cell: c, dir };
+  }
+  const start = lineIndex(here);
+  for (let k = 1; k <= LINES.length; k++) {
+    const line = LINES[(start + k) % LINES.length];
+    const c = lineCells(line).find((x) => isOpen(state, x));
+    if (c !== undefined) return { cell: c, dir: line.dir };
+  }
+  return null;
+}
 
 export function initialEntries(puzzle: SixfoldPuzzle): string {
   const out = Array<string>(CELLS).fill(BLANK);
@@ -62,6 +126,8 @@ export function initialState(puzzle: SixfoldPuzzle): GameState {
     entries: initialEntries(puzzle),
     revealed: [],
     selected: null,
+    dir: "across",
+    advancedFrom: null,
     solved: false,
     hints: 0,
     conflicts: 0,
@@ -212,32 +278,71 @@ export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case "tapCell": {
       const { cell } = action;
-      // Tapping the selected cell keeps it selected. It used to toggle
-      // off, so re-tapping a cell to fix it left nothing selected and
-      // the next letter silently went nowhere.
-      if (cell < 0 || cell >= CELLS || state.selected === cell) return state;
-      return { ...state, selected: cell };
+      // Tapping the selected cell keeps it selected and flips across/down
+      // (crossword convention). It used to toggle off, so re-tapping a
+      // cell to fix it left nothing selected and the next letter silently
+      // went nowhere.
+      if (cell < 0 || cell >= CELLS) return state;
+      if (state.selected === cell) {
+        return { ...state, dir: state.dir === "across" ? "down" : "across", advancedFrom: null };
+      }
+      return { ...state, selected: cell, advancedFrom: null };
     }
     case "select": {
       if (action.cell < 0 || action.cell >= CELLS || state.selected === action.cell) return state;
-      return { ...state, selected: action.cell };
+      return { ...state, selected: action.cell, advancedFrom: null };
     }
     case "pressLetter": {
       const letter = action.letter.toLowerCase();
       if (!state.puzzle.letters.includes(letter) || state.solved) return state;
       if (state.selected === null) return { ...state, feedback: { type: "noCell", nonce: nextNonce(state) } };
-      return write(state, state.selected, letter);
+      const cell = state.selected;
+      const after = write(state, cell, letter);
+      // Advance past a letter that landed — or that was already there, as
+      // a crossword does. A locked cell or a solve keeps (or clears) the
+      // selection as write left it.
+      if (after.solved || isLocked(state, cell) || after.entries[cell] !== letter) return after;
+      const next = nextOpenCell(after, cell, state.dir);
+      return next ? { ...after, selected: next.cell, dir: next.dir, advancedFrom: cell } : after;
+    }
+    case "stepLine": {
+      const from =
+        state.selected === null
+          ? action.delta === 1
+            ? LINES.length - 1
+            : 0
+          : lineIndex(lineOf(state.selected, state.dir));
+      const line = LINES[(from + action.delta + LINES.length) % LINES.length];
+      const cells = lineCells(line);
+      // Land on the line's first empty square, or its start when full.
+      const cell = cells.find((c) => isOpen(state, c)) ?? cells[0];
+      return { ...state, selected: cell, dir: line.dir, advancedFrom: null };
     }
     case "erase": {
       if (state.solved) return state;
       if (state.selected === null) return { ...state, feedback: { type: "noCell", nonce: nextNonce(state) } };
-      return write(state, state.selected, BLANK);
+      const cell = state.selected;
+      const cleared = { ...state, advancedFrom: null };
+      if (state.entries[cell] !== BLANK || isLocked(state, cell)) return write(cleared, cell, BLANK);
+      // An empty square: step back and clear, as a crossword's backspace
+      // does. Auto-advance usually just moved past the letter the player
+      // means to undo — possibly onto another line — so go back THERE;
+      // otherwise to the previous open square along this line.
+      const cells = lineCells(lineOf(cell, state.dir));
+      const back =
+        state.advancedFrom ??
+        cells
+          .slice(0, cells.indexOf(cell))
+          .reverse()
+          .find((c) => !isLocked(state, c));
+      if (back === undefined) return cleared;
+      return write({ ...cleared, selected: back }, back, BLANK);
     }
     case "move": {
-      if (state.selected === null) return { ...state, selected: 0 };
+      if (state.selected === null) return { ...state, selected: 0, advancedFrom: null };
       const r = (Math.floor(state.selected / N) + action.dRow + N) % N;
       const c = ((state.selected % N) + action.dCol + N) % N;
-      return { ...state, selected: r * N + c };
+      return { ...state, selected: r * N + c, advancedFrom: null };
     }
     case "revealHint": {
       // The next cell the player's own toolkit would deduce — a hint that

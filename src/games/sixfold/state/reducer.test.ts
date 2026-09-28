@@ -13,6 +13,9 @@ import {
   isLocked,
   isSolvedBoard,
   keyUse,
+  LINES,
+  lineCells,
+  nextOpenCell,
   wrongLines,
   type Action,
   type GameState,
@@ -292,5 +295,78 @@ describe("keyUse", () => {
     // ...and the letter it displaced drops back to open.
     expect(keyUse(extra, P.solution[other])).toBe("open");
     expect(keyUse(BLANK.repeat(P.solution.length), l)).toBe("open");
+  });
+});
+
+describe("crossword navigation", () => {
+  const dict = parseDictionary(
+    readFileSync(new URL("../../../lib/words/dictionary.txt", import.meta.url), "utf8"),
+  );
+  const day = dailyPuzzle(dict, "2026-09-01").puzzle;
+  const fresh = () => initialState(day);
+  const open = (s: GameState, c: number) => s.entries[c] === BLANK && !isLocked(s, c);
+  const firstOpen = (s: GameState) => [...s.entries].findIndex((_, c) => open(s, c));
+  const letterFor = (s: GameState, c: number) => s.puzzle.solution[c];
+
+  it("re-tapping the selected square flips across/down", () => {
+    const c = firstOpen(fresh());
+    const s = run([{ type: "tapCell", cell: c }], fresh());
+    expect(s.dir).toBe("across");
+    expect(run([{ type: "tapCell", cell: c }], s).dir).toBe("down");
+    expect(run([{ type: "tapCell", cell: c }, { type: "tapCell", cell: c }], s).dir).toBe("across");
+  });
+
+  it("typing advances to the next empty square along the line, then the next line", () => {
+    let s = fresh();
+    const c = firstOpen(s);
+    s = run([{ type: "tapCell", cell: c }], s);
+    // Walk the board typing the right letter each time: every step lands
+    // on an empty square, following nextOpenCell, until the solve.
+    for (let i = 0; i < 40 && !s.solved; i++) {
+      const at = s.selected!;
+      expect(open(s, at), `step ${i}`).toBe(true);
+      const want = nextOpenCell(
+        { ...s, entries: s.entries.slice(0, at) + letterFor(s, at) + s.entries.slice(at + 1) },
+        at,
+        s.dir,
+      );
+      s = run([{ type: "pressLetter", letter: letterFor(s, at) }], s);
+      if (!s.solved) expect(s.selected).toBe(want!.cell);
+    }
+    expect(s.solved).toBe(true);
+  });
+
+  it("backspace on the square auto-advance moved to undoes the letter just typed", () => {
+    const c = firstOpen(fresh());
+    const s = run([
+      { type: "tapCell", cell: c },
+      { type: "pressLetter", letter: day.letters[0] },
+      { type: "erase" },
+    ], fresh());
+    expect(s.selected).toBe(c);
+    expect(s.entries[c]).toBe(BLANK);
+  });
+
+  it("next/previous line steps through all six rows, then all six columns, and wraps", () => {
+    let s = run([{ type: "tapCell", cell: 0 }], fresh());
+    const seen: string[] = [];
+    for (let i = 0; i < LINES.length; i++) {
+      s = run([{ type: "stepLine", delta: 1 }], s);
+      const line = LINES[(i + 1) % LINES.length];
+      expect(lineCells(line)).toContain(s.selected);
+      expect(s.dir).toBe(line.dir);
+      seen.push(`${line.dir}${line.index}`);
+    }
+    expect(new Set(seen).size).toBe(12);
+    // Back one from row 1 wraps to column 6.
+    const back = run([{ type: "tapCell", cell: 1 }, { type: "stepLine", delta: -1 }], fresh());
+    expect(back.dir).toBe("down");
+    expect(lineCells({ dir: "down", index: 5 })).toContain(back.selected);
+  });
+
+  it("a stepped-to line selects its first empty square", () => {
+    const s = run([{ type: "tapCell", cell: 0 }, { type: "stepLine", delta: 1 }], fresh());
+    const row = lineCells({ dir: "across", index: 1 });
+    expect(s.selected).toBe(row.find((c) => open(s, c)) ?? row[0]);
   });
 });
