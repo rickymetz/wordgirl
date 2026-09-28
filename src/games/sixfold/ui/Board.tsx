@@ -262,28 +262,9 @@ export function Board({
         style={{ width: boardPx, height: boardPx }}
       >
         {rows}
-        {!solved && activeLine && (
-          // The active line's ink outline, drawn OVER the cells and
-          // pointer-transparent so it never fights the fills, washes and
-          // rings underneath. The word lines need no outline: their tint
-          // carries them. A diagonal isn't a rectangle: cell by cell.
-          (activeLine.dir === "diagonal" ? lineCells(activeLine).map((c) => [c]) : [lineCells(activeLine)]).map(
-            (cells) => (
-              <div
-                key={cells[0]}
-                aria-hidden
-                className="pointer-events-none absolute rounded-md border-[3px] border-ink"
-                style={lineBox(cells, cellPx)}
-              />
-            ),
-          )
-        )}
-        {/* Frames drawn as overlays on each cell's FULL box, not as inset
-            shadows: a cell owns only its top and left grid rule (1px, or
-            2px on a box edge), so an inset ring sat inside two rules and
-            none on the other sides and read heavier top/left. Over the
-            box, every side is the same width, flush with the active
-            line's outline where they meet. */}
+        {/* Matching-letter rings: overlays on each cell's full box, not
+            inset shadows, which sat inside the cell's own top/left rule
+            only and read heavier on those sides. */}
         {matches.map((c) => (
           <div
             key={`m${c}`}
@@ -292,16 +273,74 @@ export function Board({
             style={lineBox([c], cellPx)}
           />
         ))}
-        {!solved && selected !== null && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute rounded-xs border-[3px] border-ink"
-            style={lineBox([selected], cellPx)}
-          />
-        )}
       </div>
+      {/* The active line's outline and the selection frame. A layer over
+          the grid rather than inside it, so a frame can reach over the
+          board's outer rule (the grid clips its children): each edge
+          grows over the rule just outside it — a box line, a hairline, or
+          the frame — so that rule and the 3px stroke read as ONE stroke.
+          Laid inside the cells only, a stroke beside a 2px box line read
+          5px on that side and 3px on the others. */}
+      {!solved && (activeLine || selected !== null) && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 m-auto" style={{ width: boardPx, height: boardPx }}>
+          {activeLine &&
+            (activeLine.dir === "diagonal" ? lineCells(activeLine).map((c) => [c]) : [lineCells(activeLine)]).map(
+              (cells) => (
+                <div
+                  key={cells[0]}
+                  className="absolute border-[3px] border-ink"
+                  style={strokeBox(cells, cellPx, regions)}
+                />
+              ),
+            )}
+          {selected !== null && (
+            <div className="absolute border-[3px] border-ink" style={strokeBox([selected], cellPx, regions)} />
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+/** The board frame's outer corner radius (Tailwind rounded-xl). */
+const FRAME_RADIUS = 12;
+
+/**
+ * A 3px stroke's box around `cells`, in outer board pixels (frame
+ * included). A cell owns its top and left rule, so those sit INSIDE the
+ * box and the stroke covers them; the rules past the bottom and right
+ * edges (and the frame on any edge at the board's rim) sit OUTSIDE, so
+ * the box grows over them. Corners on the board's rim follow its round.
+ */
+function strokeBox(cells: number[], cellPx: number, regions: readonly number[]) {
+  const rs = cells.map((c) => Math.floor(c / N));
+  const cs = cells.map((c) => c % N);
+  const [r0, r1, c0, c1] = [Math.min(...rs), Math.max(...rs), Math.min(...cs), Math.max(...cs)];
+  const ruleBelow = () => {
+    let w = 1;
+    for (let c = c0; c <= c1; c++) if (regions[r1 * N + c] !== regions[(r1 + 1) * N + c]) w = 2;
+    return w;
+  };
+  const ruleRight = () => {
+    let w = 1;
+    for (let r = r0; r <= r1; r++) if (regions[r * N + c1] !== regions[r * N + c1 + 1]) w = 2;
+    return w;
+  };
+  const up = r0 === 0 ? FRAME : 0;
+  const lf = c0 === 0 ? FRAME : 0;
+  const dn = r1 === N - 1 ? FRAME : ruleBelow();
+  const rt = c1 === N - 1 ? FRAME : ruleRight();
+  const corner = (atRim: boolean) => (atRim ? FRAME_RADIUS : 2);
+  return {
+    top: FRAME + r0 * cellPx - up,
+    left: FRAME + c0 * cellPx - lf,
+    width: (c1 - c0 + 1) * cellPx + lf + rt,
+    height: (r1 - r0 + 1) * cellPx + up + dn,
+    borderTopLeftRadius: corner(r0 === 0 && c0 === 0),
+    borderTopRightRadius: corner(r0 === 0 && c1 === N - 1),
+    borderBottomLeftRadius: corner(r1 === N - 1 && c0 === 0),
+    borderBottomRightRadius: corner(r1 === N - 1 && c1 === N - 1),
+  };
 }
 
 /** A straight line's box in grid pixels (inside the frame). */
