@@ -136,6 +136,8 @@ export function Board({
     onMove(move[0], move[1]);
   };
 
+  // Cells ringed for holding the selected letter — drawn as overlays below.
+  const matches: number[] = [];
   const rows: ReactElement[] = [];
   for (let r = 0; r < N; r++) {
     const cells: ReactElement[] = [];
@@ -187,13 +189,7 @@ export function Board({
           : "";
       // The selection: a solid accent tile plus an inset ink ring, so it
       // stands apart from the accent-tinted word lines around it.
-      const ring = isSel
-        ? solved
-          ? ""
-          : "shadow-[inset_0_0_0_3px_var(--color-ink)]"
-        : match
-          ? "shadow-[inset_0_0_0_2px_var(--sixfold-match)]"
-          : "";
+      if (match) matches.push(c);
 
       // The selection says which way typing runs — the outline is visual.
       const heading = isSel && !solved ? `, typing ${dir === "diagonal" ? "along the diagonal" : dir}` : "";
@@ -219,7 +215,7 @@ export function Board({
           onFocus={() => onFocusCell(c)}
           className={`relative box-border flex items-center justify-center font-game focus:outline-none focus-visible:z-10 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-6px] ${
             isSel && !solved ? "focus-visible:outline-surface" : "focus-visible:outline-ink"
-          } ${fill} ${tone} ${wash} ${ring} ${
+          } ${fill} ${tone} ${wash} ${
             r === 0 ? "" : top ? "border-t-2 border-t-(--sixfold-box)" : "border-t border-t-(--sixfold-hair)"
           } ${col === 0 ? "" : left ? "border-l-2 border-l-(--sixfold-box)" : "border-l border-l-(--sixfold-hair)"}`}
           style={{ width: cellPx, height: cellPx, fontSize: letterPx, lineHeight: 1 }}
@@ -281,6 +277,27 @@ export function Board({
               />
             ),
           )
+        )}
+        {/* Frames drawn as overlays on each cell's FULL box, not as inset
+            shadows: a cell owns only its top and left grid rule (1px, or
+            2px on a box edge), so an inset ring sat inside two rules and
+            none on the other sides and read heavier top/left. Over the
+            box, every side is the same width, flush with the active
+            line's outline where they meet. */}
+        {matches.map((c) => (
+          <div
+            key={`m${c}`}
+            aria-hidden
+            className="pointer-events-none absolute rounded-xs border-2 border-(--sixfold-match)"
+            style={lineBox([c], cellPx)}
+          />
+        ))}
+        {!solved && selected !== null && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute rounded-xs border-[3px] border-ink"
+            style={lineBox([selected], cellPx)}
+          />
         )}
       </div>
     </div>
