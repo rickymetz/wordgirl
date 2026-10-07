@@ -8,6 +8,7 @@ import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
+import { ModalDialog } from "../../../components/ModalDialog";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
@@ -77,8 +78,10 @@ export function GameScreen({
   difficulty,
   onDifficultyChange,
   onRestartTutorial,
+  onReplay,
+  onNewPuzzle,
 }: Props) {
-  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, hydratedHints, setHints } =
+  const { state, dispatch, puzzle, solvedElapsedMs, hydratedAsSolved, hydratedHints, setHints, abandonSession } =
     useSerpentineGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
@@ -94,6 +97,7 @@ export function GameScreen({
   const tutorialStep = tutorialStepIndex(state);
 
   const [coachOpen, setCoachOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   // Cells revealed by hints, in the order taken — each with its place in
   // the phrase as it stood on the route the hint followed. Keyed by CELL,
   // not by index into the stored path: a board can spell its phrase along
@@ -427,6 +431,24 @@ export function GameScreen({
                 gameId="serpentine"
               />
             )}
+            {mode.kind === "archive" && onReplay && (
+              <button
+                type="button"
+                onClick={() => setReplayOpen(true)}
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+              >
+                Play again
+              </button>
+            )}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New board
+              </button>
+            )}
             {isDaily && (
               <DailyOutro gameId="serpentine" loadStreak={outroStreak} />
             )}
@@ -466,6 +488,47 @@ export function GameScreen({
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {replayOpen && (
+        <ModalDialog
+          labelledBy="replay-dialog-title"
+          onClose={() => setReplayOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="replay-dialog-title" className="text-lg font-bold">
+              {difficulty !== undefined
+                ? `Play the ${DIFF_LABELS[difficulty]} board again?`
+                : "Play this day again?"}
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              The board clears and the clock restarts. Your first solve stays
+              counted in your stats.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setReplayOpen(false);
+                  abandonSession();
+                  void onReplay?.();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Play again
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       {/* Coach */}
       <SerpentineCoach
