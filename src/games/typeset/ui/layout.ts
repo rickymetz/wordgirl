@@ -98,6 +98,12 @@ export const CARD_ASPECT = 1.5;
 const ROW_OF_CARD_W = 0.86;
 /** The touch floor a card never shrinks below. */
 export const MIN_CARD = 44;
+/**
+ * Space kept clear under (and, the row being centered, over) the glyph row
+ * for the found-set pips: a 6px pip 4px off the card's bottom edge. A board
+ * squeezed for height gives up glyph size before it lets pips sit on ink.
+ */
+export const PIP_ROOM = 11;
 /** Grid gap between cards, px. */
 export const CARD_GAP = 8;
 
@@ -118,7 +124,8 @@ export interface BoardFit {
  * board's widest row (`maxRowAspect`) must fit 86% of the card's width, less
  * room for an open outline's spacing (two extra gaps of `OPEN_STROKE` px).
  * The card is `CARD_ASPECT` (landscape); on a box too short for that, the
- * cards share the height, and the row may take 80% of a card's height. Floored to whole px, so every glyph on the board is drawn
+ * cards share the height, and the row may take 80% of a card's height, less
+ * the found-set pips' room (PIP_ROOM) above and below. Floored to whole px, so every glyph on the board is drawn
  * the same size; never below the touch floor.
  */
 export function fitBoard(n: number, width: number, height: number, maxRowAspect: number): BoardFit {
@@ -127,7 +134,7 @@ export function fitBoard(n: number, width: number, height: number, maxRowAspect:
   const roomH = (height - (rows - 1) * CARD_GAP) / rows;
   const byWidth = (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect;
   const cardPx = Math.floor(Math.max(MIN_CARD, Math.min(roomH, cardW / CARD_ASPECT)));
-  const rowPx = Math.floor(Math.max(0, Math.min(byWidth, ROW_OF_CARD_H * cardPx)));
+  const rowPx = Math.floor(Math.max(0, Math.min(byWidth, ROW_OF_CARD_H * cardPx, cardPx - 2 * PIP_ROOM)));
   return { rows, rowPx, cardPx };
 }
 

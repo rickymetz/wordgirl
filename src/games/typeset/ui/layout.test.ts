@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, rowWidth } from "./layout";
+import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, PIP_ROOM, rowWidth } from "./layout";
 
 const ASPECT = 2.4; // three ¶ in a row
 
@@ -40,5 +40,14 @@ describe("rowWidth", () => {
     const layout = { glyphs: [{ d: "", s: 1, cx: 0, cy: 0, w: 100, stem: 10 }, { d: "", s: 1, cx: 0, cy: 0, w: 1, stem: 1 }, { d: "", s: 1, cx: 0, cy: 0, w: 1, stem: 1 }] as const, gap: 10, pad: 5 };
     expect(rowWidth(layout as never, 0, 3, 4) - rowWidth(layout as never, 0, 3)).toBe(8);
     expect(rowWidth(layout as never, 0, 1, 4)).toBe(rowWidth(layout as never, 0, 1));
+  });
+});
+
+describe("pip room", () => {
+  it("keeps a strip clear for the found-set pips, even on a squeezed board", () => {
+    for (const h of [180, 220, 260, 560]) {
+      const fit = fitBoard(12, 350, h, 2.4);
+      expect((fit.cardPx - fit.rowPx) / 2, `box ${h}`).toBeGreaterThanOrEqual(PIP_ROOM);
+    }
   });
 });

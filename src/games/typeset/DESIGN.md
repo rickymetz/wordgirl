@@ -76,7 +76,7 @@ band the centered board leaves above itself, never over the status line or
 the cards (on a screen with no band, over the first row). A selected card lifts and wears a check
 (a shape change, not only a tint); a card in a found set gets one solid pip
 per found set it is in, not a cross-out, because a card can belong to more
-than one set.
+than one set. The pips go once the board is solved (every card is used by then), and a squeezed board keeps `PIP_ROOM` clear under the glyph row so pips never sit on ink.
 
 ## Faces
 

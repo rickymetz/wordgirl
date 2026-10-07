@@ -350,8 +350,10 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                     <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                 )}
-                {/* One solid pip per found set the card is in. */}
-                {used > 0 && !selected && (
+                {/* One solid pip per found set the card is in. Gone once the
+                    board is solved: every card is used by then, so they say
+                    nothing, and the solved board shrinks under them. */}
+                {used > 0 && !selected && !state.solved && (
                   <span aria-hidden className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-1">
                     {Array.from({ length: used }, (_, k) => (
                       <span key={k} className="h-1.5 w-1.5 rounded-full bg-ink-soft" />
