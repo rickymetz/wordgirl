@@ -95,6 +95,19 @@ than one set. The pips go once the board is solved (every card is used by then),
   card).
 - On the faces board ink heights are equalized so no face reads heavier for
   being drawn larger.
+- **Labels aren't enough; the outlines are measured** (`ui/legibility.test.ts`,
+  over every board the schedule and tutorial can deal). Launch day dealt
+  two boards that passed every label rule: Fraunces' "#", too thin to show
+  the hatch, and a Literata "e" beside a Jost "e" — an "e" has no serifs,
+  so "serif" and "sans" drew it alike. Two checks now:
+  - **Hatch:** each glyph's mean stroke (from the bake) over the hatch
+    pitch at a 375px phone's row size must be ≥ 0.48.
+  - **Twins:** two faces on a faces board, at equal ink height and
+    centered, may share at most 76% of their ink (Literata/Jost "e":
+    84%; the closest pairs that read apart, about 73%).
+  The thresholds were set by eye on renders; the launch-day outlines are
+  kept as fixtures so the checks are proven to still catch them. When a
+  new entry fails, pick another letter or face — don't loosen the number.
 
 ## Inks
 

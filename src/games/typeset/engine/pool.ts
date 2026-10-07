@@ -20,6 +20,16 @@
  *  - a faces trio takes three different SILHOUETTES (serif, slab, sans,
  *    mono, script), not just three families; a trio with the monospace
  *    uses a letter that shows it (MONO_TELLING)
+ *  - MEASURED, not labeled (legibility.test.ts, from the baked outlines):
+ *    every stroke thick enough to show the cross-hatch at phone size, and
+ *    no two faces on a board drawing their letter alike. A family label
+ *    says nothing about one letter: an "e" has no serifs, so a serif face
+ *    and a sans can draw it the same.
+ *
+ * A failing entry that has not been played yet may be fixed IN PLACE: the
+ * shuffle orders entries by position, so changing an entry's content moves
+ * only the days that deal it, and the puzzle key (which names the glyphs)
+ * sends any save for those days down the stale path.
  */
 import type { FaceId } from "./faces";
 
@@ -50,7 +60,9 @@ const letter = (char: string): CharacterSpec => ch(char, char, `${char}'s`);
 
 export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "jost", chars: [letter("a"), letter("g"), letter("R")], since: 0 },
-  { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("#", "number sign")], since: 0 },
+  // Was "#", whose hairline bars were too thin to show the cross-hatch
+  // (legibility.test.ts). Changed on launch day, before any later day played.
+  { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "fraunces", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s's"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O's")], since: 0 },
   { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("k")], since: 0 },
@@ -94,15 +106,20 @@ export const FACES_POOL: readonly FacesEntry[] = [
   // (its y, f and r read as a grotesque; see MONO_TELLING), and Lobster's l
   // has no closed loop to fill in on a solid card (its f did).
   { char: letter("l"), faces: ["fraunces", "jetbrains-mono", "lobster"], since: 0 },
-  { char: ch("&", "ampersand"), faces: ["eb-garamond", "archivo-black", "kaushan-script"], since: 0 },
-  { char: letter("e"), faces: ["literata", "jost", "lobster"], since: 0 },
+  { char: ch("&", "ampersand"), faces: ["eb-garamond", "archivo-black", "lobster"], since: 0 },
+  // Was Literata: an "e" has no serifs to show, and Literata's drew as
+  // Jost's near twin (legibility.test.ts). Bodoni's stress parts them.
+  { char: letter("e"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
   { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0 },
   { char: letter("G"), faces: ["bodoni-moda", "roboto-slab", "lobster"], since: 0 },
   { char: letter("y"), faces: ["literata", "archivo-black", "lobster"], since: 0 },
   { char: letter("M"), faces: ["eb-garamond", "roboto-slab", "jost"], since: 0 },
   { char: letter("j"), faces: ["jost", "jetbrains-mono", "lobster"], since: 0 },
   { char: letter("b"), faces: ["fraunces", "archivo-black", "lobster"], since: 0 },
-  { char: letter("W"), faces: ["literata", "roboto-slab", "lobster"], since: 0 },
+  // Was W (Literata, Roboto Slab, Lobster): Lobster's W is too thin for the
+  // hatch (legibility.test.ts), as was every script W tried, and without a
+  // script the serif and slab W read as twins.
+  { char: letter("d"), faces: ["eb-garamond", "archivo-black", "lobster"], since: 0 },
   { char: letter("k"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
   { char: letter("R"), faces: ["fraunces", "jost", "kaushan-script"], since: 0 },
 ];
