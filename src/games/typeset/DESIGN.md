@@ -166,3 +166,19 @@ them later:
 - **Hint hides** once every fact about the target set is shown, rather than
   answering with a dead-end toast; only a hint actually given is counted.
 
+## Pool and finish
+
+- 30 character-board entries and 16 faces trios. A review found the pool
+  thin (a faces trio back every 8 days) and leaning on three faces; the
+  additions put Bodoni Moda, Lobster and JetBrains Mono on character boards.
+  Every addition was rendered in all three fills at card size first: Bodoni
+  Moda's dagger, Literata's asterism and Kaushan Script's thin glyphs (b, g,
+  ?, ¶) broke up under the hatch and were left out.
+- The finish is a small specimen: a character board names its characters
+  ("ampersand · at sign · number sign"), and every face carries one line of
+  history (`Face.note`), not just a designer credit.
+- A solved board takes no taps, so its cards may shrink past the 44px touch
+  floor to make room for the finish, down to `SOLVED_MIN_CARD` (28px); past
+  that the page scrolls rather than the board spill over the tabs. Today
+  that is only the 320x568 Faces finish (three credit notes), by ~90px.
+

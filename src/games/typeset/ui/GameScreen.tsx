@@ -30,7 +30,7 @@ import type { Verdict } from "../state/reducer";
 import { useTypesetGame, type GameMode } from "../state/useTypesetGame";
 import { Glyph } from "./Glyph";
 import { layoutGlyphs, type GlyphLayout } from "./glyphLayout";
-import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, type BoardFit } from "./layout";
+import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, PIP_ROOM, SOLVED_MIN_CARD, type BoardFit } from "./layout";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 const outroStreak = async (today: string) => displayStreak(await loadStats(), today);
@@ -238,9 +238,14 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   const measure = useCallback(() => {
     const el = boxRef.current;
     if (!el) return;
-    const next = { ...fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect), boxH: el.clientHeight };
+    // A solved board takes no taps and shows no pips: its cards may shrink
+    // past the touch floor (to SOLVED_MIN_CARD) to make room for the finish.
+    const next = {
+      ...fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect, state.solved ? SOLVED_MIN_CARD : MIN_CARD, state.solved ? 0 : PIP_ROOM),
+      boxH: el.clientHeight,
+    };
     setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx && f.cardPx === next.cardPx && f.boxH === next.boxH ? f : next));
-  }, [board, layout]);
+  }, [board, layout, state.solved]);
   useRemeasure(boxRef, measure);
   const cols = COLS;
   const rows = fit?.rows ?? Math.ceil(board.cards.length / COLS);
@@ -384,11 +389,12 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
       {/* Measured (see fitBoard). The floor is the touch floor in PX while
           the board is in play — a rem floor grows with Huge text and pushes
           the page into a scroll long before a card is too small to tap. A
-          solved board takes no taps, so it may shrink under it. */}
+          solved board takes no taps, so it may shrink to SOLVED_MIN_CARD; past
+          that the page scrolls rather than the board spill over its neighbors. */}
       <div
         ref={boxRef}
         className="relative mt-2 flex min-h-0 flex-1 [@media(max-height:720px)]:mt-1.5"
-        style={{ minHeight: state.solved ? 0 : rows * MIN_CARD + (rows - 1) * CARD_GAP }}
+        style={{ minHeight: rows * (state.solved ? SOLVED_MIN_CARD : MIN_CARD) + (rows - 1) * CARD_GAP }}
       >
         <div
           className="absolute inset-0 grid content-center select-none touch-none"
@@ -720,27 +726,44 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
   );
 }
 
-/** Who made the type, shown once the board is done. */
+/**
+ * Who made the type, and where it comes from, shown once the board is done:
+ * a small specimen. A character board also names its characters.
+ */
 function Credits({ board, layout }: { board: Board; layout: GlyphLayout }) {
   if (board.kind === "charset") {
     const face = FACES[board.glyphs[0].face];
     return (
-      <p className="text-center text-xs text-ink-soft">
-        Set in <span className="font-semibold text-ink">{face.name}</span> · {face.designer}
-      </p>
+      <div className="flex flex-col items-center gap-1 text-center text-xs text-ink-soft">
+        <p className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+          {board.glyphs.map((g, i) => (
+            <span key={i} className="inline-flex items-center gap-1">
+              <span className="inline-flex w-5 shrink-0 justify-center">
+                <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral style={{ height: 16 }} />
+              </span>
+              {g.name}
+            </span>
+          ))}
+        </p>
+        <p>
+          Set in <span className="font-semibold text-ink">{face.name}</span> · {face.designer}
+        </p>
+        <p className="max-w-xs">{face.note}</p>
+      </div>
     );
   }
   return (
-    <ul className="flex flex-col gap-1 text-xs text-ink-soft">
+    <ul className="flex flex-col gap-1.5 text-xs text-ink-soft">
       {board.glyphs.map((g, i) => {
         const face = FACES[g.face];
         return (
-          <li key={g.face} className="flex items-center gap-2">
+          <li key={g.face} className="flex items-start gap-2">
             <span className="flex w-7 shrink-0 justify-center">
               <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral style={{ height: 20 }} />
             </span>
             <span>
               <span className="font-semibold text-ink">{face.name}</span> · {face.family} · {face.designer}
+              <span className="block">{face.note}</span>
             </span>
           </li>
         );

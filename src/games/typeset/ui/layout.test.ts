@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, PIP_ROOM, rowWidth } from "./layout";
+import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, PIP_ROOM, rowWidth, SOLVED_MIN_CARD } from "./layout";
 
 const ASPECT = 2.4; // three ¶ in a row
 
@@ -49,5 +49,13 @@ describe("pip room", () => {
       const fit = fitBoard(12, 350, h, 2.4);
       expect((fit.cardPx - fit.rowPx) / 2, `box ${h}`).toBeGreaterThanOrEqual(PIP_ROOM);
     }
+  });
+});
+
+describe("solved board", () => {
+  it("lets cards shrink past the touch floor, but not past legible", () => {
+    const fit = fitBoard(12, 280, 100, 2.4, SOLVED_MIN_CARD, 0);
+    expect(fit.cardPx).toBe(SOLVED_MIN_CARD);
+    expect(fitBoard(12, 280, 100, 2.4).cardPx).toBe(MIN_CARD);
   });
 });

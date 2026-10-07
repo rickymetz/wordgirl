@@ -96,8 +96,15 @@ const ROW_OF_CARD_H = 0.8;
 export const CARD_ASPECT = 1.5;
 /** Share of a card's width the widest row may take. */
 const ROW_OF_CARD_W = 0.86;
-/** The touch floor a card never shrinks below. */
+/** The touch floor a card never shrinks below while the board is in play. */
 export const MIN_CARD = 44;
+/**
+ * A SOLVED board takes no taps, so its cards may shrink past the touch floor
+ * to make room for the finish card — but no further than this, where a glyph
+ * is still legible. Past it the page scrolls rather than the board spill
+ * over its neighbors (the 320x568 Faces finish, with three credit notes).
+ */
+export const SOLVED_MIN_CARD = 28;
 /**
  * Space kept clear under (and, the row being centered, over) the glyph row
  * for the found-set pips: a 6px pip 4px off the card's bottom edge. A board
@@ -128,13 +135,13 @@ export interface BoardFit {
  * the found-set pips' room (PIP_ROOM) above and below. Floored to whole px, so every glyph on the board is drawn
  * the same size; never below the touch floor.
  */
-export function fitBoard(n: number, width: number, height: number, maxRowAspect: number): BoardFit {
+export function fitBoard(n: number, width: number, height: number, maxRowAspect: number, minCard = MIN_CARD, pipRoom = PIP_ROOM): BoardFit {
   const rows = Math.ceil(n / COLS);
   const cardW = (width - (COLS - 1) * CARD_GAP) / COLS;
   const roomH = (height - (rows - 1) * CARD_GAP) / rows;
   const byWidth = (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect;
-  const cardPx = Math.floor(Math.max(MIN_CARD, Math.min(roomH, cardW / CARD_ASPECT)));
-  const rowPx = Math.floor(Math.max(0, Math.min(byWidth, ROW_OF_CARD_H * cardPx, cardPx - 2 * PIP_ROOM)));
+  const cardPx = Math.floor(Math.max(minCard, Math.min(roomH, cardW / CARD_ASPECT)));
+  const rowPx = Math.floor(Math.max(0, Math.min(byWidth, ROW_OF_CARD_H * cardPx, cardPx - 2 * pipRoom)));
   return { rows, rowPx, cardPx };
 }
 

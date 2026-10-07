@@ -68,6 +68,21 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "roboto-slab", chars: [letter("h"), letter("e"), letter("y")], since: 0 },
   { theme: "Symbols", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
   { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0 },
+  // Faces that had never set a character board (review: the pool leaned on
+  // Fraunces, EB Garamond and Literata). Each vetted in all three fills at
+  // card size; Bodoni's dagger, Literata's asterism and Kaushan's thin
+  // glyphs broke up under the hatch and were left out.
+  { theme: "Symbols", face: "bodoni-moda", chars: [ch("‽", "interrobang"), ch("¶", "pilcrow"), ch("&", "ampersand")], since: 0 },
+  { theme: "Symbols", face: "lobster", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("§", "section sign")], since: 0 },
+  { theme: "Symbols", face: "jetbrains-mono", chars: [ch("#", "number sign"), ch("%", "percent sign"), ch("&", "ampersand")], since: 0 },
+  { theme: "Currency", face: "lobster", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
+  { theme: "Currency", face: "jetbrains-mono", chars: [ch("$", "dollar sign"), ch("₽", "ruble sign"), ch("¢", "cent sign")], since: 0 },
+  { theme: "Currency", face: "jost", chars: [ch("₽", "ruble sign"), ch("£", "pound sign"), ch("$", "dollar sign")], since: 0 },
+  { theme: "Beyond A–Z", face: "roboto-slab", chars: [ch("Ŋ", "eng"), ch("Ħ", "H with stroke", "Hs with stroke"), ch("Þ", "thorn")], since: 0 },
+  { theme: "Beyond A–Z", face: "bodoni-moda", chars: [ch("Œ", "OE ligature", "OE ligatures"), ch("ß", "sharp s", "sharp s's"), ch("Ł", "L with stroke", "Ls with stroke")], since: 0 },
+  { theme: "Letters", face: "bodoni-moda", chars: [letter("Q"), letter("a"), letter("k")], since: 0 },
+  { theme: "Letters", face: "lobster", chars: [letter("G"), letter("e"), letter("k")], since: 0 },
+  { theme: "Letters", face: "jost", chars: [letter("M"), letter("y"), letter("s")], since: 0 },
 ];
 
 export const FACES_POOL: readonly FacesEntry[] = [
@@ -82,4 +97,12 @@ export const FACES_POOL: readonly FacesEntry[] = [
   { char: ch("&", "ampersand"), faces: ["eb-garamond", "archivo-black", "kaushan-script"], since: 0 },
   { char: letter("e"), faces: ["literata", "jost", "lobster"], since: 0 },
   { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0 },
+  { char: letter("G"), faces: ["bodoni-moda", "roboto-slab", "lobster"], since: 0 },
+  { char: letter("y"), faces: ["literata", "archivo-black", "lobster"], since: 0 },
+  { char: letter("M"), faces: ["eb-garamond", "roboto-slab", "jost"], since: 0 },
+  { char: letter("j"), faces: ["jost", "jetbrains-mono", "lobster"], since: 0 },
+  { char: letter("b"), faces: ["fraunces", "archivo-black", "lobster"], since: 0 },
+  { char: letter("W"), faces: ["literata", "roboto-slab", "lobster"], since: 0 },
+  { char: letter("k"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
+  { char: letter("R"), faces: ["fraunces", "jost", "kaushan-script"], since: 0 },
 ];

@@ -65,6 +65,8 @@ export interface Face {
   family: FaceFamily;
   /** Designer credit for the faces board's finish card. */
   designer: string;
+  /** One line of history for the finish card: where the face comes from. */
+  note: string;
   /** Google Fonts family name, for the bake script. */
   googleFamily: string;
   weight: number;
@@ -89,6 +91,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Old style",
     designer: "Georg Duffner, after Garamont",
     googleFamily: "EB Garamond",
+    note: "A revival of Claude Garamont's 16th-century romans, from a 1592 specimen.",
     weight: 800,
   },
   jost: {
@@ -97,6 +100,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Geometric",
     designer: "Owen Earl, after Futura",
     googleFamily: "Jost",
+    note: "A free take on the 1920s German geometric sans, Futura above all.",
     weight: 900,
   },
   lobster: {
@@ -105,6 +109,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Script",
     designer: "Pablo Impallari",
     googleFamily: "Lobster",
+    note: "A bold connected script, drawn with many alternates so letters join smoothly.",
     weight: 400,
   },
   fraunces: {
@@ -113,6 +118,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Soft serif",
     designer: "Undercase Type",
     googleFamily: "Fraunces",
+    note: "A \"wonky\" soft serif after early-1900s faces like Windsor and Cooper.",
     weight: 900,
   },
   literata: {
@@ -121,6 +127,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Book serif",
     designer: "TypeTogether",
     googleFamily: "Literata",
+    note: "Commissioned as the reading face of Google Play Books.",
     weight: 900,
   },
   "bodoni-moda": {
@@ -129,6 +136,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Didone",
     designer: "Owen Earl, after Bodoni",
     googleFamily: "Bodoni Moda",
+    note: "After Giambattista Bodoni's 18th-century Didones: hairline thins, heavy thicks.",
     weight: 900,
   },
   "kaushan-script": {
@@ -137,6 +145,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Brush",
     designer: "Pablo Impallari",
     googleFamily: "Kaushan Script",
+    note: "A brush script with the pace of quick hand lettering.",
     weight: 400,
   },
   "roboto-slab": {
@@ -145,6 +154,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Slab",
     designer: "Christian Robertson",
     googleFamily: "Roboto Slab",
+    note: "The slab-serif companion to Roboto, Android's system face.",
     weight: 900,
   },
   "archivo-black": {
@@ -153,6 +163,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Grotesque",
     designer: "Omnibus-Type",
     googleFamily: "Archivo Black",
+    note: "The heaviest member of Archivo, a grotesque made for headlines.",
     weight: 400,
   },
   "jetbrains-mono": {
@@ -161,6 +172,7 @@ export const FACES: Record<FaceId, Face> = {
     family: "Monospace",
     designer: "JetBrains",
     googleFamily: "JetBrains Mono",
+    note: "Made for code: a tall lowercase, every letter the same width.",
     weight: 800,
   },
 };
