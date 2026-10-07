@@ -98,7 +98,7 @@ interface Props {
   /** Tutorial: replay the script from step one. */
   onRestartTutorial?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
-  onReplay?: () => void;
+  onReplay?: () => Promise<void>;
 }
 
 export function GameScreen({
@@ -106,6 +106,8 @@ export function GameScreen({
   level,
   onLevelChange,
   onRestartTutorial,
+  onReplay,
+  onNewPuzzle,
 }: Props) {
   const {
     state,
@@ -115,6 +117,7 @@ export function GameScreen({
     totalWords: total,
     solvedElapsedMs,
     hydratedAsSolved,
+    abandonSession,
   } = useCrosshatchGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
@@ -128,6 +131,7 @@ export function GameScreen({
   // The coach sheet opens on demand only — the first-run introduction is
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
 
   const [wordsOpen, setWordsOpen] = useState(false);
@@ -229,7 +233,7 @@ export function GameScreen({
   // dialogs. Enter/Space defer to a FOCUSED control (a keyboard user
   // tabbing the page keeps native button activation), and dialogs own
   // their keys entirely.
-  const modalOpen = hintWarningOpen || coachOpen;
+  const modalOpen = hintWarningOpen || coachOpen || replayOpen;
   useEffect(() => {
     const moveCursor = (dr: number, dc: number) => {
       const cur = state.cursor;
@@ -661,6 +665,24 @@ export function GameScreen({
                 gameId="crosshatch"
               />
             )}
+            {mode.kind === "archive" && onReplay && (
+              <button
+                type="button"
+                onClick={() => setReplayOpen(true)}
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+              >
+                Play again
+              </button>
+            )}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New board
+              </button>
+            )}
             {/* The streak belongs to the DAY, and the day needs both
                 boards — showing it after the first would report a streak
                 the player hasn't earned yet. */}
@@ -741,6 +763,47 @@ export function GameScreen({
               <button
                 type="button"
                 onClick={() => setHintWarningOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
+
+      {replayOpen && (
+        <ModalDialog
+          labelledBy="replay-dialog-title"
+          onClose={() => setReplayOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="replay-dialog-title" className="text-lg font-bold">
+              {level !== undefined
+                ? `Play the ${LEVEL_LABEL[level]} board again?`
+                : "Play this day again?"}
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              The board clears and the clock restarts. Your first solve stays
+              counted in your stats.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setReplayOpen(false);
+                  abandonSession();
+                  void onReplay?.();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Play again
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayOpen(false)}
                 className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
               >
                 Cancel
