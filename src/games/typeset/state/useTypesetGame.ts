@@ -60,11 +60,12 @@ export function useTypesetGame(mode: GameMode) {
     resetKey: `${dateKey}:${kind}`,
   });
 
-  const persistNow = (s: GameState) => {
-    if (!persisted || !hydratedRef.current || abandonedRef.current) return;
-    if (staleRecordRef.current && s.found.length === 0 && s.misses === 0) return;
+  /** Saves the board; the promise settles once the write has landed (or at once when nothing is saved). */
+  const persistNow = (s: GameState): Promise<unknown> => {
+    if (!persisted || !hydratedRef.current || abandonedRef.current) return Promise.resolve();
+    if (staleRecordRef.current && s.found.length === 0 && s.misses === 0) return Promise.resolve();
     staleRecordRef.current = false;
-    void saveDailyProgress({
+    return saveDailyProgress({
       dateKey,
       puzzleKey: pKey,
       board: kind,
@@ -153,8 +154,10 @@ export function useTypesetGame(mode: GameMode) {
     if (!recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
       statsRecordedRef.current = true;
+      // Stats chain AFTER this board's solved save lands (house rule):
+      // the day's hint-free count reads both boards' saved records.
       // Grace day only for the live daily, never an archive play.
-      void recordDailySolved(dateKey, kind, mode.kind === "daily");
+      void persistNow(state).then(() => recordDailySolved(dateKey, kind, mode.kind === "daily"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persisted, dateKey, state.solved]);
