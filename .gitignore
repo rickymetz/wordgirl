@@ -5,3 +5,6 @@ dev-dist
 .DS_Store
 scripts/.cache
 .astro
+
+# Python env for scripts/bake-typeset-glyphs.py
+.venv/

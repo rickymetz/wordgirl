@@ -12,9 +12,10 @@ import { DICT_VERSION } from "../lib/words/dictionary";
  */
 
 // A date on/after crosshatch's HARD_EPOCH so its day carries BOTH boards,
-// and after Sixfold's launch (before it, Sixfold's solvedOn says every day
-// is done, so the all-games streak survives its arrival).
-const DAY = "2026-09-30";
+// and after Sixfold's and Typeset's launches (before a game's launch its
+// solvedOn says every day is done, so the all-games streak survives its
+// arrival — which would make the "one board short" case unfalsifiable).
+const DAY = "2026-10-12";
 const V = DICT_VERSION;
 const k = (id: string, sub: string) => `wg:v1:local:${id}:daily:${sub}`;
 const put = (id: string, sub: string, v: unknown) =>
@@ -73,6 +74,17 @@ function seed(id: string, solved: boolean) {
         elapsedMs: 240000, entries: "a".repeat(36), revealed: [], filled: 30, hints: 0,
       });
       break;
+    case "typeset":
+      for (const [b, ms, n] of [["charset", 95000, 6], ["faces", 140000, 5]] as const) {
+        put(id, `${b}:${DAY}`, {
+          dateKey: DAY, dictVersion: V, board: b,
+          // Only the charset board follows `solved`; faces is done.
+          solved: b === "charset" ? solved : true,
+          elapsedMs: ms, found: Array.from({ length: n }, (_, i) => `${i},${i + 1},${i + 2}`),
+          total: n, misses: 1, hints: 0,
+        });
+      }
+      break;
     default:
       throw new Error(`registry test has no seed for "${id}" — add one`);
   }
@@ -103,6 +115,8 @@ describe("per-game daily loaders agree", () => {
         crosshatch: ["Normal", "Hard"],
         doublet: ["Easy", "Medium", "Hard"],
         serpentine: ["Haiku", "Poem"],
+        // Typeset's character-set label is the day's theme.
+        typeset: ["Beyond A–Z", "Faces"],
       };
       if (game.id in expectedLevels) {
         // Multi-level games break out per level (unit + a level each).

@@ -117,7 +117,32 @@ const GAMES = [
     id: "sixfold", name: "Sixfold", tagline: "Solve the square. Find the words.", accent: "#818cf8",
     prep: (page) => playSixfold(page, 6),
   },
+  {
+    id: "typeset", name: "Typeset", tagline: "Set, in type.", accent: "#d4b0f5",
+    prep: playTypeset,
+  },
 ];
+
+// Typeset mid-play: read the cards' labels ("2 teal open pilcrows, row 1,
+// column 3"), find the sets the way a player would, tap one in, then pick
+// two cards of another so the board shows a find and a live selection.
+async function playTypeset(page) {
+  const cards = page.locator('button[aria-pressed][aria-label*="row"]');
+  const labels = await cards.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label").split(", row")[0]));
+  const attrs = labels.map((l) => {
+    const m = l.match(/^(\d) (\w+) (solid|cross-hatched|open) (.+)$/);
+    return m ? [m[1], m[2], m[3], m[4].replace(/('s|s)$/, "")] : null;
+  });
+  const sets = [];
+  for (let i = 0; i < attrs.length; i++)
+    for (let j = i + 1; j < attrs.length; j++)
+      for (let k = j + 1; k < attrs.length; k++)
+        if ([0, 1, 2, 3].every((a) => new Set([attrs[i]?.[a], attrs[j]?.[a], attrs[k]?.[a]]).size !== 2)) sets.push([i, j, k]);
+  if (sets.length < 2) return;
+  for (const i of sets[0]) await cards.nth(i).click();
+  await page.waitForTimeout(1800); // let the "Set found" toast clear
+  for (const i of sets[1].filter((i) => !sets[0].includes(i)).slice(0, 2)) await cards.nth(i).click();
+}
 
 // Today's real solution path, computed from the game's own engine so the
 // trail follows the CORRECT answer. Populated once before capture; null if

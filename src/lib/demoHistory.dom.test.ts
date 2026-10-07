@@ -48,8 +48,8 @@ describe("seedDemoHistory", () => {
     expect(days["2026-09-15"]).toBeUndefined();
 
     for (const game of GAME_IDS) {
-      // Sixfold launched after this span: nothing to seed, and no stats.
-      if (game === "sixfold") continue;
+      // Sixfold and Typeset launched after this span: nothing to seed, and no stats.
+      if (game === "sixfold" || game === "typeset") continue;
       const stats = await createGameStore(game).get<{ played: number }>(
         "stats",
       );

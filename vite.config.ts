@@ -22,6 +22,7 @@ const OG_GAMES = [
   { id: "doublet", name: "Doublet", tagline: "Place the tiles. Spell the words." },
   { id: "serpentine", name: "Serpentine", tagline: "One continuous line." },
   { id: "sixfold", name: "Sixfold", tagline: "Solve the square. Find the words." },
+  { id: "typeset", name: "Typeset", tagline: "Set, in type." },
 ] as const;
 
 /** Rewrite the `content` of the one <meta> tag identified by attr="val". */

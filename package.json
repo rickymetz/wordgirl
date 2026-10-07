@@ -13,7 +13,8 @@
     "build:dictionary": "node scripts/build-dictionary.mjs",
     "build:og-cards": "node scripts/build-og-cards.mjs",
     "prepare": "husky",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "bake:typeset-glyphs": ".venv/bin/python scripts/bake-typeset-glyphs.py"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --max-warnings 0"

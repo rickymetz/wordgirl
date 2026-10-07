@@ -137,5 +137,45 @@ if (failures === 0) {
   console.log("  All accent pairs are distinguishable under simulated deuteranopia.\n");
 }
 
+// Typeset's card inks (--typeset-ink-N): color is one of the four things a
+// set is judged on, so the three must stay apart for every viewer. They
+// are graphics, not text: 3:1 against the card, not 4.5:1. And each ink
+// owns a LIGHTNESS rung, in the same order in both themes, so a player who
+// sorts by lightness rather than hue reads the board the same either way.
+console.log("=== Typeset card inks (graphics: 3:1 on the card; lightness rungs) ===\n");
+const inkRe = /--typeset-ink-(\d):\s*light-dark\(([^,]+),\s*([^)]+)\)/g;
+const inks = [...css.matchAll(inkRe)].map((m) => ({ n: m[1], light: m[2].trim(), dark: m[3].trim() }));
+if (inks.length !== 3) {
+  failures++;
+  console.log(`  FAIL expected 3 --typeset-ink tokens, found ${inks.length}`);
+} else {
+  const CARD = { light: "#ffffff", dark: "#211f26" };
+  const rank = (theme) =>
+    inks
+      .map((ink) => ({ n: ink.n, l: relativeLuminance(hexToRgb(ink[theme])) }))
+      .sort((a, b) => a.l - b.l)
+      .map((x) => x.n)
+      .join("");
+  for (const theme of ["light", "dark"]) {
+    for (const ink of inks) {
+      const ratio = contrastRatio(ink[theme], CARD[theme]);
+      const pass = ratio >= 3;
+      if (!pass) failures++;
+      console.log(`  ${pass ? "PASS" : "FAIL"} ink ${ink.n} ${theme} (${ink[theme]}) on card: ${ratio.toFixed(2)}:1`);
+    }
+    for (let i = 0; i < 3; i++)
+      for (let j = i + 1; j < 3; j++) {
+        const dist = colorDistance(simulateDeutan(hexToRgb(inks[i][theme])), simulateDeutan(hexToRgb(inks[j][theme])));
+        if (dist < MIN_DISTANCE) {
+          failures++;
+          console.log(`  FAIL ${theme}: ink ${inks[i].n} vs ink ${inks[j].n} — deutan distance ${dist.toFixed(4)} < ${MIN_DISTANCE}`);
+        }
+      }
+  }
+  const same = rank("light") === rank("dark");
+  if (!same) failures++;
+  console.log(`  ${same ? "PASS" : "FAIL"} lightness order light ${rank("light")} / dark ${rank("dark")}\n`);
+}
+
 console.log(`\n${failures === 0 ? "All checks passed." : `${failures} failure(s) found.`}`);
 process.exit(failures > 0 ? 1 : 0);
