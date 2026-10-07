@@ -641,6 +641,20 @@ export function GameScreen({
               {state.found.length}/{total} words
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
+            {/* One board down, one to go: the day only counts when both
+                are solved, so say so and offer the way over. */}
+            {otherLevel !== null &&
+              onLevelChange &&
+              otherBoardSolved === false && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => onLevelChange(otherLevel)}
+                  className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-surface active:scale-95"
+                >
+                  Play the {LEVEL_LABEL[otherLevel]} board
+                </button>
+              )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               mode.dateKey &&
               solvedElapsedMs !== null && (

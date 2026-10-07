@@ -252,7 +252,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 type="button"
                 aria-pressed={current}
                 className={[
-                  "relative rounded-full px-3.5 py-1 text-sm font-semibold select-none touch-manipulation transition-colors",
+                  "relative inline-flex items-center gap-1 rounded-full px-3.5 py-1 text-sm font-semibold select-none touch-manipulation transition-colors",
                   "after:absolute after:-inset-x-1 after:-inset-y-2.5",
                   current ? "bg-accent text-surface" : "bg-surface-tint text-ink-soft",
                 ].join(" ")}
@@ -260,7 +260,8 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 onClick={() => onBoardChange(k)}
               >
                 {label}
-                {solved ? " ✓" : ""}
+                {/* lucide, not a text "✓": icons in chrome are lucide. */}
+                {solved && <Check aria-label="solved" className="h-3.5 w-3.5" strokeWidth={3} />}
               </button>
             );
           })}
