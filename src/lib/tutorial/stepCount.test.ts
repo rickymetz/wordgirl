@@ -6,6 +6,7 @@ import * as pierglassEngine from "../../games/pierglass/engine/tutorial";
 import * as doubletEngine from "../../games/doublet/engine/tutorial";
 import * as serpentineEngine from "../../games/serpentine/engine/tutorial";
 import * as sixfoldEngine from "../../games/sixfold/engine/tutorial";
+import * as typesetEngine from "../../games/typeset/engine/tutorial";
 
 import { TUTORIAL_STEPS as polygramSteps } from "../../games/polygram/ui/tutorialSteps";
 import { TUTORIAL_STEPS as crosshatchSteps } from "../../games/crosshatch/ui/tutorialSteps";
@@ -13,6 +14,7 @@ import { TUTORIAL_STEPS as pierglassSteps } from "../../games/pierglass/ui/tutor
 import { TUTORIAL_STEPS as doubletSteps } from "../../games/doublet/ui/tutorialSteps";
 import { TUTORIAL_STEPS as serpentineSteps } from "../../games/serpentine/ui/tutorialSteps";
 import { TUTORIAL_STEPS as sixfoldSteps } from "../../games/sixfold/ui/tutorialSteps";
+import { TUTORIAL_STEPS as typesetSteps } from "../../games/typeset/ui/tutorialSteps";
 
 /**
  * Each game states how many steps it has TWICE: `TUTORIAL_STEP_COUNT` in
@@ -30,6 +32,7 @@ const GAMES = [
   { name: "doublet", count: doubletEngine.TUTORIAL_STEP_COUNT, steps: doubletSteps },
   { name: "serpentine", count: serpentineEngine.TUTORIAL_STEP_COUNT, steps: serpentineSteps },
   { name: "sixfold", count: sixfoldEngine.TUTORIAL_STEP_COUNT, steps: sixfoldSteps },
+  { name: "typeset", count: typesetEngine.TUTORIAL_STEP_COUNT, steps: typesetSteps },
 ];
 
 describe("every game's tutorial", () => {
@@ -51,6 +54,6 @@ describe("every game's tutorial", () => {
   });
 
   it("covers every game", () => {
-    expect(GAMES).toHaveLength(6);
+    expect(GAMES).toHaveLength(7);
   });
 });

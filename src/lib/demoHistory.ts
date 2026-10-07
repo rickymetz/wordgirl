@@ -6,6 +6,7 @@ import { createLocalStorageAdapter } from "./storage/localStorageAdapter";
 import { BACKUP_PREFIX } from "./backup";
 import { levelsFor } from "../games/crosshatch/state/persistence";
 import { ARCHIVE_EPOCH as SIXFOLD_EPOCH } from "../games/sixfold/state/persistence";
+import { ARCHIVE_EPOCH as TYPESET_EPOCH } from "../games/typeset/state/persistence";
 
 /**
  * Demo history for previewing full archive/stats pages: visiting any
@@ -50,6 +51,7 @@ export const GAME_IDS = [
   "doublet",
   "serpentine",
   "sixfold",
+  "typeset",
 ] as const;
 
 /** Fake words render in archive word lists; nonsense is fine, these
@@ -424,6 +426,42 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
         bestStreak: Math.min(best, seeded),
         bestTimeMs,
         hintFreeSolves,
+      });
+    }
+  }
+
+  // — Typeset: two boards a day (character set + faces), and only from
+  //   its launch (ARCHIVE_EPOCH) on.
+  {
+    const seededDays = played.filter((d) => d >= TYPESET_EPOCH);
+    let hintFreeDays = 0;
+    for (const d of seededDays) {
+      let dayHints = 0;
+      for (const board of ["charset", "faces"] as const) {
+        const total = int(4, 8);
+        const hints = rng() < 0.2 ? int(1, 2) : 0;
+        dayHints += hints;
+        put("typeset", `daily:${board}:${d}`, {
+          ...dayBase(d, minutes(1, 6)),
+          board,
+          found: Array.from({ length: total }, (_, i) => `${i},${i + 1},${i + 2}`),
+          total,
+          misses: rng() < 0.5 ? int(1, 4) : 0,
+          hints,
+          sessions: 1,
+          solvedHour: int(7, 22),
+        });
+      }
+      if (dayHints === 0) hintFreeDays++;
+    }
+    if (seededDays.length > 0) {
+      put("typeset", "stats", {
+        ...streakBase,
+        played: seededDays.length,
+        solved: seededDays.length,
+        currentStreak: Math.min(run, seededDays.length),
+        bestStreak: Math.min(best, seededDays.length),
+        hintFreeDays,
       });
     }
   }

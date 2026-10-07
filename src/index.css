@@ -136,6 +136,7 @@
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
   --level-sixfold: light-dark(#4338ca, #818cf8);    /* indigo */
+  --level-typeset: light-dark(#6b3f86, #d4b0f5);    /* aubergine: book cloth */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -150,6 +151,7 @@
   --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
   --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
   --roundup-c6: light-dark(#4f46e5, #818cf8); /* indigo */
+  --roundup-c7: light-dark(#7e3fa6, #d4b0f5); /* aubergine */
 
   /* Confetti. Decorative like the rainbow above and tuned the same way,
      but the reason it MUST be a light-dark() pair is sharper here: a
@@ -191,17 +193,19 @@
   --roundup-rainbow: linear-gradient(
     105deg,
     var(--roundup-c1) 0%,
-    var(--roundup-c2) 8.33%,
-    var(--roundup-c3) 16.67%,
-    var(--roundup-c4) 25%,
-    var(--roundup-c5) 33.33%,
-    var(--roundup-c6) 41.67%,
+    var(--roundup-c2) 7.14%,
+    var(--roundup-c3) 14.29%,
+    var(--roundup-c4) 21.43%,
+    var(--roundup-c5) 28.57%,
+    var(--roundup-c6) 35.71%,
+    var(--roundup-c7) 42.86%,
     var(--roundup-c1) 50%,
-    var(--roundup-c2) 58.33%,
-    var(--roundup-c3) 66.67%,
-    var(--roundup-c4) 75%,
-    var(--roundup-c5) 83.33%,
-    var(--roundup-c6) 91.67%,
+    var(--roundup-c2) 57.14%,
+    var(--roundup-c3) 64.29%,
+    var(--roundup-c4) 71.43%,
+    var(--roundup-c5) 78.57%,
+    var(--roundup-c6) 85.71%,
+    var(--roundup-c7) 92.86%,
     var(--roundup-c1) 100%
   );
 }
@@ -237,6 +241,48 @@
 
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
+
+/* Typeset — aubergine. Stone at first, so the chrome would never compete
+   with the three card inks below; next to six saturated siblings it read as
+   switched off (the hub date, the tabs, the ¶). Aubergine is the hue
+   farthest from every sibling accent (OKLab dE >= 12.8 in both themes,
+   measured), and the card inks are a triad on it (below). A selected card
+   is marked in neutral ink, not the accent, so it never reads as violet. */
+[data-level="typeset"] {
+  --color-accent: var(--level-typeset);
+}
+
+/* Typeset's card inks: a deliberate exception to "one palette key per
+   game". Color is one of the four attributes a set is judged on, so the
+   cards need three inks that stay apart for every viewer:
+   - a TRIAD on the chrome's aubergine (OKLCH hue 311): violet, then gold
+     at ~70 and teal at ~190, the other two corners 120 degrees round. Red,
+     amber and blue clashed with the aubergine; a true green and orange
+     scored worse for colorblind players (the two merge under
+     deuteranopia), while teal keeps the blue they can still see;
+   - each ink owns a LIGHTNESS rung, and keeps the same order in both
+     themes (violet darkest, gold middle, teal lightest), so a player who
+     sorts by lightness rather than hue reads the board the same way;
+   - worst pair under simulated deuteranopia/protanopia (Machado 2009,
+     OKLab dE) is 15.6 light / 21.1 dark; normal vision 21.6 / 28.5;
+   - they are GRAPHICS, so they clear 3:1, not 4.5:1: teal is 3.4:1 on
+     white, the dark inks 5:1+ on the dark card. Never set text in them.
+   --typeset-tint-N is the cross-hatch's ground (25% light / 30% dark;
+   a 22% wash read as a dim smear on dark; light gold takes 35%, a 25%
+   amber ground vanished on white) and --typeset-wash-N the flat
+   middle fill tray glyphs use, too small to resolve a hatch (55%: at 40%
+   it read under 2:1 on the card). */
+:root {
+  --typeset-ink-0: light-dark(#6d28d9, #a77be0);
+  --typeset-ink-1: light-dark(#b4650a, #ea9602);
+  --typeset-ink-2: light-dark(#2f9a9b, #4aebed);
+  --typeset-tint-0: light-dark(color-mix(in oklab, #6d28d9 25%, #ffffff), color-mix(in oklab, #a77be0 30%, #211f26));
+  --typeset-tint-1: light-dark(color-mix(in oklab, #b4650a 35%, #ffffff), color-mix(in oklab, #ea9602 30%, #211f26));
+  --typeset-tint-2: light-dark(color-mix(in oklab, #2f9a9b 25%, #ffffff), color-mix(in oklab, #4aebed 30%, #211f26));
+  --typeset-wash-0: light-dark(color-mix(in oklab, #6d28d9 55%, #ffffff), color-mix(in oklab, #a77be0 55%, #211f26));
+  --typeset-wash-1: light-dark(color-mix(in oklab, #b4650a 55%, #ffffff), color-mix(in oklab, #ea9602 55%, #211f26));
+  --typeset-wash-2: light-dark(color-mix(in oklab, #2f9a9b 55%, #ffffff), color-mix(in oklab, #4aebed 55%, #211f26));
+}
 
 /* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {
