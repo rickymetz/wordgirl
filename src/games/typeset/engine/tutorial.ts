@@ -3,10 +3,13 @@
  * dealer (whose 4–8 set bounds are tuned for a day's play) and lives in
  * its own module so nothing here can shift a daily seed.
  *
- * Nine cards, exactly three sets, one idea each:
- *  1. everything matches but the fill
- *  2. everything differs
- *  3. a mix — two attributes the same, two different
+ * Nine cards, exactly three sets, and four steps:
+ *  1. a set where everything matches but the fill
+ *  2. NOT a set: both RRR cards and the single gold R — counts 3, 3, 1,
+ *     the two-alike-one-different pick newcomers actually make (step done
+ *     on any miss)
+ *  3. a set where everything differs
+ *  4. a mix — two attributes the same, two different
  * tutorial.test.ts asserts there are no other sets on the board, so a
  * player following the steps can't stumble into a fourth.
  */
@@ -55,14 +58,26 @@ export const TUTORIAL_TARGETS: readonly string[] = TUTORIAL_SETS.map((set) =>
   tripleKey(set.map((card) => cards.findIndex((c) => c.join() === card.join()))),
 );
 
-export const TUTORIAL_STEP_COUNT = TUTORIAL_TARGETS.length;
+/** The near-miss step 2 asks for: both RRR cards and the single gold R. */
+export const TUTORIAL_NOT_A_SET: Card[] = [
+  [2, 2, 2, 2],
+  [2, 2, 1, 2],
+  [2, 0, 1, 0],
+];
+
+/** Three sets plus the not-a-set step. */
+export const TUTORIAL_STEP_COUNT = TUTORIAL_TARGETS.length + 1;
 
 /**
- * The step the player is on: the first teaching set not yet found
- * (TUTORIAL_STEP_COUNT once all are). Any order of finding works; the
- * banner always teaches the earliest one still open.
+ * The step the player is on (TUTORIAL_STEP_COUNT once done). Step 1 until
+ * the first set is found; then step 2, the not-a-set pick, until the player
+ * has missed once (a miss before that counts: they have met "Not a set");
+ * then the remaining sets in order. Any order of finding works; the banner
+ * always teaches the earliest step still open.
  */
-export function tutorialStepIndex(found: readonly string[]): number {
+export function tutorialStepIndex(found: readonly string[], misses = 0): number {
+  if (!found.includes(TUTORIAL_TARGETS[0])) return 0;
+  if (misses === 0) return 1;
   const i = TUTORIAL_TARGETS.findIndex((t) => !found.includes(t));
-  return i === -1 ? TUTORIAL_STEP_COUNT : i;
+  return i === -1 ? TUTORIAL_STEP_COUNT : i + 1;
 }

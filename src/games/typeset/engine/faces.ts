@@ -52,10 +52,11 @@ export const SILHOUETTE: Record<FaceFamily, Silhouette> = {
 
 /**
  * Letters that SHOW a monospace: narrow letters drawn wide, with the slab
- * feet a fixed advance forces on them. In a round letter (a, e, y) a black
- * mono reads as just another grotesque, and the lesson is invisible.
+ * feet and hooks a fixed advance forces on them. Checked against the baked
+ * outlines, not assumed: JetBrains Mono's f, r and t have NO foot, and in
+ * them (as in a round a, e, y) a black mono reads as just another grotesque.
  */
-export const MONO_TELLING = new Set(["f", "i", "j", "l", "r", "t"]);
+export const MONO_TELLING = new Set(["i", "j", "l"]);
 
 export interface Face {
   id: FaceId;

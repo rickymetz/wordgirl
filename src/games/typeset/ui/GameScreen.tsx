@@ -21,7 +21,7 @@ import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useRemeasure } from "../../../lib/useRemeasure";
 import { FACES } from "../engine/faces";
-import { describeCard, hintLabel, hintText, nextHint } from "../engine/hints";
+import { COLORS, describeCard, hintLabel, hintText, nextHint } from "../engine/hints";
 import { pressHandlers } from "../../../lib/pressHandlers";
 import { dailyBoard, type Board, type BoardKind } from "../engine/schedule";
 import { tutorialStepIndex } from "../engine/tutorial";
@@ -37,14 +37,15 @@ const outroStreak = async (today: string) => displayStreak(await loadStats(), to
 
 const OTHER: Record<BoardKind, BoardKind> = { charset: "faces", faces: "charset" };
 
-/** Share names the board by kind, not its theme (a theme like "Beyond A–Z" would push it past a message bubble). */
-const SHARE_KIND: Record<BoardKind, string> = { charset: "Characters", faces: "Faces" };
+/** Desktop keys for the cards, row by row in the three-column grid. */
+const CARD_KEYS = ["1", "2", "3", "q", "w", "e", "a", "s", "d", "z", "x", "c"];
+
 
 export function buildShareText(board: Board, found: number, hints: number, dateKey: string, elapsedMs: number): string {
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return [
     `🖋️ Typeset — ${formatShareDate(dateKey)}`,
-    `${SHARE_KIND[board.kind]} · ${found} sets · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${board.label} · ${found} sets · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -93,7 +94,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   useEffect(() => {
     if (showResults && state.solved && !hydratedAsSolved) resultsRef.current?.focus({ preventScroll: true });
   }, [showResults, state.solved, hydratedAsSolved]);
-  const tutorialStep = useTutorialProgress(tutorialStepIndex(state.found));
+  const tutorialStep = useTutorialProgress(tutorialStepIndex(state.found, state.misses));
   const [coachOpen, setCoachOpen] = useState(false);
 
   // The other board of the date, for its tab label and its ✓ (the tabs are
@@ -131,6 +132,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
     dispatch({ type: "hint" });
   };
   const requestHint = () => {
+    if (!canHint) return;
     if (persisted && state.hints === 0) setHintWarningOpen(true);
     else takeHint();
   };
@@ -147,13 +149,35 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
     const text = verdictText(v, board, state.found.length);
     say(text);
     if (v.kind !== "hint") show(text, v.kind === "miss" ? 2400 : 1600);
+    if (v.kind === "miss") flashMiss(attemptRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.verdict?.id]);
+
+  // The three cards of the last full pick, so a miss can show WHICH three
+  // were tried before the reducer clears the selection.
+  const attemptRef = useRef<number[] | null>(null);
+  // A miss shakes the three cards for 180ms (a fade with reduced motion).
+  // Web Animations on the elements: nothing re-renders, and taps stay live.
+  const flashMiss = (cards: number[] | null) => {
+    const box = boxRef.current;
+    if (!box || !cards) return;
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    for (const i of cards) {
+      const el = box.querySelector<HTMLElement>(`[data-card="${i}"]`);
+      el?.animate(
+        still
+          ? [{ opacity: 1 }, { opacity: 0.45 }, { opacity: 1 }]
+          : [{ transform: "translateX(0)" }, { transform: "translateX(-3px)" }, { transform: "translateX(3px)" }, { transform: "translateX(0)" }],
+        { duration: 180, easing: "ease-in-out" },
+      );
+    }
+  };
 
   // Escape clears a half-made selection; dialogs own their own keys.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" && e.key !== "Backspace") return;
+      if (e.key === "Backspace" && (e.target as HTMLElement | null)?.closest("input, textarea, [contenteditable]")) return;
       if ((e.target as HTMLElement | null)?.closest('[role="dialog"]')) return;
       setCoachOpen(false);
       setHintWarningOpen(false);
@@ -169,8 +193,32 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
     const desc = describeCard(board, board.cards[i]);
     if (state.selected.includes(i)) say(`${desc}, deselected`);
     else if (state.selected.length < 2) say(`${desc}, ${state.selected.length + 1} of 3 selected`);
+    attemptRef.current = !state.selected.includes(i) && state.selected.length === 2 ? [...state.selected, i] : null;
     dispatch({ type: "tap", index: i });
   };
+
+  // Desktop play: each card has a key, row by row (1 2 3 / q w e / a s d /
+  // z x c). Ignored with a modifier held, while a dialog or sheet is open,
+  // and from inside a text field.
+  const tapRef = useRef(tapCard);
+  tapRef.current = tapCard;
+  const solvedRef = useRef(state.solved);
+  solvedRef.current = state.solved;
+  const dialogOpen = coachOpen || hintWarningOpen || replayOpen;
+  useEffect(() => {
+    if (dialogOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || solvedRef.current) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest('input, textarea, [contenteditable], [role="dialog"]')) return;
+      const i = CARD_KEYS.indexOf(e.key.toLowerCase());
+      if (i < 0 || i >= board.cards.length) return;
+      e.preventDefault();
+      tapRef.current(i);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [dialogOpen, board]);
   // How many found sets each card is in: a card can belong to several, so a
   // found card stays in play, and its pips say how often it has been used.
   const foundCount = useMemo(() => {
@@ -222,10 +270,14 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
           )}
           {/* No DictionaryLink, unlike every sibling: it is there for
               mid-game word lookups, and Typeset has no words. */}
-          {!state.solved && !isTutorial && canHint && (
+          {/* Once the target set is fully described the button stays but goes
+              inactive (aria-disabled, not removed or `disabled`), so a
+              keyboard or screen-reader user's focus isn't dropped. */}
+          {!state.solved && !isTutorial && (
             <button
               type="button"
-              className="relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-soft select-none touch-manipulation active:scale-95 after:absolute after:inset-x-0 after:-inset-y-2.5"
+              aria-disabled={!canHint}
+              className={`relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-soft select-none touch-manipulation after:absolute after:inset-x-0 after:-inset-y-2.5 ${canHint ? "active:scale-95" : "opacity-40"}`}
               onPointerDown={(e) => e.preventDefault()}
               onClick={requestHint}
             >
@@ -360,6 +412,8 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 // The tap runs on pointerdown: a thumb that drifts a few px
                 // gets its click cancelled (see lib/pressHandlers).
                 {...pressHandlers(() => tapCard(i))}
+                data-card={i}
+                aria-keyshortcuts={CARD_KEYS[i]?.toUpperCase()}
                 className={[
                   "relative flex items-center justify-center rounded-xl border bg-surface-raised transition-[transform,box-shadow,border-color] duration-100",
                   // Selected LIFTS, with a check: a shape change, not only a tint.
@@ -517,7 +571,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
             rules={[
               {
                 Icon: Type,
-                title: board.kind === "faces" ? "Today's faces" : `Today: ${board.label}`,
+                title: `Today: ${board.label}`,
                 body: <TodayGlyphs board={board} layout={layout} />,
               },
               {
@@ -534,8 +588,9 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 title: "Four things to compare",
                 body: (
                   <>
-                    The <Key>character</Key> (the <Key>face</Key> on the faces board), the <Key>count</Key>, the <Key>color</Key>, and the{" "}
+                    The <Key>character</Key> (the <Key>face</Key> on the Faces board), the <Key>count</Key>, the <Key>color</Key>, and the{" "}
                     <Key>fill</Key>: solid, cross-hatched or open.
+                    <ColorKey />
                   </>
                 ),
               },
@@ -553,17 +608,8 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 title: "Two boards",
                 body: (
                   <>
-                    Each day has a <Key>character set</Key> board and a <Key>faces</Key> board — one letter in three typefaces. Solve{" "}
+                    Each day has a themed board — <Key>Letters</Key>, <Key>Symbols</Key>, <Key>Currency</Key> or <Key>Beyond A–Z</Key> — and a <Key>Faces</Key> board: one letter in three typefaces. Solve{" "}
                     <Key>both</Key> to finish the day.
-                  </>
-                ),
-              },
-              {
-                Icon: Lightbulb,
-                title: "Hints",
-                body: (
-                  <>
-                    A hint names one thing about a set you haven't found. Your result notes how many you used.
                   </>
                 ),
               },
@@ -592,8 +638,28 @@ function TodayGlyphs({ board, layout }: { board: Board; layout: GlyphLayout }) {
     <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
       {board.glyphs.map((g, i) => (
         <span key={i} className="inline-flex items-center gap-1">
-          <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="inline-block shrink-0" style={{ height: 20 }} />
+          {/* A fixed box, so the names after glyphs of different widths line up. */}
+          <span className="inline-flex w-7 shrink-0 justify-center">
+            <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral style={{ height: 20 }} />
+          </span>
           <span>{board.kind === "faces" ? `${FACES[g.face].name} (${FACES[g.face].family.toLowerCase()})` : g.name}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The three inks, named, so a color hint ("all teal") maps to the cards for
+ * a player who can't tell the hues apart. Swatches are the card inks.
+ */
+function ColorKey() {
+  return (
+    <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+      {COLORS.map((name, i) => (
+        <span key={name} className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="h-3 w-3 shrink-0 rounded-full" style={{ background: `var(--typeset-ink-${i})` }} />
+          {name}
         </span>
       ))}
     </span>
@@ -611,9 +677,12 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
   const miniStyle = { aspectRatio: String(CARD_ASPECT) };
   return (
     <section aria-label={`${found.length} of ${board.sets.length} sets found`} className="grid grid-cols-2 gap-1.5">
-      {slots.map((key, i) =>
-        key === null ? (
-          <div key={i} aria-hidden className="grid grid-cols-3 gap-1 rounded-lg border border-dashed border-line p-[3px]">
+      {slots.map((key, i) => {
+        // An odd count centers its last slot, rather than leaving a half row.
+        const lone = i === slots.length - 1 && slots.length % 2 === 1;
+        const place = lone ? "col-span-2 w-[calc(50%-3px)] justify-self-center" : "";
+        return key === null ? (
+          <div key={i} aria-hidden className={`grid grid-cols-3 gap-1 rounded-lg border border-dashed border-line p-[3px] ${place}`}>
             {[0, 1, 2].map((k) => (
               <div key={k} className={mini} style={miniStyle} />
             ))}
@@ -626,7 +695,7 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
               .split(",")
               .map((idx) => describeCard(board, board.cards[Number(idx)]))
               .join(", ")}
-            className="grid grid-cols-3 gap-1 rounded-lg border border-transparent bg-surface-tint p-[3px]"
+            className={`grid grid-cols-3 gap-1 rounded-lg border border-transparent bg-surface-tint p-[3px] ${place}`}
           >
             {key.split(",").map((idx) => {
               const card = board.cards[Number(idx)];
@@ -645,8 +714,8 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
               );
             })}
           </div>
-        ),
-      )}
+        );
+      })}
     </section>
   );
 }
@@ -667,7 +736,9 @@ function Credits({ board, layout }: { board: Board; layout: GlyphLayout }) {
         const face = FACES[g.face];
         return (
           <li key={g.face} className="flex items-center gap-2">
-            <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="shrink-0" style={{ height: 20 }} />
+            <span className="flex w-7 shrink-0 justify-center">
+              <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral style={{ height: 20 }} />
+            </span>
             <span>
               <span className="font-semibold text-ink">{face.name}</span> · {face.family} · {face.designer}
             </span>

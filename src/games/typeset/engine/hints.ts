@@ -33,7 +33,8 @@ export interface HintState {
 export const NO_HINTS: HintState = { target: null, facts: [] };
 
 const COUNTS = ["one", "two", "three"];
-const COLORS = ["violet", "gold", "teal"];
+/** The inks' names, in ink order: hints, card labels and the "?" sheet's key. */
+export const COLORS = ["violet", "gold", "teal"] as const;
 const FILLS = ["solid", "cross-hatched", "open"];
 
 function factsFor(cards: readonly Card[], set: Triple): HintFact[] {

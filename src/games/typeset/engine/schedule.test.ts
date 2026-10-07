@@ -36,12 +36,12 @@ describe("schedule", () => {
     });
     expect(week).toMatchInlineSnapshot(`
       [
-        "2026-10-07 ?¶§/eb-garamond f:fraunces,jetbrains-mono,lobster 4+4",
+        "2026-10-07 ?¶§/eb-garamond l:fraunces,jetbrains-mono,lobster 4+4",
         "2026-10-08 agR/jost &:eb-garamond,archivo-black,kaushan-script 5+4",
         "2026-10-09 &@#/fraunces k:jost,roboto-slab,kaushan-script 4+4",
         "2026-10-10 $£¥/eb-garamond a:bodoni-moda,jost,kaushan-script 6+5",
         "2026-10-11 Qek/fraunces g:eb-garamond,jost,lobster 6+4",
-        "2026-10-12 λΩψ/literata f:fraunces,jetbrains-mono,lobster 6+5",
+        "2026-10-12 λΩψ/literata l:fraunces,jetbrains-mono,lobster 6+5",
         "2026-10-13 ßÆØ/eb-garamond e:literata,jost,lobster 5+5",
       ]
     `);

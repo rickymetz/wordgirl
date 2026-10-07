@@ -89,8 +89,10 @@ than one set. The pips go once the board is solved (every card is used by then),
   mono, script), not merely three families (`pool.test.ts`). Families are
   finer than a lone letter shows: a review couldn't tell Fraunces from
   JetBrains Mono in a black "y". A trio with the monospace also uses a
-  letter that SHOWS it (f, i, j, l, r, t: narrow letters drawn wide, with
-  slab feet), so that trio's "y" became "f".
+  letter that SHOWS it — i, j or l, checked against the outlines: JetBrains
+  Mono's f, r and t have no foot and read as a grotesque. That trio went
+  y → f → l (Lobster's f also had a closed loop that filled in on a solid
+  card).
 - On the faces board ink heights are equalized so no face reads heavier for
   being drawn larger.
 

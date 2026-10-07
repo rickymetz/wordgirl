@@ -35,7 +35,7 @@ export function ProgressBar({
           />
         ))}
       </div>
-      <span className="shrink-0 text-xs font-medium text-ink-soft">
+      <span className="shrink-0 text-xs font-medium text-ink-soft tabular-nums">
         {found}/{total}
         {label && <span className="sr-only"> {label}</span>}
       </span>

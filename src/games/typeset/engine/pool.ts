@@ -75,8 +75,10 @@ export const FACES_POOL: readonly FacesEntry[] = [
   { char: letter("a"), faces: ["bodoni-moda", "jost", "kaushan-script"], since: 0 },
   { char: letter("R"), faces: ["bodoni-moda", "archivo-black", "roboto-slab"], since: 0 },
   { char: letter("Q"), faces: ["eb-garamond", "jost", "roboto-slab"], since: 0 },
-  // "f", not "y": a lone black mono "y" reads as a grotesque (see MONO_TELLING).
-  { char: letter("f"), faces: ["fraunces", "jetbrains-mono", "lobster"], since: 0 },
+  // "l": JetBrains Mono's hooked, footed l is the one that shows a monospace
+  // (its y, f and r read as a grotesque; see MONO_TELLING), and Lobster's l
+  // has no closed loop to fill in on a solid card (its f did).
+  { char: letter("l"), faces: ["fraunces", "jetbrains-mono", "lobster"], since: 0 },
   { char: ch("&", "ampersand"), faces: ["eb-garamond", "archivo-black", "kaushan-script"], since: 0 },
   { char: letter("e"), faces: ["literata", "jost", "lobster"], since: 0 },
   { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0 },
