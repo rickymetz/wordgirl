@@ -53,7 +53,7 @@ export function SerpentineCoach({ open, onClose, tutorialTo }: CoachProps) {
             },
             {
               Icon: Lightbulb,
-              title: "Use hints",
+              title: "Hints",
               body: (
                 <>
                   Tap <Key>Hint</Key> to mark the <Key>next cell</Key> of the

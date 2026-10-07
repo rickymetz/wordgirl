@@ -71,7 +71,7 @@ export const config: GameTrendsConfig<ArchivedDay> = {
     ),
     solvedCounter<ArchivedDay>(
       "sessions",
-      "Sessions to finish",
+      "Sessions to solve",
       (d) => d.sessions,
       { lowerIsBetter: true },
     ),
