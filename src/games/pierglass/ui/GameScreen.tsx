@@ -17,6 +17,7 @@ import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "..
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
+import { ModalDialog } from "../../../components/ModalDialog";
 import { HomeLink } from "../../../components/HomeLink";
 import { DictionaryLink } from "../../../components/DictionaryLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
@@ -77,11 +78,11 @@ interface Props {
   /** Tutorial: replay the script from step one. */
   onRestartTutorial?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
-  onReplay?: () => void;
+  onReplay?: () => Promise<void>;
 }
 
-export function GameScreen({ mode, onRestartTutorial }: Props) {
-  const { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved } =
+export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: Props) {
+  const { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved, abandonSession } =
     usePierglassGame(mode);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
@@ -145,6 +146,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   // The coach sheet opens on demand only — the first-run introduction is
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
 
   // Post-solve par reveal, offered only when the solve came in ABOVE
@@ -192,7 +194,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   }, [mode.kind]);
 
   // Physical keyboard: letters stage, Backspace deletes, Enter places.
-  const modalOpen = coachOpen;
+  const modalOpen = coachOpen || replayOpen;
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -527,6 +529,24 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
                 )}
               </div>
             )}
+            {mode.kind === "archive" && onReplay && (
+              <button
+                type="button"
+                onClick={() => setReplayOpen(true)}
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+              >
+                Play again
+              </button>
+            )}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New board
+              </button>
+            )}
             {isDaily && (
               <DailyOutro gameId="pierglass" loadStreak={outroStreak} />
             )}
@@ -580,6 +600,45 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {replayOpen && (
+        <ModalDialog
+          labelledBy="replay-dialog-title"
+          onClose={() => setReplayOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="replay-dialog-title" className="text-lg font-bold">
+              Play this day again?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              The board clears and the clock restarts. Your first solve stays
+              counted in your stats.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setReplayOpen(false);
+                  abandonSession();
+                  void onReplay?.();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Play again
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       <AnimatePresence>
         {coachOpen && (
