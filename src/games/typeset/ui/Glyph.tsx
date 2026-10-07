@@ -1,6 +1,6 @@
-import { useId, type SVGProps } from "react";
+import { useId, type CSSProperties, type SVGProps } from "react";
 import type { Value } from "../engine/sets";
-import type { GlyphLayout } from "./layout";
+import { copyTransform, rowWidth, type GlyphLayout } from "./layout";
 
 /**
  * One drawn glyph in one of the three fills. Settled across four rounds
@@ -12,7 +12,7 @@ import type { GlyphLayout } from "./layout";
  *   with a thin full-ink keyline. Gestalt closure reads the letter; the
  *   tint holds thin strokes together (a bare hatch broke € bars and
  *   script hairlines into debris); the keyline keeps the silhouette crisp.
- *   Hatch pitch scales with the glyph (~8.5% of the box) so it stays a
+ *   Hatch pitch scales with the glyph (~7.5% of the row height) so it stays a
  *   texture at every card size.
  * - OPEN: an outline drawn OUTSIDE the letter (paint-order: stroke under a
  *   fill of the card color). An inside band fills a heavy stem completely
@@ -28,21 +28,24 @@ import type { GlyphLayout } from "./layout";
 interface Props {
   layout: GlyphLayout;
   glyph: Value;
+  /** Copies in the row (a card's count). */
+  count?: number;
   ink: Value;
   fill: Value;
   mini?: boolean;
-  /** Paint the glyph in neutral ink (legend chips), ignoring `ink`. */
+  /** Paint the glyph in neutral ink (the ? sheet, credits), ignoring `ink`. */
   neutral?: boolean;
   className?: string;
+  /** Sizing: set a height; the width follows from the row's aspect ratio. */
+  style?: CSSProperties;
 }
 
-export function Glyph({ layout, glyph, ink, fill, mini = false, neutral = false, className }: Props) {
+export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, neutral = false, className, style }: Props) {
   // useId's characters («r1», :r1:) are not safe inside url(); keep [\w-].
   const id = `ts-hatch-${useId().replace(/[^\w-]/g, "")}`;
-  const { size } = layout;
-  const placed = layout.glyphs[glyph];
+  const width = rowWidth(layout, glyph, count);
   const color = neutral ? "var(--color-ink)" : `var(--typeset-ink-${ink})`;
-  const pitch = size * 0.085;
+  const pitch = layout.height * 0.075;
   const line = pitch * 0.23;
 
   let paint: SVGProps<SVGPathElement>;
@@ -59,7 +62,14 @@ export function Glyph({ layout, glyph, ink, fill, mini = false, neutral = false,
   }
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className={className} aria-hidden focusable="false">
+    <svg
+      viewBox={`0 0 ${width} ${layout.height}`}
+      className={className}
+      // Outside outlines may cross the viewBox edge; never clip them.
+      style={{ aspectRatio: `${width} / ${layout.height}`, overflow: "visible", ...style }}
+      aria-hidden
+      focusable="false"
+    >
       {fill === 1 && !mini && (
         <defs>
           <pattern id={id} width={pitch} height={pitch} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -69,13 +79,16 @@ export function Glyph({ layout, glyph, ink, fill, mini = false, neutral = false,
           </pattern>
         </defs>
       )}
-      <path
-        d={placed.d}
-        transform={placed.transform}
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-        {...paint}
-      />
+      {Array.from({ length: count }, (_, k) => (
+        <path
+          key={k}
+          d={layout.glyphs[glyph].d}
+          transform={copyTransform(layout, glyph, k)}
+          vectorEffect="non-scaling-stroke"
+          strokeLinejoin="round"
+          {...paint}
+        />
+      ))}
     </svg>
   );
 }

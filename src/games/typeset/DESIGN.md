@@ -33,6 +33,16 @@ becomes a flat wash plus keyline. Keyline and outline widths are CSS px
 chop serifs at random, and at tray size dashed and solid outlines are the
 same.
 
+## Card layout
+
+A card's copies are set as one row, spaced edge-to-edge by a gap measured
+from the ink (13% of the board's mean ink height), not dropped into fixed
+slots: fixed square slots left narrow glyphs like `?` and `¶` floating far
+apart. Every row on a board shares one height, the lesser of 66% of the
+card's height and what lets the board's widest possible row (three of its
+widest glyph) fit the card's width. Both terms are container units, so a
+glyph is the same size on every card whatever its count.
+
 ## Faces
 
 - Every face at its **heaviest weight**. The fills need stems several times

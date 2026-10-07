@@ -10,6 +10,8 @@ import { layoutOutlines, type Outline } from "./layout";
 // The first pool entry's three glyphs, baked into their own 2 KB file so
 // the hub bundle never carries the full outline set.
 const LAYOUT = layoutOutlines(previewGlyphs as unknown as [Outline, Outline, Outline], "charset");
+/** One row height for all three cards: the widest row fills 24px of a 28px card. */
+const ROW_H = Math.min(18, 24 / LAYOUT.maxRowAspect);
 const CARDS: Card[] = [
   [0, 0, 0, 0],
   [1, 1, 1, 1],
@@ -21,9 +23,7 @@ export function TypesetPreview() {
     <div className="flex gap-[3px]" aria-hidden>
       {CARDS.map((card, i) => (
         <div key={i} className="flex h-[38px] w-[28px] items-center justify-center rounded-md bg-surface">
-          {Array.from({ length: card[1] + 1 }, (_, n) => (
-            <Glyph key={n} layout={LAYOUT} glyph={card[0]} ink={card[2]} fill={card[3]} mini className="h-3.5 w-[8.5px]" />
-          ))}
+          <Glyph layout={LAYOUT} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} mini style={{ height: ROW_H }} />
         </div>
       ))}
     </div>

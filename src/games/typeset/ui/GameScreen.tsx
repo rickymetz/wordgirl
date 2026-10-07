@@ -141,6 +141,12 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
 
   const archiveHref = "/games/typeset/archive";
   const rows = Math.ceil(board.cards.length / 3);
+  // One row height for every card on the board: the lesser of a share of
+  // the card's height and what lets the board's WIDEST row (three of its
+  // widest glyph) fit the card's width. Both are card-relative (container
+  // units), and every card is the same size, so a glyph renders the same
+  // size on every card whatever its count.
+  const cardRowHeight = `min(66cqh, ${(86 / layout.maxRowAspect).toFixed(2)}cqw)`;
 
   return (
     <div data-level="typeset" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 md:max-w-lg [@media(max-height:720px)]:pb-3">
@@ -264,13 +270,12 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => dispatch({ type: "tap", index: i })}
                 className={[
-                  "flex min-h-11 items-center justify-center gap-[2%] rounded-xl border bg-surface-raised transition-[box-shadow,background-color] duration-100",
+                  // A size container: the row below sizes itself from the card.
+                  "flex min-h-11 items-center justify-center rounded-xl border bg-surface-raised transition-[box-shadow,background-color] duration-100 [container-type:size]",
                   selected ? "border-accent bg-surface-tint shadow-[inset_0_0_0_2px_var(--color-accent)]" : "border-line",
                 ].join(" ")}
               >
-                {Array.from({ length: card[1] + 1 }, (_, n) => (
-                  <Glyph key={n} layout={layout} glyph={card[0]} ink={card[2]} fill={card[3]} className="h-[70%] w-[30%]" />
-                ))}
+                <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} style={{ height: cardRowHeight }} />
               </button>
             );
           })}
@@ -434,7 +439,7 @@ function TodayGlyphs({ board, layout }: { board: Board; layout: GlyphLayout }) {
     <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
       {board.glyphs.map((g, i) => (
         <span key={i} className="inline-flex items-center gap-1">
-          <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="inline-block h-5 w-5 shrink-0" />
+          <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="inline-block shrink-0" style={{ height: 20 }} />
           <span>{board.kind === "faces" ? `${FACES[g.face].name} (${FACES[g.face].family.toLowerCase()})` : g.name}</span>
         </span>
       ))}
@@ -463,10 +468,16 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
             {key.split(",").map((idx) => {
               const card = board.cards[Number(idx)];
               return (
-                <div key={idx} className="flex flex-1 items-center justify-center rounded-md bg-surface-raised">
-                  {Array.from({ length: card[1] + 1 }, (_, n) => (
-                    <Glyph key={n} layout={layout} glyph={card[0]} ink={card[2]} fill={card[3]} mini className="h-[22px] w-[15px]" />
-                  ))}
+                <div key={idx} className="flex flex-1 items-center justify-center rounded-md bg-surface-raised [container-type:size]">
+                  <Glyph
+                    layout={layout}
+                    glyph={card[0]}
+                    count={card[1] + 1}
+                    ink={card[2]}
+                    fill={card[3]}
+                    mini
+                    style={{ height: `min(64cqh, ${(88 / layout.maxRowAspect).toFixed(2)}cqw)` }}
+                  />
                 </div>
               );
             })}
@@ -493,7 +504,7 @@ function Credits({ board, layout }: { board: Board; layout: GlyphLayout }) {
         const face = FACES[g.face];
         return (
           <li key={g.face} className="flex items-center gap-2">
-            <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="h-5 w-5 shrink-0" />
+            <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="shrink-0" style={{ height: 20 }} />
             <span>
               <span className="font-semibold text-ink">{face.name}</span> · {face.family} · {face.designer}
             </span>
