@@ -83,6 +83,14 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   const layout = useMemo(() => layoutGlyphs(board.glyphs, board.kind), [board]);
   const storageBroken = useStorageBroken();
   const { showConfetti, showResults } = useSolveTransition(state.solved, hydratedAsSolved);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  // A solve made here moves focus to the results (as Sixfold does): the
+  // solved board's cards are disabled, so focus would otherwise fall to
+  // <body>, and a screen reader hears the label, time and counts. A day that
+  // loads already solved leaves focus alone.
+  useEffect(() => {
+    if (showResults && state.solved && !hydratedAsSolved) resultsRef.current?.focus({ preventScroll: true });
+  }, [showResults, state.solved, hydratedAsSolved]);
   const tutorialStep = useTutorialProgress(tutorialStepIndex(state.found));
   const [coachOpen, setCoachOpen] = useState(false);
 
@@ -261,7 +269,12 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               >
                 {label}
                 {/* lucide, not a text "✓": icons in chrome are lucide. */}
-                {solved && <Check aria-label="solved" className="h-3.5 w-3.5" strokeWidth={3} />}
+                {solved && (
+                  <>
+                    <Check aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
+                    <span className="sr-only"> solved</span>
+                  </>
+                )}
               </button>
             );
           })}
@@ -377,7 +390,14 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
             <TutorialDone gameId="typeset" recap={TUTORIAL_RECAP} onRestart={onRestartTutorial} />
           </motion.div>
         ) : state.solved && showResults ? (
-          <motion.div key="results" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center gap-2.5 pt-3">
+          <motion.div
+            key="results"
+            ref={resultsRef}
+            tabIndex={-1}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-2.5 pt-3 outline-none"
+          >
             <p className="text-lg font-bold text-ink">{board.label} solved</p>
             {solvedElapsedMs !== null && <p className="font-game text-2xl text-accent">{formatDuration(solvedElapsedMs)}</p>}
             <p className="text-sm text-ink-soft">
