@@ -182,3 +182,12 @@ them later:
   that the page scrolls rather than the board spill over the tabs. Today
   that is only the 320x568 Faces finish (three credit notes), by ~90px.
 
+## Hub card
+
+The hub art is a **specimen print**: Lobster's ampersand printed three times,
+offset like overlapping proofs — open teal at the back, cross-hatched gold,
+solid violet in front — so the three inks and fills show at the siblings'
+visual weight. Three tiny stacked cards (the first version) read as a smudge,
+and a fanned hand hid its glyphs at 92px. The preview bakes only that one
+outline (`preview-glyphs.json`), so the hub bundle stays small.
+
