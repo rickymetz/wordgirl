@@ -77,6 +77,8 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
     },
   ],
   isDone: (day) => day.solved,
+  // A board can be played on bonus words alone.
+  hasProgress: (day) => day.foundWords.length > 0 || (day.bonusWords ?? 0) > 0,
   rowStatus: (_dateKey, day) => rowStatus(day),
 };
 

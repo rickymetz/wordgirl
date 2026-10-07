@@ -19,7 +19,9 @@ export function Keyboard({
     "flex h-12 touch-manipulation items-center justify-center rounded-lg font-semibold uppercase select-none [@media(max-height:720px)]:h-10";
   const key = `${base} bg-tile active:bg-accent-soft`;
   return (
-    <div className="flex w-full max-w-md flex-col gap-1.5 md:max-w-2xl">
+    // relative z-10: keys paint above the Hold to finish button's
+    // invisible 44px touch floor, which reaches a few px into this row.
+    <div className="relative z-10 flex w-full max-w-md flex-col gap-1.5 md:max-w-2xl">
       <div className="flex gap-1.5">
         {[...ROWS[0]].map((l) => (
           <button key={l} type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => onLetter(l)} className={`${key} flex-1 text-sm`}>

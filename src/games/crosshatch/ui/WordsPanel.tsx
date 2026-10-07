@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronDown } from "lucide-react";
-import { allWords, progressCount, type GameState } from "../state/reducer";
+import { ChevronDown, Sparkle } from "lucide-react";
+import { allWords, type GameState } from "../state/reducer";
+
+/** The bonus mark, as an icon (lucide-only in chrome): the same solid
+ * four-point star the line chips use. */
+function BonusStar({ className = "" }: { className?: string }) {
+  return (
+    <Sparkle
+      aria-hidden
+      className={`inline h-3 w-3 shrink-0 text-accent ${className}`}
+      fill="currentColor"
+      strokeWidth={1}
+    />
+  );
+}
 
 /**
  * The words panel: every word of the day, shortest first then
@@ -9,8 +22,11 @@ import { allWords, progressCount, type GameState } from "../state/reducer";
  * words is itself a gentle hint. Unfound words are tappable to aim the
  * next hint; hint-revealed letters show in the accent color, before
  * AND after the word is found. Bonus words — valid-grid words the list
- * doesn't hold — follow in their own group, marked ✦. On a board finished
- * by hold, the list words never found are spelled out, greyed, as missed.
+ * doesn't hold — follow in their own group, each marked with a star. On a
+ * board finished by hold, the list words never found move to their own
+ * "Missed" group, spelled out — a group, not just a lighter grey, so
+ * "missed" never rests on color alone. The header counts list words
+ * only, so it adds up with the list under it.
  */
 export function WordsPanel({
   state,
@@ -33,6 +49,9 @@ export function WordsPanel({
   // The word list depends only on the puzzle — not on every keystroke.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const words = useMemo(() => allWords(state), [state.puzzle]);
+  const missed = state.solved
+    ? words.filter((w) => !state.found.includes(w))
+    : [];
 
   // Puzzle input auto-closes the panel; if keyboard focus was inside
   // it, the unmount drops focus to <body> — catch it on the toggle.
@@ -52,7 +71,9 @@ export function WordsPanel({
         ref={toggleRef}
         type="button"
         onClick={onToggle}
-        aria-label="found words"
+        // The name the results card and coach sheet use for it. The
+        // collapsed word run is visual only: this label replaces it.
+        aria-label="Your words"
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-3 text-left"
       >
@@ -73,8 +94,7 @@ export function WordsPanel({
               {bonusRecentFirst.map((word, i) => (
                 <span key={`bonus-${word}`} className="uppercase">
                   {(recentFirst.length > 0 || i > 0) && " "}
-                  <span aria-hidden className="text-accent">✦</span>
-                  <span className="sr-only">bonus </span>
+                  <BonusStar className="mr-0.5 -mt-0.5" />
                   {word}
                 </span>
               ))}
@@ -100,8 +120,15 @@ export function WordsPanel({
             transition={{ duration: 0.15 }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                {progressCount(state)}/{words.length} words
+              <span className="flex items-center gap-2 text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                {state.found.length}/{words.length} words
+                {state.bonus.length > 0 && (
+                  <span className="inline-flex items-center gap-0.5 tracking-normal">
+                    <BonusStar />
+                    {state.bonus.length}
+                    <span className="sr-only"> bonus</span>
+                  </span>
+                )}
               </span>
               {/* A finished board has nothing left to hint. */}
               {!state.solved && (
@@ -119,19 +146,8 @@ export function WordsPanel({
               {words.map((word) => {
                 const hinted = state.revealed[word] ?? [];
                 const isFound = state.found.includes(word);
-                // Finished by hold: the list words never found, spelled
-                // out so the player learns them.
-                if (!isFound && state.solved) {
-                  return (
-                    <span
-                      key={word}
-                      className="font-game text-xs text-ink-soft uppercase"
-                    >
-                      <span className="sr-only">missed </span>
-                      {word}
-                    </span>
-                  );
-                }
+                // Finished by hold: unfound words are in Missed, below.
+                if (!isFound && state.solved) return null;
                 const letters = [...word].map((letter, i) =>
                   hinted.includes(i) ? (
                     <span
@@ -171,15 +187,30 @@ export function WordsPanel({
                 );
               })}
             </div>
-            {state.bonus.length > 0 && (
+            {missed.length > 0 && (
               <div className="mt-4 border-t border-line pt-3">
                 <span className="mb-2 block text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                  <span aria-hidden className="text-accent">✦</span>{" "}
+                  {missed.length} missed
+                </span>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {missed.map((word) => (
+                    <span key={word} className="font-game text-xs text-ink-soft uppercase">
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {state.bonus.length > 0 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <span className="mb-2 flex items-center gap-1 text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                  <BonusStar />
                   {state.bonus.length} bonus
                 </span>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                   {state.bonus.map((word) => (
-                    <span key={word} className="font-game text-xs uppercase">
+                    <span key={word} className="inline-flex items-center gap-1 font-game text-xs uppercase">
+                      <BonusStar />
                       {word}
                     </span>
                   ))}

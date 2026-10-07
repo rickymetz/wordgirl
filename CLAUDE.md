@@ -261,6 +261,11 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   that a modal would be heavier than the mistake. Owns the gesture,
   the sweep, and a 44px `::after` touch floor; sizing and color come
   from `className`. Label it with the gesture ("Hold to skip level").
+  Pass `onTapFallback` (a confirmation dialog) wherever the action
+  matters: Voice Control, Switch Access and a screen reader's double-tap
+  send a bare click and can't hold, so without it the control is
+  unreachable to them. The sweep keeps its real duration under reduced
+  motion (it is progress, not decoration).
   Its sweep is `--color-press-fill`, which moves AWAY from the surface
   color so an on-accent label GAINS contrast as the fill passes under
   it — never re-tint it toward `surface`, which sinks the label to
@@ -457,9 +462,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - NEVER hand-roll an archive page. Render
   `components/GameArchive.tsx` with a `GameArchiveConfig`: gameId,
   accent (= accentLevel), epoch, the two loaders, `hasPlayed`, six
-  `statTiles` (or eight, which go four across — Crosshatch's; the
-  callback also gets the loaded days, for a tile derived from history),
-  `isDone`, and `rowStatus`. The shared component owns
+  `statTiles` (or eight — Crosshatch's — two across on a phone and four
+  on wider screens; the callback also gets the loaded days, for a tile
+  derived from history), `isDone`, `rowStatus`, and optionally
+  `hasProgress` where a game's finds aren't all in `foundWords`. The shared component owns
   ALL archive layout/colors (stats grid + calendar mosaic on tinted
   panels, neutral not-played cells, scoreboard rows). ~30 lines of
   config per game — see either game's `ui/ArchivePage.tsx`.

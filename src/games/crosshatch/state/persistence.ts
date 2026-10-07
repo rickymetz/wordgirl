@@ -276,7 +276,11 @@ export async function loadAllDailyProgress(): Promise<
       boards: boards.length,
       solvedCount: saves.filter((s) => s.solved).length,
       startedCount: saves.filter(
-        (s) => s.solved || s.foundWords.length > 0 || hasReveals(s),
+        (s) =>
+          s.solved ||
+          s.foundWords.length > 0 ||
+          (s.bonusWords?.length ?? 0) > 0 ||
+          hasReveals(s),
       ).length,
       // Every board the DATE carries must be solved — not merely every
       // board that happens to have a save, or a day whose hard board

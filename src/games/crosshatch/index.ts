@@ -33,12 +33,10 @@ export const crosshatch: GameDefinition = {
         Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
       0,
     );
-    // A board's value is its progress: list finds plus bonus finds, one
-    // for one, capped at the list (a hold-to-finish board reads full).
-    const value = (b: NonNullable<(typeof boards)[number]>) => {
-      const n = b.foundWords.length + (b.bonusWords?.length ?? 0);
-      return b.totalWords ? Math.min(n, b.totalWords) : n;
-    };
+    // A board's value is its LIST words: a board ended by hold reads
+    // short of a full sweep (bonus words show on the board's own share).
+    const value = (b: NonNullable<(typeof boards)[number]>) =>
+      b.foundWords.length;
     // Multi-board days break out by level (banner sub-rows, inline in the
     // share); a lone pre-HARD_EPOCH board keeps the plain "N words" form.
     if (levels.length > 1) {

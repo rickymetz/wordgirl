@@ -14,10 +14,12 @@ import {
  * an X when the word doesn't work there, a grey check when it's
  * counted already (a normal state — winning grids reuse found words),
  * a green circled check for a new word. A bonus word — it fits, but the
- * list doesn't hold it — takes a SOLID four-point star instead (lucide's
- * Sparkle, filled): accent while new, grey once banked. Solid because it
- * is the ✦ that marks bonus words in Your words and in Polygram; the
- * outlined three-part Sparkles read as a clump at chip size. Tapping a chip aims the cursor at its
+ * list doesn't hold it — takes a four-point star instead (lucide's
+ * Sparkle): SOLID accent while new, an OUTLINED grey star once banked, so
+ * the two states differ in shape as well as color (as the list words'
+ * circled check and plain check do). Solid because it is the star that
+ * marks bonus words in Your words and in Polygram; the three-part
+ * Sparkles read as a clump at chip size. Tapping a chip aims the cursor at its
  * line.
  */
 export function SlotChips({
@@ -83,7 +85,6 @@ export function SlotChips({
                           Icon: Sparkle,
                           tone: "text-ink-soft",
                           label: "bonus word, counted already",
-                          filled: true,
                         }
                       : {
                           Icon: Sparkle,
@@ -136,7 +137,7 @@ export function SlotChips({
                     className={`h-4 w-4 ${verdict.tone}`}
                     {...("filled" in verdict
                       ? { fill: "currentColor", strokeWidth: 1 }
-                      : { strokeWidth: 3 })}
+                      : { strokeWidth: verdict.Icon === Sparkle ? 2 : 3 })}
                   />
                 )}
               </button>

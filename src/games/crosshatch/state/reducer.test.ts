@@ -220,6 +220,28 @@ describe("submit", () => {
     expect(canFinish({ ...s, bonus: [] })).toBe(false);
   });
 
+  it("a finished board is over: no typing, submitting, hints or second finish", () => {
+    const small: CrosshatchPuzzle = { ...withBonus, targets: ["bab", "bad"] };
+    let s = play(fillBabCab(initialState(small)), { type: "submit" }, { type: "finish" });
+    expect(s.solved).toBe(true);
+    const done = s;
+    // "bad" is still unfound: a late Enter on a physical keyboard must not
+    // bank it (it would move the saved time and the "missed" count).
+    s = play(
+      s,
+      { type: "focusCell", row: 1, col: 1 },
+      ...type("ad"),
+      { type: "submit" },
+      { type: "revealHint", letterIndex: 0 },
+      { type: "clearEntry" },
+      { type: "finish" },
+    );
+    expect(s.found).toEqual(done.found);
+    expect(s.bonus).toEqual(done.bonus);
+    expect(s.grid).toEqual(done.grid);
+    expect(s.revealed).toEqual(done.revealed);
+  });
+
   it("caps progress at the list size however many bonus words are found", () => {
     const s = { ...initialState(withBonus), found: ["bab", "bad"], bonus: ["cab", "x", "y", "z"] };
     expect(progressCount(s)).toBe(5);

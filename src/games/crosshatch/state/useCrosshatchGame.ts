@@ -104,6 +104,11 @@ export function useCrosshatchGame(mode: GameMode) {
   // be written — re-saving a zero would turn the legacy day's GAP
   // into a fake best-ever 0 on the trends charts.
   const countersKnownRef = useRef(true);
+  // Same rule for bonus words: a save from before they shipped never
+  // recorded the bonus fills its valid grids held, so its count is
+  // unknown, not zero. Writing [] back on the next save would turn that
+  // day's chart GAP into a fake 0.
+  const bonusKnownRef = useRef(true);
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
     if (
@@ -120,7 +125,9 @@ export function useCrosshatchGame(mode: GameMode) {
       dictVersion: DICT_VERSION,
       puzzleKey: pKey,
       foundWords: s.found,
-      bonusWords: s.bonus,
+      ...((bonusKnownRef.current || s.bonus.length > 0) && {
+        bonusWords: s.bonus,
+      }),
       grid: s.grid,
       revealed: s.revealed,
       totalWords,
@@ -182,6 +189,7 @@ export function useCrosshatchGame(mode: GameMode) {
                 : saved.sessions + 1;
           solvedHourRef.current = saved.solvedHour ?? null;
           countersKnownRef.current = saved.invalids !== undefined;
+          bonusKnownRef.current = saved.bonusWords !== undefined;
           dispatch({
             type: "hydrate",
             found: saved.foundWords,

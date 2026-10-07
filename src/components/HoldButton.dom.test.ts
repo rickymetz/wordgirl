@@ -183,3 +183,39 @@ describe("HoldButton", () => {
     expect(button.getAttribute("aria-label")).toBe("skip to the next level");
   });
 });
+
+describe("tap fallback (assistive tech that can't hold)", () => {
+  it("a bare click — no press behind it — takes the fallback, not the action", () => {
+    let fallback = 0;
+    const btn = render({ onTapFallback: () => fallback++ });
+    fire(btn, new MouseEvent("click", { bubbles: true }));
+    expect(fallback).toBe(1);
+    expect(fired).toBe(0);
+  });
+
+  it("a finger that presses and lets go early is a hold abandoned, not a fallback", () => {
+    let fallback = 0;
+    const btn = render({ onTapFallback: () => fallback++ });
+    pointer(btn, "pointerdown");
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    pointer(btn, "pointerup");
+    fire(btn, new MouseEvent("click", { bubbles: true }));
+    expect(fallback).toBe(0);
+    expect(fired).toBe(0);
+  });
+
+  it("a key hold's own click never also opens the fallback", () => {
+    let fallback = 0;
+    const btn = render({ onTapFallback: () => fallback++ });
+    key(btn, "keydown", " ");
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    key(btn, "keyup", " ");
+    fire(btn, new MouseEvent("click", { bubbles: true }));
+    expect(fired).toBe(1);
+    expect(fallback).toBe(0);
+  });
+});

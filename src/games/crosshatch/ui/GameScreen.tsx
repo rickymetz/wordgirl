@@ -70,8 +70,13 @@ import { WordsPanel } from "./WordsPanel";
 const outroStreak = async (today: string) =>
   displayStreak(await loadStats(), today);
 
+/**
+ * `found` is LIST words: a board ended by hold shares as "9/11 words ✦2",
+ * never as the "11/11" of a full sweep.
+ */
 function buildShareText(
   found: number,
+  bonus: number,
   total: number,
   hints: number,
   dateKey: string,
@@ -82,7 +87,7 @@ function buildShareText(
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return [
     `🧺 Crosshatch — ${date}`,
-    `${LEVEL_LABEL[level]} · ${found}/${total} words · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
+    `${LEVEL_LABEL[level]} · ${found}/${total} words${bonus > 0 ? ` ✦${bonus}` : ""} · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -177,6 +182,21 @@ export function GameScreen({
   // Daily hints are free to use but marked: the first one warns that
   // the day's result will carry a hint count.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
+  // Hold to finish's fallback for players who can't hold.
+  const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
+  const finishBoard = () => {
+    setWordsOpen(false);
+    dispatch({ type: "finish" });
+  };
+
+  // The results block takes focus when the board ends this session.
+  const resultsHeadingRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (showResults && state.solved && !hydratedAsSolved && !isTutorial) {
+      resultsHeadingRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showResults]);
   const hintUsed = Object.keys(state.revealed).length > 0;
   // Tapping an unfound word in the list aims the next hint at it.
   const [hintTargetWord, setHintTargetWord] = useState<string | null>(null);
@@ -239,7 +259,8 @@ export function GameScreen({
   // dialogs. Enter/Space defer to a FOCUSED control (a keyboard user
   // tabbing the page keeps native button activation), and dialogs own
   // their keys entirely.
-  const modalOpen = hintWarningOpen || coachOpen || replayOpen;
+  const modalOpen =
+    hintWarningOpen || coachOpen || replayOpen || finishConfirmOpen;
   useEffect(() => {
     const moveCursor = (dr: number, dc: number) => {
       const cur = state.cursor;
@@ -378,25 +399,34 @@ export function GameScreen({
   const [toast, setToast] = useState<{ text: string; nonce: number } | null>(
     null,
   );
+  // Whether Hold to finish was already open before the latest submit.
+  const gateOpenRef = useRef(canFinish(state));
   useEffect(() => {
     const r = state.lastResult;
     if (!r) return;
     const banked = (r.newWords ?? []).map((w) => w.toUpperCase());
     const bonus = (r.newBonus ?? []).map((w) => w.toUpperCase());
-    const progress = `${progressCount(state)} of ${total}`;
+    // List words only: bonus words are extra, never "of 11".
+    const progress = `${state.found.length} of ${total}`;
+    // The submit that first lets the board end says so — the Hold button
+    // appears beside Clear grid, and nothing else would announce it.
+    const gateOpened = canFinish(state) && !gateOpenRef.current;
+    gateOpenRef.current = canFinish(state);
     const messages: Record<string, string> = {
       correct:
         state.found.length === total
           ? "Perfect sweep!"
-          : bonus.length === 0
-            ? banked.length === 1
-              ? `${banked[0]} — ${progress}`
-              : `${banked.length} new words — ${progress}`
-            : banked.length === 0
-              ? bonus.length === 1
-                ? `${bonus[0]} — bonus word! ${progress}`
-                : `${bonus.length} bonus words — ${progress}`
-              : `${banked.length} new + ${bonus.length} bonus — ${progress}`,
+          : gateOpened
+            ? "Hold to finish, or keep going"
+            : bonus.length === 0
+              ? banked.length === 1
+                ? `${banked[0]} — ${progress}`
+                : `${banked.length} new words — ${progress}`
+              : banked.length === 0
+                ? bonus.length === 1
+                  ? `${bonus[0]} — bonus word · ${progress}`
+                  : `${bonus.length} bonus words · ${progress}`
+                : `${banked.length} new · ${bonus.length} bonus — ${progress}`,
       // Kept short enough to stay on ONE line: these are the longest
       // strings any game emits, and the pill is now capped to the
       // viewport, so wordier phrasing wraps to two lines on a phone.
@@ -589,7 +619,8 @@ export function GameScreen({
           job is aiming hints, and hints are off on the tutorial. Dropping
           it also keeps the grid and keyboard on-screen at large text. */}
       <ProgressBar
-        found={progressCount(state)}
+        found={state.found.length}
+        progress={progressCount(state)}
         total={total}
         bonus={state.bonus.length}
       />
@@ -656,8 +687,20 @@ export function GameScreen({
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center gap-3 pb-2"
           >
-            <p className="text-lg font-bold text-ink">
-              {level !== undefined ? `${LEVEL_LABEL[level]} solved` : "Solved"}
+            {/* Focused when the board ends THIS session, so a screen
+                reader lands on the result (a results block is not a dialog,
+                so nothing else would move focus — the button that ended
+                the board has just unmounted). "Finished", not "solved",
+                when it was ended by hold with list words missed. */}
+            <p
+              ref={resultsHeadingRef}
+              tabIndex={-1}
+              className="text-lg font-bold text-ink outline-none"
+            >
+              {level !== undefined ? `${LEVEL_LABEL[level]} ` : ""}
+              {state.found.length < total
+                ? level !== undefined ? "finished" : "Finished"
+                : level !== undefined ? "solved" : "Solved"}
             </p>
             {solvedElapsedMs !== null && (
               <p className="font-game text-2xl text-accent">
@@ -665,21 +708,20 @@ export function GameScreen({
               </p>
             )}
             <p className="text-sm text-ink-soft">
-              {progressCount(state)}/{total} words
+              {state.found.length}/{total} words
               {state.bonus.length > 0 ? ` · ${state.bonus.length} bonus` : ""}
+              {state.found.length < total
+                ? ` · ${total - state.found.length} missed`
+                : ""}
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
-            {state.found.length < total && (
-              <p className="-mt-2 text-xs text-ink-soft">
-                {total - state.found.length} missed — see Your words
-              </p>
-            )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               mode.dateKey &&
               solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(
-                  progressCount(state),
+                  state.found.length,
+                  state.bonus.length,
                   total,
                   hintCount,
                   mode.dateKey,
@@ -721,7 +763,7 @@ export function GameScreen({
             transition={{ duration: 0.2 }}
             className="flex flex-col items-center gap-2"
           >
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}
@@ -735,19 +777,24 @@ export function GameScreen({
               </button>
               {/* Bonus finds have covered the list: the board may end here
                   (the unfound list words show as missed) or play on for
-                  the full sweep. Held, not tapped: it forfeits the rest.
-                  Beside Clear grid, with its height folded into that row
-                  (-my-2; the 44px floor is HoldButton's ::after), so it
-                  costs the board no room at Huge text. */}
+                  the full sweep. Held, not tapped: it forfeits the rest;
+                  a bare click (Voice Control, Switch Access, a screen
+                  reader's double-tap — none can hold) asks instead.
+                  Beside Clear grid with its height mostly folded into that
+                  row (-my-1.5), so it costs the board almost no room at Huge
+                  text; the keyboard sits above its ::after touch floor
+                  (relative z-10), so the overlap never steals a key tap.
+                  An outline, not a fill: it must not outweigh ENTER. Ink
+                  label, not accent: the house press-fill darkens toward
+                  black (light) / white (dark) and would sink accent text
+                  below 4.5:1 mid-hold. */}
               {canFinish(state) && (
                 <HoldButton
-                  onHoldComplete={() => {
-                    setWordsOpen(false);
-                    dispatch({ type: "finish" });
-                  }}
-                  className="-my-2 rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-surface"
+                  onHoldComplete={finishBoard}
+                  onTapFallback={() => setFinishConfirmOpen(true)}
+                  className="-my-1.5 whitespace-nowrap rounded-full border border-accent bg-surface-tint px-3 py-1 text-sm font-semibold text-ink"
                 >
-                  <Flag aria-hidden className="h-4 w-4" />
+                  <Flag aria-hidden className="h-3.5 w-3.5 text-accent" />
                   Hold to finish
                 </HoldButton>
               )}
@@ -808,6 +855,46 @@ export function GameScreen({
                 className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
+
+      {finishConfirmOpen && (
+        <ModalDialog
+          labelledBy="finish-dialog-title"
+          onClose={() => setFinishConfirmOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="finish-dialog-title" className="text-lg font-bold">
+              Finish the board?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              {total - state.found.length === 1
+                ? "1 list word you haven't found will be marked missed."
+                : `${total - state.found.length} list words you haven't found will be marked missed.`}{" "}
+              It counts as solved.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setFinishConfirmOpen(false);
+                  finishBoard();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Finish
+              </button>
+              <button
+                type="button"
+                onClick={() => setFinishConfirmOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Keep playing
               </button>
             </div>
           </div>
@@ -934,9 +1021,9 @@ export function GameScreen({
                 title: "Solve the board",
                 body: (
                   <>
-                    Find <Key>every word</Key> to solve the board.{" "}
-                    <Key>Your words</Key> lists them as ?-blanks — tap one,
-                    then Hint, to reveal its next letter.
+                    Find <Key>every word</Key> on the list to solve the
+                    board. <Key>Your words</Key> lists them as ?-blanks — tap
+                    one, then Hint, to reveal its next letter.
                   </>
                 ),
               },
@@ -946,9 +1033,10 @@ export function GameScreen({
                 body: (
                   <>
                     A real word that fits but isn't on the list is a{" "}
-                    <Key>bonus word</Key>. Each one counts toward the
-                    total — once they cover it, <Key>hold to finish</Key>{" "}
-                    early, or keep going for the full list.
+                    <Key>bonus word</Key>. Once your list and bonus words
+                    add up to the list's length, you can{" "}
+                    <Key>hold to finish</Key> — list words you haven't found
+                    show as missed — or keep going.
                   </>
                 ),
               },

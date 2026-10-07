@@ -220,6 +220,14 @@ function cellIndexInSlot(slot: Slot, row: number, col: number): number {
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  // A solved board is over. Before bonus words that cost nothing to
+  // allow — every list word was found, so a physical keyboard's late
+  // Enter could only say "no new words" — but a board ended by hold has
+  // list words left, and banking them after the finish would move the
+  // saved time, the lifetime totals and the "missed" count.
+  if (state.solved && action.type !== "hydrate" && action.type !== "focusCell") {
+    return state;
+  }
   switch (action.type) {
     case "focusCell": {
       const slots = slotsAt(state.puzzle, action.row, action.col);
