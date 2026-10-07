@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { holdModalOpen } from "../lib/modalOpen";
 
 /**
  * Focus containment for dialogs: when `active`, moves focus into the
@@ -9,6 +10,13 @@ import { useEffect, useRef } from "react";
  */
 export function useModalFocus<T extends HTMLElement>(active: boolean) {
   const ref = useRef<T | null>(null);
+
+  // Counted separately from the focus trap below (which needs the node):
+  // an open dialog pauses the daily clock (lib/modalOpen.ts).
+  useEffect(() => {
+    if (!active) return;
+    return holdModalOpen();
+  }, [active]);
 
   useEffect(() => {
     const node = ref.current;

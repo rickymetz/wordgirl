@@ -10,7 +10,7 @@ import {
 import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import {
   buildLexicon,
   commonWords,
@@ -130,6 +130,10 @@ export function usePierglassGame(mode: GameMode) {
     flush: () => persistRef.current(),
     resetKey: dateKey,
   });
+
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress, so stray taps can't wipe the historical record.
@@ -306,5 +310,5 @@ export function usePierglassGame(mode: GameMode) {
   // `items` is exposed so the UI's par-solution search runs over the
   // SAME item list parRows was computed against — re-deriving it in
   // the UI would make that invariant a coincidence.
-  return { state, dispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved: hydratedSolvedRef.current, abandonSession };
+  return { state, dispatch: playerDispatch, puzzle, items, solvedElapsedMs, hydratedAsSolved: hydratedSolvedRef.current, abandonSession };
 }

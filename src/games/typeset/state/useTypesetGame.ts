@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { trackStarted, trackSolved } from "../../../lib/analytics";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { dailyBoard, practiceBoard, type BoardKind } from "../engine/schedule";
 import { TUTORIAL_BOARD } from "../engine/tutorial";
@@ -59,6 +59,9 @@ export function useTypesetGame(mode: GameMode) {
     },
     resetKey: `${dateKey}:${kind}`,
   });
+  // Player actions (tap, clear, hint) start and stamp the clock at the
+  // input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
 
   /** Saves the board; the promise settles once the write has landed (or at once when nothing is saved). */
   const persistNow = (s: GameState): Promise<unknown> => {
@@ -173,7 +176,7 @@ export function useTypesetGame(mode: GameMode) {
 
   return {
     state,
-    dispatch,
+    dispatch: playerDispatch,
     board,
     pKey,
     clock,

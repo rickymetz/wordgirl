@@ -294,6 +294,13 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   lock/defaults-merge, coachSeen, plus `streakAdvance`/`countsAsToday`/
   `displayStreak`. `lib/daily/useDailyClock.ts` owns active-time
   (pause on hide, flush, freeze-at-solve). Every game uses both.
+  The clock is FAIR: it starts at the player's first input, pauses
+  while any `useModalFocus` dialog/sheet is open (`lib/modalOpen.ts`),
+  and freezes at the winning input's stamp, not at the effect that
+  notices the solve. So a game hands the UI
+  `useClockedDispatch(dispatch, clock.input, programmatic)`, never the
+  raw dispatch, and lists any action it dispatches itself (hydrate,
+  timers like Polygram's `advanceLevel`) as programmatic.
 - Dominoes/two-cell pieces: `doublet/ui/DominoTray.tsx`; polygon
   morphing: `polygram/ui/`.
 

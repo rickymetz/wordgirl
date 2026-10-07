@@ -1,6 +1,6 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { trackStarted, trackSolved } from "../../../lib/analytics";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dictionaryOn } from "../../../lib/words/overlay";
@@ -145,6 +145,10 @@ export function useCrosshatchGame(mode: GameMode) {
     resetKey: `${dateKey}:${level}`,
   });
 
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
+
   // Hydrate from storage once. StrictMode-safe: no run-once ref — the
   // first (cancelled) run applies nothing, the second completes.
   useEffect(() => {
@@ -243,7 +247,7 @@ export function useCrosshatchGame(mode: GameMode) {
       solvedElapsedMs === null ||
       state.found.length > clockFoundRef.current
     ) {
-      const t = solvedElapsedMs === null ? clock.freeze() : clock.rawElapsedMs();
+      const t = solvedElapsedMs === null ? clock.freeze() : clock.stampedElapsedMs();
       clockFoundRef.current = state.found.length;
       setSolvedElapsedMs(t);
     }
@@ -308,5 +312,5 @@ export function useCrosshatchGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, dict, totalWords, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
+  return { state, dispatch: playerDispatch, puzzle, dict, totalWords, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
 }
