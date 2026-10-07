@@ -48,6 +48,14 @@ const config: GameArchiveConfig<ArchivedDay, PolygramStats> = {
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.completed },
     { label: "Played", value: stats.played },
+    // Derived from the two counts above (both count DAYS), so it needs
+    // no new persistence — the same tile Doublet shows.
+    {
+      label: "Win %",
+      value: stats.played > 0
+        ? `${Math.round((stats.completed / stats.played) * 100)}%`
+        : "—",
+    },
     { label: "Words", value: stats.totalWords },
   ],
   isDone: (day) => day.completed,
