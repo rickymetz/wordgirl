@@ -63,7 +63,7 @@ export function CoachSheet({
         <Link
           to={tutorialTo}
           onClick={onClose}
-          className="mt-3 block text-center text-sm font-semibold text-ink-soft"
+          className="-mb-3 block py-3 text-center text-sm font-semibold text-ink-soft"
         >
           Play the tutorial
         </Link>
