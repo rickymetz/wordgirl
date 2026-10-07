@@ -77,27 +77,35 @@ not a cross-out, because a card can belong to more than one set.
 
 ## Inks
 
-Light `#991b1b / #ca6a04 / #2563eb`, dark `#ef4444 / #fcd34d / #38bdf8`.
+Light `#6d28d9 / #b4650a / #2f9a9b`, dark `#a77be0 / #ea9602 / #4aebed`:
+violet, gold, teal.
 
-- Each ink owns a **lightness rung**, in the same order in both themes (red
-  darkest, blue, amber lightest), so a player sorting by lightness reads the
-  board the same way. The first red/yellow/blue picked by hue difference
-  alone read as two browns on thin outlines in light mode.
-- Graphics, not text: **3:1** on the card, not 4.5:1. Amber is 3.8:1 — a
-  deliberate step darker than `#d97706` (3.2:1, washed out in glare) but not
-  as dark as `#b45309`, which landed on blue's lightness.
+- A **triad on the chrome's aubergine** (OKLCH hue 311): violet, then gold
+  and teal at the other two corners, 120° round. The first inks were red,
+  amber and blue, which clashed with the aubergine once it replaced stone.
+- A true green and orange were tried first and dropped: under simulated
+  deuteranopia the two merge (worst pair 10.0 dark, against 21.1 for the
+  triad). Teal keeps the blue a red-green colorblind player still sees.
+- Each ink owns a **lightness rung**, in the same order in both themes
+  (violet darkest, gold, teal lightest), so a player sorting by lightness
+  reads the board the same way.
+- Worst pair under simulated deuteranopia/protanopia (Machado 2009, OKLab
+  ΔE) is 15.6 light / 21.1 dark; normal vision 21.6 / 28.5. Teal against
+  gold is the closest pair in every variant tried, so the light gold sits a
+  step darker (#b4650a) to widen their lightness gap.
+- Graphics, not text: **3:1** on the card, not 4.5:1. Light teal is the
+  low one at 3.4:1; lighter teals fell to 3.2:1, the level that washed out
+  in glare in an earlier round.
+- A selected card is marked in neutral ink, not the accent: the accent is
+  a corner of the triad and would read as a violet card.
 - `scripts/validate_palette.js` checks contrast, simulated deuteranopia
-  and the lightness order. These are a documented exception to "one palette
-  key per game". The chrome accent is aubergine: it began as a neutral
-  stone so it would never compete with the inks, but beside six saturated
-  siblings it read as switched off. Aubergine is the hue farthest from every
-  sibling accent and every ink (OKLab ΔE ≥ 12.8 in both themes), so the
-  selection ring never reads as a card ink.
-- Light amber was tested against an ochre (#a87a00, suggested in review)
-  and goldenrod (#b8860b). Ochre sits CLOSER to red under simulated
-  deuteranopia; goldenrod separates a little more but fades on white. At
-  the larger card sizes the current amber holds, so it stays. Its hatch
-  ground is 35% (25% vanished on white).
+  and the lightness order. The inks are a documented exception to "one
+  palette key per game". The chrome accent is aubergine: it began as a
+  neutral stone so it would never compete with the inks, but beside six
+  saturated siblings it read as switched off. Aubergine is the hue
+  farthest from every sibling accent (OKLab ΔE ≥ 12.8 in both themes).
+- The light gold's hatch ground is 35% (a 25% amber ground vanished on
+  white).
 
 ## Glyphs
 

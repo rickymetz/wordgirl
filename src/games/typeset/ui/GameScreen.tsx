@@ -332,8 +332,10 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
                 className={[
                   "relative flex items-center justify-center rounded-xl border bg-surface-raised transition-[transform,box-shadow,border-color] duration-100",
                   // Selected LIFTS, with a check: a shape change, not only a tint.
+                  // Neutral ink, not the accent: the aubergine accent is a
+                  // corner of the inks' triad and would read as a violet card.
                   selected
-                    ? "-translate-y-1 border-accent shadow-[0_0_0_1px_var(--color-accent),0_8px_16px_-8px_rgb(0_0_0/0.45)]"
+                    ? "-translate-y-1 border-ink shadow-[0_0_0_1px_var(--color-ink),0_8px_16px_-8px_rgb(0_0_0/0.45)]"
                     : "border-line",
                 ].join(" ")}
               >
@@ -341,7 +343,7 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
                   <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} wash={wash} rowPx={rowPx} style={{ height: rowPx }} />
                 )}
                 {selected && (
-                  <span aria-hidden className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-surface">
+                  <span aria-hidden className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-surface">
                     <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                 )}

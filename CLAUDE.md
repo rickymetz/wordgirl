@@ -310,8 +310,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   judged on. They are graphics (3:1 on the card, never text), each owns a
   lightness rung in the same order in both themes, and
   `validate_palette.js` checks all of it. Its chrome accent is still one
-  key (`typeset`, aubergine — the hue farthest from both the sibling
-  accents and the inks). See `typeset/DESIGN.md` before touching them.
+  key (`typeset`, aubergine, the hue farthest from the sibling accents),
+  and the inks are a violet/gold/teal triad on it, so a selected card is
+  marked in neutral ink, never the accent. See `typeset/DESIGN.md` before
+  touching them.
 - Light-mode accents are ~700-weight shades: accent text on surface
   AND surface text on accent must clear WCAG AA (4.5:1).
 - Tinted panels use `bg-surface-tint` (6% accent light / 13% dark).

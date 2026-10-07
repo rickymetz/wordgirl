@@ -1,13 +1,13 @@
 /**
  * Hints name a property of one set the player hasn't found:
- * "An unfound set is all blue", "…has one of each fill".
+ * "An unfound set is all teal", "…has one of each fill".
  *
  * Every hint is about the same TARGET set (the first unfound set in board
  * order) until it is found, so successive hints add up rather than
  * scatter. The order is measured, not hand-picked: each hint is the fact
  * about the target that leaves the most candidate triples on the board,
  * given the facts already shown — gentlest first. A "same" fact ("all
- * blue") cuts the board to the four-odd blue cards; a "different" fact
+ * teal") cuts the board to the four-odd teal cards; a "different" fact
  * ("one of each color") barely narrows on its own, so it usually leads.
  * hints.measure.test.ts reports how much each step narrows across a run
  * of real days.
@@ -33,7 +33,7 @@ export interface HintState {
 export const NO_HINTS: HintState = { target: null, facts: [] };
 
 const COUNTS = ["one", "two", "three"];
-const COLORS = ["red", "amber", "blue"];
+const COLORS = ["violet", "gold", "teal"];
 const FILLS = ["solid", "cross-hatched", "open"];
 
 function factsFor(cards: readonly Card[], set: Triple): HintFact[] {
@@ -115,7 +115,7 @@ export function hintLabel(board: Board, fact: HintFact): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-/** Screen-reader / aria description of a card: "2 blue open euro signs". */
+/** Screen-reader / aria description of a card: "2 teal open euro signs". */
 export function describeCard(board: Board, card: Card): string {
   const g = board.glyphs[card[0]];
   const n = card[1] + 1;

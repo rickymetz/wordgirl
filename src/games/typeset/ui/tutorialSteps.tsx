@@ -11,7 +11,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Find three that match but one way",
     body: (
       <>
-        Three blue <Key>a</Key>’s, alike in all but <Key>fill</Key>. Tap all three.
+        Three teal <Key>a</Key>’s, alike in all but <Key>fill</Key>. Tap all three.
       </>
     ),
   },

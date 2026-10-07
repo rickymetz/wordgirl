@@ -44,7 +44,7 @@ describe("hints", () => {
       expect(hintText(board, step.fact)).toMatch(/^An unfound set (is|has) .+\.$/);
       state = step.state;
     }
-    expect(describeCard(board, [1, 1, 2, 2])).toBe(`2 blue open ${board.glyphs[1].plural}`);
+    expect(describeCard(board, [1, 1, 2, 2])).toBe(`2 teal open ${board.glyphs[1].plural}`);
   });
 
   it("leads with a fact that leaves most of the board in play (measured over 60 days)", () => {
