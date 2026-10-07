@@ -41,15 +41,13 @@ slots: fixed square slots left narrow glyphs like `?` and `¶` floating far
 apart. Open copies get an extra outline width between them, or a script's
 outside outlines meet.
 
-The board is **measured** and dealt into whichever grid draws the glyphs
-largest (`fitBoard`). A row is three copies across, so three columns of
-portrait cards are width-bound and waste their height: on a phone, two
-columns of landscape cards draw the type about half again as large. Every
-row on a board shares one px height (80% of the card's height, or what
-fits the widest possible row across 86% of its width), so a glyph is the
-same size on every card whatever its count. The column count is held once
-the board is solved, so the cards keep their shape when the results take
-the space. Cards never drop below the 44px touch floor while in play.
+The board is always **three columns**: that is how the game reads, like
+Set's own layout. (Two columns of landscape cards drew the type about half
+again as large, and were tried and dropped for this.) The board is measured,
+and every row on it shares one px height: 80% of the card's height, or what
+fits the widest possible row across 86% of its width, so a glyph is the same
+size on every card whatever its count. Cards never drop below the 44px touch
+floor while in play.
 
 Where the board's thinnest stem (measured at bake time, 2 × area /
 perimeter) would draw under 4px, the whole board's middle fill becomes the

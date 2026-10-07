@@ -94,39 +94,28 @@ export const MIN_CARD = 44;
 /** Grid gap between cards, px. */
 export const CARD_GAP = 8;
 
+/** Cards across. Fixed: three columns is how the game reads, like Set's own layout. */
+export const COLS = 3;
+
 export interface BoardFit {
-  cols: number;
   rows: number;
   /** Row height, px: the size every glyph on the board is drawn at. */
   rowPx: number;
 }
 
 /**
- * Pure: how to deal `n` cards into a `width` x `height` px box so the glyphs
- * come out LARGEST. A card's row is three copies across, so on a phone a
- * portrait card (three columns) is width-bound and wastes its height; two
- * columns of landscape cards fit rows half again as tall. A deal that doesn't
- * divide evenly (the tutorial's nine) leaves its last card alone on the last
- * row, centered by the caller. A layout whose cards would fall under the touch floor is skipped unless
- * nothing fits, when the one with the fewest rows wins (the caller floors the
- * box at the touch floor, and the fewest rows is the smallest floor, so the
- * next measure lands on a layout that fits rather than flipping between
- * two). Ties go to more columns. The row leaves room for an open outline's
- * spacing: two extra gaps of `OPEN_STROKE` px. Pass `onlyCols` to size a
- * layout already chosen.
+ * Pure: the row height for `n` cards dealt three across into a `width` x
+ * `height` px box. The lesser of a share of the card's height and what lets
+ * the board's WIDEST row (`maxRowAspect`) fit the card's width, less room for
+ * an open outline's spacing (two extra gaps of `OPEN_STROKE` px). Floored to
+ * whole px, so every glyph on the board is drawn the same size.
  */
-export function fitBoard(n: number, width: number, height: number, maxRowAspect: number, onlyCols?: number): BoardFit {
-  let best: (BoardFit & { ok: boolean }) | null = null;
-  for (const cols of onlyCols ? [onlyCols] : [4, 3, 2]) {
-    const rows = Math.ceil(n / cols);
-    const cardW = (width - (cols - 1) * CARD_GAP) / cols;
-    const cardH = (height - (rows - 1) * CARD_GAP) / rows;
-    const rowPx = Math.floor(Math.max(0, Math.min(ROW_OF_CARD_H * cardH, (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect)));
-    const ok = cardH >= MIN_CARD && cardW >= MIN_CARD;
-    if (!best || (ok && !best.ok) || (ok && best.ok && rowPx > best.rowPx)) best = { cols, rows, rowPx, ok };
-  }
-  if (!best) return { cols: 3, rows: Math.ceil(n / 3), rowPx: 0 };
-  return { cols: best.cols, rows: best.rows, rowPx: best.rowPx };
+export function fitBoard(n: number, width: number, height: number, maxRowAspect: number): BoardFit {
+  const rows = Math.ceil(n / COLS);
+  const cardW = (width - (COLS - 1) * CARD_GAP) / COLS;
+  const cardH = (height - (rows - 1) * CARD_GAP) / rows;
+  const rowPx = Math.floor(Math.max(0, Math.min(ROW_OF_CARD_H * cardH, (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect)));
+  return { rows, rowPx };
 }
 
 /** SVG transform for copy `k` of glyph `i` in its row; `extraGap` widens the spacing (layout units). */

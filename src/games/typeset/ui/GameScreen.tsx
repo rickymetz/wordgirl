@@ -28,7 +28,7 @@ import type { Verdict } from "../state/reducer";
 import { useTypesetGame, type GameMode } from "../state/useTypesetGame";
 import { Glyph } from "./Glyph";
 import { layoutGlyphs, type GlyphLayout } from "./glyphLayout";
-import { CARD_GAP, fitBoard, MIN_CARD, type BoardFit } from "./layout";
+import { CARD_GAP, COLS, fitBoard, MIN_CARD, type BoardFit } from "./layout";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 const outroStreak = async (today: string) => displayStreak(await loadStats(), today);
@@ -156,26 +156,20 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
 
   const archiveHref = "/games/typeset/archive";
 
-  // The board is MEASURED, then dealt into whichever grid draws the glyphs
-  // largest (fitBoard): on a phone that is two columns of landscape cards.
-  // Every row on the board shares one px height, so a glyph is the same size
-  // on every card whatever its count. The column count is chosen while the
-  // board is in play and then held, so the cards keep their shape when the
-  // results take the space below.
+  // The board is MEASURED: three columns always, and every row on the board
+  // shares one px height (fitBoard), so a glyph is the same size on every
+  // card whatever its count.
   const boxRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<BoardFit | null>(null);
-  const heldCols = useRef<{ board: Board; cols: number } | null>(null);
   const measure = useCallback(() => {
     const el = boxRef.current;
     if (!el) return;
-    const held = heldCols.current?.board === board && state.solved ? heldCols.current.cols : undefined;
-    const next = fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect, held);
-    if (!state.solved) heldCols.current = { board, cols: next.cols };
-    setFit((f) => (f && f.cols === next.cols && f.rows === next.rows && f.rowPx === next.rowPx ? f : next));
-  }, [board, layout, state.solved]);
+    const next = fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect);
+    setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx ? f : next));
+  }, [board, layout]);
   useRemeasure(boxRef, measure);
-  const cols = fit?.cols ?? 3;
-  const rows = fit?.rows ?? Math.ceil(board.cards.length / 3);
+  const cols = COLS;
+  const rows = fit?.rows ?? Math.ceil(board.cards.length / COLS);
   const rowPx = fit?.rowPx ?? 0;
   // A stem under ~4px can't hold the hatch; the whole board then draws its
   // middle fill as a wash, so one board never shows it two ways.
@@ -316,13 +310,9 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
           {board.cards.map((card, i) => {
             const selected = state.selected.includes(i);
             const found = inFoundSet.has(i);
-            // A deal that doesn't fill the last row (the tutorial's nine in
-            // two columns) centers its last card rather than leaving it left.
-            const lone = i === board.cards.length - 1 && board.cards.length % cols !== 0;
             return (
               <button
                 key={i}
-                style={lone ? { gridColumn: "1 / -1", justifySelf: "center", width: `calc((100% - ${(cols - 1) * CARD_GAP}px) / ${cols})` } : undefined}
                 type="button"
                 aria-pressed={selected}
                 aria-label={`${describeCard(board, card)}, row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}${found ? ", in a found set" : ""}`}
