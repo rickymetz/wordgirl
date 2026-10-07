@@ -1,4 +1,4 @@
-import { Check, CircleCheck, MoveDown, MoveRight, Sparkles, X } from "lucide-react";
+import { Check, CircleCheck, MoveDown, MoveRight, Sparkle, X } from "lucide-react";
 import { targetWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
@@ -14,8 +14,10 @@ import {
  * an X when the word doesn't work there, a grey check when it's
  * counted already (a normal state — winning grids reuse found words),
  * a green circled check for a new word. A bonus word — it fits, but the
- * list doesn't hold it — takes a sparkle instead: accent while new, grey
- * once banked, the ✦ that marks bonus words in Your words. Tapping a chip aims the cursor at its
+ * list doesn't hold it — takes a SOLID four-point star instead (lucide's
+ * Sparkle, filled): accent while new, grey once banked. Solid because it
+ * is the ✦ that marks bonus words in Your words and in Polygram; the
+ * outlined three-part Sparkles read as a clump at chip size. Tapping a chip aims the cursor at its
  * line.
  */
 export function SlotChips({
@@ -78,14 +80,16 @@ export function SlotChips({
                   : !listed.has(word)
                     ? bonus.has(word)
                       ? {
-                          Icon: Sparkles,
+                          Icon: Sparkle,
                           tone: "text-ink-soft",
                           label: "bonus word, counted already",
+                          filled: true,
                         }
                       : {
-                          Icon: Sparkles,
+                          Icon: Sparkle,
                           tone: "text-accent",
                           label: "new bonus word",
+                          filled: true,
                         }
                     : {
                         Icon: CircleCheck,
@@ -130,7 +134,9 @@ export function SlotChips({
                   <verdict.Icon
                     aria-hidden
                     className={`h-4 w-4 ${verdict.tone}`}
-                    strokeWidth={3}
+                    {...("filled" in verdict
+                      ? { fill: "currentColor", strokeWidth: 1 }
+                      : { strokeWidth: 3 })}
                   />
                 )}
               </button>

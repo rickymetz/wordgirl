@@ -12,6 +12,7 @@ import {
   Lightbulb,
   ListChecks,
   Lock,
+  Sparkle,
   Sparkles,
   Repeat2,
   Target,
@@ -906,10 +907,11 @@ export function GameScreen({
                       strokeWidth={3}
                     />{" "}
                     a new word,{" "}
-                    <Sparkles
-                      aria-label="sparkle"
+                    <Sparkle
+                      aria-label="star"
                       className="inline h-3.5 w-3.5 text-accent"
-                      strokeWidth={2.5}
+                      fill="currentColor"
+                      strokeWidth={1}
                     />{" "}
                     a bonus word (grey once counted). Tap a chip to jump to
                     its line.
