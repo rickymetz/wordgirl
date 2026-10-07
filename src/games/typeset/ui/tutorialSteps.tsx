@@ -11,7 +11,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Find three that match but one way",
     body: (
       <>
-        Three teal <Key>a</Key>’s, alike in all but <Key>fill</Key>. Tap all three.
+        Three teal <Key>a</Key>'s, alike in all but <Key>fill</Key>. Tap all three.
       </>
     ),
   },
@@ -19,12 +19,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: "Or three that differ every way",
     body: (
       <>
-        Different letter, count, color <Key>and</Key> fill — that’s a set too.
+        Different character, count, color <Key>and</Key> fill — that's a set too.
       </>
     ),
   },
   {
-    title: "Same or all different",
+    title: "All same or all different",
     body: (
       <>
         Check each of the four on its own: all <Key>same</Key> or all <Key>different</Key>.
@@ -34,4 +34,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 export const TUTORIAL_RECAP =
-  "Letter, count, color and fill: for a set, each one is all the same or all different across the three cards.";
+  "Character, count, color and fill: each is all the same or all different across a set. A real day has two boards of 12 cards, a character set and three faces, with 4 to 8 sets each.";

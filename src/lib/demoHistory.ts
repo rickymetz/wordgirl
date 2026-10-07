@@ -434,20 +434,25 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
   //   its launch (ARCHIVE_EPOCH) on.
   {
     const seededDays = played.filter((d) => d >= TYPESET_EPOCH);
+    let hintFreeDays = 0;
     for (const d of seededDays) {
+      let dayHints = 0;
       for (const board of ["charset", "faces"] as const) {
         const total = int(4, 8);
+        const hints = rng() < 0.2 ? int(1, 2) : 0;
+        dayHints += hints;
         put("typeset", `daily:${board}:${d}`, {
           ...dayBase(d, minutes(1, 6)),
           board,
           found: Array.from({ length: total }, (_, i) => `${i},${i + 1},${i + 2}`),
           total,
           misses: rng() < 0.5 ? int(1, 4) : 0,
-          hints: rng() < 0.2 ? int(1, 2) : 0,
+          hints,
           sessions: 1,
           solvedHour: int(7, 22),
         });
       }
+      if (dayHints === 0) hintFreeDays++;
     }
     if (seededDays.length > 0) {
       put("typeset", "stats", {
@@ -456,6 +461,7 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
         solved: seededDays.length,
         currentStreak: Math.min(run, seededDays.length),
         bestStreak: Math.min(best, seededDays.length),
+        hintFreeDays,
       });
     }
   }

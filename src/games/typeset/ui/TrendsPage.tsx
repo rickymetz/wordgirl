@@ -21,7 +21,7 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       lowerIsBetter: true,
     },
     solvedCounter<ArchivedDay>("misses", "Misses", (d) => gap(d.misses), { lowerIsBetter: true }),
-    solvedCounter<ArchivedDay>("hints", "Hints", (d) => gap(d.hints), { lowerIsBetter: true }),
+    solvedCounter<ArchivedDay>("hints", "Hints used", (d) => gap(d.hints), { lowerIsBetter: true }),
     solvedCounter<ArchivedDay>("sessions", "Sessions to solve", (d) => gap(d.sessions), { lowerIsBetter: true }),
   ],
   hours: {

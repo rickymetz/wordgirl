@@ -68,7 +68,17 @@ describe("two boards a day", () => {
     stats = await recordDailySolved(DATE, "faces");
     expect(stats.solved).toBe(1);
     expect(stats.currentStreak).toBe(1);
+    expect(stats.hintFreeDays).toBe(1);
     expect(await isDaySolved(DATE)).toBe(true);
+  });
+
+  it("counts a day hint-free only when neither board used a hint", async () => {
+    await saveDailyProgress(day("charset", { solved: true, hints: 1 }));
+    await recordDailySolved(DATE, "charset");
+    await saveDailyProgress(day("faces", { solved: true }));
+    const stats = await recordDailySolved(DATE, "faces");
+    expect(stats.solved).toBe(1);
+    expect(stats.hintFreeDays).toBe(0);
   });
 
   it("never lets an unsolved save overwrite a solved one", async () => {

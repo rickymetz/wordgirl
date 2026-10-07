@@ -46,13 +46,13 @@ export interface FacesEntry {
 }
 
 const ch = (char: string, name: string, plural = `${name}s`): CharacterSpec => ({ char, name, plural });
-const letter = (char: string): CharacterSpec => ch(char, char, `${char}’s`);
+const letter = (char: string): CharacterSpec => ch(char, char, `${char}'s`);
 
 export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "jost", chars: [letter("a"), letter("g"), letter("R")], since: 0 },
   { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("#", "number sign")], since: 0 },
   { theme: "Currency", face: "fraunces", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
-  { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s’s"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O’s")], since: 0 },
+  { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s's"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O's")], since: 0 },
   { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("k")], since: 0 },
   { theme: "Symbols", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
   { theme: "Currency", face: "literata", chars: [ch("£", "pound sign"), ch("₹", "rupee sign"), ch("₩", "won sign")], since: 0 },

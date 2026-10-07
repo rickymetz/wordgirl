@@ -20,7 +20,8 @@ import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
 import { useRemeasure } from "../../../lib/useRemeasure";
 import { FACES } from "../engine/faces";
-import { describeCard, hintLabel, hintText } from "../engine/hints";
+import { describeCard, hintLabel, hintText, nextHint } from "../engine/hints";
+import { pressHandlers } from "../../../lib/pressHandlers";
 import { dailyBoard, type Board, type BoardKind } from "../engine/schedule";
 import { tutorialStepIndex } from "../engine/tutorial";
 import { displayStreak, isDaySolved, loadDailyProgress, loadStats, loadTutorialSeen, markTutorialSeen } from "../state/persistence";
@@ -119,7 +120,12 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   // Hints in a daily or archive play are marked on the result, so the
   // first one asks.
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
+  // Once every fact about the target set is shown there is nothing left to
+  // give, so the button goes rather than answer with a dead-end toast, and
+  // only a hint actually given is counted (as the siblings count).
+  const canHint = useMemo(() => nextHint(board, state.found, state.hintState) !== null, [board, state.found, state.hintState]);
   const takeHint = () => {
+    if (!canHint) return;
     trackHint("typeset");
     dispatch({ type: "hint" });
   };
@@ -198,7 +204,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   const toastTop = fit && cardPx ? Math.max(0, (fit.boxH - gridH) / 4 - 18) : 0;
 
   return (
-    <div data-level="typeset" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 md:max-w-lg [@media(max-height:720px)]:pb-3">
+    <div data-level="typeset" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 md:max-w-2xl [@media(max-height:720px)]:pb-3">
       <header className="flex items-center justify-between pt-6 pb-2 [@media(max-height:720px)]:pt-3 [@media(max-height:720px)]:pb-1">
         {mode.kind === "archive" ? (
           <Link to={archiveHref} className="text-sm font-semibold text-ink-soft">
@@ -213,7 +219,9 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               New daily puzzle
             </Link>
           )}
-          {!state.solved && !isTutorial && (
+          {/* No DictionaryLink, unlike every sibling: it is there for
+              mid-game word lookups, and Typeset has no words. */}
+          {!state.solved && !isTutorial && canHint && (
             <button
               type="button"
               className="relative flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-ink-soft select-none touch-manipulation active:scale-95 after:absolute after:inset-x-0 after:-inset-y-2.5"
@@ -238,11 +246,18 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
         </span>
       </header>
 
-      <div className={`flex items-baseline gap-2 ${onBoardChange && !isTutorial ? "pb-1.5" : "pb-3"}`}>
+      <div className={`flex items-baseline gap-2.5 ${onBoardChange && !isTutorial ? "pb-1.5" : "pb-3"}`}>
         <h1 className="font-game text-2xl font-normal tracking-tight">Typeset</h1>
-        <span aria-hidden className="self-center font-display text-2xl font-bold text-accent">
-          ¶
-        </span>
+        {/* The title mark is DRAWN, like every sibling's: a text ¶ would be
+            swapped by the Font setting and change width. */}
+        <svg role="img" aria-label="typeset" width="20" height="20" viewBox="0 0 20 20" className="shrink-0 self-center text-accent">
+          <path d="M10.5 2.5H7.75a4.25 4.25 0 0 0 0 8.5h2.75Z" fill="currentColor" />
+          <g stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="10.5" y1="2.5" x2="15.5" y2="2.5" />
+            <line x1="10.5" y1="2.5" x2="10.5" y2="17.5" />
+            <line x1="15" y1="2.5" x2="15" y2="17.5" />
+          </g>
+        </svg>
         {mode.kind === "archive" && <span className="text-base font-semibold text-ink-soft">{formatDateKey(mode.dateKey)}</span>}
         {mode.kind === "practice" && <span className="text-base font-semibold text-ink-soft">practice</span>}
         {isTutorial && <span className="text-base font-semibold text-ink-soft">tutorial</span>}
@@ -294,12 +309,9 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
           of sets found, then the hint facts. Its height is held from the
           first frame so a hint never moves the board. */}
       {!isTutorial && (
-        <div className="pt-1 text-sm leading-5 text-ink-soft">
+        <div className="pt-1 text-sm leading-5 font-medium text-ink-soft">
           <p>
-            <span className="font-semibold text-ink">
-              {state.found.length}/{board.sets.length}
-            </span>{" "}
-            sets found
+            {state.found.length}/{board.sets.length} sets found
           </p>
           <ul className="flex min-h-5 flex-wrap items-baseline gap-x-1.5 text-sm leading-5" aria-label="Hints about an unfound set">
             {state.hintState.facts.length > 0 && !state.solved && (
@@ -327,7 +339,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
         style={{ minHeight: state.solved ? 0 : rows * MIN_CARD + (rows - 1) * CARD_GAP }}
       >
         <div
-          className="absolute inset-0 grid content-center select-none touch-manipulation"
+          className="absolute inset-0 grid content-center select-none touch-none"
           style={{
             gap: CARD_GAP,
             gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
@@ -345,15 +357,16 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 aria-pressed={selected}
                 aria-label={`${describeCard(board, card)}, row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}${used ? `, in ${used} found ${used === 1 ? "set" : "sets"}` : ""}`}
                 disabled={state.solved}
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => tapCard(i)}
+                // The tap runs on pointerdown: a thumb that drifts a few px
+                // gets its click cancelled (see lib/pressHandlers).
+                {...pressHandlers(() => tapCard(i))}
                 className={[
                   "relative flex items-center justify-center rounded-xl border bg-surface-raised transition-[transform,box-shadow,border-color] duration-100",
                   // Selected LIFTS, with a check: a shape change, not only a tint.
                   // Neutral ink, not the accent: the aubergine accent is a
                   // corner of the inks' triad and would read as a violet card.
                   selected
-                    ? "-translate-y-1 border-ink shadow-[0_0_0_1px_var(--color-ink),0_8px_16px_-8px_rgb(0_0_0/0.45)]"
+                    ? "-translate-y-1 border-ink shadow-[0_0_0_1px_var(--color-ink),0_8px_16px_-8px_color-mix(in_oklab,var(--color-ink)_45%,transparent)]"
                     : "border-line",
                 ].join(" ")}
               >
@@ -396,12 +409,13 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
             tabIndex={-1}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center gap-2.5 pt-3 outline-none"
+            className="flex flex-col items-center gap-3 pt-3 pb-2 outline-none"
           >
             <p className="text-lg font-bold text-ink">{board.label} solved</p>
             {solvedElapsedMs !== null && <p className="font-game text-2xl text-accent">{formatDuration(solvedElapsedMs)}</p>}
             <p className="text-sm text-ink-soft">
-              {state.found.length}/{board.sets.length} sets · {state.misses} {state.misses === 1 ? "miss" : "misses"}
+              {state.found.length}/{board.sets.length} sets
+              {state.misses > 0 ? ` · ${state.misses} ${state.misses === 1 ? "miss" : "misses"}` : ""}
               {state.hints > 0 ? ` · ${state.hints} ${state.hints === 1 ? "hint" : "hints"}` : ""}
             </p>
             <Credits board={board} layout={layout} />
@@ -472,8 +486,8 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               Use a hint?
             </h2>
             <p className="mt-2 text-sm text-ink-soft">
-              A hint names one thing about a set you haven’t found. Each one narrows it further, and today’s result will note{" "}
-              <span className="font-semibold text-ink">how many hints you used</span>. Streaks are safe.
+              A hint names one thing about a set you haven't found. Each one narrows it further, and today's result will note{" "}
+              <span className="font-semibold text-ink">how many hints you used</span>. Streaks are safe — hints never break them.
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -503,7 +517,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
             rules={[
               {
                 Icon: Type,
-                title: board.kind === "faces" ? "Today’s faces" : `Today: ${board.label}`,
+                title: board.kind === "faces" ? "Today's faces" : `Today: ${board.label}`,
                 body: <TodayGlyphs board={board} layout={layout} />,
               },
               {
@@ -511,7 +525,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 title: "Find sets of three",
                 body: (
                   <>
-                    Tap three cards. Find <Key>every set</Key> on the board to solve it — the board says how many there are.
+                    Tap three cards. Find <Key>every set</Key> on the board to solve it — the board says how many there are. Wrong guesses are counted, never penalized.
                   </>
                 ),
               },
@@ -520,7 +534,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 title: "Four things to compare",
                 body: (
                   <>
-                    The <Key>character</Key> (or the <Key>face</Key> on the faces board), how <Key>many</Key>, the <Key>color</Key>, and the{" "}
+                    The <Key>character</Key> (the <Key>face</Key> on the faces board), the <Key>count</Key>, the <Key>color</Key>, and the{" "}
                     <Key>fill</Key>: solid, cross-hatched or open.
                   </>
                 ),
@@ -549,7 +563,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
                 title: "Hints",
                 body: (
                   <>
-                    A hint names one thing about a set you haven’t found. Wrong guesses are counted, never penalized.
+                    A hint names one thing about a set you haven't found. Your result notes how many you used.
                   </>
                 ),
               },

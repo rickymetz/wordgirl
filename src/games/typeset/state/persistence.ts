@@ -29,7 +29,10 @@ export interface DailyProgress extends DailyBase {
   solvedHour?: number;
 }
 
-export type TypesetStats = StreakStats;
+export interface TypesetStats extends StreakStats {
+  /** Days solved (both boards) with no hint on either. */
+  hintFreeDays: number;
+}
 
 const EMPTY_STATS: TypesetStats = {
   played: 0,
@@ -37,6 +40,7 @@ const EMPTY_STATS: TypesetStats = {
   currentStreak: 0,
   bestStreak: 0,
   lastSolvedDate: null,
+  hintFreeDays: 0,
 };
 
 export const ARCHIVE_EPOCH = "2026-10-07";
@@ -94,10 +98,15 @@ export async function recordDailyStarted(dateKey: string, board: BoardKind): Pro
  */
 export async function recordDailySolved(dateKey: string, board: BoardKind, allowGrace = true): Promise<TypesetStats> {
   const dayComplete = await everyOtherBoardSolved(BOARD_KINDS, board, (b) => loadBoardRecord(dateKey, b));
+  const hintFree = dayComplete && (await Promise.all(BOARD_KINDS.map((b) => loadBoardRecord(dateKey, b)))).every((r) => (r?.hints ?? 0) === 0);
   return base.updateStats((stats) => ({
     ...stats,
     ...(dayComplete && stats.lastSolvedDate !== dateKey
-      ? { solved: stats.solved + 1, ...streakAdvance(stats, dateKey, allowGrace) }
+      ? {
+          solved: stats.solved + 1,
+          hintFreeDays: stats.hintFreeDays + (hintFree ? 1 : 0),
+          ...streakAdvance(stats, dateKey, allowGrace),
+        }
       : {}),
   }));
 }

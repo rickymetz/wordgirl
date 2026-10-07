@@ -148,3 +148,19 @@ candidates go 220 → ~60 → ~16 → ~4 → 1.
 Two append-only pools, each run in seeded cycles (as Sixfold does), so past
 days never move. An entry never repeats within three days across a cycle
 boundary. `schedule.test.ts` pins the first week.
+
+## House conventions
+
+Audited against the six siblings (house steward, UI systems, interaction,
+accessibility and copy reviews). Deliberate departures, so nobody "fixes"
+them later:
+
+- **No dictionary link** in the header: it exists for mid-game word lookups,
+  and Typeset has no words.
+- **Tabs mark a solved board** with lucide's Check (plus sr-only "solved"),
+  like Crosshatch's two boards, where the day only counts once both are done.
+- **No hand-off button** after a board: the tabs lead to the other board, as
+  in Serpentine and Doublet.
+- **Hint hides** once every fact about the target set is shown, rather than
+  answering with a dead-end toast; only a hint actually given is counted.
+
