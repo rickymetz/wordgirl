@@ -9,6 +9,7 @@ import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast, useToast } from "../../../components/game/GameToast";
+import { everyStep, ProgressBar } from "../../../components/game/ProgressBar";
 import { ModalDialog } from "../../../components/ModalDialog";
 import { CoachSheet, Key } from "../../../components/CoachSheet";
 import { TutorialPrompt } from "../../../components/TutorialPrompt";
@@ -305,14 +306,13 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
       )}
 
 
-      {/* The status line, like every sibling's progress readout: the count
-          of sets found, then the hint facts. Its height is held from the
-          first frame so a hint never moves the board. */}
+      {/* Progress, as Crosshatch and Polygram show it: the kit's rail, one
+          checkpoint per set on the board, then the hint facts on a line
+          whose height is held from the first frame so a hint never moves
+          the board. */}
       {!isTutorial && (
         <div className="pt-1 text-sm leading-5 font-medium text-ink-soft">
-          <p>
-            {state.found.length}/{board.sets.length} sets found
-          </p>
+          <ProgressBar found={state.found.length} total={board.sets.length} checkpoints={everyStep(board.sets.length)} label="sets found" />
           <ul className="flex min-h-5 flex-wrap items-baseline gap-x-1.5 text-sm leading-5" aria-label="Hints about an unfound set">
             {state.hintState.facts.length > 0 && !state.solved && (
               <>

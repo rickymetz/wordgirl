@@ -69,7 +69,7 @@ too small for any hatch, use the wash (55% ink), keyline included.
 
 ## Status and feedback
 
-Like every sibling, the board has a progress line ("1/4 sets found"), and
+Like Crosshatch and Polygram, the board has a progress rail (the kit's `ProgressBar`, one checkpoint per set, then "1/4"), and
 hint facts sit on the line under it, which holds its height so a hint never
 moves the board. A hint is not also a toast; found/miss toasts sit in the
 band the centered board leaves above itself, never over the status line or

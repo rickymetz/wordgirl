@@ -18,6 +18,10 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `ghost` (translucent reading). Motion-wrapped tiles (layoutId, drag)
   take `tileClasses(...)` as their className; `mini` is bento-card
   sizing. `TileSocket` is the dashed empty home (subdued on tint).
+- `ProgressBar` (+ `everyStep(total)`) — the accent rail with checkpoint
+  dots and the bare `found/total` count (a `label` adds sr-only words).
+  Typeset uses it with one checkpoint per set; Crosshatch still has its
+  own original copy in `crosshatch/ui` (to be moved onto the kit).
 - `GameToast` + `useToast()` — the floating feedback pill over a
   board (`mode="wait"`, positioned via className) and its state/timer.
   Mirror `toast?.text` into an `aria-live` region for narration.
