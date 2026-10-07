@@ -531,7 +531,7 @@ export function GameScreen({
                 key={l}
                 aria-pressed={l === level}
                 className={[
-                  "relative rounded-full px-3.5 py-1 text-sm font-semibold",
+                  "relative inline-flex items-center gap-1 rounded-full px-3.5 py-1 text-sm font-semibold",
                   "touch-manipulation select-none transition-colors",
                   // Small pills, so the 44px touch target comes from an
                   // invisible expansion rather than padding.
@@ -544,7 +544,12 @@ export function GameScreen({
                 onClick={() => onLevelChange(l)}
               >
                 {LEVEL_LABEL[l]}
-                {solved ? " ✓" : ""}
+                {solved && (
+                  <>
+                    <Check aria-hidden className="h-3.5 w-3.5" strokeWidth={3} />
+                    <span className="sr-only"> solved</span>
+                  </>
+                )}
               </button>
             );
           })}
