@@ -109,6 +109,12 @@ export function hintText(board: Board, fact: HintFact): string {
   }
 }
 
+/** The fact as a short label for the running hint list: "One of each color". */
+export function hintLabel(board: Board, fact: HintFact): string {
+  const t = hintText(board, fact).replace(/^An unfound set (has|is) /, "").replace(/\.$/, "");
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 /** Screen-reader / aria description of a card: "2 blue open euro signs". */
 export function describeCard(board: Board, card: Card): string {
   const g = board.glyphs[card[0]];

@@ -136,6 +136,7 @@
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
   --level-sixfold: light-dark(#4338ca, #818cf8);    /* indigo */
+  --level-typeset: light-dark(#57534e, #d6d3d1);    /* stone: paper and ink */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -150,6 +151,7 @@
   --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
   --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
   --roundup-c6: light-dark(#4f46e5, #818cf8); /* indigo */
+  --roundup-c7: light-dark(#78716c, #d6d3d1); /* stone */
 
   /* Confetti. Decorative like the rainbow above and tuned the same way,
      but the reason it MUST be a light-dark() pair is sharper here: a
@@ -191,17 +193,19 @@
   --roundup-rainbow: linear-gradient(
     105deg,
     var(--roundup-c1) 0%,
-    var(--roundup-c2) 8.33%,
-    var(--roundup-c3) 16.67%,
-    var(--roundup-c4) 25%,
-    var(--roundup-c5) 33.33%,
-    var(--roundup-c6) 41.67%,
+    var(--roundup-c2) 7.14%,
+    var(--roundup-c3) 14.29%,
+    var(--roundup-c4) 21.43%,
+    var(--roundup-c5) 28.57%,
+    var(--roundup-c6) 35.71%,
+    var(--roundup-c7) 42.86%,
     var(--roundup-c1) 50%,
-    var(--roundup-c2) 58.33%,
-    var(--roundup-c3) 66.67%,
-    var(--roundup-c4) 75%,
-    var(--roundup-c5) 83.33%,
-    var(--roundup-c6) 91.67%,
+    var(--roundup-c2) 57.14%,
+    var(--roundup-c3) 64.29%,
+    var(--roundup-c4) 71.43%,
+    var(--roundup-c5) 78.57%,
+    var(--roundup-c6) 85.71%,
+    var(--roundup-c7) 92.86%,
     var(--roundup-c1) 100%
   );
 }
@@ -237,6 +241,36 @@
 
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
+
+/* Typeset — stone. The cards carry three inks of their own (below), so the
+   chrome stays the color of paper and press ink and never competes. */
+[data-level="typeset"] {
+  --color-accent: var(--level-typeset);
+}
+
+/* Typeset's card inks: a deliberate exception to "one palette key per
+   game". Color is one of the four attributes a set is judged on, so the
+   cards need three inks that stay apart for every viewer:
+   - each ink owns a LIGHTNESS rung, and keeps the same order in both
+     themes (red darkest, blue middle, amber lightest), so a player who
+     sorts by lightness rather than hue reads the board the same way;
+   - worst simulated-CVD separation (OKLab dE) is 22.5 light / 24.0 dark;
+   - they are GRAPHICS, so they clear 3:1, not 4.5:1: amber is 3.8:1 on
+     white, the dark inks 4.3:1+ on the dark card. Never set text in them.
+   --typeset-tint-N is the cross-hatch's ground (25% light / 30% dark;
+   a 22% wash read as a dim smear on dark) and --typeset-wash-N the flat
+   middle fill tray glyphs use, too small to resolve a hatch. */
+:root {
+  --typeset-ink-0: light-dark(#991b1b, #ef4444);
+  --typeset-ink-1: light-dark(#ca6a04, #fcd34d);
+  --typeset-ink-2: light-dark(#2563eb, #38bdf8);
+  --typeset-tint-0: light-dark(color-mix(in oklab, #991b1b 25%, #ffffff), color-mix(in oklab, #ef4444 30%, #211f26));
+  --typeset-tint-1: light-dark(color-mix(in oklab, #ca6a04 25%, #ffffff), color-mix(in oklab, #fcd34d 30%, #211f26));
+  --typeset-tint-2: light-dark(color-mix(in oklab, #2563eb 25%, #ffffff), color-mix(in oklab, #38bdf8 30%, #211f26));
+  --typeset-wash-0: light-dark(color-mix(in oklab, #991b1b 40%, #ffffff), color-mix(in oklab, #ef4444 45%, #211f26));
+  --typeset-wash-1: light-dark(color-mix(in oklab, #ca6a04 40%, #ffffff), color-mix(in oklab, #fcd34d 45%, #211f26));
+  --typeset-wash-2: light-dark(color-mix(in oklab, #2563eb 40%, #ffffff), color-mix(in oklab, #38bdf8 45%, #211f26));
+}
 
 /* Sixfold — indigo, the one hue the palette lacked. */
 [data-level="sixfold"] {

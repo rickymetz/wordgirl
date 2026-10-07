@@ -38,6 +38,7 @@ from fontTools.ttLib.removeOverlaps import removeOverlaps
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "src/games/typeset/glyphs.json"
+PREVIEW_OUT = ROOT / "src/games/typeset/preview-glyphs.json"
 CACHE = ROOT / "node_modules/.cache/typeset-fonts"
 UPM = 1000
 # A non-browser user agent makes Google Fonts serve one full TTF per
@@ -113,6 +114,8 @@ def main():
         sys.exit("characters missing from their face: " + ", ".join(missing))
 
     OUT.write_text(json.dumps({"upm": UPM, "glyphs": dict(sorted(glyphs.items()))}, ensure_ascii=False, separators=(",", ":")) + "\n")
+    preview = [glyphs[f"{face}:{char}"] for face, char in m["preview"]]
+    PREVIEW_OUT.write_text(json.dumps(preview, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(f"wrote {len(glyphs)} glyphs, {OUT.stat().st_size // 1024} KB -> {OUT.relative_to(ROOT)}")
 
 

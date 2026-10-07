@@ -16,6 +16,8 @@ for (const b of TUTORIAL_BOARDS) for (const g of b.glyphs) pairs.add(JSON.string
 console.log(
   JSON.stringify({
     faces: Object.fromEntries(Object.values(FACES).map((f) => [f.id, { family: f.googleFamily, weight: f.weight }])),
+    // The hub-card preview's glyphs, baked into their own tiny file.
+    preview: CHARSET_POOL[0].chars.map((c) => [CHARSET_POOL[0].face, c.char]),
     glyphs: [...pairs].map((p) => JSON.parse(p) as [string, string]).sort(),
   }),
 );
