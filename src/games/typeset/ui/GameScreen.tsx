@@ -156,21 +156,23 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
 
   const archiveHref = "/games/typeset/archive";
 
-  // The board is MEASURED: three columns always, and every row on the board
-  // shares one px height (fitBoard), so a glyph is the same size on every
-  // card whatever its count.
+  // The board is MEASURED: three columns always, landscape cards of one
+  // fixed shape, and every row on the board sharing one px height
+  // (fitBoard), so a glyph is the same size on every card whatever its
+  // count. The board centers in the height the cards don't use.
   const boxRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<BoardFit | null>(null);
   const measure = useCallback(() => {
     const el = boxRef.current;
     if (!el) return;
     const next = fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect);
-    setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx ? f : next));
+    setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx && f.cardPx === next.cardPx ? f : next));
   }, [board, layout]);
   useRemeasure(boxRef, measure);
   const cols = COLS;
   const rows = fit?.rows ?? Math.ceil(board.cards.length / COLS);
   const rowPx = fit?.rowPx ?? 0;
+  const cardPx = fit?.cardPx ?? 0;
   // A stem under ~4px can't hold the hatch; the whole board then draws its
   // middle fill as a wash, so one board never shows it two ways.
   const thinnest = Math.min(...layout.glyphs.map((g) => g.stem || Infinity));
@@ -300,11 +302,12 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
         style={{ minHeight: state.solved ? 0 : rows * MIN_CARD + (rows - 1) * CARD_GAP }}
       >
         <div
-          className="absolute inset-0 grid select-none touch-manipulation"
+          className="absolute inset-0 grid content-center select-none touch-manipulation"
           style={{
             gap: CARD_GAP,
             gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+            // Cards only as tall as their row needs; the board centers in the rest.
+            gridTemplateRows: cardPx ? `repeat(${rows}, ${cardPx}px)` : `repeat(${rows}, minmax(0, 1fr))`,
           }}
         >
           {board.cards.map((card, i) => {

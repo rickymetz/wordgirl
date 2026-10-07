@@ -87,6 +87,13 @@ export function rowWidth(layout: Pick<GlyphLayout, "glyphs" | "gap" | "pad">, i:
 export const OPEN_STROKE = 3;
 /** Share of a card's height a row may take. */
 const ROW_OF_CARD_H = 0.8;
+/**
+ * A card's shape, width over height: landscape, like a Set card lying on the
+ * table. Three across, a card is width-bound, so height past this would only
+ * be blank card; it is left to the page instead. FIXED, not fitted to the
+ * board's glyphs, so a card is the same shape on both tabs and every day.
+ */
+export const CARD_ASPECT = 1.5;
 /** Share of a card's width the widest row may take. */
 const ROW_OF_CARD_W = 0.86;
 /** The touch floor a card never shrinks below. */
@@ -101,21 +108,27 @@ export interface BoardFit {
   rows: number;
   /** Row height, px: the size every glyph on the board is drawn at. */
   rowPx: number;
+  /** Card height, px. */
+  cardPx: number;
 }
 
 /**
- * Pure: the row height for `n` cards dealt three across into a `width` x
- * `height` px box. The lesser of a share of the card's height and what lets
- * the board's WIDEST row (`maxRowAspect`) fit the card's width, less room for
- * an open outline's spacing (two extra gaps of `OPEN_STROKE` px). Floored to
- * whole px, so every glyph on the board is drawn the same size.
+ * Pure: the row height and card height for `n` cards dealt three across
+ * into a `width` x `height` px box. Three across, a card is WIDTH-bound: the
+ * board's widest row (`maxRowAspect`) must fit 86% of the card's width, less
+ * room for an open outline's spacing (two extra gaps of `OPEN_STROKE` px).
+ * The card is `CARD_ASPECT` (landscape); on a box too short for that, the
+ * cards share the height, and the row may take 80% of a card's height. Floored to whole px, so every glyph on the board is drawn
+ * the same size; never below the touch floor.
  */
 export function fitBoard(n: number, width: number, height: number, maxRowAspect: number): BoardFit {
   const rows = Math.ceil(n / COLS);
   const cardW = (width - (COLS - 1) * CARD_GAP) / COLS;
-  const cardH = (height - (rows - 1) * CARD_GAP) / rows;
-  const rowPx = Math.floor(Math.max(0, Math.min(ROW_OF_CARD_H * cardH, (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect)));
-  return { rows, rowPx };
+  const roomH = (height - (rows - 1) * CARD_GAP) / rows;
+  const byWidth = (ROW_OF_CARD_W * cardW - 2 * OPEN_STROKE) / maxRowAspect;
+  const cardPx = Math.floor(Math.max(MIN_CARD, Math.min(roomH, cardW / CARD_ASPECT)));
+  const rowPx = Math.floor(Math.max(0, Math.min(byWidth, ROW_OF_CARD_H * cardPx)));
+  return { rows, rowPx, cardPx };
 }
 
 /** SVG transform for copy `k` of glyph `i` in its row; `extraGap` widens the spacing (layout units). */

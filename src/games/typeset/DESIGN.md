@@ -43,11 +43,15 @@ outside outlines meet.
 
 The board is always **three columns**: that is how the game reads, like
 Set's own layout. (Two columns of landscape cards drew the type about half
-again as large, and were tried and dropped for this.) The board is measured,
-and every row on it shares one px height: 80% of the card's height, or what
-fits the widest possible row across 86% of its width, so a glyph is the same
-size on every card whatever its count. Cards never drop below the 44px touch
-floor while in play.
+again as large, and were tried and dropped for this; so was setting three
+copies as a pyramid.) Three across, a card is width-bound: the glyph's size
+is what fits the board's widest possible row across 86% of the card. So the
+card is only as tall as that needs: one FIXED landscape shape, 1.5:1, like a
+Set card lying on the table, the same on both tabs and every day. The board
+centers in the height the cards don't use, between the progress line and
+the found-set tray. Every row on a board shares one px height, so a glyph is
+the same size on every card whatever its count. On a box too short for the
+1.5:1 cards they share the height instead, never below the 44px touch floor.
 
 Where the board's thinnest stem (measured at bake time, 2 × area /
 perimeter) would draw under 4px, the whole board's middle fill becomes the

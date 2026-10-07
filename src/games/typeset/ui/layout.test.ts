@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD_GAP, COLS, fitBoard, rowWidth } from "./layout";
+import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, rowWidth } from "./layout";
 
 const ASPECT = 2.4; // three ¶ in a row
 
@@ -15,10 +15,23 @@ describe("fitBoard", () => {
     expect(fit.rowPx * ASPECT + 6).toBeLessThanOrEqual(cardW);
   });
 
-  it("is height-bound on a short board", () => {
-    const fit = fitBoard(12, 350, 200, ASPECT);
-    const cardH = (200 - 3 * CARD_GAP) / 4;
-    expect(fit.rowPx).toBe(Math.floor(0.8 * cardH));
+  it("deals landscape cards of one fixed shape, whatever the glyphs, leaving the rest", () => {
+    const narrow = fitBoard(12, 350, 560, 1.8);
+    const wide = fitBoard(12, 350, 560, ASPECT);
+    const cardW = (350 - (COLS - 1) * CARD_GAP) / COLS;
+    expect(wide.cardPx).toBe(Math.floor(cardW / CARD_ASPECT));
+    expect(narrow.cardPx).toBe(wide.cardPx);
+    expect(wide.rows * wide.cardPx + (wide.rows - 1) * CARD_GAP).toBeLessThan(560);
+  });
+
+  it("on a short board, shares the height and lets the row take more of it", () => {
+    const fit = fitBoard(12, 350, 260, ASPECT);
+    expect(fit.cardPx).toBe(Math.floor((260 - 3 * CARD_GAP) / 4));
+    expect(fit.rowPx).toBeLessThanOrEqual(Math.floor(0.8 * fit.cardPx));
+  });
+
+  it("never sizes a card under the touch floor", () => {
+    expect(fitBoard(12, 350, 100, ASPECT).cardPx).toBe(MIN_CARD);
   });
 });
 
