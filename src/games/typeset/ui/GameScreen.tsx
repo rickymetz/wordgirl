@@ -86,8 +86,9 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   const tutorialStep = useTutorialProgress(tutorialStepIndex(state.found));
   const [coachOpen, setCoachOpen] = useState(false);
 
-  // The other board of the date, for its tab label, its ✓, and the
-  // hand-off once this one is done.
+  // The other board of the date, for its tab label and its ✓ (the tabs are
+  // the way over; no hand-off button, as in Serpentine and Doublet), and for
+  // holding the day's outro until both boards are solved.
   const otherKind = OTHER[kind];
   const otherLabel = useMemo(() => {
     if (isTutorial) return null;
@@ -383,16 +384,6 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               {state.hints > 0 ? ` · ${state.hints} ${state.hints === 1 ? "hint" : "hints"}` : ""}
             </p>
             <Credits board={board} layout={layout} />
-            {onBoardChange && otherLabel && dateKey && otherSolved === false && (
-              <button
-                type="button"
-                onPointerDown={(e) => e.preventDefault()}
-                onClick={() => onBoardChange(otherKind)}
-                className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-surface active:scale-95"
-              >
-                Play {otherLabel}
-              </button>
-            )}
             {dateKey && solvedElapsedMs !== null && (
               <ShareButton text={buildShareText(board, state.found.length, state.hints, dateKey, solvedElapsedMs)} gameId="typeset" />
             )}
