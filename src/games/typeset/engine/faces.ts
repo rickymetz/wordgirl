@@ -28,6 +28,35 @@ export type FaceFamily =
   | "Script"
   | "Brush";
 
+/**
+ * The SHAPE a family reads as at card size. Families are finer than a
+ * player can see in one letter at a glance: a soft serif and a slab are
+ * different families but, in a lone upright letter, near twins (review:
+ * Fraunces and JetBrains Mono's "y" read as the same face). A faces trio
+ * takes three different silhouettes (pool.test.ts).
+ */
+export type Silhouette = "serif" | "slab" | "sans" | "mono" | "script";
+
+export const SILHOUETTE: Record<FaceFamily, Silhouette> = {
+  "Old style": "serif",
+  Didone: "serif",
+  "Soft serif": "serif",
+  "Book serif": "serif",
+  Slab: "slab",
+  Geometric: "sans",
+  Grotesque: "sans",
+  Monospace: "mono",
+  Script: "script",
+  Brush: "script",
+};
+
+/**
+ * Letters that SHOW a monospace: narrow letters drawn wide, with the slab
+ * feet a fixed advance forces on them. In a round letter (a, e, y) a black
+ * mono reads as just another grotesque, and the lesson is invisible.
+ */
+export const MONO_TELLING = new Set(["f", "i", "j", "l", "r", "t"]);
+
 export interface Face {
   id: FaceId;
   /** The face's published name. */

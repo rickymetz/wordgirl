@@ -35,12 +35,14 @@ const outroStreak = async (today: string) => displayStreak(await loadStats(), to
 
 const OTHER: Record<BoardKind, BoardKind> = { charset: "faces", faces: "charset" };
 
-export function buildShareText(board: Board, found: number, hints: number, misses: number, dateKey: string, elapsedMs: number): string {
-  const missPart = misses > 0 ? ` · ❌ ${misses}` : "";
+/** Share names the board by kind, not its theme ("Signs & punctuation" alone would wrap a message bubble). */
+const SHARE_KIND: Record<BoardKind, string> = { charset: "Characters", faces: "Faces" };
+
+export function buildShareText(board: Board, found: number, hints: number, dateKey: string, elapsedMs: number): string {
   const hintPart = hints > 0 ? ` · 🫣 ${hints}` : " · 😎 0";
   return [
     `🖋️ Typeset — ${formatShareDate(dateKey)}`,
-    `${board.label} · ${found}/${board.sets.length} sets · ⏱️ ${formatDuration(elapsedMs)}${missPart}${hintPart}`,
+    `${SHARE_KIND[board.kind]} · ${found} sets · ⏱️ ${formatDuration(elapsedMs)}${hintPart}`,
     SHARE_URL,
   ].join("\n");
 }
@@ -69,8 +71,9 @@ interface Props {
   onReplay?: () => void;
 }
 
-export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
-  const { state, dispatch, board, solvedElapsedMs, hydratedAsSolved } = useTypesetGame(mode);
+export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial, onReplay }: Props) {
+  const { state, dispatch, board, solvedElapsedMs, hydratedAsSolved, abandonSession } = useTypesetGame(mode);
+  const [replayOpen, setReplayOpen] = useState(false);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
   const persisted = mode.kind === "daily" || mode.kind === "archive";
@@ -152,7 +155,13 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
     else if (state.selected.length < 2) say(`${desc}, ${state.selected.length + 1} of 3 selected`);
     dispatch({ type: "tap", index: i });
   };
-  const inFoundSet = useMemo(() => new Set(state.found.flatMap((k) => k.split(",").map(Number))), [state.found]);
+  // How many found sets each card is in: a card can belong to several, so a
+  // found card stays in play, and its pips say how often it has been used.
+  const foundCount = useMemo(() => {
+    const n = new Map<number, number>();
+    for (const k of state.found) for (const i of k.split(",").map(Number)) n.set(i, (n.get(i) ?? 0) + 1);
+    return n;
+  }, [state.found]);
 
   const archiveHref = "/games/typeset/archive";
 
@@ -161,22 +170,23 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
   // (fitBoard), so a glyph is the same size on every card whatever its
   // count. The board centers in the height the cards don't use.
   const boxRef = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState<BoardFit | null>(null);
+  const [fit, setFit] = useState<(BoardFit & { boxH: number }) | null>(null);
   const measure = useCallback(() => {
     const el = boxRef.current;
     if (!el) return;
-    const next = fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect);
-    setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx && f.cardPx === next.cardPx ? f : next));
+    const next = { ...fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect), boxH: el.clientHeight };
+    setFit((f) => (f && f.rows === next.rows && f.rowPx === next.rowPx && f.cardPx === next.cardPx && f.boxH === next.boxH ? f : next));
   }, [board, layout]);
   useRemeasure(boxRef, measure);
   const cols = COLS;
   const rows = fit?.rows ?? Math.ceil(board.cards.length / COLS);
   const rowPx = fit?.rowPx ?? 0;
   const cardPx = fit?.cardPx ?? 0;
-  // A stem under ~4px can't hold the hatch; the whole board then draws its
-  // middle fill as a wash, so one board never shows it two ways.
-  const thinnest = Math.min(...layout.glyphs.map((g) => g.stem || Infinity));
-  const wash = rowPx > 0 && (thinnest * rowPx) / layout.height < 4;
+  // The toast sits in the band the centered board leaves above itself, so it
+  // never covers the status line (or the hint the player just paid for).
+  // Where there is no band (a short screen) it falls back over the first row.
+  const gridH = rows * cardPx + (rows - 1) * CARD_GAP;
+  const toastTop = fit && cardPx ? Math.max(0, (fit.boxH - gridH) / 4 - 18) : 0;
 
   return (
     <div data-level="typeset" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 md:max-w-lg [@media(max-height:720px)]:pb-3">
@@ -276,7 +286,7 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
             </span>{" "}
             sets found
           </p>
-          <ul className="flex min-h-4 flex-wrap items-baseline gap-x-1.5 text-xs leading-4" aria-label="Hints about an unfound set">
+          <ul className="flex min-h-5 flex-wrap items-baseline gap-x-1.5 text-sm leading-5" aria-label="Hints about an unfound set">
             {state.hintState.facts.length > 0 && !state.solved && (
               <>
                 <li className="font-semibold">Unfound set:</li>
@@ -312,13 +322,13 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
         >
           {board.cards.map((card, i) => {
             const selected = state.selected.includes(i);
-            const found = inFoundSet.has(i);
+            const used = foundCount.get(i) ?? 0;
             return (
               <button
                 key={i}
                 type="button"
                 aria-pressed={selected}
-                aria-label={`${describeCard(board, card)}, row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}${found ? ", in a found set" : ""}`}
+                aria-label={`${describeCard(board, card)}, row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}${used ? `, in ${used} found ${used === 1 ? "set" : "sets"}` : ""}`}
                 disabled={state.solved}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => tapCard(i)}
@@ -333,22 +343,28 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
                 ].join(" ")}
               >
                 {rowPx > 0 && (
-                  <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} wash={wash} rowPx={rowPx} style={{ height: rowPx }} />
+                  <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} rowPx={rowPx} style={{ height: rowPx }} />
                 )}
                 {selected && (
                   <span aria-hidden className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-surface">
                     <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                 )}
-                {/* A card can be in more than one set, so a found card stays
-                    in play; the dot only says it has been used once. */}
-                {found && !selected && <span aria-hidden className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-ink-soft/60" />}
+                {/* One solid pip per found set the card is in. */}
+                {used > 0 && !selected && (
+                  <span aria-hidden className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-1">
+                    {Array.from({ length: used }, (_, k) => (
+                      <span key={k} className="h-1.5 w-1.5 rounded-full bg-ink-soft" />
+                    ))}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
-        {/* Above the board, over the status line — never over the cards. */}
-        <GameToast toast={toast} className="bottom-full mb-1" />
+        <div className="pointer-events-none absolute inset-x-0" style={{ top: toastTop }}>
+          <GameToast toast={toast} className="top-0" />
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -376,7 +392,25 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
               </button>
             )}
             {dateKey && solvedElapsedMs !== null && (
-              <ShareButton text={buildShareText(board, state.found.length, state.hints, state.misses, dateKey, solvedElapsedMs)} gameId="typeset" />
+              <ShareButton text={buildShareText(board, state.found.length, state.hints, dateKey, solvedElapsedMs)} gameId="typeset" />
+            )}
+            {mode.kind === "archive" && onReplay && (
+              <button
+                type="button"
+                onClick={() => setReplayOpen(true)}
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+              >
+                Play again
+              </button>
+            )}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New board
+              </button>
             )}
             {isDaily && otherSolved && <DailyOutro gameId="typeset" loadStreak={outroStreak} />}
           </motion.div>
@@ -388,6 +422,34 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {replayOpen && (
+        <ModalDialog labelledBy="replay-dialog-title" onClose={() => setReplayOpen(false)} className="text-center">
+          <div>
+            <h2 id="replay-dialog-title" className="text-lg font-bold">
+              Play this board again?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">The board clears and the clock restarts. Your first solve stays counted in your stats.</p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setReplayOpen(false);
+                  abandonSession();
+                  onReplay?.();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Play again
+              </button>
+              <button type="button" onClick={() => setReplayOpen(false)} className="rounded-full border border-line py-2.5 font-semibold active:scale-95">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       {hintWarningOpen && (
         <ModalDialog labelledBy="hint-dialog-title" onClose={() => setHintWarningOpen(false)} className="text-center">

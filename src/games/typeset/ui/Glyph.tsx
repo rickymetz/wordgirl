@@ -13,19 +13,20 @@ import { copyTransform, OPEN_STROKE, rowWidth, type GlyphLayout } from "./layout
  *   tint holds thin strokes together (a bare hatch broke € bars and
  *   script hairlines into debris); the keyline keeps the silhouette crisp.
  *   Hatch pitch scales with the glyph (~7.5% of the row height) so it stays a
- *   texture at every card size.
+ *   texture at every card size, but never finer than 4.5px with 1.1px lines
+ *   (given `rowPx`): finer, a hatch on a thin face blurs into a pale solid,
+ *   which reads as a fourth fill.
  * - OPEN: an outline drawn OUTSIDE the letter (paint-order: stroke under a
  *   fill of the card color). An inside band fills a heavy stem completely
  *   below ~18px and reads as solid; outside, every stroke keeps its full
  *   width as a hollow channel at any size. The fill on top also hides any
  *   contour seams the bake didn't merge.
- * - TRAY size (`mini`), and boards whose thinnest stem is under ~4px at the
- *   size drawn (`wash`): a hatch can't resolve there and smears into a pink
- *   or pale solid, so the middle fill becomes a flat wash plus keyline. The
- *   caller decides per BOARD, never per glyph, so one board never shows the
- *   middle fill two ways.
+ * - TRAY size (`mini`): a hatch can't resolve at tray size, so the middle
+ *   fill becomes a flat wash plus keyline there. The BOARD always hatches:
+ *   a wash there (tried, for thin faces) read as a pale tint, a fourth fill,
+ *   and contradicted every label and hint that says "cross-hatched".
  * - Open copies are spaced an extra outline width apart (`rowPx` gives the
- *   px-to-units scale), or the outside outlines of a script meet.
+ *   px-to-units scale; minis take a fixed extra), or outside outlines meet.
  *
  * Stroke widths are in CSS px (non-scaling-stroke), so the keyline and
  * the open band are the same weight on every card at every Text size.
@@ -38,8 +39,6 @@ interface Props {
   ink: Value;
   fill: Value;
   mini?: boolean;
-  /** Draw the middle fill as a flat wash instead of the cross-hatch. */
-  wash?: boolean;
   /** The row's rendered height in px, when known; spaces open copies apart by their outline. */
   rowPx?: number;
   /** Paint the glyph in neutral ink (the ? sheet, credits), ignoring `ink`. */
@@ -49,15 +48,17 @@ interface Props {
   style?: CSSProperties;
 }
 
-export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, wash = false, rowPx, neutral = false, className, style }: Props) {
+export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, rowPx, neutral = false, className, style }: Props) {
   // useId's characters («r1», :r1:) are not safe inside url(); keep [\w-].
   const id = `ts-hatch-${useId().replace(/[^\w-]/g, "")}`;
-  const flat = mini || wash;
-  const extraGap = fill === 2 && rowPx ? (OPEN_STROKE * layout.height) / rowPx : 0;
+  const flat = mini;
+  // Layout units per CSS px, when the drawn size is known.
+  const unitsPerPx = rowPx ? layout.height / rowPx : 0;
+  const extraGap = fill !== 2 ? 0 : unitsPerPx ? OPEN_STROKE * unitsPerPx : mini ? layout.gap * 1.5 : 0;
   const width = rowWidth(layout, glyph, count, extraGap);
   const color = neutral ? "var(--color-ink)" : `var(--typeset-ink-${ink})`;
-  const pitch = layout.height * 0.075;
-  const line = pitch * 0.23;
+  const pitch = Math.max(layout.height * 0.075, 4.5 * unitsPerPx);
+  const line = Math.max(pitch * 0.23, 1.1 * unitsPerPx);
 
   let paint: SVGProps<SVGPathElement>;
   if (fill === 0) {
@@ -65,7 +66,7 @@ export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, wash 
   } else if (fill === 1) {
     paint = flat
       ? { style: { fill: neutral ? "var(--color-ink-soft)" : `var(--typeset-wash-${ink})`, stroke: color, strokeWidth: 0.75 } }
-      : { style: { fill: `url(#${id})`, stroke: color, strokeWidth: 0.75 } };
+      : { style: { fill: `url(#${id})`, stroke: color, strokeWidth: 1 } };
   } else {
     paint = {
       style: { fill: "var(--color-surface-raised)", stroke: color, strokeWidth: mini ? 2 : OPEN_STROKE, paintOrder: "stroke" },

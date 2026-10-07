@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import glyphs from "../glyphs.json";
-import { FACES } from "./faces";
+import { FACES, MONO_TELLING, SILHOUETTE } from "./faces";
 import { CHARSET_POOL, FACES_POOL } from "./pool";
 import { TUTORIAL_BOARDS } from "./tutorial";
 
@@ -52,6 +52,19 @@ describe("faces pool", () => {
     for (const entry of FACES_POOL) {
       const families = entry.faces.map((f) => FACES[f].family);
       expect(new Set(families).size, entry.char.char).toBe(3);
+    }
+  });
+
+  it("draws each trio from three different silhouettes, so the faces part at a glance", () => {
+    for (const entry of FACES_POOL) {
+      const shapes = entry.faces.map((f) => SILHOUETTE[FACES[f].family]);
+      expect(new Set(shapes).size, `${entry.char.char}: ${shapes.join(", ")}`).toBe(3);
+    }
+  });
+
+  it("gives a trio with the monospace a letter that shows it", () => {
+    for (const entry of FACES_POOL) {
+      if (entry.faces.some((f) => FACES[f].family === "Monospace")) expect(MONO_TELLING.has(entry.char.char), entry.char.char).toBe(true);
     }
   });
 

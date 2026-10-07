@@ -270,7 +270,8 @@
    --typeset-tint-N is the cross-hatch's ground (25% light / 30% dark;
    a 22% wash read as a dim smear on dark; light gold takes 35%, a 25%
    amber ground vanished on white) and --typeset-wash-N the flat
-   middle fill tray glyphs use, too small to resolve a hatch. */
+   middle fill tray glyphs use, too small to resolve a hatch (55%: at 40%
+   it read under 2:1 on the card). */
 :root {
   --typeset-ink-0: light-dark(#6d28d9, #a77be0);
   --typeset-ink-1: light-dark(#b4650a, #ea9602);
@@ -278,9 +279,9 @@
   --typeset-tint-0: light-dark(color-mix(in oklab, #6d28d9 25%, #ffffff), color-mix(in oklab, #a77be0 30%, #211f26));
   --typeset-tint-1: light-dark(color-mix(in oklab, #b4650a 35%, #ffffff), color-mix(in oklab, #ea9602 30%, #211f26));
   --typeset-tint-2: light-dark(color-mix(in oklab, #2f9a9b 25%, #ffffff), color-mix(in oklab, #4aebed 30%, #211f26));
-  --typeset-wash-0: light-dark(color-mix(in oklab, #6d28d9 40%, #ffffff), color-mix(in oklab, #a77be0 45%, #211f26));
-  --typeset-wash-1: light-dark(color-mix(in oklab, #b4650a 40%, #ffffff), color-mix(in oklab, #ea9602 45%, #211f26));
-  --typeset-wash-2: light-dark(color-mix(in oklab, #2f9a9b 40%, #ffffff), color-mix(in oklab, #4aebed 45%, #211f26));
+  --typeset-wash-0: light-dark(color-mix(in oklab, #6d28d9 55%, #ffffff), color-mix(in oklab, #a77be0 55%, #211f26));
+  --typeset-wash-1: light-dark(color-mix(in oklab, #b4650a 55%, #ffffff), color-mix(in oklab, #ea9602 55%, #211f26));
+  --typeset-wash-2: light-dark(color-mix(in oklab, #2f9a9b 55%, #ffffff), color-mix(in oklab, #4aebed 55%, #211f26));
 }
 
 /* Sixfold — indigo, the one hue the palette lacked. */

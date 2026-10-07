@@ -7,16 +7,22 @@ describe("share string", () => {
   const board = dailyBoard("2026-10-07", "charset");
 
   it("is three tight lines: emoji-led header, result, link", () => {
-    const text = buildShareText(board, 4, 0, 0, "2026-10-07", 134_000);
-    expect(text.split("\n")).toEqual([
-      "🖋️ Typeset — October 7",
-      `${board.label} · 4/${board.sets.length} sets · ⏱️ 2:14 · 😎 0`,
-      SHARE_URL,
-    ]);
+    const text = buildShareText(board, 4, 0, "2026-10-07", 134_000);
+    expect(text.split("\n")).toEqual(["🖋️ Typeset — October 7", "Characters · 4 sets · ⏱️ 2:14 · 😎 0", SHARE_URL]);
   });
 
-  it("adds misses and hints only when there are some", () => {
-    const text = buildShareText(board, 4, 2, 1, "2026-10-07", 60_000);
-    expect(text.split("\n")[1]).toBe(`${board.label} · 4/${board.sets.length} sets · ⏱️ 1:00 · ❌ 1 · 🫣 2`);
+  it("counts hints only when there are some", () => {
+    expect(buildShareText(board, 4, 2, "2026-10-07", 60_000).split("\n")[1]).toBe("Characters · 4 sets · ⏱️ 1:00 · 🫣 2");
+  });
+
+  it("is no longer than the siblings' lines, whatever the day's theme, on a long day", () => {
+    // 8 sets, ten minutes, a few hints. Crosshatch's everyday line
+    // ("Normal · 11/11 words · ⏱️ 2:14 · 😎 0") is 36 code points; the
+    // board's theme would push this past 45, so the line names the kind.
+    const faces = dailyBoard("2026-10-07", "faces");
+    for (const b of [board, faces]) {
+      const line = buildShareText(b, 8, 3, "2026-10-07", 599_000).split("\n")[1];
+      expect([...line].length).toBeLessThanOrEqual(36);
+    }
   });
 });

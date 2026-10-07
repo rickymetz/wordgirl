@@ -58,19 +58,23 @@ row drawn in the same proportion. An empty slot holds three invisible minis,
 so it is exactly as tall as a filled one and the tray never grows as sets
 are found.
 
-Where the board's thinnest stem (measured at bake time, 2 × area /
-perimeter) would draw under 4px, the whole board's middle fill becomes the
-tray's flat wash: a hatch smears on a stroke that thin. The choice is per
-board, never per glyph, so one board never shows the middle fill two ways.
+The board **always cross-hatches** the middle fill. A flat-wash fallback
+for thin faces was tried and dropped: at board size it read as a pale tint
+(a fourth fill, said a review), and it contradicted every label and hint
+that says "cross-hatched". Instead the lattice never goes finer than 4.5px
+with 1.1px lines, and the hatched keyline is 1px. Only the tray's minis,
+too small for any hatch, use the wash (55% ink), keyline included.
 
 ## Status and feedback
 
 Like every sibling, the board has a progress line ("1/4 sets found"), and
 hint facts sit on the line under it, which holds its height so a hint never
-moves the board. A hint is not also a toast; found/miss toasts sit above
-the board, never over the cards. A selected card lifts and wears a check
-(a shape change, not only a tint); a card in a found set gets a small dot,
-not a cross-out, because a card can belong to more than one set.
+moves the board. A hint is not also a toast; found/miss toasts sit in the
+band the centered board leaves above itself, never over the status line or
+the cards (on a screen with no band, over the first row). A selected card lifts and wears a check
+(a shape change, not only a tint); a card in a found set gets one solid pip
+per found set it is in, not a cross-out, because a card can belong to more
+than one set.
 
 ## Faces
 
@@ -79,8 +83,14 @@ not a cross-out, because a card can belong to more than one set.
   hatch has nothing to sit in.
 - **No blackletter or hairline scripts** — their open and hatched fills turn
   to noise. Pacifico was dropped for this; Lobster replaced it.
-- A faces trio never repeats a family (`pool.test.ts`). On the faces board
-  ink heights are equalized so no face reads heavier for being drawn larger.
+- A faces trio takes three different **silhouettes** (serif, slab, sans,
+  mono, script), not merely three families (`pool.test.ts`). Families are
+  finer than a lone letter shows: a review couldn't tell Fraunces from
+  JetBrains Mono in a black "y". A trio with the monospace also uses a
+  letter that SHOWS it (f, i, j, l, r, t: narrow letters drawn wide, with
+  slab feet), so that trio's "y" became "f".
+- On the faces board ink heights are equalized so no face reads heavier for
+  being drawn larger.
 
 ## Inks
 
