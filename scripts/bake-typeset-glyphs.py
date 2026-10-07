@@ -30,7 +30,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from fontTools.pens.areaPen import AreaPen
 from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.perimeterPen import PerimeterPen
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
@@ -105,10 +107,16 @@ def main():
             bounds = BoundsPen(gs)
             gs[gid].draw(TransformPen(bounds, (scale, 0, 0, -scale, 0, 0)))
             x0, y0, x1, y1 = (round(v) for v in bounds.bounds)
+            # Mean stroke thickness (2 x area / perimeter): the app swaps the
+            # cross-hatch for a flat wash where a stem is too thin to hold it.
+            area, perimeter = AreaPen(gs), PerimeterPen(gs)
+            gs[gid].draw(TransformPen(area, (scale, 0, 0, -scale, 0, 0)))
+            gs[gid].draw(TransformPen(perimeter, (scale, 0, 0, -scale, 0, 0)))
             glyphs[f"{face}:{c}"] = {
                 "d": svg.getCommands(),
                 "adv": round(gs[gid].width * scale),
                 "box": [x0, y0, x1, y1],
+                "stem": round(2 * abs(area.value) / perimeter.value),
             }
     if missing:
         sys.exit("characters missing from their face: " + ", ".join(missing))

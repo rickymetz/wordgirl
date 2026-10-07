@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { CircleHelp, Equal, Grid3x3, Layers, Lightbulb, Shapes, Type } from "lucide-react";
+import { Check, CircleHelp, Equal, Grid3x3, Layers, Lightbulb, Shapes, Type } from "lucide-react";
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
@@ -18,6 +18,7 @@ import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
 import { ConfettiOverlay } from "../../../components/ConfettiOverlay";
 import { useSolveTransition } from "../../../lib/useSolveTransition";
 import { useStorageBroken } from "../../../lib/useStorageBroken";
+import { useRemeasure } from "../../../lib/useRemeasure";
 import { FACES } from "../engine/faces";
 import { describeCard, hintLabel, hintText } from "../engine/hints";
 import { dailyBoard, type Board, type BoardKind } from "../engine/schedule";
@@ -27,6 +28,7 @@ import type { Verdict } from "../state/reducer";
 import { useTypesetGame, type GameMode } from "../state/useTypesetGame";
 import { Glyph } from "./Glyph";
 import { layoutGlyphs, type GlyphLayout } from "./glyphLayout";
+import { CARD_GAP, fitBoard, MIN_CARD, type BoardFit } from "./layout";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 const outroStreak = async (today: string) => displayStreak(await loadStats(), today);
@@ -46,7 +48,7 @@ export function buildShareText(board: Board, found: number, hints: number, misse
 function verdictText(v: Verdict, board: Board, foundCount: number): string {
   switch (v.kind) {
     case "found":
-      return foundCount === board.sets.length ? "Every set found" : `Set! ${foundCount} of ${board.sets.length}`;
+      return foundCount === board.sets.length ? "Every set found" : `Set found · ${foundCount} of ${board.sets.length}`;
     case "already":
       return "Already found";
     case "miss":
@@ -114,12 +116,18 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
     else takeHint();
   };
 
-  // Outcomes: a toast over the board, narrated by the live region below.
+  // Outcomes: a toast above the board, and every outcome narrated by the one
+  // live region below. A hint is the exception on screen: it lands in the
+  // status line, which already shows it, so a toast would say it twice.
   const { toast, show } = useToast();
+  const [announce, setAnnounce] = useState<{ text: string; nonce: number } | null>(null);
+  const say = (text: string) => setAnnounce((a) => ({ text, nonce: (a?.nonce ?? 0) + 1 }));
   useEffect(() => {
     const v = state.verdict;
     if (!v) return;
-    show(verdictText(v, board, state.found.length), v.kind === "hint" || v.kind === "miss" ? 3200 : 1600);
+    const text = verdictText(v, board, state.found.length);
+    say(text);
+    if (v.kind !== "hint") show(text, v.kind === "miss" ? 2400 : 1600);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.verdict?.id]);
 
@@ -136,17 +144,43 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [dispatch]);
 
-  const selectionAnnounce =
-    state.selected.length > 0 ? `${state.selected.length} of 3 selected: ${state.selected.map((i) => describeCard(board, board.cards[i])).join(", ")}` : "";
+  // Narrate only the card just tapped; the third tap's outcome is the
+  // verdict's to announce.
+  const tapCard = (i: number) => {
+    const desc = describeCard(board, board.cards[i]);
+    if (state.selected.includes(i)) say(`${desc}, deselected`);
+    else if (state.selected.length < 2) say(`${desc}, ${state.selected.length + 1} of 3 selected`);
+    dispatch({ type: "tap", index: i });
+  };
+  const inFoundSet = useMemo(() => new Set(state.found.flatMap((k) => k.split(",").map(Number))), [state.found]);
 
   const archiveHref = "/games/typeset/archive";
-  const rows = Math.ceil(board.cards.length / 3);
-  // One row height for every card on the board: the lesser of a share of
-  // the card's height and what lets the board's WIDEST row (three of its
-  // widest glyph) fit the card's width. Both are card-relative (container
-  // units), and every card is the same size, so a glyph renders the same
-  // size on every card whatever its count.
-  const cardRowHeight = `min(66cqh, ${(86 / layout.maxRowAspect).toFixed(2)}cqw)`;
+
+  // The board is MEASURED, then dealt into whichever grid draws the glyphs
+  // largest (fitBoard): on a phone that is two columns of landscape cards.
+  // Every row on the board shares one px height, so a glyph is the same size
+  // on every card whatever its count. The column count is chosen while the
+  // board is in play and then held, so the cards keep their shape when the
+  // results take the space below.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<BoardFit | null>(null);
+  const heldCols = useRef<{ board: Board; cols: number } | null>(null);
+  const measure = useCallback(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const held = heldCols.current?.board === board && state.solved ? heldCols.current.cols : undefined;
+    const next = fitBoard(board.cards.length, el.clientWidth, el.clientHeight, layout.maxRowAspect, held);
+    if (!state.solved) heldCols.current = { board, cols: next.cols };
+    setFit((f) => (f && f.cols === next.cols && f.rows === next.rows && f.rowPx === next.rowPx ? f : next));
+  }, [board, layout, state.solved]);
+  useRemeasure(boxRef, measure);
+  const cols = fit?.cols ?? 3;
+  const rows = fit?.rows ?? Math.ceil(board.cards.length / 3);
+  const rowPx = fit?.rowPx ?? 0;
+  // A stem under ~4px can't hold the hatch; the whole board then draws its
+  // middle fill as a wash, so one board never shows it two ways.
+  const thinnest = Math.min(...layout.glyphs.map((g) => g.stem || Infinity));
+  const wash = rowPx > 0 && (thinnest * rowPx) / layout.height < 4;
 
   return (
     <div data-level="typeset" className="mx-auto flex w-full max-w-md grow flex-col px-5 pb-5 md:max-w-lg [@media(max-height:720px)]:pb-3">
@@ -235,54 +269,91 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
       )}
 
 
-      {state.hintState.facts.length > 0 && !state.solved && (
-        <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-2 text-xs text-ink-soft" aria-label="Hints about an unfound set">
-          <li className="font-semibold">Unfound set:</li>
-          {state.hintState.facts.map((f, i) => (
-            <li key={f.attribute}>
-              {i > 0 && <span aria-hidden>· </span>}
-              {hintLabel(board, f)}
-            </li>
-          ))}
-        </ul>
+      {/* The status line, like every sibling's progress readout: the count
+          of sets found, then the hint facts. Its height is held from the
+          first frame so a hint never moves the board. */}
+      {!isTutorial && (
+        <div className="pt-1 text-sm leading-5 text-ink-soft">
+          <p>
+            <span className="font-semibold text-ink">
+              {state.found.length}/{board.sets.length}
+            </span>{" "}
+            sets found
+          </p>
+          <ul className="flex min-h-4 flex-wrap items-baseline gap-x-1.5 text-xs leading-4" aria-label="Hints about an unfound set">
+            {state.hintState.facts.length > 0 && !state.solved && (
+              <>
+                <li className="font-semibold">Unfound set:</li>
+                {state.hintState.facts.map((f, i) => (
+                  <li key={f.attribute}>
+                    {i > 0 && <span aria-hidden>· </span>}
+                    {hintLabel(board, f).toLowerCase()}
+                  </li>
+                ))}
+              </>
+            )}
+          </ul>
+        </div>
       )}
 
-      {/* The floor is the touch floor in PX (44px cards plus gaps), not rem:
-          a rem floor grows with Huge text and pushes the page into a scroll
-          long before a card is too small to tap. */}
-      <div className="relative mt-3 flex flex-1 [@media(max-height:720px)]:mt-2" style={{ minHeight: rows * 44 + (rows - 1) * 8 }}>
+      {/* Measured (see fitBoard). The floor is the touch floor in PX while
+          the board is in play — a rem floor grows with Huge text and pushes
+          the page into a scroll long before a card is too small to tap. A
+          solved board takes no taps, so it may shrink under it. */}
+      <div
+        ref={boxRef}
+        className="relative mt-2 flex min-h-0 flex-1 [@media(max-height:720px)]:mt-1.5"
+        style={{ minHeight: state.solved ? 0 : rows * MIN_CARD + (rows - 1) * CARD_GAP }}
+      >
         <div
-          className="absolute inset-0 grid gap-2 select-none touch-manipulation"
+          className="absolute inset-0 grid select-none touch-manipulation"
           style={{
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: CARD_GAP,
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
           }}
         >
           {board.cards.map((card, i) => {
             const selected = state.selected.includes(i);
+            const found = inFoundSet.has(i);
+            // A deal that doesn't fill the last row (the tutorial's nine in
+            // two columns) centers its last card rather than leaving it left.
+            const lone = i === board.cards.length - 1 && board.cards.length % cols !== 0;
             return (
               <button
                 key={i}
+                style={lone ? { gridColumn: "1 / -1", justifySelf: "center", width: `calc((100% - ${(cols - 1) * CARD_GAP}px) / ${cols})` } : undefined}
                 type="button"
                 aria-pressed={selected}
-                aria-label={describeCard(board, card)}
+                aria-label={`${describeCard(board, card)}, row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}${found ? ", in a found set" : ""}`}
                 disabled={state.solved}
                 onPointerDown={(e) => e.preventDefault()}
-                onClick={() => dispatch({ type: "tap", index: i })}
+                onClick={() => tapCard(i)}
                 className={[
-                  // A size container: the row below sizes itself from the card.
-                  "flex min-h-11 items-center justify-center rounded-xl border bg-surface-raised transition-[box-shadow,background-color] duration-100 [container-type:size]",
-                  selected ? "border-accent bg-surface-tint shadow-[inset_0_0_0_2px_var(--color-accent)]" : "border-line",
+                  "relative flex items-center justify-center rounded-xl border bg-surface-raised transition-[transform,box-shadow,border-color] duration-100",
+                  // Selected LIFTS, with a check: a shape change, not only a tint.
+                  selected
+                    ? "-translate-y-1 border-accent shadow-[0_0_0_1px_var(--color-accent),0_8px_16px_-8px_rgb(0_0_0/0.45)]"
+                    : "border-line",
                 ].join(" ")}
               >
-                <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} style={{ height: cardRowHeight }} />
+                {rowPx > 0 && (
+                  <Glyph layout={layout} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} wash={wash} rowPx={rowPx} style={{ height: rowPx }} />
+                )}
+                {selected && (
+                  <span aria-hidden className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-surface">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                )}
+                {/* A card can be in more than one set, so a found card stays
+                    in play; the dot only says it has been used once. */}
+                {found && !selected && <span aria-hidden className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-ink-soft/60" />}
               </button>
             );
           })}
         </div>
-        {/* Centered over the board, not above it: the running hint list
-            sits just above the board and must stay readable. */}
-        <GameToast toast={toast} className="top-1/2 -translate-y-1/2" />
+        {/* Above the board, over the status line — never over the cards. */}
+        <GameToast toast={toast} className="bottom-full mb-1" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -419,10 +490,7 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
       <TutorialPrompt enabled={isDaily} gameId="typeset" gameName="Typeset" loadSeen={loadTutorialSeen} markSeen={markTutorialSeen} />
 
       <div aria-live="polite" role="status" className="sr-only">
-        {toast && <span key={toast.nonce}>{toast.text}</span>}
-      </div>
-      <div aria-live="polite" className="sr-only">
-        {selectionAnnounce}
+        {announce && <span key={announce.nonce}>{announce.text}</span>}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useId, type CSSProperties, type SVGProps } from "react";
 import type { Value } from "../engine/sets";
-import { copyTransform, rowWidth, type GlyphLayout } from "./layout";
+import { copyTransform, OPEN_STROKE, rowWidth, type GlyphLayout } from "./layout";
 
 /**
  * One drawn glyph in one of the three fills. Settled across four rounds
@@ -19,8 +19,13 @@ import { copyTransform, rowWidth, type GlyphLayout } from "./layout";
  *   below ~18px and reads as solid; outside, every stroke keeps its full
  *   width as a hollow channel at any size. The fill on top also hides any
  *   contour seams the bake didn't merge.
- * - TRAY size (`mini`): a hatch can't resolve at ~14px, so the middle fill
- *   becomes a flat wash plus keyline there.
+ * - TRAY size (`mini`), and boards whose thinnest stem is under ~4px at the
+ *   size drawn (`wash`): a hatch can't resolve there and smears into a pink
+ *   or pale solid, so the middle fill becomes a flat wash plus keyline. The
+ *   caller decides per BOARD, never per glyph, so one board never shows the
+ *   middle fill two ways.
+ * - Open copies are spaced an extra outline width apart (`rowPx` gives the
+ *   px-to-units scale), or the outside outlines of a script meet.
  *
  * Stroke widths are in CSS px (non-scaling-stroke), so the keyline and
  * the open band are the same weight on every card at every Text size.
@@ -33,6 +38,10 @@ interface Props {
   ink: Value;
   fill: Value;
   mini?: boolean;
+  /** Draw the middle fill as a flat wash instead of the cross-hatch. */
+  wash?: boolean;
+  /** The row's rendered height in px, when known; spaces open copies apart by their outline. */
+  rowPx?: number;
   /** Paint the glyph in neutral ink (the ? sheet, credits), ignoring `ink`. */
   neutral?: boolean;
   className?: string;
@@ -40,10 +49,12 @@ interface Props {
   style?: CSSProperties;
 }
 
-export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, neutral = false, className, style }: Props) {
+export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, wash = false, rowPx, neutral = false, className, style }: Props) {
   // useId's characters («r1», :r1:) are not safe inside url(); keep [\w-].
   const id = `ts-hatch-${useId().replace(/[^\w-]/g, "")}`;
-  const width = rowWidth(layout, glyph, count);
+  const flat = mini || wash;
+  const extraGap = fill === 2 && rowPx ? (OPEN_STROKE * layout.height) / rowPx : 0;
+  const width = rowWidth(layout, glyph, count, extraGap);
   const color = neutral ? "var(--color-ink)" : `var(--typeset-ink-${ink})`;
   const pitch = layout.height * 0.075;
   const line = pitch * 0.23;
@@ -52,12 +63,12 @@ export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, neutr
   if (fill === 0) {
     paint = { style: { fill: color } };
   } else if (fill === 1) {
-    paint = mini
+    paint = flat
       ? { style: { fill: neutral ? "var(--color-ink-soft)" : `var(--typeset-wash-${ink})`, stroke: color, strokeWidth: 0.75 } }
       : { style: { fill: `url(#${id})`, stroke: color, strokeWidth: 0.75 } };
   } else {
     paint = {
-      style: { fill: "var(--color-surface-raised)", stroke: color, strokeWidth: mini ? 2 : 3, paintOrder: "stroke" },
+      style: { fill: "var(--color-surface-raised)", stroke: color, strokeWidth: mini ? 2 : OPEN_STROKE, paintOrder: "stroke" },
     };
   }
 
@@ -70,7 +81,7 @@ export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, neutr
       aria-hidden
       focusable="false"
     >
-      {fill === 1 && !mini && (
+      {fill === 1 && !flat && (
         <defs>
           <pattern id={id} width={pitch} height={pitch} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width={pitch} height={pitch} style={{ fill: neutral ? "var(--color-tile)" : `var(--typeset-tint-${ink})` }} />
@@ -83,7 +94,7 @@ export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, neutr
         <path
           key={k}
           d={layout.glyphs[glyph].d}
-          transform={copyTransform(layout, glyph, k)}
+          transform={copyTransform(layout, glyph, k, extraGap)}
           vectorEffect="non-scaling-stroke"
           strokeLinejoin="round"
           {...paint}

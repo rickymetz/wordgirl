@@ -8,7 +8,7 @@ export function rowStatus(day: ArchivedDay): { text: string; done: boolean } {
   }
   const extras = [
     day.misses ? `${day.misses} ${day.misses === 1 ? "miss" : "misses"}` : null,
-    day.hints ? "used hint" : null,
+    day.hints ? `${day.hints} ${day.hints === 1 ? "hint" : "hints"}` : null,
   ].filter(Boolean);
   return { text: [`${day.setsFound} sets`, ...extras].join(" · "), done: true };
 }
@@ -25,7 +25,7 @@ const config: GameArchiveConfig<ArchivedDay, TypesetStats> = {
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.solved },
     { label: "Played", value: stats.played },
-    { label: "Solve rate", value: stats.played > 0 ? `${Math.round((100 * stats.solved) / stats.played)}%` : "–" },
+    { label: "Win %", value: stats.played > 0 ? `${Math.round((100 * stats.solved) / stats.played)}%` : "–" },
   ],
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => rowStatus(day),

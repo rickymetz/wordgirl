@@ -136,7 +136,7 @@
   --level-doublet: light-dark(#92400e, #fbbf24);    /* amber */
   --level-serpentine: light-dark(#4d7c0f, #a3e635); /* lime */
   --level-sixfold: light-dark(#4338ca, #818cf8);    /* indigo */
-  --level-typeset: light-dark(#57534e, #d6d3d1);    /* stone: paper and ink */
+  --level-typeset: light-dark(#6b3f86, #d4b0f5);    /* aubergine: book cloth */
 
   /* The rainbow that borders the "every puzzle done" banner. Its stops
      are DECORATIVE, not the AA-tuned game accents: a border carries no
@@ -151,7 +151,7 @@
   --roundup-c4: light-dark(#ea580c, #fbbf24); /* orange */
   --roundup-c5: light-dark(#65a30d, #a3e635); /* lime */
   --roundup-c6: light-dark(#4f46e5, #818cf8); /* indigo */
-  --roundup-c7: light-dark(#78716c, #d6d3d1); /* stone */
+  --roundup-c7: light-dark(#7e3fa6, #d4b0f5); /* aubergine */
 
   /* Confetti. Decorative like the rainbow above and tuned the same way,
      but the reason it MUST be a light-dark() pair is sharper here: a
@@ -242,8 +242,11 @@
 /* Doublet — warm amber. */
 [data-level="doublet"] { --color-accent: var(--level-doublet); }
 
-/* Typeset — stone. The cards carry three inks of their own (below), so the
-   chrome stays the color of paper and press ink and never competes. */
+/* Typeset — aubergine. Stone at first, so the chrome would never compete
+   with the three card inks below; next to six saturated siblings it read as
+   switched off (the hub date, the tabs, the ¶). Aubergine is the hue
+   farthest from every sibling accent AND every ink (OKLab dE >= 12.8 in
+   both themes, measured), so the selection ring never reads as a card ink. */
 [data-level="typeset"] {
   --color-accent: var(--level-typeset);
 }
@@ -258,14 +261,15 @@
    - they are GRAPHICS, so they clear 3:1, not 4.5:1: amber is 3.8:1 on
      white, the dark inks 4.3:1+ on the dark card. Never set text in them.
    --typeset-tint-N is the cross-hatch's ground (25% light / 30% dark;
-   a 22% wash read as a dim smear on dark) and --typeset-wash-N the flat
+   a 22% wash read as a dim smear on dark; light amber takes 35%, its
+   25% ground vanished on white) and --typeset-wash-N the flat
    middle fill tray glyphs use, too small to resolve a hatch. */
 :root {
   --typeset-ink-0: light-dark(#991b1b, #ef4444);
   --typeset-ink-1: light-dark(#ca6a04, #fcd34d);
   --typeset-ink-2: light-dark(#2563eb, #38bdf8);
   --typeset-tint-0: light-dark(color-mix(in oklab, #991b1b 25%, #ffffff), color-mix(in oklab, #ef4444 30%, #211f26));
-  --typeset-tint-1: light-dark(color-mix(in oklab, #ca6a04 25%, #ffffff), color-mix(in oklab, #fcd34d 30%, #211f26));
+  --typeset-tint-1: light-dark(color-mix(in oklab, #ca6a04 35%, #ffffff), color-mix(in oklab, #fcd34d 30%, #211f26));
   --typeset-tint-2: light-dark(color-mix(in oklab, #2563eb 25%, #ffffff), color-mix(in oklab, #38bdf8 30%, #211f26));
   --typeset-wash-0: light-dark(color-mix(in oklab, #991b1b 40%, #ffffff), color-mix(in oklab, #ef4444 45%, #211f26));
   --typeset-wash-1: light-dark(color-mix(in oklab, #ca6a04 40%, #ffffff), color-mix(in oklab, #fcd34d 45%, #211f26));

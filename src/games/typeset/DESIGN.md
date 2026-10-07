@@ -38,10 +38,32 @@ same.
 A card's copies are set as one row, spaced edge-to-edge by a gap measured
 from the ink (13% of the board's mean ink height), not dropped into fixed
 slots: fixed square slots left narrow glyphs like `?` and `¶` floating far
-apart. Every row on a board shares one height, the lesser of 66% of the
-card's height and what lets the board's widest possible row (three of its
-widest glyph) fit the card's width. Both terms are container units, so a
-glyph is the same size on every card whatever its count.
+apart. Open copies get an extra outline width between them, or a script's
+outside outlines meet.
+
+The board is **measured** and dealt into whichever grid draws the glyphs
+largest (`fitBoard`). A row is three copies across, so three columns of
+portrait cards are width-bound and waste their height: on a phone, two
+columns of landscape cards draw the type about half again as large. Every
+row on a board shares one px height (80% of the card's height, or what
+fits the widest possible row across 86% of its width), so a glyph is the
+same size on every card whatever its count. The column count is held once
+the board is solved, so the cards keep their shape when the results take
+the space. Cards never drop below the 44px touch floor while in play.
+
+Where the board's thinnest stem (measured at bake time, 2 × area /
+perimeter) would draw under 4px, the whole board's middle fill becomes the
+tray's flat wash: a hatch smears on a stroke that thin. The choice is per
+board, never per glyph, so one board never shows the middle fill two ways.
+
+## Status and feedback
+
+Like every sibling, the board has a progress line ("1/4 sets found"), and
+hint facts sit on the line under it, which holds its height so a hint never
+moves the board. A hint is not also a toast; found/miss toasts sit above
+the board, never over the cards. A selected card lifts and wears a check
+(a shape change, not only a tint); a card in a found set gets a small dot,
+not a cross-out, because a card can belong to more than one set.
 
 ## Faces
 
@@ -66,7 +88,16 @@ Light `#991b1b / #ca6a04 / #2563eb`, dark `#ef4444 / #fcd34d / #38bdf8`.
   as dark as `#b45309`, which landed on blue's lightness.
 - `scripts/validate_palette.js` checks contrast, simulated deuteranopia
   and the lightness order. These are a documented exception to "one palette
-  key per game"; the chrome accent is a neutral stone.
+  key per game". The chrome accent is aubergine: it began as a neutral
+  stone so it would never compete with the inks, but beside six saturated
+  siblings it read as switched off. Aubergine is the hue farthest from every
+  sibling accent and every ink (OKLab ΔE ≥ 12.8 in both themes), so the
+  selection ring never reads as a card ink.
+- Light amber was tested against an ochre (#a87a00, suggested in review)
+  and goldenrod (#b8860b). Ochre sits CLOSER to red under simulated
+  deuteranopia; goldenrod separates a little more but fades on white. At
+  the larger card sizes the current amber holds, so it stays. Its hatch
+  ground is 35% (25% vanished on white).
 
 ## Glyphs
 

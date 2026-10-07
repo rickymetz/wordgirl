@@ -10,8 +10,11 @@ import { layoutOutlines, type Outline } from "./layout";
 // The first pool entry's three glyphs, baked into their own 2 KB file so
 // the hub bundle never carries the full outline set.
 const LAYOUT = layoutOutlines(previewGlyphs as unknown as [Outline, Outline, Outline], "charset");
-/** One row height for all three cards: the widest row fills 24px of a 28px card. */
-const ROW_H = Math.min(18, 24 / LAYOUT.maxRowAspect);
+/** Cards like the board's on a phone: landscape, stacked, about as big as the siblings' art. */
+const CARD_W = 76;
+const CARD_H = 27;
+/** One row height for all three cards, as on the board (see fitBoard). */
+const ROW_H = Math.floor(Math.min(0.8 * CARD_H, (0.86 * CARD_W) / LAYOUT.maxRowAspect));
 const CARDS: Card[] = [
   [0, 0, 0, 0],
   [1, 1, 1, 1],
@@ -20,10 +23,10 @@ const CARDS: Card[] = [
 
 export function TypesetPreview() {
   return (
-    <div className="flex gap-[3px]" aria-hidden>
+    <div className="flex flex-col gap-[3px]" aria-hidden>
       {CARDS.map((card, i) => (
-        <div key={i} className="flex h-[38px] w-[28px] items-center justify-center rounded-md bg-surface">
-          <Glyph layout={LAYOUT} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} mini style={{ height: ROW_H }} />
+        <div key={i} className="flex items-center justify-center rounded-md border border-line bg-surface" style={{ width: CARD_W, height: CARD_H }}>
+          <Glyph layout={LAYOUT} glyph={card[0]} count={card[1] + 1} ink={card[2]} fill={card[3]} mini rowPx={ROW_H} style={{ height: ROW_H }} />
         </div>
       ))}
     </div>
