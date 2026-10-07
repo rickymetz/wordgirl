@@ -26,8 +26,10 @@ describe("schedule", () => {
     }
   });
 
-  // Pins history: if this changes, past days moved and archive saves are
-  // stranded. Only update it alongside a TYPESET_VERSION bump.
+  // Pins history: if a DEAL or an entry's position changes, past days moved
+  // and archive saves are stranded (only alongside a TYPESET_VERSION bump).
+  // A glyph changing here is an entry fixed in place (see pool.ts): 10-07,
+  // 10-09 and 10-11 were re-set on launch day by legibility.test.ts.
   it("keeps the first week where it is", () => {
     const week = dateKeyRange("2026-10-07", "2026-10-13").map((d) => {
       const c = dailyBoard(d, "charset");
@@ -36,11 +38,11 @@ describe("schedule", () => {
     });
     expect(week).toMatchInlineSnapshot(`
       [
-        "2026-10-07 &@#/fraunces e:literata,jost,lobster 4+4",
+        "2026-10-07 &@?/fraunces e:bodoni-moda,jost,lobster 4+4",
         "2026-10-08 agR/jost R:bodoni-moda,archivo-black,roboto-slab 5+4",
-        "2026-10-09 αγξ/literata W:literata,roboto-slab,lobster 4+5",
+        "2026-10-09 αγξ/literata d:eb-garamond,archivo-black,lobster 4+5",
         "2026-10-10 Ags/archivo-black a:bodoni-moda,jost,kaushan-script 6+4",
-        "2026-10-11 £₹₩/literata &:eb-garamond,archivo-black,kaushan-script 6+4",
+        "2026-10-11 £₹₩/literata &:eb-garamond,archivo-black,lobster 6+4",
         "2026-10-12 ßÆØ/eb-garamond k:jost,roboto-slab,kaushan-script 6+4",
         "2026-10-13 ₽£$/jost g:eb-garamond,jost,lobster 5+4",
       ]
