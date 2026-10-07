@@ -457,7 +457,9 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 - NEVER hand-roll an archive page. Render
   `components/GameArchive.tsx` with a `GameArchiveConfig`: gameId,
   accent (= accentLevel), epoch, the two loaders, `hasPlayed`, six
-  `statTiles`, `isDone`, and `rowStatus`. The shared component owns
+  `statTiles` (or eight, which go four across — Crosshatch's; the
+  callback also gets the loaded days, for a tile derived from history),
+  `isDone`, and `rowStatus`. The shared component owns
   ALL archive layout/colors (stats grid + calendar mosaic on tinted
   panels, neutral not-played cells, scoreboard rows). ~30 lines of
   config per game — see either game's `ui/ArchivePage.tsx`.

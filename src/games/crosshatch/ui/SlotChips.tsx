@@ -12,9 +12,9 @@ import {
 /**
  * One chip per line showing its current content plus a verdict icon:
  * an X when the word doesn't work there, a grey check when it's
- * counted already (a normal state — winning grids reuse found words)
- * or fits only through a bonus-tier fill (accepted, never listed), a green
- * circled check for a new word. Tapping a chip aims the cursor at its
+ * counted already (a normal state — winning grids reuse found words,
+ * list or bonus), a green circled check for a new word — on the list or
+ * a bonus word, which fits but the list doesn't hold. Tapping a chip aims the cursor at its
  * line.
  */
 export function SlotChips({
@@ -25,7 +25,7 @@ export function SlotChips({
   onFocusSlot: (slot: Slot) => void;
 }) {
   const { puzzle } = state;
-  const found = new Set(state.found);
+  const found = new Set([...state.found, ...state.bonus]);
   const listed = new Set(targetWords(puzzle));
   const active = cursorSlot(state);
 
@@ -75,9 +75,9 @@ export function SlotChips({
                     }
                   : !listed.has(word)
                     ? {
-                        Icon: Check,
-                        tone: "text-ink-soft",
-                        label: "fits, not on the list",
+                        Icon: CircleCheck,
+                        tone: "text-good",
+                        label: "new bonus word",
                       }
                     : {
                         Icon: CircleCheck,

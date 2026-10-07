@@ -33,6 +33,12 @@ export const crosshatch: GameDefinition = {
         Object.values(b?.revealed ?? {}).reduce((m, pos) => m + pos.length, 0),
       0,
     );
+    // A board's value is its progress: list finds plus bonus finds, one
+    // for one, capped at the list (a hold-to-finish board reads full).
+    const value = (b: NonNullable<(typeof boards)[number]>) => {
+      const n = b.foundWords.length + (b.bonusWords?.length ?? 0);
+      return b.totalWords ? Math.min(n, b.totalWords) : n;
+    };
     // Multi-board days break out by level (banner sub-rows, inline in the
     // share); a lone pre-HARD_EPOCH board keeps the plain "N words" form.
     if (levels.length > 1) {
@@ -42,7 +48,7 @@ export const crosshatch: GameDefinition = {
         unit: "words",
         levels: levels.map((level, i) => ({
           label: capitalize(level),
-          value: boards[i]!.foundWords.length,
+          value: value(boards[i]!),
           elapsedMs: boards[i]!.elapsedMs,
           hints: Object.values(boards[i]!.revealed ?? {}).reduce(
             (m, pos) => m + pos.length,
@@ -57,7 +63,7 @@ export const crosshatch: GameDefinition = {
       emoji: "🧺",
       name: "Crosshatch",
       unit: "words",
-      value: boards[0]!.foundWords.length,
+      value: value(boards[0]!),
       elapsedMs,
       hints,
     };

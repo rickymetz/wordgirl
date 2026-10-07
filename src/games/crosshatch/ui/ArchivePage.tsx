@@ -51,7 +51,7 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
   loadAllDays: loadAllDailyProgress,
   loadStats,
   hasPlayed: (stats) => stats.played > 0,
-  statTiles: (stats) => [
+  statTiles: (stats, days) => [
     { label: "Streak", value: displayStreak(stats) },
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.solved },
@@ -65,6 +65,16 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
         : "—",
     },
     { label: "Words", value: stats.totalWords },
+    { label: "Bonus", value: stats.bonusWords },
+    // From the day saves, not the stats blob: they carry every day's
+    // hint record back to launch. "—" until they load.
+    {
+      label: "Hint-free",
+      value: days
+        ? Object.values(days).filter((d) => d.solved && d.hintLetters === 0)
+            .length
+        : "—",
+    },
   ],
   isDone: (day) => day.solved,
   rowStatus: (_dateKey, day) => rowStatus(day),

@@ -7,7 +7,7 @@ import { dictionaryOn } from "../../../lib/words/overlay";
 import { dailySeed, generateCrosshatch, parseLevel } from "../engine/generator";
 import type { Level } from "../engine/types";
 import { tutorialPuzzle } from "../engine/tutorial";
-import { isSolved, targetWords } from "../engine/scoring";
+import { targetWords } from "../engine/scoring";
 import {
   crosshatchPuzzleKey,
   loadDailyProgress,
@@ -109,6 +109,7 @@ export function useCrosshatchGame(mode: GameMode) {
     if (
       staleRecordRef.current &&
       s.found.length === 0 &&
+      s.bonus.length === 0 &&
       Object.keys(s.revealed).length === 0
     ) {
       return;
@@ -119,6 +120,7 @@ export function useCrosshatchGame(mode: GameMode) {
       dictVersion: DICT_VERSION,
       puzzleKey: pKey,
       foundWords: s.found,
+      bonusWords: s.bonus,
       grid: s.grid,
       revealed: s.revealed,
       totalWords,
@@ -183,6 +185,7 @@ export function useCrosshatchGame(mode: GameMode) {
           dispatch({
             type: "hydrate",
             found: saved.foundWords,
+            bonus: saved.bonusWords,
             grid: saved.grid ?? {},
             // Older saves predate hints — normalize.
             revealed: saved.revealed ?? {},
@@ -274,12 +277,9 @@ export function useCrosshatchGame(mode: GameMode) {
   const recordedRef = useRef(false);
   useEffect(() => {
     if (!persisted || !state.solved) return;
-    const total = totalWords;
-    if (
-      !recordedRef.current &&
-      !statsRecordedRef.current &&
-      isSolved(state.found.length, total)
-    ) {
+    // Any solve records: the whole list, or a hold-to-finish once list +
+    // bonus finds covered it (the reducer only solves on those two).
+    if (!recordedRef.current && !statsRecordedRef.current) {
       recordedRef.current = true;
       creditedRef.current = state.found.length;
       void recordDailySolved(
@@ -287,6 +287,7 @@ export function useCrosshatchGame(mode: GameMode) {
         level,
         state.found.length,
         mode.kind === "daily",
+        state.bonus.length,
       );
       return;
     }
@@ -305,7 +306,7 @@ export function useCrosshatchGame(mode: GameMode) {
   useEffect(() => {
     persistNow(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persisted, dateKey, state.found, state.grid, state.revealed, state.solved]);
+  }, [persisted, dateKey, state.found, state.bonus, state.grid, state.revealed, state.solved]);
 
   // Stop ALL further persistence for this mount (replay reset).
   const abandonSession = () => {

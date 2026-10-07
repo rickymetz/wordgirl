@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
-import { allWords, type GameState } from "../state/reducer";
+import { allWords, progressCount, type GameState } from "../state/reducer";
 
 /**
  * The words panel: every word of the day, shortest first then
  * alphabetical, blanks in place — where a blank sits between found
  * words is itself a gentle hint. Unfound words are tappable to aim the
  * next hint; hint-revealed letters show in the accent color, before
- * AND after the word is found.
+ * AND after the word is found. Bonus words — valid-grid words the list
+ * doesn't hold — follow in their own group, marked ✦. On a board finished
+ * by hold, the list words never found are spelled out, greyed, as missed.
  */
 export function WordsPanel({
   state,
@@ -27,6 +29,7 @@ export function WordsPanel({
   onSelectWord: (word: string) => void;
 }) {
   const recentFirst = [...state.found].reverse();
+  const bonusRecentFirst = [...state.bonus].reverse();
   // The word list depends only on the puzzle — not on every keystroke.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const words = useMemo(() => allWords(state), [state.puzzle]);
@@ -54,18 +57,28 @@ export function WordsPanel({
         className="flex w-full items-center justify-between gap-2 rounded-xl border border-line bg-surface-raised px-4 py-3 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm">
-          {recentFirst.length === 0 ? (
+          {recentFirst.length === 0 && bonusRecentFirst.length === 0 ? (
             <span className="text-ink-soft">Your words…</span>
           ) : (
-            recentFirst.map((word, i) => (
-              <span
-                key={word}
-                className={i === 0 ? "font-semibold uppercase" : "uppercase"}
-              >
-                {i > 0 && " "}
-                {word}
-              </span>
-            ))
+            <>
+              {recentFirst.map((word, i) => (
+                <span
+                  key={word}
+                  className={i === 0 ? "font-semibold uppercase" : "uppercase"}
+                >
+                  {i > 0 && " "}
+                  {word}
+                </span>
+              ))}
+              {bonusRecentFirst.map((word, i) => (
+                <span key={`bonus-${word}`} className="uppercase">
+                  {(recentFirst.length > 0 || i > 0) && " "}
+                  <span aria-hidden className="text-accent">✦</span>
+                  <span className="sr-only">bonus </span>
+                  {word}
+                </span>
+              ))}
+            </>
           )}
         </span>
         <motion.span
@@ -88,21 +101,37 @@ export function WordsPanel({
           >
             <div className="mb-3 flex items-center justify-between">
               <span className="text-xs font-semibold tracking-widest text-ink-soft uppercase">
-                {state.found.length}/{words.length} words
+                {progressCount(state)}/{words.length} words
               </span>
-              <button
-                type="button"
-                onClick={onHint}
-                disabled={state.found.length === words.length}
-                className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-40"
-              >
-                Hint
-              </button>
+              {/* A finished board has nothing left to hint. */}
+              {!state.solved && (
+                <button
+                  type="button"
+                  onClick={onHint}
+                  disabled={state.found.length === words.length}
+                  className="rounded-full bg-accent px-4 py-1.5 text-sm font-semibold text-surface active:scale-95 disabled:opacity-40"
+                >
+                  Hint
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {words.map((word) => {
                 const hinted = state.revealed[word] ?? [];
                 const isFound = state.found.includes(word);
+                // Finished by hold: the list words never found, spelled
+                // out so the player learns them.
+                if (!isFound && state.solved) {
+                  return (
+                    <span
+                      key={word}
+                      className="font-game text-xs text-ink-soft uppercase"
+                    >
+                      <span className="sr-only">missed </span>
+                      {word}
+                    </span>
+                  );
+                }
                 const letters = [...word].map((letter, i) =>
                   hinted.includes(i) ? (
                     <span
@@ -142,6 +171,21 @@ export function WordsPanel({
                 );
               })}
             </div>
+            {state.bonus.length > 0 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <span className="mb-2 block text-xs font-semibold tracking-widest text-ink-soft uppercase">
+                  <span aria-hidden className="text-accent">✦</span>{" "}
+                  {state.bonus.length} bonus
+                </span>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {state.bonus.map((word) => (
+                    <span key={word} className="font-game text-xs uppercase">
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

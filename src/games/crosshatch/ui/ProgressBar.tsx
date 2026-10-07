@@ -1,11 +1,17 @@
 const CHECKPOINTS = [25, 50, 70, 90, 100];
 
+/**
+ * `found` is the board's progress — list finds plus bonus finds, capped
+ * (`progressCount`); `bonus` adds the tally after the count.
+ */
 export function ProgressBar({
   found,
   total,
+  bonus = 0,
 }: {
   found: number;
   total: number;
+  bonus?: number;
 }) {
   const pct = total === 0 ? 0 : (found / total) * 100;
   return (
@@ -28,6 +34,7 @@ export function ProgressBar({
       </div>
       <span className="shrink-0 text-xs font-medium text-ink-soft">
         {found}/{total}
+        {bonus > 0 && ` · ${bonus} bonus`}
       </span>
     </div>
   );

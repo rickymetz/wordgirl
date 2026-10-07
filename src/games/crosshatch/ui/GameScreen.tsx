@@ -7,10 +7,12 @@ import {
   CircleCheck,
   CircleHelp,
   CornerDownLeft,
+  Flag,
   Layers,
   Lightbulb,
   ListChecks,
   Lock,
+  Sparkles,
   Repeat2,
   Target,
   X,
@@ -21,6 +23,7 @@ import { ShareButton } from "../../../components/ShareButton";
 import { DailyOutro } from "../../../components/game/DailyOutro";
 import { HomeLink } from "../../../components/HomeLink";
 import { DictionaryLink } from "../../../components/DictionaryLink";
+import { HoldButton } from "../../../components/HoldButton";
 import { trackCoach, trackHint } from "../../../lib/analytics";
 import { GameToast } from "../../../components/game/GameToast";
 import { ModalDialog } from "../../../components/ModalDialog";
@@ -45,9 +48,11 @@ import {
 } from "../state/persistence";
 
 import {
+  canFinish,
   hintLetterIndex,
   hintTarget,
   letterAt,
+  progressCount,
   slotsAt,
   slotWord,
   unfoundWords,
@@ -376,13 +381,21 @@ export function GameScreen({
     const r = state.lastResult;
     if (!r) return;
     const banked = (r.newWords ?? []).map((w) => w.toUpperCase());
+    const bonus = (r.newBonus ?? []).map((w) => w.toUpperCase());
+    const progress = `${progressCount(state)} of ${total}`;
     const messages: Record<string, string> = {
       correct:
         state.found.length === total
           ? "Perfect sweep!"
-          : banked.length === 1
-            ? `${banked[0]} — ${state.found.length} of ${total}`
-            : `${banked.length} new words — ${state.found.length} of ${total}`,
+          : bonus.length === 0
+            ? banked.length === 1
+              ? `${banked[0]} — ${progress}`
+              : `${banked.length} new words — ${progress}`
+            : banked.length === 0
+              ? bonus.length === 1
+                ? `${bonus[0]} — bonus word! ${progress}`
+                : `${bonus.length} bonus words — ${progress}`
+              : `${banked.length} new + ${bonus.length} bonus — ${progress}`,
       // Kept short enough to stay on ONE line: these are the longest
       // strings any game emits, and the pill is now capped to the
       // viewport, so wordier phrasing wraps to two lines on a phone.
@@ -574,7 +587,11 @@ export function GameScreen({
           watch. The words panel does not: it is a browse-the-day list whose
           job is aiming hints, and hints are off on the tutorial. Dropping
           it also keeps the grid and keyboard on-screen at large text. */}
-      <ProgressBar found={state.found.length} total={total} />
+      <ProgressBar
+        found={progressCount(state)}
+        total={total}
+        bonus={state.bonus.length}
+      />
 
       {!isTutorial && (
         <div className="pt-3">
@@ -647,15 +664,21 @@ export function GameScreen({
               </p>
             )}
             <p className="text-sm text-ink-soft">
-              {state.found.length}/{total} words
+              {progressCount(state)}/{total} words
+              {state.bonus.length > 0 ? ` · ${state.bonus.length} bonus` : ""}
               {hintCount > 0 ? ` · ${hintCount} hints` : ""}
             </p>
+            {state.found.length < total && (
+              <p className="-mt-2 text-xs text-ink-soft">
+                {total - state.found.length} missed — see Your words
+              </p>
+            )}
             {(mode.kind === "daily" || mode.kind === "archive") &&
               mode.dateKey &&
               solvedElapsedMs !== null && (
               <ShareButton
                 text={buildShareText(
-                  state.found.length,
+                  progressCount(state),
                   total,
                   hintCount,
                   mode.dateKey,
@@ -709,6 +732,24 @@ export function GameScreen({
               >
                 Clear grid
               </button>
+              {/* Bonus finds have covered the list: the board may end here
+                  (the unfound list words show as missed) or play on for
+                  the full sweep. Held, not tapped: it forfeits the rest.
+                  Beside Clear grid, with its height folded into that row
+                  (-my-2; the 44px floor is HoldButton's ::after), so it
+                  costs the board no room at Huge text. */}
+              {canFinish(state) && (
+                <HoldButton
+                  onHoldComplete={() => {
+                    setWordsOpen(false);
+                    dispatch({ type: "finish" });
+                  }}
+                  className="-my-2 rounded-full bg-accent px-3.5 py-1.5 text-sm font-semibold text-surface"
+                >
+                  <Flag aria-hidden className="h-4 w-4" />
+                  Hold to finish
+                </HoldButton>
+              )}
             </div>
             <Keyboard
               onLetter={(letter) => {
@@ -887,6 +928,18 @@ export function GameScreen({
                     Find <Key>every word</Key> to solve the board.{" "}
                     <Key>Your words</Key> lists them as ?-blanks — tap one,
                     then Hint, to reveal its next letter.
+                  </>
+                ),
+              },
+              {
+                Icon: Sparkles,
+                title: "Bonus words",
+                body: (
+                  <>
+                    A real word that fits but isn't on the list is a{" "}
+                    <Key>bonus word</Key>. Each one counts toward the
+                    total — once they cover it, <Key>hold to finish</Key>{" "}
+                    early, or keep going for the full list.
                   </>
                 ),
               },

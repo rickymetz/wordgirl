@@ -38,8 +38,13 @@ export interface GameArchiveConfig<Day extends ArchiveDayBase, Stats> {
   loadStats: () => Promise<Stats>;
   /** Show the stats grid at all (usually stats.played > 0). */
   hasPlayed: (stats: Stats) => boolean;
-  /** The six stat tiles, in display order. */
-  statTiles: (stats: Stats) => { label: string; value: string | number }[];
+  /** The stat tiles, in display order: six (three across), or eight
+   * (four across). `days` is the loaded day list, null until it lands —
+   * for a tile derived from history rather than kept in the stats blob. */
+  statTiles: (
+    stats: Stats,
+    days: Record<string, Day> | null,
+  ) => { label: string; value: string | number }[];
   /** The day reached its finish state (solved / completed). */
   isDone: (day: Day) => boolean;
   /** Scoreboard line under a played row's date. May suspend (use()). */
@@ -149,11 +154,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
       </div>
 
       {stats && config.hasPlayed(stats) && (
-        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
-          {config.statTiles(stats).map((tile) => (
-            <Stat key={tile.label} label={tile.label} value={tile.value} />
-          ))}
-        </div>
+        <StatGrid tiles={config.statTiles(stats, progress)} />
       )}
 
       <CalendarMosaic config={config} progress={progress ?? {}} />
@@ -309,6 +310,25 @@ function DayCell<Day extends ArchiveDayBase, Stats>({
     >
       {day}
     </Link>
+  );
+}
+
+function StatGrid({
+  tiles,
+}: {
+  tiles: { label: string; value: string | number }[];
+}) {
+  // Eight tiles go four across, so the grid stays two even rows.
+  return (
+    <div
+      className={`mb-5 grid gap-3 rounded-2xl bg-surface-tint px-5 py-4 ${
+        tiles.length === 8 ? "grid-cols-4" : "grid-cols-3"
+      }`}
+    >
+      {tiles.map((tile) => (
+        <Stat key={tile.label} label={tile.label} value={tile.value} />
+      ))}
+    </div>
   );
 }
 

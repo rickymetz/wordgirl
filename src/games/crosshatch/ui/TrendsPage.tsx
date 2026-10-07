@@ -45,6 +45,14 @@ export const config: GameTrendsConfig<ArchivedDay> = {
       label: "Words found",
       value: (d) => (d.foundWords.length > 0 ? d.foundWords.length : null),
     },
+    {
+      key: "bonus",
+      // Accrues from the day bonus words shipped; days saved before it
+      // are gaps (null), never zeros.
+      label: "Bonus words",
+      value: (d) =>
+        d.solved || d.foundWords.length > 0 ? d.bonusWords : null,
+    },
     solvedCounter<ArchivedDay>(
       "hints",
       "Hint letters",

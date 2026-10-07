@@ -17,3 +17,12 @@ export function targetWords(puzzle: CrosshatchPuzzle): string[] {
 export function isSolved(found: number, total: number): boolean {
   return total > 0 && found >= total;
 }
+
+/**
+ * The hold-to-finish gate: list finds plus bonus finds cover the list,
+ * one for one, while some of the list is still unfound (the whole list
+ * solves on its own). Finishing reveals the unfound list words as missed.
+ */
+export function canFinishEarly(found: number, bonus: number, total: number): boolean {
+  return total > 0 && found < total && bonus > 0 && found + bonus >= total;
+}
