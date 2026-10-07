@@ -1,4 +1,4 @@
-import { Check, CircleCheck, MoveDown, MoveRight, X } from "lucide-react";
+import { Check, CircleCheck, MoveDown, MoveRight, Sparkles, X } from "lucide-react";
 import { targetWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
@@ -12,9 +12,10 @@ import {
 /**
  * One chip per line showing its current content plus a verdict icon:
  * an X when the word doesn't work there, a grey check when it's
- * counted already (a normal state — winning grids reuse found words,
- * list or bonus), a green circled check for a new word — on the list or
- * a bonus word, which fits but the list doesn't hold. Tapping a chip aims the cursor at its
+ * counted already (a normal state — winning grids reuse found words),
+ * a green circled check for a new word. A bonus word — it fits, but the
+ * list doesn't hold it — takes a sparkle instead: accent while new, grey
+ * once banked, the ✦ that marks bonus words in Your words. Tapping a chip aims the cursor at its
  * line.
  */
 export function SlotChips({
@@ -25,7 +26,8 @@ export function SlotChips({
   onFocusSlot: (slot: Slot) => void;
 }) {
   const { puzzle } = state;
-  const found = new Set([...state.found, ...state.bonus]);
+  const found = new Set(state.found);
+  const bonus = new Set(state.bonus);
   const listed = new Set(targetWords(puzzle));
   const active = cursorSlot(state);
 
@@ -74,11 +76,17 @@ export function SlotChips({
                       label: "counted already",
                     }
                   : !listed.has(word)
-                    ? {
-                        Icon: CircleCheck,
-                        tone: "text-good",
-                        label: "new bonus word",
-                      }
+                    ? bonus.has(word)
+                      ? {
+                          Icon: Sparkles,
+                          tone: "text-ink-soft",
+                          label: "bonus word, counted already",
+                        }
+                      : {
+                          Icon: Sparkles,
+                          tone: "text-accent",
+                          label: "new bonus word",
+                        }
                     : {
                         Icon: CircleCheck,
                         tone: "text-good",

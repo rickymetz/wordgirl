@@ -905,7 +905,14 @@ export function GameScreen({
                       className="inline h-3.5 w-3.5 text-good"
                       strokeWidth={3}
                     />{" "}
-                    a new word. Tap a chip to jump to its line.
+                    a new word,{" "}
+                    <Sparkles
+                      aria-label="sparkle"
+                      className="inline h-3.5 w-3.5 text-accent"
+                      strokeWidth={2.5}
+                    />{" "}
+                    a bonus word (grey once counted). Tap a chip to jump to
+                    its line.
                   </>
                 ),
               },
