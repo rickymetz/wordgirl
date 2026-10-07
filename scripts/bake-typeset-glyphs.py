@@ -9,7 +9,7 @@ weight changes, and its output is committed — CI and the app need no
 Python.
 
 For every (face, character) pair the pool uses (scripts/typeset-glyph-
-manifest.ts prints them), it:
+manifest.mts prints them), it:
   1. fetches the face's static TTF at its weight from Google Fonts (all
      faces are OFL),
   2. fails loudly if the character is missing,
