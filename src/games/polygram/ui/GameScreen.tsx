@@ -79,13 +79,13 @@ interface Props {
   mode: GameMode;
   onNewPuzzle?: () => void;
   /** Archive: wipe the day's progress and start a fresh run. */
-  onReplay?: () => void;
+  onReplay?: () => Promise<void>;
   /** Tutorial: replay the script from step one. */
   onRestartTutorial?: () => void;
 }
 
-export function GameScreen({ mode, onRestartTutorial }: Props) {
-  const { state, dispatch, doneElapsedMs, hydratedAsSolved } =
+export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: Props) {
+  const { state, dispatch, doneElapsedMs, hydratedAsSolved, abandonSession } =
     usePolygramGame(mode);
   const level = currentLevel(state);
   const isTutorial = mode.kind === "tutorial";
@@ -108,6 +108,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
   // The coach sheet opens on demand only — the first-run introduction is
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
 
   // The words panel is controlled here so the lightbulb can open it.
@@ -221,7 +222,7 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
 
   // Physical keyboard support: letters type, Backspace deletes, Enter
   // submits, Escape closes the hint dialog.
-  const modalOpen = hintWarningOpen || coachOpen;
+  const modalOpen = hintWarningOpen || coachOpen || replayOpen;
   useEffect(() => {
     const letters = new Set(state.puzzle.letters.slice(0, level.size));
     const onKeyDown = (e: KeyboardEvent) => {
@@ -532,6 +533,24 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
               doneElapsedMs !== null && (
               <ShareButton text={buildShareText(state, mode.dateKey, doneElapsedMs)} gameId="polygram" />
             )}
+            {mode.kind === "archive" && onReplay && (
+              <button
+                type="button"
+                onClick={() => setReplayOpen(true)}
+                className="-my-3.5 touch-manipulation px-3 py-3.5 text-xs font-semibold text-ink-soft underline underline-offset-2"
+              >
+                Play again
+              </button>
+            )}
+            {mode.kind === "practice" && onNewPuzzle && (
+              <button
+                type="button"
+                onClick={onNewPuzzle}
+                className="mt-1 rounded-full bg-accent px-6 py-2.5 font-semibold text-surface active:scale-95"
+              >
+                New puzzle
+              </button>
+            )}
             {isDaily && (
               <DailyOutro gameId="polygram" loadStreak={outroStreak} />
             )}
@@ -576,6 +595,45 @@ export function GameScreen({ mode, onRestartTutorial }: Props) {
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {replayOpen && (
+        <ModalDialog
+          labelledBy="replay-dialog-title"
+          onClose={() => setReplayOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="replay-dialog-title" className="text-lg font-bold">
+              Play this day again?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              Every level clears and the clock restarts. Your first solve stays
+              counted in your stats.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setReplayOpen(false);
+                  abandonSession();
+                  void onReplay?.();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Play again
+              </button>
+              <button
+                type="button"
+                onClick={() => setReplayOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       {hintWarningOpen && (
         <ModalDialog

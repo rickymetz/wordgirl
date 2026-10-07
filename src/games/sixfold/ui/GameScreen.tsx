@@ -27,7 +27,7 @@ import { GameToast, useToast } from "../../../components/game/GameToast";
 import { TutorialBanner } from "../../../components/game/TutorialBanner";
 import { TutorialDone } from "../../../components/game/TutorialDone";
 import { trackCoach, trackHint } from "../../../lib/analytics";
-import { formatDateKey, formatDuration, formatShareDate } from "../../../lib/date";
+import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { pressHandlers } from "../../../lib/pressHandlers";
 import { SHARE_URL } from "../../../lib/share";
 import { useTutorialProgress } from "../../../lib/tutorial/useTutorialProgress";
@@ -38,6 +38,7 @@ import { tutorialStepIndex } from "../engine/tutorial";
 import { N } from "../engine/types";
 import {
   displayStreak,
+  isDaySolved,
   loadStats,
   loadTutorialSeen,
   markTutorialSeen,
@@ -129,6 +130,13 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   }, [showResults, state.solved, hydratedAsSolved]);
   const [coachOpen, setCoachOpen] = useState(false);
   const [replayOpen, setReplayOpen] = useState(false);
+
+  // Practice: offer a jump to the daily only while it's still unsolved.
+  const [dailySolved, setDailySolved] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (mode.kind !== "practice") return;
+    void isDaySolved(localDateKey()).then(setDailySolved);
+  }, [mode.kind]);
   const [hintAskOpen, setHintAskOpen] = useState(false);
 
   // Only the PLAYER's letters carry the repeat mark: a given is never the
@@ -313,6 +321,14 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
           <HomeLink />
         )}
         <span className="flex items-center gap-2">
+          {mode.kind === "practice" && dailySolved === false && (
+            <Link
+              to="/games/sixfold"
+              className="-my-3 inline-block py-3 text-sm font-semibold text-accent"
+            >
+              New daily puzzle
+            </Link>
+          )}
           {!state.solved && !isTutorial && (
             <button
               type="button"

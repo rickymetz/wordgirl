@@ -56,6 +56,14 @@ const config: GameArchiveConfig<ArchivedDay, CrosshatchStats> = {
     { label: "Best streak", value: stats.bestStreak },
     { label: "Solved", value: stats.solved },
     { label: "Played", value: stats.played },
+    // Derived from the two counts above (both count DAYS), so it needs
+    // no new persistence — the same tile Doublet shows.
+    {
+      label: "Win %",
+      value: stats.played > 0
+        ? `${Math.round((stats.solved / stats.played) * 100)}%`
+        : "—",
+    },
     { label: "Words", value: stats.totalWords },
   ],
   isDone: (day) => day.solved,
