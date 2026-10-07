@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { CircleHelp, Equal, Grid3x3, Layers, Lightbulb, Shapes } from "lucide-react";
+import { CircleHelp, Equal, Grid3x3, Layers, Lightbulb, Shapes, Type } from "lucide-react";
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
@@ -228,7 +228,6 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
         </p>
       )}
 
-      <Legend board={board} layout={layout} />
 
       {state.hintState.facts.length > 0 && !state.solved && (
         <ul className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-2 text-xs text-ink-soft" aria-label="Hints about an unfound set">
@@ -356,6 +355,11 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
             tutorialTo={isTutorial ? undefined : "/games/typeset/tutorial"}
             rules={[
               {
+                Icon: Type,
+                title: board.kind === "faces" ? "Today’s faces" : `Today: ${board.label}`,
+                body: <TodayGlyphs board={board} layout={layout} />,
+              },
+              {
                 Icon: Grid3x3,
                 title: "Find sets of three",
                 body: (
@@ -419,23 +423,22 @@ export function GameScreen({ mode, onBoardChange, onRestartTutorial }: Props) {
   );
 }
 
-/** The day's three glyphs, named — the key to the glyph attribute. */
-function Legend({ board, layout }: { board: Board; layout: GlyphLayout }) {
+/**
+ * The day's three glyphs, named — the key to the glyph attribute. Lives in
+ * the "?" sheet, not on the board: a row of labels between the tabs and the
+ * cards read as clutter, and cost the cards their height. Each card's
+ * aria-label already names its glyph.
+ */
+function TodayGlyphs({ board, layout }: { board: Board; layout: GlyphLayout }) {
   return (
-    <ul className="grid grid-cols-3 gap-1.5" aria-label={board.kind === "faces" ? "Today’s faces" : "Today’s characters"}>
+    <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
       {board.glyphs.map((g, i) => (
-        <li key={i} className="flex min-h-8 min-w-0 items-center justify-center gap-1.5 rounded-lg bg-surface-tint px-1.5 py-0.5 text-[11px] leading-tight text-ink-soft">
-          <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="h-6 w-6 shrink-0" />
-          {/* A letter names itself; anything else gets its name (or, on
-              the faces board, its family). */}
-          {board.kind === "faces" ? (
-            <span className="line-clamp-2">{FACES[g.face].family}</span>
-          ) : g.name !== g.char ? (
-            <span className="line-clamp-2">{g.name}</span>
-          ) : null}
-        </li>
+        <span key={i} className="inline-flex items-center gap-1">
+          <Glyph layout={layout} glyph={i as 0 | 1 | 2} ink={0} fill={0} neutral className="inline-block h-5 w-5 shrink-0" />
+          <span>{board.kind === "faces" ? `${FACES[g.face].name} (${FACES[g.face].family.toLowerCase()})` : g.name}</span>
+        </span>
       ))}
-    </ul>
+    </span>
   );
 }
 
