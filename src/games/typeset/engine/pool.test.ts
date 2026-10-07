@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
+import glyphs from "../glyphs.json";
 import { FACES } from "./faces";
 import { CHARSET_POOL, FACES_POOL } from "./pool";
+import { TUTORIAL_BOARDS } from "./tutorial";
+
+describe("baked outlines", () => {
+  // Fails after a pool edit until scripts/bake-typeset-glyphs.py is re-run.
+  it("has an outline for every (face, character) the pool and tutorial use", () => {
+    const baked = glyphs.glyphs as Record<string, unknown>;
+    const missing: string[] = [];
+    for (const e of CHARSET_POOL) for (const c of e.chars) if (!baked[`${e.face}:${c.char}`]) missing.push(`${e.face}:${c.char}`);
+    for (const e of FACES_POOL) for (const f of e.faces) if (!baked[`${f}:${e.char.char}`]) missing.push(`${f}:${e.char.char}`);
+    for (const b of TUTORIAL_BOARDS) for (const g of b.glyphs) if (!baked[`${g.face}:${g.char}`]) missing.push(`${g.face}:${g.char}`);
+    expect(missing).toEqual([]);
+  });
+});
 
 describe("charset pool", () => {
   it("gives every entry three distinct characters, none of them digits", () => {

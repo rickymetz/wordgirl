@@ -61,7 +61,7 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Beyond A–Z", face: "fraunces", chars: [ch("Þ", "thorn"), ch("ð", "eth"), ch("Œ", "OE ligature", "OE ligatures")], since: 0 },
   { theme: "Letters", face: "literata", chars: [letter("R"), letter("b"), letter("s")], since: 0 },
   { theme: "Signs & punctuation", face: "literata", chars: [ch("#", "number sign"), ch("?", "question mark"), ch("&", "ampersand")], since: 0 },
-  { theme: "Currency", face: "roboto-slab", chars: [ch("¢", "cent sign"), ch("€", "euro sign"), ch("₩", "won sign")], since: 0 },
+  { theme: "Currency", face: "roboto-slab", chars: [ch("¢", "cent sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("λ", "lambda"), ch("Ω", "omega"), ch("ψ", "psi")], since: 0 },
   { theme: "Letters", face: "roboto-slab", chars: [letter("h"), letter("e"), letter("y")], since: 0 },
   { theme: "Signs & punctuation", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
