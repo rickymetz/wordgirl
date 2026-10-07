@@ -305,6 +305,12 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   `data-level={accentLevel}` so `bg-accent`/`text-accent` resolve to
   the game's color. The root accent is neutral black/white — the hub
   and settings are monochrome; no surface wears a purple accent.
+  The one documented exception: Typeset's three CARD INKS
+  (`--typeset-ink-N`), because color is one of the attributes a set is
+  judged on. They are graphics (3:1 on the card, never text), each owns a
+  lightness rung in the same order in both themes, and
+  `validate_palette.js` checks all of it. Its chrome accent is still one
+  key (`typeset`, stone). See `typeset/DESIGN.md` before touching them.
 - Light-mode accents are ~700-weight shades: accent text on surface
   AND surface text on accent must clear WCAG AA (4.5:1).
 - Tinted panels use `bg-surface-tint` (6% accent light / 13% dark).
@@ -336,7 +342,7 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   else the pairing appears (docs, marketing). Share strings are the one
   exception: they LEAD with the game's emoji, so the first character in
   a pasted result identifies the game (🐍 Serpentine, 👯‍♂️ Doublet,
-  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Sixfold).
+  🔻 Polygram, 🪞 Pierglass, 🧺 Crosshatch, 🔠 Sixfold, 🖋️ Typeset).
 - Blanks are monospaced `?` in `font-game` (Rubik Mono One) wherever a
   hidden letter appears — chips, word lists, typed-word tray — so
   nothing reflows as letters fill in. That holds only in the DEFAULT
@@ -361,6 +367,9 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   ways; see the KNOWN GAP note in `pierglass/engine/lexicon.ts` before
   touching it. Don't add another: if a new rule leans on a glyph's shape,
   it has to hold in BOTH faces or not be a rule.
+  Typeset's faces board is NOT another: its cards are baked SVG outlines
+  (`typeset/glyphs.json`), art the Font setting never reaches, so the
+  same card looks the same in both settings and the rule holds.
 
 **Layout & interaction**
 - No game screen may have a page scroll when content fits. `#root` is

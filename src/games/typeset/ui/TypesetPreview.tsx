@@ -18,11 +18,11 @@ const CARDS: Card[] = [
 
 export function TypesetPreview() {
   return (
-    <div className="flex gap-1" aria-hidden>
+    <div className="flex gap-[3px]" aria-hidden>
       {CARDS.map((card, i) => (
-        <div key={i} className="flex h-[40px] w-[32px] items-center justify-center rounded-md bg-surface">
+        <div key={i} className="flex h-[38px] w-[28px] items-center justify-center rounded-md bg-surface">
           {Array.from({ length: card[1] + 1 }, (_, n) => (
-            <Glyph key={n} layout={LAYOUT} glyph={card[0]} ink={card[2]} fill={card[3]} mini className="h-4 w-[10px]" />
+            <Glyph key={n} layout={LAYOUT} glyph={card[0]} ink={card[2]} fill={card[3]} mini className="h-3.5 w-[8.5px]" />
           ))}
         </div>
       ))}
