@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { trackStarted, trackSolved } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { streakAdvance } from "../../../lib/daily/persistence";
 import { getDailyPuzzle } from "../engine/dailySeed";
 import { getPracticePuzzle } from "../engine/practice";
@@ -64,6 +64,10 @@ export function useSerpentineGame(mode: GameMode) {
     flush: () => persistRef.current(),
     resetKey: `${difficulty}:${dateKey}`,
   });
+
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
 
   const solvedElapsedMs = useRef<number | null>(null);
   const statsRecorded = useRef(false);
@@ -222,7 +226,7 @@ export function useSerpentineGame(mode: GameMode) {
 
   return {
     state,
-    dispatch,
+    dispatch: playerDispatch,
     puzzle,
     solvedElapsedMs: solvedElapsedMs.current,
     hydratedAsSolved: hydratedAsSolved.current,

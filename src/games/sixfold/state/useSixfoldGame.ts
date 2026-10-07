@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { trackSolved, trackStarted } from "../../../lib/analytics";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { localDateKey } from "../../../lib/date";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
@@ -101,6 +101,10 @@ export function useSixfoldGame(mode: GameMode) {
     flush: () => persistRef.current(),
     resetKey: dateKey,
   });
+
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress, so stray taps can't wipe the historical record.
@@ -255,7 +259,7 @@ export function useSixfoldGame(mode: GameMode) {
 
   return {
     state,
-    dispatch,
+    dispatch: playerDispatch,
     puzzle,
     pristine,
     puzzleKey: pKey,

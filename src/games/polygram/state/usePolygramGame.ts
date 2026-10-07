@@ -5,7 +5,7 @@ import {
   trackStarted,
 } from "../../../lib/analytics";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { dailySeed, generatePuzzle } from "../engine/generator";
 import { TUTORIAL_PUZZLE } from "../engine/tutorial";
 import {
@@ -114,6 +114,11 @@ export function usePolygramGame(mode: GameMode) {
     },
     resetKey: dateKey,
   });
+
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself. advanceLevel is the between-level timer, not a
+  // player input; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input, ["hydrate", "advanceLevel"]);
 
   // An old-dictionary save is on disk for this date: hold off writing
   // until real progress (a word or a hint), so stray taps can't wipe
@@ -303,5 +308,5 @@ export function usePolygramGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, doneElapsedMs, hydratedAsSolved: hydratedAsSolvedRef.current, abandonSession };
+  return { state, dispatch: playerDispatch, puzzle, doneElapsedMs, hydratedAsSolved: hydratedAsSolvedRef.current, abandonSession };
 }

@@ -1,6 +1,6 @@
 import { use, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { trackStarted, trackSolved } from "../../../lib/analytics";
-import { useDailyClock } from "../../../lib/daily/useDailyClock";
+import { useClockedDispatch, useDailyClock } from "../../../lib/daily/useDailyClock";
 import { DICT_VERSION } from "../../../lib/words/dictionary";
 import { loadDictionary } from "../../../lib/words/loader";
 import { dictionaryOn } from "../../../lib/words/overlay";
@@ -82,6 +82,10 @@ export function useDoubletGame(mode: GameMode) {
     },
     resetKey: `${dateKey}:${mode.difficulty}`,
   });
+
+  // The player's actions start the clock and stamp its solve time at
+  // the input itself; the internal hydrate dispatch bypasses the wrapper.
+  const playerDispatch = useClockedDispatch(dispatch, clock.input);
 
   const persistNow = (s: GameState) => {
     if (!persisted || !hydratedRef.current || abandonedRef.current) return;
@@ -226,5 +230,5 @@ export function useDoubletGame(mode: GameMode) {
     abandonedRef.current = true;
   };
 
-  return { state, dispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
+  return { state, dispatch: playerDispatch, puzzle, dict, solvedElapsedMs, hydratedAsSolved: alreadySolvedRef.current, abandonSession };
 }
