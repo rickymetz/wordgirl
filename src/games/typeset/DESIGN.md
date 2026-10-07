@@ -2,7 +2,7 @@
 
 Set, in type. Each day has two boards, played as tabs in either order:
 
-- **Character set** — a theme (Letters, Signs & punctuation, Currency,
+- **Character set** — a theme (Letters, Symbols, Currency,
   Beyond A–Z) and three characters set in one face. The glyph attribute is
   *which character*.
 - **Faces** — one letter in three faces from three different families. The

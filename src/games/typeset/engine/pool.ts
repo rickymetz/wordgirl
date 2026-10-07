@@ -23,7 +23,7 @@
  */
 import type { FaceId } from "./faces";
 
-export type Theme = "Letters" | "Signs & punctuation" | "Currency" | "Beyond A–Z";
+export type Theme = "Letters" | "Symbols" | "Currency" | "Beyond A–Z";
 
 export interface CharacterSpec {
   char: string;
@@ -50,23 +50,23 @@ const letter = (char: string): CharacterSpec => ch(char, char, `${char}’s`);
 
 export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "jost", chars: [letter("a"), letter("g"), letter("R")], since: 0 },
-  { theme: "Signs & punctuation", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("#", "number sign")], since: 0 },
+  { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("#", "number sign")], since: 0 },
   { theme: "Currency", face: "fraunces", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s’s"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O’s")], since: 0 },
   { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("k")], since: 0 },
-  { theme: "Signs & punctuation", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
+  { theme: "Symbols", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
   { theme: "Currency", face: "literata", chars: [ch("£", "pound sign"), ch("₹", "rupee sign"), ch("₩", "won sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("α", "alpha"), ch("γ", "gamma"), ch("ξ", "xi")], since: 0 },
   { theme: "Letters", face: "eb-garamond", chars: [letter("G"), letter("a"), letter("y")], since: 0 },
-  { theme: "Signs & punctuation", face: "jost", chars: [ch("%", "percent sign"), ch("&", "ampersand"), ch("?", "question mark")], since: 0 },
+  { theme: "Symbols", face: "jost", chars: [ch("%", "percent sign"), ch("&", "ampersand"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "eb-garamond", chars: [ch("$", "dollar sign"), ch("£", "pound sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "fraunces", chars: [ch("Þ", "thorn"), ch("ð", "eth"), ch("Œ", "OE ligature", "OE ligatures")], since: 0 },
   { theme: "Letters", face: "literata", chars: [letter("R"), letter("b"), letter("s")], since: 0 },
-  { theme: "Signs & punctuation", face: "literata", chars: [ch("#", "number sign"), ch("?", "question mark"), ch("&", "ampersand")], since: 0 },
+  { theme: "Symbols", face: "literata", chars: [ch("#", "number sign"), ch("?", "question mark"), ch("&", "ampersand")], since: 0 },
   { theme: "Currency", face: "roboto-slab", chars: [ch("¢", "cent sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("λ", "lambda"), ch("Ω", "omega"), ch("ψ", "psi")], since: 0 },
   { theme: "Letters", face: "roboto-slab", chars: [letter("h"), letter("e"), letter("y")], since: 0 },
-  { theme: "Signs & punctuation", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
+  { theme: "Symbols", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
   { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0 },
 ];
 

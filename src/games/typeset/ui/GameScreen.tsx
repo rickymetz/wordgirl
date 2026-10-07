@@ -35,7 +35,7 @@ const outroStreak = async (today: string) => displayStreak(await loadStats(), to
 
 const OTHER: Record<BoardKind, BoardKind> = { charset: "faces", faces: "charset" };
 
-/** Share names the board by kind, not its theme ("Signs & punctuation" alone would wrap a message bubble). */
+/** Share names the board by kind, not its theme (a theme like "Beyond A–Z" would push it past a message bubble). */
 const SHARE_KIND: Record<BoardKind, string> = { charset: "Characters", faces: "Faces" };
 
 export function buildShareText(board: Board, found: number, hints: number, dateKey: string, elapsedMs: number): string {
