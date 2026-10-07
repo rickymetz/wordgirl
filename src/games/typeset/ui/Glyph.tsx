@@ -11,7 +11,8 @@ import { copyTransform, OPEN_STROKE, rowWidth, type GlyphLayout } from "./layout
  * - CROSS-HATCH (middle): a 45° lattice over a 25–30% tint of the ink,
  *   with a thin full-ink keyline. Gestalt closure reads the letter; the
  *   tint holds thin strokes together (a bare hatch broke € bars and
- *   script hairlines into debris); the keyline keeps the silhouette crisp.
+ *   script hairlines into debris); the 0.5px keyline holds thin
+ *   faces together (without it a ? or a script f breaks into fragments).
  *   Hatch pitch scales with the glyph (~7.5% of the row height) so it stays a
  *   texture at every card size, but never finer than 4.5px with 1.1px lines
  *   (given `rowPx`): finer, a hatch on a thin face blurs into a pale solid,
@@ -66,7 +67,7 @@ export function Glyph({ layout, glyph, count = 1, ink, fill, mini = false, rowPx
   } else if (fill === 1) {
     paint = flat
       ? { style: { fill: neutral ? "var(--color-ink-soft)" : `var(--typeset-wash-${ink})`, stroke: color, strokeWidth: 0.75 } }
-      : { style: { fill: `url(#${id})`, stroke: color, strokeWidth: 1 } };
+      : { style: { fill: `url(#${id})`, stroke: color, strokeWidth: 0.5 } };
   } else {
     paint = {
       style: { fill: "var(--color-surface-raised)", stroke: color, strokeWidth: mini ? 2 : OPEN_STROKE, paintOrder: "stroke" },

@@ -62,7 +62,9 @@ The board **always cross-hatches** the middle fill. A flat-wash fallback
 for thin faces was tried and dropped: at board size it read as a pale tint
 (a fourth fill, said a review), and it contradicted every label and hint
 that says "cross-hatched". Instead the lattice never goes finer than 4.5px
-with 1.1px lines, and the hatched keyline is 1px. Only the tray's minis,
+with 1.1px lines. Its keyline is 0.5px (one device pixel on a phone): with
+no keyline, thin faces (a ?, a script f) fell apart into fragments, even
+over a 40% tint; at 1px it was heavier than thick glyphs need. Only the tray's minis,
 too small for any hatch, use the wash (55% ink), keyline included.
 
 ## Status and feedback
