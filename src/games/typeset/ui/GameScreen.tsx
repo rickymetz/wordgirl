@@ -28,7 +28,7 @@ import type { Verdict } from "../state/reducer";
 import { useTypesetGame, type GameMode } from "../state/useTypesetGame";
 import { Glyph } from "./Glyph";
 import { layoutGlyphs, type GlyphLayout } from "./glyphLayout";
-import { CARD_GAP, COLS, fitBoard, MIN_CARD, type BoardFit } from "./layout";
+import { CARD_ASPECT, CARD_GAP, COLS, fitBoard, MIN_CARD, type BoardFit } from "./layout";
 import { TUTORIAL_RECAP, TUTORIAL_STEPS } from "./tutorialSteps";
 
 const outroStreak = async (today: string) => displayStreak(await loadStats(), today);
@@ -513,11 +513,21 @@ function TodayGlyphs({ board, layout }: { board: Board; layout: GlyphLayout }) {
 /** One slot per set on the board; found sets fill in as mini cards. */
 function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout; found: string[] }) {
   const slots = Array.from({ length: board.sets.length }, (_, i) => found[i] ?? null);
+  // Mini cards are the board's card in miniature: the same CARD_ASPECT, and
+  // the row drawn in the same proportion (86% of the card's width for the
+  // widest row). An empty slot holds three invisible minis, so it is exactly
+  // as tall as a filled one and the tray never grows as sets are found.
+  const mini = "flex items-center justify-center rounded-md [container-type:size]";
+  const miniStyle = { aspectRatio: String(CARD_ASPECT) };
   return (
     <section aria-label={`${found.length} of ${board.sets.length} sets found`} className="grid grid-cols-2 gap-1.5">
       {slots.map((key, i) =>
         key === null ? (
-          <div key={i} className="h-9 rounded-lg border border-dashed border-line" />
+          <div key={i} aria-hidden className="grid grid-cols-3 gap-1 rounded-lg border border-dashed border-line p-[3px]">
+            {[0, 1, 2].map((k) => (
+              <div key={k} className={mini} style={miniStyle} />
+            ))}
+          </div>
         ) : (
           <div
             key={i}
@@ -526,12 +536,12 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
               .split(",")
               .map((idx) => describeCard(board, board.cards[Number(idx)]))
               .join(", ")}
-            className="flex h-9 gap-1 rounded-lg bg-surface-tint p-1"
+            className="grid grid-cols-3 gap-1 rounded-lg border border-transparent bg-surface-tint p-[3px]"
           >
             {key.split(",").map((idx) => {
               const card = board.cards[Number(idx)];
               return (
-                <div key={idx} className="flex flex-1 items-center justify-center rounded-md bg-surface-raised [container-type:size]">
+                <div key={idx} className={`${mini} bg-surface-raised`} style={miniStyle}>
                   <Glyph
                     layout={layout}
                     glyph={card[0]}
@@ -539,7 +549,7 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
                     ink={card[2]}
                     fill={card[3]}
                     mini
-                    style={{ height: `min(64cqh, ${(88 / layout.maxRowAspect).toFixed(2)}cqw)` }}
+                    style={{ height: `min(80cqh, ${(86 / layout.maxRowAspect).toFixed(2)}cqw)` }}
                   />
                 </div>
               );

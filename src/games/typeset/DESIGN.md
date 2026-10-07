@@ -53,6 +53,11 @@ the found-set tray. Every row on a board shares one px height, so a glyph is
 the same size on every card whatever its count. On a box too short for the
 1.5:1 cards they share the height instead, never below the 44px touch floor.
 
+The found-set tray's mini cards are the same card in miniature: 1.5:1, the
+row drawn in the same proportion. An empty slot holds three invisible minis,
+so it is exactly as tall as a filled one and the tray never grows as sets
+are found.
+
 Where the board's thinnest stem (measured at bake time, 2 × area /
 perimeter) would draw under 4px, the whole board's middle fill becomes the
 tray's flat wash: a hatch smears on a stroke that thin. The choice is per
