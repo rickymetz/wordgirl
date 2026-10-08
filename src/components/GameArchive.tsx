@@ -38,10 +38,18 @@ export interface GameArchiveConfig<Day extends ArchiveDayBase, Stats> {
   loadStats: () => Promise<Stats>;
   /** Show the stats grid at all (usually stats.played > 0). */
   hasPlayed: (stats: Stats) => boolean;
-  /** The six stat tiles, in display order. */
-  statTiles: (stats: Stats) => { label: string; value: string | number }[];
+  /** The stat tiles, in display order: six (three across), or eight
+   * (four across). `days` is the loaded day list, null until it lands —
+   * for a tile derived from history rather than kept in the stats blob. */
+  statTiles: (
+    stats: Stats,
+    days: Record<string, Day> | null,
+  ) => { label: string; value: string | number }[];
   /** The day reached its finish state (solved / completed). */
   isDone: (day: Day) => boolean;
+  /** The day has progress on it (default: any found word) — for a game
+   * whose finds aren't all in `foundWords` (Crosshatch's bonus words). */
+  hasProgress?: (day: Day) => boolean;
   /** Scoreboard line under a played row's date. May suspend (use()). */
   rowStatus: (dateKey: string, day: Day) => { text: string; done: boolean };
 }
@@ -116,7 +124,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
   // with actual results (it's the scoreboard).
   const playedDates = dates.filter((d) => {
     const saved = progress?.[d];
-    return saved && (config.isDone(saved) || saved.foundWords.length > 0);
+    return saved && (config.isDone(saved) || hasProgress(config, saved));
   });
 
   return (
@@ -149,11 +157,7 @@ export function GameArchive<Day extends ArchiveDayBase, Stats>({
       </div>
 
       {stats && config.hasPlayed(stats) && (
-        <div className="mb-5 grid grid-cols-3 gap-3 rounded-2xl bg-surface-tint px-5 py-4">
-          {config.statTiles(stats).map((tile) => (
-            <Stat key={tile.label} label={tile.label} value={tile.value} />
-          ))}
-        </div>
+        <StatGrid tiles={config.statTiles(stats, progress)} />
       )}
 
       <CalendarMosaic config={config} progress={progress ?? {}} />
@@ -285,7 +289,7 @@ function DayCell<Day extends ArchiveDayBase, Stats>({
   }
 
   const done = saved ? config.isDone(saved) : false;
-  const started = !done && (saved?.foundWords.length ?? 0) > 0;
+  const started = !done && !!saved && hasProgress(config, saved);
   const status = done ? "solved" : started ? "in progress" : "not played";
   const isToday = dateKey === today;
   const tone = done
@@ -309,6 +313,34 @@ function DayCell<Day extends ArchiveDayBase, Stats>({
     >
       {day}
     </Link>
+  );
+}
+
+function hasProgress<Day extends ArchiveDayBase, Stats>(
+  config: GameArchiveConfig<Day, Stats>,
+  day: Day,
+): boolean {
+  return config.hasProgress ? config.hasProgress(day) : day.foundWords.length > 0;
+}
+
+function StatGrid({
+  tiles,
+}: {
+  tiles: { label: string; value: string | number }[];
+}) {
+  // Eight tiles go two across on a phone (four rows) and four across
+  // where there is room: four across on a phone gave each tile ~60px,
+  // and a truncated "100%" read as "10…".
+  return (
+    <div
+      className={`mb-5 grid gap-3 rounded-2xl bg-surface-tint px-5 py-4 ${
+        tiles.length === 8 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"
+      }`}
+    >
+      {tiles.map((tile) => (
+        <Stat key={tile.label} label={tile.label} value={tile.value} />
+      ))}
+    </div>
   );
 }
 

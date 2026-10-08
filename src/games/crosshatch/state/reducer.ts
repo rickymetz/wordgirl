@@ -1,6 +1,6 @@
 import type { CrosshatchPuzzle, Slot, SlotDir } from "../engine/types";
 import { cellKey, comboKey, slotCells } from "../engine/types";
-import { isSolved, targetWords } from "../engine/scoring";
+import { canFinishEarly, isSolved, targetWords } from "../engine/scoring";
 
 export interface Cursor {
   row: number;
@@ -14,6 +14,8 @@ export interface SubmitResult {
   word?: string;
   /** Words banked by a correct submission, in slot order. */
   newWords?: string[];
+  /** Bonus words banked by the same submission, in slot order. */
+  newBonus?: string[];
   /** Monotonic counter so the UI can re-trigger animations on repeats. */
   nonce: number;
 }
@@ -25,6 +27,14 @@ export interface GameState {
   cursor: Cursor | null;
   /** Distinct words banked so far, in the order they were found. */
   found: string[];
+  /**
+   * Bonus words: words of a VALID grid that the day's list doesn't hold
+   * (a bonus-tier fill, or a word that only fits beside one), in the
+   * order found. Each counts toward the board's progress one for one, so
+   * a board can be finished on them (see `finish`), but hints and the
+   * list never aim at them.
+   */
+  bonus: string[];
   /** Hint reveals: word -> revealed letter positions. */
   revealed: Record<string, number[]>;
   /** Sticky: reached the solve threshold at some point (survives replays
@@ -43,9 +53,12 @@ export type GameAction =
   | { type: "clearEntry" }
   | { type: "submit" }
   | { type: "revealHint"; letterIndex: number; word?: string }
+  /** Hold-to-finish: end the board once list + bonus finds cover it. */
+  | { type: "finish" }
   | {
       type: "hydrate";
       found: string[];
+      bonus?: string[];
       grid: Record<string, string>;
       revealed: Record<string, number[]>;
       solved: boolean;
@@ -58,11 +71,29 @@ export function initialState(puzzle: CrosshatchPuzzle): GameState {
     grid: {},
     cursor: firstEditableCursor(puzzle),
     found: [],
+    bonus: [],
     revealed: {},
     solved: false,
     lastResult: null,
     invalids: 0,
   };
+}
+
+/**
+ * Words toward the board, out of `targetWords(puzzle).length`: list
+ * finds plus bonus finds, one for one, capped at the total — what the
+ * progress bar, the share and the roundup read.
+ */
+export function progressCount(state: Pick<GameState, "found" | "bonus" | "puzzle">): number {
+  return Math.min(state.found.length + state.bonus.length, targetWords(state.puzzle).length);
+}
+
+/** May the player hold to finish? See `canFinishEarly`. */
+export function canFinish(state: GameState): boolean {
+  return (
+    !state.solved &&
+    canFinishEarly(state.found.length, state.bonus.length, targetWords(state.puzzle).length)
+  );
 }
 
 function firstEditableCursor(puzzle: CrosshatchPuzzle): Cursor | null {
@@ -189,6 +220,14 @@ function cellIndexInSlot(slot: Slot, row: number, col: number): number {
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  // A solved board is over. Before bonus words that cost nothing to
+  // allow — every list word was found, so a physical keyboard's late
+  // Enter could only say "no new words" — but a board ended by hold has
+  // list words left, and banking them after the finish would move the
+  // saved time, the lifetime totals and the "missed" count.
+  if (state.solved && action.type !== "hydrate" && action.type !== "focusCell") {
+    return state;
+  }
   switch (action.type) {
     case "focusCell": {
       const slots = slotsAt(state.puzzle, action.row, action.col);
@@ -295,23 +334,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       // A valid grid banks every listed word not yet credited. Words are
       // the unit of progress — re-arranging already-found words earns
-      // nothing, so there's no cross-product sweeping. A bonus-tier fill
-      // (see BONUS_FILLS_EPOCH), and a word that only fits beside one,
-      // make the grid valid but are never banked.
+      // nothing, so there's no cross-product sweeping. A word of the grid
+      // that the list doesn't hold — a bonus-tier fill (see
+      // BONUS_FILLS_EPOCH), or a word that only fits beside one — banks
+      // as a BONUS word instead.
       const listed = targetWords(state.puzzle);
       const newWords = words.filter(
         (w) => listed.includes(w) && !state.found.includes(w),
       );
-      if (newWords.length === 0) return fail("nothingNew");
+      const newBonus = words.filter(
+        (w) => !listed.includes(w) && !state.bonus.includes(w),
+      );
+      if (newWords.length === 0 && newBonus.length === 0) return fail("nothingNew");
 
       const found = [...state.found, ...newWords];
       const total = listed.length;
       return {
         ...state,
         found,
+        bonus: [...state.bonus, ...newBonus],
+        // Only the WHOLE list solves on its own; bonus finds open the
+        // hold-to-finish instead (`finish`).
         solved: state.solved || isSolved(found.length, total),
-        lastResult: { type: "correct", newWords, nonce },
+        lastResult: { type: "correct", newWords, newBonus, nonce },
       };
+    }
+
+    case "finish": {
+      if (!canFinish(state)) return state;
+      return { ...state, solved: true };
     }
 
     case "revealHint": {
@@ -355,8 +406,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         found: action.found,
+        bonus: action.bonus ?? [],
         grid: action.grid,
         revealed: action.revealed,
+        // A save solved by hold-to-finish says so itself; only the whole
+        // list solves a board that was saved unsolved.
         solved:
           action.solved ||
           isSolved(action.found.length, targetWords(state.puzzle).length),

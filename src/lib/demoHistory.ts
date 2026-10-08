@@ -264,11 +264,14 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
   //   date would describe a board that never existed).
   {
     let totalWords = 0;
+    let bonusWords = 0;
     for (const d of played) {
       for (const level of levelsFor(d)) {
         const count = level === "normal" ? int(9, 13) : int(11, 15);
         totalWords += count;
         const words = Array.from({ length: count }, () => fakeWord(int(3, 6)));
+        const bonus = Array.from({ length: int(0, 3) }, () => fakeWord(int(3, 5)));
+        bonusWords += bonus.length;
         put(
           "crosshatch",
           level === "normal" ? `daily:${d}` : `daily:hard:${d}`,
@@ -276,6 +279,7 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
             ...dayBase(d, minutes(4, 15)),
             level,
             foundWords: words,
+            bonusWords: bonus,
             grid: {},
             revealed: revealedFor(words, 0.2),
             totalWords: count,
@@ -285,7 +289,7 @@ export async function seedDemoHistory(replace: boolean): Promise<boolean> {
         );
       }
     }
-    put("crosshatch", "stats", { ...streakBase, totalWords });
+    put("crosshatch", "stats", { ...streakBase, totalWords, bonusWords });
   }
 
   // — Pierglass: rows against par.

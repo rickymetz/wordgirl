@@ -10,6 +10,14 @@ const RELEASE_MS = 160;
 interface Props {
   /** Fires once, the moment the hold completes. */
   onHoldComplete: () => void;
+  /**
+   * A click that no press began: what Voice Control, Switch Access and a
+   * screen reader's double-tap send — they can't hold. Give them another
+   * way through (a confirmation dialog), or the control is unreachable.
+   * A finger or key that pressed and let go early is NOT this: that is a
+   * hold abandoned, and it stays a no-op.
+   */
+  onTapFallback?: () => void;
   /** Hold duration in ms. */
   holdMs?: number;
   children: ReactNode;
@@ -34,6 +42,7 @@ interface Props {
  */
 export function HoldButton({
   onHoldComplete,
+  onTapFallback,
   holdMs = HOLD_MS,
   children,
   disabled,
@@ -42,6 +51,9 @@ export function HoldButton({
 }: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const timerRef = useRef<number | null>(null);
+  // Set by a pointer or key press; a click that arrives without one is
+  // an assistive-tech activation (see onTapFallback).
+  const pressedRef = useRef(false);
   const hintId = useId();
 
   // The sweep is a background LAYER, not a child element: a background
@@ -52,7 +64,12 @@ export function HoldButton({
   const paint = useCallback((to: 0 | 1, ms: number) => {
     const el = buttonRef.current;
     if (!el) return;
-    el.style.transition = `background-size ${ms}ms linear`;
+    // !important: the global reduced-motion rule forces every transition
+    // to 0.01ms, which would fill the sweep instantly while the action
+    // still waits the full hold — a player who lets go when it LOOKS
+    // full cancels without knowing. The sweep is progress, not
+    // decoration, so it keeps its real duration.
+    el.style.setProperty("transition", `background-size ${ms}ms linear`, "important");
     el.style.backgroundSize = `${to * 100}% 100%`;
   }, []);
 
@@ -73,7 +90,7 @@ export function HoldButton({
     // hold that just started — the timer restarts, so the fill must too.
     const el = buttonRef.current;
     if (el) {
-      el.style.transition = "none";
+      el.style.setProperty("transition", "none", "important");
       el.style.backgroundSize = "0% 100%";
       void el.offsetWidth; // flush, so the reset is not coalesced away
     }
@@ -107,6 +124,7 @@ export function HoldButton({
       // Taps on a game surface must never steal focus from the board.
       onPointerDown={(e) => {
         e.preventDefault();
+        pressedRef.current = true;
         // Touch implicitly captures the pointer, which would suppress
         // the leave event — release it so dragging a finger off the
         // button aborts the hold the way it does with a mouse.
@@ -123,6 +141,7 @@ export function HoldButton({
         if (e.repeat) return;
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
+          pressedRef.current = true;
           start();
         }
       }}
@@ -130,10 +149,15 @@ export function HoldButton({
         if (e.key === " " || e.key === "Enter") cancel();
       }}
       onBlur={cancel}
+      onClick={() => {
+        const pressed = pressedRef.current;
+        pressedRef.current = false;
+        if (!pressed && !disabled) onTapFallback?.();
+      }}
       // The ::after is the 44px touch floor — an invisible expansion, so
       // a hold survives thumb drift without the button claiming 44px of
       // layout height on screens that are already budgeted to the pixel.
-      className={`relative inline-flex items-center justify-center touch-manipulation select-none outline-none after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-40 ${className}`}
+      className={`relative inline-flex items-center justify-center touch-manipulation select-none outline-none after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-40 ${className}`}
       style={{
         touchAction: "manipulation",
         // One layer: the fill, with its last 2px in the label's own

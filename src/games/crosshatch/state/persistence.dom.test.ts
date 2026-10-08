@@ -122,6 +122,27 @@ describe("stats recording", () => {
     expect(saved?.foundWords).toEqual(["out", "tin", "van"]);
   });
 
+  it("a stale tab's save never destroys another tab's bonus words", async () => {
+    const base = {
+      dateKey: "2026-07-06",
+      dictVersion: DICT_VERSION,
+      foundWords: ["out"],
+      grid: {},
+      revealed: {},
+      solved: false,
+    };
+    await saveDailyProgress({ ...base, bonusWords: ["hazy", "oxen"], elapsedMs: 5000 });
+    await saveDailyProgress({ ...base, bonusWords: ["hazy"], elapsedMs: 9000 });
+    expect((await loadDailyProgress("2026-07-06"))?.bonusWords).toEqual(["hazy", "oxen"]);
+  });
+
+  it("a solve credits the board's bonus words to the lifetime count, once", async () => {
+    await recordDailySolved("2026-07-06", "normal", 11, true, 3);
+    expect((await loadStats()).bonusWords).toBe(3);
+    await recordDailySolved("2026-07-05", "normal", 9, false);
+    expect((await loadStats()).bonusWords).toBe(3); // no bonus words passed
+  });
+
   it("a pre-v17 save is a record, not resumable progress", async () => {
     // The v17 generator change rewrote every date's puzzle, so the
     // save's puzzleKey can't match — it must not hydrate the new
@@ -204,6 +225,7 @@ describe("stats recording", () => {
     const stats = await loadStats();
     expect(stats.played).toBe(3);
     expect(stats.totalWords).toBe(0); // missing field gets its default
+    expect(stats.bonusWords).toBe(0); // blobs from before bonus words
   });
 });
 
@@ -370,6 +392,17 @@ describe("two boards a day", () => {
     expect(day.elapsedMs).toBe(12000);
     expect(day.hintLetters).toBe(1);
     expect(day.invalids).toBe(3);
+    // Neither save carries bonus words: a gap, not zero.
+    expect(day.bonusWords).toBeNull();
+  });
+
+  it("sums bonus words across boards, as a gap when one board predates them", async () => {
+    await save({ dateKey: HARD_DAY, level: "normal", bonusWords: ["hazy"], solved: true });
+    await save({ dateKey: HARD_DAY, level: "hard", bonusWords: ["oxen", "quay"], solved: true });
+    expect((await loadAllDailyProgress())[HARD_DAY].bonusWords).toBe(3);
+    await save({ dateKey: "2026-08-21", level: "normal", bonusWords: [], solved: true });
+    await save({ dateKey: "2026-08-21", level: "hard", solved: true });
+    expect((await loadAllDailyProgress())["2026-08-21"].bonusWords).toBeNull();
   });
 
   it("charts a gap when only one board carries a counter", async () => {
@@ -394,6 +427,7 @@ describe("two boards a day", () => {
     await resetDailyForReplay(HARD_DAY, "hard");
     expect((await loadDailyProgress(HARD_DAY, "normal"))?.foundWords).toEqual(["out"]);
     expect((await loadDailyProgress(HARD_DAY, "hard"))?.foundWords).toEqual([]);
+    expect((await loadDailyProgress(HARD_DAY, "hard"))?.bonusWords).toEqual([]);
   });
 });
 

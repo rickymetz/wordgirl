@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { CrosshatchPuzzle } from "../engine/types";
 import {
+  canFinish,
   gameReducer,
   hintLetterIndex,
   hintTarget,
   initialState,
   letterAt,
+  progressCount,
   slotWord,
   type GameAction,
   type GameState,
@@ -160,28 +162,89 @@ describe("submit", () => {
     expect(s.solved).toBe(true);
   });
 
-  it("a bonus-tier fill makes the grid valid but is never banked", () => {
-    // "cab" stands in for a bonus fill (HAZY beside EASY): it completes a
-    // combo, so its partner "bab" is listed and banks, but "cab" itself
-    // is off the list — not counted, not solving the day.
-    const bonus: CrosshatchPuzzle = {
-      ...puzzle,
-      combos: [...puzzle.combos, ["bab", "cab"]],
-      targets: ["bab", "bad", "bud", "dab", "dud"],
-    };
-    let s = play(
-      initialState(bonus),
-      ...type("ab"), // across -> "bab"
-      { type: "focusCell", row: 0, col: 1 },
-      ...type("cab"),
-      { type: "submit" },
-    );
-    expect(s.lastResult).toMatchObject({ type: "correct", newWords: ["bab"] });
+  // "cab" stands in for a bonus fill (HAZY beside EASY): it completes a
+  // combo, so its partner "bab" is listed and banks, but "cab" itself is
+  // off the list — a BONUS word.
+  const withBonus: CrosshatchPuzzle = {
+    ...puzzle,
+    combos: [...puzzle.combos, ["bab", "cab"]],
+    targets: ["bab", "bad", "bud", "dab", "dud"],
+  };
+  const fillBabCab = (s: GameState) =>
+    play(s, ...type("ab"), { type: "focusCell", row: 0, col: 1 }, ...type("cab"));
+
+  it("banks a valid grid's off-list word as a bonus word, once", () => {
+    let s = play(fillBabCab(initialState(withBonus)), { type: "submit" });
+    expect(s.lastResult).toMatchObject({
+      type: "correct",
+      newWords: ["bab"],
+      newBonus: ["cab"],
+    });
     expect(s.found).toEqual(["bab"]);
-    // Resubmitting earns nothing: the bonus word never becomes new.
+    expect(s.bonus).toEqual(["cab"]);
+    expect(progressCount(s)).toBe(2);
+    // Resubmitting earns nothing: a bonus word banks once.
     s = gameReducer(s, { type: "submit" });
     expect(s.lastResult?.type).toBe("nothingNew");
+    expect(s.bonus).toEqual(["cab"]);
+    // Hints still aim at the list, never at bonus words.
     expect(hintTarget(s)).toBe("bad");
+  });
+
+  it("a grid whose only new word is a bonus word is a find, not nothingNew", () => {
+    let s = play(fillBabCab(initialState(withBonus)), { type: "submit" });
+    // Bank "bab" through the list first, then a grid new only in "cab".
+    s = { ...s, bonus: [] };
+    s = gameReducer(s, { type: "submit" });
+    expect(s.lastResult).toMatchObject({ type: "correct", newWords: [], newBonus: ["cab"] });
+  });
+
+  it("opens hold-to-finish once list + bonus finds cover the list, and never solves on its own", () => {
+    const small: CrosshatchPuzzle = { ...withBonus, targets: ["bab", "bad"] };
+    let s = play(fillBabCab(initialState(small)), { type: "submit" });
+    // 1 listed + 1 bonus = 2 of 2: the gate is open, the board isn't solved.
+    expect(progressCount(s)).toBe(2);
+    expect(s.solved).toBe(false);
+    expect(canFinish(s)).toBe(true);
+    s = gameReducer(s, { type: "finish" });
+    expect(s.solved).toBe(true);
+    expect(canFinish(s)).toBe(false);
+  });
+
+  it("refuses to finish before the bonus finds cover the list", () => {
+    let s = play(fillBabCab(initialState(withBonus)), { type: "submit" });
+    expect(canFinish(s)).toBe(false); // 2 of 5
+    s = gameReducer(s, { type: "finish" });
+    expect(s.solved).toBe(false);
+    // Nor without any bonus word at all.
+    expect(canFinish({ ...s, bonus: [] })).toBe(false);
+  });
+
+  it("a finished board is over: no typing, submitting, hints or second finish", () => {
+    const small: CrosshatchPuzzle = { ...withBonus, targets: ["bab", "bad"] };
+    let s = play(fillBabCab(initialState(small)), { type: "submit" }, { type: "finish" });
+    expect(s.solved).toBe(true);
+    const done = s;
+    // "bad" is still unfound: a late Enter on a physical keyboard must not
+    // bank it (it would move the saved time and the "missed" count).
+    s = play(
+      s,
+      { type: "focusCell", row: 1, col: 1 },
+      ...type("ad"),
+      { type: "submit" },
+      { type: "revealHint", letterIndex: 0 },
+      { type: "clearEntry" },
+      { type: "finish" },
+    );
+    expect(s.found).toEqual(done.found);
+    expect(s.bonus).toEqual(done.bonus);
+    expect(s.grid).toEqual(done.grid);
+    expect(s.revealed).toEqual(done.revealed);
+  });
+
+  it("caps progress at the list size however many bonus words are found", () => {
+    const s = { ...initialState(withBonus), found: ["bab", "bad"], bonus: ["cab", "x", "y", "z"] };
+    expect(progressCount(s)).toBe(5);
   });
 
   it("hints reveal letters of the target word and bank it when full", () => {
@@ -313,5 +376,27 @@ describe("submit", () => {
       solved: false,
     });
     expect(solved.solved).toBe(true);
+  });
+
+  it("hydrates bonus words, an empty list for saves from before them, and a held finish", () => {
+    const legacy = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: ["bad"],
+      grid: {},
+      revealed: {},
+      solved: false,
+    });
+    expect(legacy.bonus).toEqual([]);
+    // Solved by hold: 1 listed + 3 bonus of 4, saved solved — stays solved.
+    const held = gameReducer(initialState(puzzle), {
+      type: "hydrate",
+      found: ["bad"],
+      bonus: ["cab", "cob", "cub"],
+      grid: {},
+      revealed: {},
+      solved: true,
+    });
+    expect(held.bonus).toEqual(["cab", "cob", "cub"]);
+    expect(held.solved).toBe(true);
   });
 });

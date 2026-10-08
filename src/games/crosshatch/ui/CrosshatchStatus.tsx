@@ -21,7 +21,9 @@ export function CrosshatchStatus() {
         if (boards.length > 1 && solved > 0) {
           return `${solved}/${boards.length} boards`;
         }
-        return boards.some((b) => b && b.foundWords.length > 0)
+        return boards.some(
+          (b) => b && (b.foundWords.length > 0 || (b.bonusWords?.length ?? 0) > 0),
+        )
           ? "In progress"
           : null;
       }}

@@ -22,6 +22,10 @@ export interface DailyProgress {
   puzzleKey?: string;
   /** Distinct words banked so far, in the order they were found. */
   foundWords: string[];
+  /** Bonus words banked (valid-grid words the list doesn't hold), in the
+   * order found. ABSENT on saves from before bonus words shipped — those
+   * days chart as gaps, never as zero bonus words. */
+  bonusWords?: string[];
   /** Player-typed letters still on the grid, cell key -> letter. */
   grid: Record<string, string>;
   /** Hint reveals: word -> revealed letter positions. */
@@ -29,7 +33,8 @@ export interface DailyProgress {
   /** The day's distinct-word total, stored so the archive can rank
    * without regenerating the puzzle. */
   totalWords?: number;
-  /** All words found. */
+  /** All words found, or finished by hold once list + bonus finds
+   * covered the list (the unfound list words then show as missed). */
   solved: boolean;
   /** Wall-clock play time across sessions, frozen at the solve moment. */
   elapsedMs: number;
@@ -56,6 +61,9 @@ export interface CrosshatchStats {
   bestStreak: number;
   lastSolvedDate: string | null;
   totalWords: number;
+  /** Lifetime bonus words, credited when a board solves (absent from
+   * stats saved before bonus words shipped: defaults-merge reads 0). */
+  bonusWords: number;
 }
 
 const EMPTY_STATS: CrosshatchStats = {
@@ -65,6 +73,7 @@ const EMPTY_STATS: CrosshatchStats = {
   bestStreak: 0,
   lastSolvedDate: null,
   totalWords: 0,
+  bonusWords: 0,
 };
 
 /**
@@ -106,6 +115,9 @@ const base = createDailyPersistence<DailyProgress, CrosshatchStats>({
       stored.foundWords.length > progress.foundWords.length &&
       stored.foundWords.some((w) => !progress.foundWords.includes(w))
     ) &&
+    // Bonus words only grow too, by the same rule.
+    !((stored.bonusWords ?? []).length > (progress.bonusWords ?? []).length &&
+      (stored.bonusWords ?? []).some((w) => !(progress.bonusWords ?? []).includes(w))) &&
     (progress.invalids ?? 0) >= (stored.invalids ?? 0) &&
     (progress.sessions ?? 0) >= (stored.sessions ?? 0),
 });
@@ -239,6 +251,9 @@ export interface ArchivedDay {
   sessions: number | null;
   /** An hour one of the day's boards was solved at. */
   solvedHour: number | null;
+  /** Bonus words across boards — null when any board's save predates
+   * bonus words (a gap on the trends chart, never a fake zero). */
+  bonusWords: number | null;
 }
 
 /** Hint letters spent on a board, or undefined where the save predates
@@ -261,7 +276,11 @@ export async function loadAllDailyProgress(): Promise<
       boards: boards.length,
       solvedCount: saves.filter((s) => s.solved).length,
       startedCount: saves.filter(
-        (s) => s.solved || s.foundWords.length > 0 || hasReveals(s),
+        (s) =>
+          s.solved ||
+          s.foundWords.length > 0 ||
+          (s.bonusWords?.length ?? 0) > 0 ||
+          hasReveals(s),
       ).length,
       // Every board the DATE carries must be solved — not merely every
       // board that happens to have a save, or a day whose hard board
@@ -280,6 +299,7 @@ export async function loadAllDailyProgress(): Promise<
       sessions: sumAcrossBoards(saves, (s) => s.sessions),
       solvedHour:
         saves.map((s) => s.solvedHour).find((h) => h !== undefined) ?? null,
+      bonusWords: sumAcrossBoards(saves, (s) => s.bonusWords?.length),
     };
   }
   return out;
@@ -307,6 +327,7 @@ export async function resetDailyForReplay(
     dictVersion: DICT_VERSION,
     ...(currentPuzzleKey && { puzzleKey: currentPuzzleKey }),
     foundWords: [],
+    bonusWords: [],
     grid: {},
     revealed: {},
     solved: false,
@@ -359,6 +380,9 @@ export async function recordDailySolved(
   // The grace day exists for a DAILY session frozen across midnight;
   // an archive play of yesterday must not borrow it to move the streak.
   allowGrace = true,
+  // Bonus words the board banked: play ends at the solve, so this is
+  // the board's whole count, credited once.
+  bonusFound = 0,
 ): Promise<CrosshatchStats> {
   // `solved` and the streak count DAYS — they always have — and a day
   // now needs every board it carries. The board that just solved may
@@ -376,6 +400,7 @@ export async function recordDailySolved(
     // Words are the player's own tally: every board's finds count as
     // they're found, whether or not the day is finished.
     totalWords: stats.totalWords + wordsFound,
+    bonusWords: stats.bonusWords + bonusFound,
     ...(dayComplete && stats.lastSolvedDate !== dateKey
       ? {
           solved: stats.solved + 1,

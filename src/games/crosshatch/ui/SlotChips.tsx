@@ -1,4 +1,4 @@
-import { Check, CircleCheck, MoveDown, MoveRight, X } from "lucide-react";
+import { Check, CircleCheck, MoveDown, MoveRight, Sparkle, X } from "lucide-react";
 import { targetWords } from "../engine/scoring";
 import type { Slot } from "../engine/types";
 import { cellKey, slotCells } from "../engine/types";
@@ -12,9 +12,14 @@ import {
 /**
  * One chip per line showing its current content plus a verdict icon:
  * an X when the word doesn't work there, a grey check when it's
- * counted already (a normal state — winning grids reuse found words)
- * or fits only through a bonus-tier fill (accepted, never listed), a green
- * circled check for a new word. Tapping a chip aims the cursor at its
+ * counted already (a normal state — winning grids reuse found words),
+ * a green circled check for a new word. A bonus word — it fits, but the
+ * list doesn't hold it — takes a four-point star instead (lucide's
+ * Sparkle): SOLID accent while new, an OUTLINED grey star once banked, so
+ * the two states differ in shape as well as color (as the list words'
+ * circled check and plain check do). Solid because it is the star that
+ * marks bonus words in Your words and in Polygram; the three-part
+ * Sparkles read as a clump at chip size. Tapping a chip aims the cursor at its
  * line.
  */
 export function SlotChips({
@@ -26,6 +31,7 @@ export function SlotChips({
 }) {
   const { puzzle } = state;
   const found = new Set(state.found);
+  const bonus = new Set(state.bonus);
   const listed = new Set(targetWords(puzzle));
   const active = cursorSlot(state);
 
@@ -74,11 +80,18 @@ export function SlotChips({
                       label: "counted already",
                     }
                   : !listed.has(word)
-                    ? {
-                        Icon: Check,
-                        tone: "text-ink-soft",
-                        label: "fits, not on the list",
-                      }
+                    ? bonus.has(word)
+                      ? {
+                          Icon: Sparkle,
+                          tone: "text-ink-soft",
+                          label: "bonus word, counted already",
+                        }
+                      : {
+                          Icon: Sparkle,
+                          tone: "text-accent",
+                          label: "new bonus word",
+                          filled: true,
+                        }
                     : {
                         Icon: CircleCheck,
                         tone: "text-good",
@@ -122,7 +135,9 @@ export function SlotChips({
                   <verdict.Icon
                     aria-hidden
                     className={`h-4 w-4 ${verdict.tone}`}
-                    strokeWidth={3}
+                    {...("filled" in verdict
+                      ? { fill: "currentColor", strokeWidth: 1 }
+                      : { strokeWidth: verdict.Icon === Sparkle ? 2 : 3 })}
                   />
                 )}
               </button>

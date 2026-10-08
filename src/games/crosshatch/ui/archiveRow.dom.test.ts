@@ -18,6 +18,7 @@ const day = (over: Partial<ArchivedDay> = {}): ArchivedDay => ({
   invalids: 0,
   sessions: 1,
   solvedHour: 9,
+  bonusWords: null,
   ...over,
 });
 
