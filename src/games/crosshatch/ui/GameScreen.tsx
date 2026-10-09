@@ -763,7 +763,9 @@ export function GameScreen({
             transition={{ duration: 0.2 }}
             className="flex flex-col items-center gap-2"
           >
-            <div className="flex items-center gap-4">
+            {/* mb-2: air between this row (Clear grid, Hold to finish) and the
+                keyboard, so the pill doesn't sit on the top row of keys. */}
+            <div className="mb-2 flex items-center gap-4">
               <button
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}
