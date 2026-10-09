@@ -40,7 +40,7 @@ import {
   markTutorialSeen,
 } from "../state/persistence";
 
-import { canSkipLevel, currentLevel, hintTarget, unsolvedWords } from "../state/reducer";
+import { canSkipLevel, currentLevel, hintTarget, levelWordsFound, unsolvedWords } from "../state/reducer";
 import { bonusFound } from "../engine/completion";
 import { PolygonBoard } from "./PolygonBoard";
 import { CurrentWord } from "./CurrentWord";
@@ -109,6 +109,9 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
   // now the tutorial offer (see TutorialPrompt).
   const [coachOpen, setCoachOpen] = useState(false);
   const [replayOpen, setReplayOpen] = useState(false);
+  // Hold to skip's fallback for players who can't hold (Voice Control,
+  // Switch Access, a screen reader's double-tap all send a bare click).
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const closeCoach = () => setCoachOpen(false);
 
   // The words panel is controlled here so the lightbulb can open it.
@@ -222,7 +225,18 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
 
   // Physical keyboard support: letters type, Backspace deletes, Enter
   // submits, Escape closes the hint dialog.
-  const modalOpen = hintWarningOpen || coachOpen || replayOpen;
+  const skipLevel = () => {
+    trackSkipLevel("polygram");
+    dispatch({ type: "skipLevel" });
+  };
+  const levelWordsLeft =
+    state.phase === "playing"
+      ? currentLevel(state).words.length -
+        levelWordsFound(state, state.levelIndex).length
+      : 0;
+
+  const modalOpen =
+    hintWarningOpen || coachOpen || replayOpen || skipConfirmOpen;
   useEffect(() => {
     const letters = new Set(state.puzzle.letters.slice(0, level.size));
     const onKeyDown = (e: KeyboardEvent) => {
@@ -566,10 +580,8 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
               // Held, not tapped: skipping forfeits the level's
               // remaining words, so a stray thumb must not do it.
               <HoldButton
-                onHoldComplete={() => {
-                  trackSkipLevel("polygram");
-                  dispatch({ type: "skipLevel" });
-                }}
+                onHoldComplete={skipLevel}
+                onTapFallback={() => setSkipConfirmOpen(true)}
                 className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface"
               >
                 <SkipForward aria-hidden className="h-4 w-4" />
@@ -595,6 +607,45 @@ export function GameScreen({ mode, onRestartTutorial, onReplay, onNewPuzzle }: P
       </AnimatePresence>
 
       {showConfetti && <ConfettiOverlay />}
+
+      {skipConfirmOpen && (
+        <ModalDialog
+          labelledBy="skip-dialog-title"
+          onClose={() => setSkipConfirmOpen(false)}
+          className="text-center"
+        >
+          <div>
+            <h2 id="skip-dialog-title" className="text-lg font-bold">
+              Skip this level?
+            </h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              {levelWordsLeft === 1
+                ? "The 1 word you haven't found on this level is left behind."
+                : `The ${levelWordsLeft} words you haven't found on this level are left behind.`}
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                data-autofocus
+                onClick={() => {
+                  setSkipConfirmOpen(false);
+                  skipLevel();
+                }}
+                className="rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+              >
+                Skip level
+              </button>
+              <button
+                type="button"
+                onClick={() => setSkipConfirmOpen(false)}
+                className="rounded-full border border-line py-2.5 font-semibold active:scale-95"
+              >
+                Keep playing
+              </button>
+            </div>
+          </div>
+        </ModalDialog>
+      )}
 
       {replayOpen && (
         <ModalDialog
