@@ -781,20 +781,19 @@ export function GameScreen({
                   a bare click (Voice Control, Switch Access, a screen
                   reader's double-tap — none can hold) asks instead.
                   Beside Clear grid with its height mostly folded into that
-                  row (-my-1.5), so it costs the board almost no room at Huge
+                  row (-my-2), so it costs the board almost no room at Huge
                   text; the keyboard sits above its ::after touch floor
                   (relative z-10), so the overlap never steals a key tap.
-                  An outline, not a fill: it must not outweigh ENTER. Ink
-                  label, not accent: the house press-fill darkens toward
-                  black (light) / white (dark) and would sink accent text
-                  below 4.5:1 mid-hold. */}
+                  Styled as Polygram's Hold to skip level (a solid accent
+                  pill, surface label, icon at h-4), so the house's one
+                  hold-to-end gesture looks the same in both games. */}
               {canFinish(state) && (
                 <HoldButton
                   onHoldComplete={finishBoard}
                   onTapFallback={() => setFinishConfirmOpen(true)}
-                  className="-my-1.5 whitespace-nowrap rounded-full border border-accent bg-surface-tint px-3 py-1 text-sm font-semibold text-ink"
+                  className="-my-2 whitespace-nowrap rounded-full bg-accent px-4 py-2 text-sm font-semibold text-surface"
                 >
-                  <Flag aria-hidden className="h-3.5 w-3.5 text-accent" />
+                  <Flag aria-hidden className="h-4 w-4" />
                   Hold to finish
                 </HoldButton>
               )}
