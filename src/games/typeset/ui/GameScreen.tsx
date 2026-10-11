@@ -728,7 +728,7 @@ function FoundTray({ board, layout, found, wide = false }: { board: Board; layou
   const mini = "flex items-center justify-center rounded-md [container-type:size]";
   const miniStyle = { aspectRatio: String(CARD_ASPECT) };
   return (
-    <section aria-label={`${found.length} of ${board.sets.length} sets found`} className={`grid gap-1.5 ${wide ? "grid-cols-1 gap-2" : "grid-cols-2"}`}>
+    <section aria-label={`${found.length} of ${board.sets.length} sets found`} className={`grid ${wide ? "grid-cols-1 gap-2" : "grid-cols-2 gap-1.5"}`}>
       {slots.map((key, i) => {
         // An odd count centers its last slot, rather than leaving a half row.
         const lone = !wide && i === slots.length - 1 && slots.length % 2 === 1;
