@@ -490,9 +490,13 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               <button
                 type="button"
                 onClick={() => setSetsOpen(true)}
-                className="relative inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-1.5 text-sm font-semibold text-ink active:scale-95 after:absolute after:inset-x-0 after:-inset-y-1"
+                // Share's own size (px-6 py-3), outlined: the row's two
+                // actions read as a pair, with Share still the filled one.
+                // An inset ring, not a border, so it is exactly Share's
+                // height (a border would add 2px to a row at its budget).
+                className="inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold text-ink ring-1 ring-line ring-inset active:scale-95"
               >
-                <Grid3x3 aria-hidden className="h-4 w-4 text-accent" />
+                <Grid3x3 aria-hidden className="h-4.5 w-4.5 text-accent" />
                 Your sets
               </button>
               {dateKey && solvedElapsedMs !== null && (
