@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, CircleHelp, Equal, Grid3x3, Layers, Lightbulb, Shapes, Type } from "lucide-react";
+import { BottomSheet } from "../../../components/BottomSheet";
 import { formatDateKey, formatDuration, formatShareDate, localDateKey } from "../../../lib/date";
 import { SHARE_URL } from "../../../lib/share";
 import { ShareButton } from "../../../components/ShareButton";
@@ -77,6 +78,9 @@ interface Props {
 export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial, onReplay }: Props) {
   const { state, dispatch, board, solvedElapsedMs, hydratedAsSolved, abandonSession } = useTypesetGame(mode);
   const [replayOpen, setReplayOpen] = useState(false);
+  // The found sets, once the board is done: the tray gives way to the
+  // results card, so they move to a sheet a tap away.
+  const [setsOpen, setSetsOpen] = useState(false);
   const isTutorial = mode.kind === "tutorial";
   const isDaily = mode.kind === "daily";
   const persisted = mode.kind === "daily" || mode.kind === "archive";
@@ -204,7 +208,7 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
   tapRef.current = tapCard;
   const solvedRef = useRef(state.solved);
   solvedRef.current = state.solved;
-  const dialogOpen = coachOpen || hintWarningOpen || replayOpen;
+  const dialogOpen = coachOpen || hintWarningOpen || replayOpen || setsOpen;
   useEffect(() => {
     if (dialogOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -479,9 +483,26 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
               {state.hints > 0 ? ` · ${state.hints} ${state.hints === 1 ? "hint" : "hints"}` : ""}
             </p>
             <Credits board={board} layout={layout} />
-            {dateKey && solvedElapsedMs !== null && (
-              <ShareButton text={buildShareText(board, state.found.length, state.hints, dateKey, solvedElapsedMs)} gameId="typeset" />
-            )}
+            {/* Your sets shares the Share row, so it costs the results no
+                height: the solved board is already down to SOLVED_MIN_CARD
+                on the smallest phones. */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSetsOpen(true)}
+                // Share's own size (px-6 py-3), outlined: the row's two
+                // actions read as a pair, with Share still the filled one.
+                // An inset ring, not a border, so it is exactly Share's
+                // height (a border would add 2px to a row at its budget).
+                className="inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold text-ink ring-1 ring-line ring-inset active:scale-95"
+              >
+                <Grid3x3 aria-hidden className="h-4.5 w-4.5 text-accent" />
+                Your sets
+              </button>
+              {dateKey && solvedElapsedMs !== null && (
+                <ShareButton text={buildShareText(board, state.found.length, state.hints, dateKey, solvedElapsedMs)} gameId="typeset" />
+              )}
+            </div>
             {mode.kind === "archive" && onReplay && (
               <button
                 type="button"
@@ -568,6 +589,28 @@ export function GameScreen({ mode, onBoardChange, onNewPuzzle, onRestartTutorial
           </div>
         </ModalDialog>
       )}
+
+      <AnimatePresence>
+        {setsOpen && (
+          <BottomSheet labelledBy="sets-title" onClose={() => setSetsOpen(false)}>
+            <h2 id="sets-title" className="text-lg font-bold">
+              Your sets
+            </h2>
+            <p className="pb-4 text-sm text-ink-soft">
+              {board.label} · {state.found.length} {state.found.length === 1 ? "set" : "sets"}, in the order you found them
+            </p>
+            <FoundTray board={board} layout={layout} found={state.found} wide />
+            <button
+              type="button"
+              data-autofocus
+              onClick={() => setSetsOpen(false)}
+              className="mt-6 w-full rounded-full bg-accent py-2.5 font-semibold text-surface active:scale-95"
+            >
+              Done
+            </button>
+          </BottomSheet>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {coachOpen && (
@@ -672,8 +715,11 @@ function ColorKey() {
   );
 }
 
-/** One slot per set on the board; found sets fill in as mini cards. */
-function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout; found: string[] }) {
+/**
+ * One slot per set on the board; found sets fill in as mini cards. `wide`
+ * (the finished board's Your sets sheet) lists one set per row, larger.
+ */
+function FoundTray({ board, layout, found, wide = false }: { board: Board; layout: GlyphLayout; found: string[]; wide?: boolean }) {
   const slots = Array.from({ length: board.sets.length }, (_, i) => found[i] ?? null);
   // Mini cards are the board's card in miniature: the same CARD_ASPECT, and
   // the row drawn in the same proportion (86% of the card's width for the
@@ -682,10 +728,10 @@ function FoundTray({ board, layout, found }: { board: Board; layout: GlyphLayout
   const mini = "flex items-center justify-center rounded-md [container-type:size]";
   const miniStyle = { aspectRatio: String(CARD_ASPECT) };
   return (
-    <section aria-label={`${found.length} of ${board.sets.length} sets found`} className="grid grid-cols-2 gap-1.5">
+    <section aria-label={`${found.length} of ${board.sets.length} sets found`} className={`grid ${wide ? "grid-cols-1 gap-2" : "grid-cols-2 gap-1.5"}`}>
       {slots.map((key, i) => {
         // An odd count centers its last slot, rather than leaving a half row.
-        const lone = i === slots.length - 1 && slots.length % 2 === 1;
+        const lone = !wide && i === slots.length - 1 && slots.length % 2 === 1;
         const place = lone ? "col-span-2 w-[calc(50%-3px)] justify-self-center" : "";
         return key === null ? (
           <div key={i} aria-hidden className={`grid grid-cols-3 gap-1 rounded-lg border border-dashed border-line p-[3px] ${place}`}>
