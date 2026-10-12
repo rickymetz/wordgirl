@@ -30,6 +30,11 @@
  * shuffle orders entries by position, so changing an entry's content moves
  * only the days that deal it, and the puzzle key (which names the glyphs)
  * sends any save for those days down the stale path.
+ *
+ * One that HAS been played is RETIRED instead: `until` (a FUTURE cycle)
+ * takes it out of that cycle's shuffle and every later one, so its played
+ * days keep their boards in the archive. Append its replacement with
+ * `since` set to the same cycle, so the cycle keeps its length.
  */
 import type { FaceId } from "./faces";
 
@@ -47,13 +52,26 @@ export interface CharsetEntry {
   face: FaceId;
   chars: readonly [CharacterSpec, CharacterSpec, CharacterSpec];
   since: number;
+  /** Retired: the first cycle the entry no longer plays in (see below). */
+  until?: number;
 }
 
 export interface FacesEntry {
   char: CharacterSpec;
   faces: readonly [FaceId, FaceId, FaceId];
   since: number;
+  /** Retired: the first cycle the entry no longer plays in (see below). */
+  until?: number;
 }
+
+/**
+ * Characters no board may deal. A card prints its character up to three
+ * times in a row, so these spell something no one should find on a puzzle
+ * card: KKK, SS (the capital only: "ss" is just a word ending), XXX.
+ * pool.test.ts and schedule.test.ts hold every live entry, the tutorial
+ * and every future day to it.
+ */
+export const NEVER_DEALT: ReadonlySet<string> = new Set(["k", "K", "S", "x", "X"]);
 
 const ch = (char: string, name: string, plural = `${name}s`): CharacterSpec => ({ char, name, plural });
 const letter = (char: string): CharacterSpec => ch(char, char, `${char}'s`);
@@ -65,7 +83,8 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "fraunces", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s's"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O's")], since: 0 },
-  { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("k")], since: 0 },
+  // Was Q e k: a card prints its character up to three times (NEVER_DEALT).
+  { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("b")], since: 0 },
   { theme: "Symbols", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
   { theme: "Currency", face: "literata", chars: [ch("£", "pound sign"), ch("₹", "rupee sign"), ch("₩", "won sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("α", "alpha"), ch("γ", "gamma"), ch("ξ", "xi")], since: 0 },
@@ -92,8 +111,8 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Currency", face: "jost", chars: [ch("₽", "ruble sign"), ch("£", "pound sign"), ch("$", "dollar sign")], since: 0 },
   { theme: "Beyond A–Z", face: "roboto-slab", chars: [ch("Ŋ", "eng"), ch("Ħ", "H with stroke", "Hs with stroke"), ch("Þ", "thorn")], since: 0 },
   { theme: "Beyond A–Z", face: "bodoni-moda", chars: [ch("Œ", "OE ligature", "OE ligatures"), ch("ß", "sharp s", "sharp s's"), ch("Ł", "L with stroke", "Ls with stroke")], since: 0 },
-  { theme: "Letters", face: "bodoni-moda", chars: [letter("Q"), letter("a"), letter("k")], since: 0 },
-  { theme: "Letters", face: "lobster", chars: [letter("G"), letter("e"), letter("k")], since: 0 },
+  { theme: "Letters", face: "bodoni-moda", chars: [letter("Q"), letter("a"), letter("R")], since: 0 },
+  { theme: "Letters", face: "lobster", chars: [letter("G"), letter("e"), letter("d")], since: 0 },
   { theme: "Letters", face: "jost", chars: [letter("M"), letter("y"), letter("s")], since: 0 },
 ];
 
@@ -110,7 +129,10 @@ export const FACES_POOL: readonly FacesEntry[] = [
   // Was Literata: an "e" has no serifs to show, and Literata's drew as
   // Jost's near twin (legibility.test.ts). Bodoni's stress parts them.
   { char: letter("e"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
-  { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0 },
+  // Retired, as is the other "k" below: three k's on one card (NEVER_DEALT).
+  // Both had already played, so they keep their cycle-0 days and leave
+  // the rotation from cycle 1; the "h" and "B" at the end take their places.
+  { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0, until: 1 },
   { char: letter("G"), faces: ["bodoni-moda", "roboto-slab", "lobster"], since: 0 },
   { char: letter("y"), faces: ["literata", "archivo-black", "lobster"], since: 0 },
   { char: letter("M"), faces: ["eb-garamond", "roboto-slab", "jost"], since: 0 },
@@ -120,6 +142,8 @@ export const FACES_POOL: readonly FacesEntry[] = [
   // hatch (legibility.test.ts), as was every script W tried, and without a
   // script the serif and slab W read as twins.
   { char: letter("d"), faces: ["eb-garamond", "archivo-black", "lobster"], since: 0 },
-  { char: letter("k"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
+  { char: letter("k"), faces: ["bodoni-moda", "jost", "lobster"], since: 0, until: 1 },
   { char: letter("R"), faces: ["fraunces", "jost", "kaushan-script"], since: 0 },
+  { char: letter("h"), faces: ["bodoni-moda", "archivo-black", "kaushan-script"], since: 1 },
+  { char: letter("B"), faces: ["bodoni-moda", "jost", "lobster"], since: 1 },
 ];

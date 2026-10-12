@@ -1,20 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
-import { CHARSET_POOL, FACES_POOL } from "./pool";
+import { CHARSET_POOL, FACES_POOL, NEVER_DEALT } from "./pool";
 import { dailyBoard, practiceBoard, scheduleSlot } from "./schedule";
 import { findSets } from "./sets";
 
 describe("schedule", () => {
-  it("plays every charset entry once per cycle", () => {
-    const days = dateKeyRange("2026-10-01", "2026-12-31").slice(0, CHARSET_POOL.length);
-    const entries = days.map((d) => scheduleSlot(CHARSET_POOL, "charset", d).entry);
-    expect(new Set(entries).size).toBe(CHARSET_POOL.length);
-  });
+  // Each of the first few cycles plays exactly the entries live in it:
+  // added from `since`, retired from `until`.
+  for (const [pool, kind] of [[CHARSET_POOL, "charset"], [FACES_POOL, "faces"]] as const) {
+    it(`plays every live ${kind} entry once per cycle`, () => {
+      const byCycle = new Map<number, unknown[]>();
+      for (const d of dateKeyRange("2026-10-01", "2027-03-31")) {
+        const { entry, cycle } = scheduleSlot<(typeof pool)[number]>(pool, kind, d);
+        byCycle.set(cycle, [...(byCycle.get(cycle) ?? []), entry]);
+      }
+      const last = Math.max(...byCycle.keys());
+      for (const [cycle, played] of byCycle) {
+        if (cycle === last) continue; // cut off by the date range
+        const live = pool.filter((e) => e.since <= cycle && (e.until === undefined || cycle < e.until));
+        expect(played, `${kind} cycle ${cycle}`).toHaveLength(live.length);
+        expect(new Set(played), `${kind} cycle ${cycle}`).toEqual(new Set(live));
+      }
+    });
+  }
 
-  it("plays every faces entry once per cycle", () => {
-    const days = dateKeyRange("2026-10-01", "2026-12-31").slice(0, FACES_POOL.length);
-    const entries = days.map((d) => scheduleSlot(FACES_POOL, "faces", d).entry);
-    expect(new Set(entries).size).toBe(FACES_POOL.length);
+  // The first faces "k" played 10-01 and the second 10-12, before the rule
+  // (pool.ts NEVER_DEALT); from the day after, no board may deal one.
+  it("never deals a character a card may not repeat, from 2026-10-13 on", () => {
+    const dealt: string[] = [];
+    for (const d of dateKeyRange("2026-10-13", "2028-12-31"))
+      for (const kind of ["charset", "faces"] as const)
+        for (const g of dailyBoard(d, kind).glyphs) if (NEVER_DEALT.has(g.char)) dealt.push(`${d} ${kind} ${g.char}`);
+    expect(dealt).toEqual([]);
   });
 
   it("never replays an entry within three days across a cycle boundary", () => {
@@ -65,6 +82,12 @@ describe("schedule", () => {
     const c = dailyBoard("2026-10-07", "charset");
     const f = dailyBoard("2026-10-07", "faces");
     expect(c.cards).not.toEqual(f.cards);
+  });
+
+  it("never deals a retired entry in practice", () => {
+    for (let i = 0; i < 500; i++)
+      for (const kind of ["charset", "faces"] as const)
+        for (const g of practiceBoard(kind, `seed${i}`).glyphs) expect(NEVER_DEALT.has(g.char), `${kind} seed${i}`).toBe(false);
   });
 
   it("builds practice boards of either kind", () => {

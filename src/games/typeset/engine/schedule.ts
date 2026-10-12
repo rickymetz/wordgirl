@@ -2,7 +2,8 @@
  * Which boards a date gets.
  *
  * Each pool (pool.ts) runs in CYCLES, the way Sixfold's schedule does:
- * cycle c is one seeded shuffle of every entry whose `since` <= c, so each
+ * cycle c is one seeded shuffle of every entry live in c (`since` <= c, and
+ * not yet retired: c < `until`), so each
  * entry plays once per cycle and a cycle is as many days long as it has
  * entries. The two pools cycle independently, so the pairing of a
  * character set with a faces trio drifts day to day.
@@ -59,8 +60,8 @@ interface Slot<T> {
  * Walk the cycles to find a day's entry. Days before the epoch wrap into
  * cycle 0 (the archive never reaches them, but practice and tests may).
  */
-export function scheduleSlot<T extends { since: number }>(pool: readonly T[], name: string, dateKey: string): Slot<T> {
-  const poolFor = (cycle: number) => pool.filter((e) => e.since <= cycle);
+export function scheduleSlot<T extends { since: number; until?: number }>(pool: readonly T[], name: string, dateKey: string): Slot<T> {
+  const poolFor = (cycle: number) => pool.filter((e) => e.since <= cycle && (e.until === undefined || cycle < e.until));
   const order = (cycle: number, prev: readonly T[] | null) => {
     const o = shuffle(poolFor(cycle).slice(), seededRandom(`${SEED}:${name}:cycle:${cycle}`));
     return prev ? spaceFromPrevious(o, prev) : o;
@@ -128,13 +129,17 @@ export function dailyBoard(dateKey: string, kind: BoardKind): Board {
   return { kind, label: "Faces", glyphs: facesGlyphs(entry), cards, sets };
 }
 
-/** A practice board: any pool entry, any deal, from a random seed. */
+/** Entries not retired: what practice draws from. */
+const LIVE_CHARSET = CHARSET_POOL.filter((e) => e.until === undefined);
+const LIVE_FACES = FACES_POOL.filter((e) => e.until === undefined);
+
+/** A practice board: any live pool entry, any deal, from a random seed. */
 export function practiceBoard(kind: BoardKind, seed: string): Board {
   const rand = seededRandom(`${SEED}:practice:${kind}:${seed}`);
   if (kind === "charset") {
-    const entry = CHARSET_POOL[Math.floor(rand() * CHARSET_POOL.length)];
+    const entry = LIVE_CHARSET[Math.floor(rand() * LIVE_CHARSET.length)];
     return { kind, label: entry.theme, glyphs: charsetGlyphs(entry), ...deal(rand) };
   }
-  const entry = FACES_POOL[Math.floor(rand() * FACES_POOL.length)];
+  const entry = LIVE_FACES[Math.floor(rand() * LIVE_FACES.length)];
   return { kind, label: "Faces", glyphs: facesGlyphs(entry), ...deal(rand) };
 }

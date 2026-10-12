@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import glyphs from "../glyphs.json";
 import { FACES, MONO_TELLING, SILHOUETTE } from "./faces";
-import { CHARSET_POOL, FACES_POOL } from "./pool";
+import { CHARSET_POOL, FACES_POOL, NEVER_DEALT } from "./pool";
 import { TUTORIAL_BOARDS } from "./tutorial";
 
 describe("baked outlines", () => {
@@ -13,6 +13,23 @@ describe("baked outlines", () => {
     for (const e of FACES_POOL) for (const f of e.faces) if (!baked[`${f}:${e.char.char}`]) missing.push(`${f}:${e.char.char}`);
     for (const b of TUTORIAL_BOARDS) for (const g of b.glyphs) if (!baked[`${g.face}:${g.char}`]) missing.push(`${g.face}:${g.char}`);
     expect(missing).toEqual([]);
+  });
+});
+
+describe("characters no card may repeat", () => {
+  // A retired entry keeps the boards it already played; nothing else may
+  // deal one of these again.
+  it("are absent from every live entry and the tutorial", () => {
+    const dealt = [
+      ...CHARSET_POOL.filter((e) => e.until === undefined).flatMap((e) => e.chars.map((c) => c.char)),
+      ...FACES_POOL.filter((e) => e.until === undefined).map((e) => e.char.char),
+      ...TUTORIAL_BOARDS.flatMap((b) => b.glyphs.map((g) => g.char)),
+    ];
+    expect(dealt.filter((c) => NEVER_DEALT.has(c))).toEqual([]);
+  });
+
+  it("cover both cases of KKK and XXX", () => {
+    for (const c of ["k", "K", "x", "X", "S"]) expect(NEVER_DEALT.has(c), c).toBe(true);
   });
 });
 
