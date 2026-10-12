@@ -1,20 +1,47 @@
 import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
-import { CHARSET_POOL, FACES_POOL } from "./pool";
+import { blockedReading, CHARSET_POOL, FACES_POOL } from "./pool";
 import { dailyBoard, practiceBoard, scheduleSlot } from "./schedule";
 import { findSets } from "./sets";
 
-describe("schedule", () => {
-  it("plays every charset entry once per cycle", () => {
-    const days = dateKeyRange("2026-10-01", "2026-12-31").slice(0, CHARSET_POOL.length);
-    const entries = days.map((d) => scheduleSlot(CHARSET_POOL, "charset", d).entry);
-    expect(new Set(entries).size).toBe(CHARSET_POOL.length);
-  });
+// Boards repeat from a small pool: read each character set once.
+const readings = new Map<string, string | null>();
+const spells = (chars: string[]) => {
+  const key = chars.join("\u0000");
+  if (!readings.has(key)) readings.set(key, blockedReading(chars));
+  return readings.get(key)!;
+};
 
-  it("plays every faces entry once per cycle", () => {
-    const days = dateKeyRange("2026-10-01", "2026-12-31").slice(0, FACES_POOL.length);
-    const entries = days.map((d) => scheduleSlot(FACES_POOL, "faces", d).entry);
-    expect(new Set(entries).size).toBe(FACES_POOL.length);
+describe("schedule", () => {
+  // Each of the first few cycles plays exactly the entries live in it:
+  // added from `since`, retired from `until`.
+  for (const [pool, kind] of [[CHARSET_POOL, "charset"], [FACES_POOL, "faces"]] as const) {
+    it(`plays every live ${kind} entry once per cycle`, () => {
+      const byCycle = new Map<number, unknown[]>();
+      for (const d of dateKeyRange("2026-10-01", "2027-03-31")) {
+        const { entry, cycle } = scheduleSlot<(typeof pool)[number]>(pool, kind, d);
+        byCycle.set(cycle, [...(byCycle.get(cycle) ?? []), entry]);
+      }
+      const last = Math.max(...byCycle.keys());
+      for (const [cycle, played] of byCycle) {
+        if (cycle === last) continue; // cut off by the date range
+        const live = pool.filter((e) => e.since <= cycle && (e.until === undefined || cycle < e.until));
+        expect(played, `${kind} cycle ${cycle}`).toHaveLength(live.length);
+        expect(new Set(played), `${kind} cycle ${cycle}`).toEqual(new Set(live));
+      }
+    });
+  }
+
+  // Faces "k" played 10-01 and 10-12, before the rule (pool.ts
+  // NEVER_SPELLED); from the day after, no board may spell a word on it.
+  it("never deals a board that spells a NEVER_SPELLED word, from 2026-10-13 on", () => {
+    const spelled: string[] = [];
+    for (const d of dateKeyRange("2026-10-13", "2028-12-31"))
+      for (const kind of ["charset", "faces"] as const) {
+        const reading = spells(dailyBoard(d, kind).glyphs.map((g) => g.char));
+        if (reading) spelled.push(`${d} ${kind} ${reading}`);
+      }
+    expect(spelled).toEqual([]);
   });
 
   it("never replays an entry within three days across a cycle boundary", () => {
@@ -65,6 +92,12 @@ describe("schedule", () => {
     const c = dailyBoard("2026-10-07", "charset");
     const f = dailyBoard("2026-10-07", "faces");
     expect(c.cards).not.toEqual(f.cards);
+  });
+
+  it("never deals a retired entry in practice", () => {
+    for (let i = 0; i < 500; i++)
+      for (const kind of ["charset", "faces"] as const)
+        expect(spells(practiceBoard(kind, `seed${i}`).glyphs.map((g) => g.char)), `${kind} seed${i}`).toBeNull();
   });
 
   it("builds practice boards of either kind", () => {

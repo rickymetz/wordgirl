@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import glyphs from "../glyphs.json";
 import { FACES, MONO_TELLING, SILHOUETTE } from "./faces";
-import { CHARSET_POOL, FACES_POOL } from "./pool";
+import { blockedReading, CHARSET_POOL, FACES_POOL } from "./pool";
 import { TUTORIAL_BOARDS } from "./tutorial";
 
 describe("baked outlines", () => {
@@ -13,6 +13,31 @@ describe("baked outlines", () => {
     for (const e of FACES_POOL) for (const f of e.faces) if (!baked[`${f}:${e.char.char}`]) missing.push(`${f}:${e.char.char}`);
     for (const b of TUTORIAL_BOARDS) for (const g of b.glyphs) if (!baked[`${g.face}:${g.char}`]) missing.push(`${g.face}:${g.char}`);
     expect(missing).toEqual([]);
+  });
+});
+
+describe("what a board may spell", () => {
+  // A retired entry keeps the boards it already played; nothing else may
+  // spell a NEVER_SPELLED word again.
+  it("is nothing on the list, for every live entry and the tutorial", () => {
+    const boards = [
+      ...CHARSET_POOL.filter((e) => e.until === undefined).map((e) => e.chars.map((c) => c.char)),
+      ...FACES_POOL.filter((e) => e.until === undefined).map((e) => [e.char.char]),
+      ...TUTORIAL_BOARDS.map((b) => b.glyphs.map((g) => g.char)),
+    ];
+    expect(boards.map((chars) => blockedReading(chars)).filter(Boolean)).toEqual([]);
+  });
+
+  it("is read on one card and across cards, and the capital SS only as written", () => {
+    expect(blockedReading(["k"])).toBe("kkk");
+    expect(blockedReading(["n", "i", "g"])).toBe("nig");
+    expect(blockedReading(["S"])).toBe("SS");
+    expect(blockedReading(["M", "y", "s"])).toBeNull();
+  });
+
+  it("is not a profanity filter: swears may be dealt", () => {
+    expect(blockedReading(["A", "g", "s"])).toBeNull();
+    expect(blockedReading(["G", "a", "y"])).toBeNull();
   });
 });
 
