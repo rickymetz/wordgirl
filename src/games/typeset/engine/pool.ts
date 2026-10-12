@@ -65,13 +65,45 @@ export interface FacesEntry {
 }
 
 /**
- * Characters no board may deal. A card prints its character up to three
- * times in a row, so these spell something no one should find on a puzzle
- * card: KKK, SS (the capital only: "ss" is just a word ending), XXX.
- * pool.test.ts and schedule.test.ts hold every live entry, the tutorial
- * and every future day to it.
+ * What no board may spell. A card prints its character up to three times,
+ * and cards sit side by side (a row of the board, a set in the tray), so a
+ * board reads as runs of its characters run together: "kkk" on one card,
+ * "A" then "ss" as "Ass" across two. `blockedReading` tries every such
+ * string across up to three cards; pool.test.ts and schedule.test.ts hold
+ * every live entry, the tutorial, practice and every future day to it.
+ *
+ * Matched ignoring case, except an entry with a capital, which matches
+ * only as written: "SS" is the Nazi paramilitary, "ss" a word ending.
+ * "gay" is here for the insult it is on a playground, not for the word.
  */
-export const NEVER_DEALT: ReadonlySet<string> = new Set(["k", "K", "S", "x", "X"]);
+export const NEVER_SPELLED: readonly string[] = [
+  "kkk", "SS", "xxx", "nazi", "heil",
+  "ass", "arse", "anal", "anus", "bitch", "boob", "butt", "cock", "crap",
+  "cum", "cunt", "damn", "dick", "fuck", "hell", "jizz", "piss", "porn",
+  "prick", "pussy", "sex", "shit", "tit", "twat", "wank",
+  "chink", "coon", "dyke", "fag", "gay", "gook", "homo", "jap", "jew",
+  "kike", "negro", "nig", "spic", "wop",
+  "hoe", "slut", "whore", "rape", "retard", "kys",
+];
+
+/** Every run a card can print: a character once, twice or three times. */
+function runs(chars: readonly string[]): string[] {
+  return chars.flatMap((c) => [c, c + c, c + c + c]);
+}
+
+/**
+ * The first NEVER_SPELLED word a board of these characters can show, as
+ * the reading that shows it ("Ass"), or null when there is none.
+ */
+export function blockedReading(chars: readonly string[]): string | null {
+  const r = runs(chars);
+  const readings = [...r, ...r.flatMap((a) => r.map((b) => a + b)), ...r.flatMap((a) => r.flatMap((b) => r.map((c) => a + b + c)))];
+  for (const s of readings) {
+    const lower = s.toLowerCase();
+    for (const w of NEVER_SPELLED) if ((w === w.toLowerCase() ? lower : s).includes(w)) return s;
+  }
+  return null;
+}
 
 const ch = (char: string, name: string, plural = `${name}s`): CharacterSpec => ({ char, name, plural });
 const letter = (char: string): CharacterSpec => ch(char, char, `${char}'s`);
@@ -83,12 +115,13 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Symbols", face: "fraunces", chars: [ch("&", "ampersand"), ch("@", "at sign"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "fraunces", chars: [ch("$", "dollar sign"), ch("€", "euro sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "eb-garamond", chars: [ch("ß", "sharp s", "sharp s's"), ch("Æ", "ash", "ashes"), ch("Ø", "slashed O", "slashed O's")], since: 0 },
-  // Was Q e k: a card prints its character up to three times (NEVER_DEALT).
+  // Was Q e k: three k's on one card (NEVER_SPELLED).
   { theme: "Letters", face: "fraunces", chars: [letter("Q"), letter("e"), letter("b")], since: 0 },
   { theme: "Symbols", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
   { theme: "Currency", face: "literata", chars: [ch("£", "pound sign"), ch("₹", "rupee sign"), ch("₩", "won sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("α", "alpha"), ch("γ", "gamma"), ch("ξ", "xi")], since: 0 },
-  { theme: "Letters", face: "eb-garamond", chars: [letter("G"), letter("a"), letter("y")], since: 0 },
+  // Was G a y, which a row of three cards spells (NEVER_SPELLED).
+  { theme: "Letters", face: "eb-garamond", chars: [letter("G"), letter("a"), letter("d")], since: 0 },
   { theme: "Symbols", face: "jost", chars: [ch("%", "percent sign"), ch("&", "ampersand"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "eb-garamond", chars: [ch("$", "dollar sign"), ch("£", "pound sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "fraunces", chars: [ch("Þ", "thorn"), ch("ð", "eth"), ch("Œ", "OE ligature", "OE ligatures")], since: 0 },
@@ -98,7 +131,9 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Beyond A–Z", face: "literata", chars: [ch("λ", "lambda"), ch("Ω", "omega"), ch("ψ", "psi")], since: 0 },
   { theme: "Letters", face: "roboto-slab", chars: [letter("h"), letter("e"), letter("y")], since: 0 },
   { theme: "Symbols", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
-  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0 },
+  // Retired: an A card beside an "ss" card reads "Ass" (NEVER_SPELLED). It
+  // had played (10-10), so it keeps that day; A b y, at the end, replaces it.
+  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0, until: 1 },
   // Faces that had never set a character board (review: the pool leaned on
   // Fraunces, EB Garamond and Literata). Each vetted in all three fills at
   // card size; Bodoni's dagger, Literata's asterism and Kaushan's thin
@@ -114,6 +149,7 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "bodoni-moda", chars: [letter("Q"), letter("a"), letter("R")], since: 0 },
   { theme: "Letters", face: "lobster", chars: [letter("G"), letter("e"), letter("d")], since: 0 },
   { theme: "Letters", face: "jost", chars: [letter("M"), letter("y"), letter("s")], since: 0 },
+  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("b"), letter("y")], since: 1 },
 ];
 
 export const FACES_POOL: readonly FacesEntry[] = [
@@ -129,7 +165,7 @@ export const FACES_POOL: readonly FacesEntry[] = [
   // Was Literata: an "e" has no serifs to show, and Literata's drew as
   // Jost's near twin (legibility.test.ts). Bodoni's stress parts them.
   { char: letter("e"), faces: ["bodoni-moda", "jost", "lobster"], since: 0 },
-  // Retired, as is the other "k" below: three k's on one card (NEVER_DEALT).
+  // Retired, as is the other "k" below: three k's on one card (NEVER_SPELLED).
   // Both had already played, so they keep their cycle-0 days and leave
   // the rotation from cycle 1; the "h" and "B" at the end take their places.
   { char: letter("k"), faces: ["jost", "roboto-slab", "kaushan-script"], since: 0, until: 1 },

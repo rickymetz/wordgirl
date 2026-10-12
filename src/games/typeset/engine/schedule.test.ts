@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { dateKeyRange } from "../../../lib/date";
-import { CHARSET_POOL, FACES_POOL, NEVER_DEALT } from "./pool";
+import { blockedReading, CHARSET_POOL, FACES_POOL } from "./pool";
 import { dailyBoard, practiceBoard, scheduleSlot } from "./schedule";
 import { findSets } from "./sets";
+
+// Boards repeat from a small pool: read each character set once.
+const readings = new Map<string, string | null>();
+const spells = (chars: string[]) => {
+  const key = chars.join("\u0000");
+  if (!readings.has(key)) readings.set(key, blockedReading(chars));
+  return readings.get(key)!;
+};
 
 describe("schedule", () => {
   // Each of the first few cycles plays exactly the entries live in it:
@@ -24,14 +32,16 @@ describe("schedule", () => {
     });
   }
 
-  // The first faces "k" played 10-01 and the second 10-12, before the rule
-  // (pool.ts NEVER_DEALT); from the day after, no board may deal one.
-  it("never deals a character a card may not repeat, from 2026-10-13 on", () => {
-    const dealt: string[] = [];
+  // Faces "k" played 10-01 and 10-12, Letters "A g s" 10-10, before the
+  // rule (pool.ts NEVER_SPELLED); from the day after, no board may.
+  it("never deals a board that spells a NEVER_SPELLED word, from 2026-10-13 on", () => {
+    const spelled: string[] = [];
     for (const d of dateKeyRange("2026-10-13", "2028-12-31"))
-      for (const kind of ["charset", "faces"] as const)
-        for (const g of dailyBoard(d, kind).glyphs) if (NEVER_DEALT.has(g.char)) dealt.push(`${d} ${kind} ${g.char}`);
-    expect(dealt).toEqual([]);
+      for (const kind of ["charset", "faces"] as const) {
+        const reading = spells(dailyBoard(d, kind).glyphs.map((g) => g.char));
+        if (reading) spelled.push(`${d} ${kind} ${reading}`);
+      }
+    expect(spelled).toEqual([]);
   });
 
   it("never replays an entry within three days across a cycle boundary", () => {
@@ -87,7 +97,7 @@ describe("schedule", () => {
   it("never deals a retired entry in practice", () => {
     for (let i = 0; i < 500; i++)
       for (const kind of ["charset", "faces"] as const)
-        for (const g of practiceBoard(kind, `seed${i}`).glyphs) expect(NEVER_DEALT.has(g.char), `${kind} seed${i}`).toBe(false);
+        expect(spells(practiceBoard(kind, `seed${i}`).glyphs.map((g) => g.char)), `${kind} seed${i}`).toBeNull();
   });
 
   it("builds practice boards of either kind", () => {
