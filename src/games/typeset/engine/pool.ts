@@ -65,25 +65,21 @@ export interface FacesEntry {
 }
 
 /**
- * What no board may spell. A card prints its character up to three times,
- * and cards sit side by side (a row of the board, a set in the tray), so a
- * board reads as runs of its characters run together: "kkk" on one card,
- * "A" then "ss" as "Ass" across two. `blockedReading` tries every such
- * string across up to three cards; pool.test.ts and schedule.test.ts hold
- * every live entry, the tutorial, practice and every future day to it.
+ * What no board may spell: slurs and hate-group names and symbols. (Swears
+ * are fine; this is not a profanity filter.) A card prints its character
+ * up to three times, and cards sit side by side (a row of the board, a set
+ * in the tray), so a board reads as runs of its characters run together:
+ * "kkk" on one card, "n" then "ig" across two. `blockedReading` tries every
+ * such string across up to three cards; pool.test.ts and schedule.test.ts
+ * hold every live entry, the tutorial, practice and every future day to it.
  *
  * Matched ignoring case, except an entry with a capital, which matches
  * only as written: "SS" is the Nazi paramilitary, "ss" a word ending.
- * "gay" is here for the insult it is on a playground, not for the word.
  */
 export const NEVER_SPELLED: readonly string[] = [
-  "kkk", "SS", "xxx", "nazi", "heil",
-  "ass", "arse", "anal", "anus", "bitch", "boob", "butt", "cock", "crap",
-  "cum", "cunt", "damn", "dick", "fuck", "hell", "jizz", "piss", "porn",
-  "prick", "pussy", "sex", "shit", "tit", "twat", "wank",
-  "chink", "coon", "dyke", "fag", "gay", "gook", "homo", "jap", "jew",
-  "kike", "negro", "nig", "spic", "wop",
-  "hoe", "slut", "whore", "rape", "retard", "kys",
+  "kkk", "SS", "nazi", "heil",
+  "chink", "coon", "dyke", "fag", "gook", "kike", "negro", "nig", "spic",
+  "tranny", "wop", "retard",
 ];
 
 /** Every run a card can print: a character once, twice or three times. */
@@ -93,7 +89,7 @@ function runs(chars: readonly string[]): string[] {
 
 /**
  * The first NEVER_SPELLED word a board of these characters can show, as
- * the reading that shows it ("Ass"), or null when there is none.
+ * the reading that shows it ("kkk"), or null when there is none.
  */
 export function blockedReading(chars: readonly string[]): string | null {
   const r = runs(chars);
@@ -120,8 +116,7 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Symbols", face: "eb-garamond", chars: [ch("?", "question mark"), ch("¶", "pilcrow"), ch("§", "section sign")], since: 0 },
   { theme: "Currency", face: "literata", chars: [ch("£", "pound sign"), ch("₹", "rupee sign"), ch("₩", "won sign")], since: 0 },
   { theme: "Beyond A–Z", face: "literata", chars: [ch("α", "alpha"), ch("γ", "gamma"), ch("ξ", "xi")], since: 0 },
-  // Was G a y, which a row of three cards spells (NEVER_SPELLED).
-  { theme: "Letters", face: "eb-garamond", chars: [letter("G"), letter("a"), letter("d")], since: 0 },
+  { theme: "Letters", face: "eb-garamond", chars: [letter("G"), letter("a"), letter("y")], since: 0 },
   { theme: "Symbols", face: "jost", chars: [ch("%", "percent sign"), ch("&", "ampersand"), ch("?", "question mark")], since: 0 },
   { theme: "Currency", face: "eb-garamond", chars: [ch("$", "dollar sign"), ch("£", "pound sign"), ch("¥", "yen sign")], since: 0 },
   { theme: "Beyond A–Z", face: "fraunces", chars: [ch("Þ", "thorn"), ch("ð", "eth"), ch("Œ", "OE ligature", "OE ligatures")], since: 0 },
@@ -131,9 +126,7 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Beyond A–Z", face: "literata", chars: [ch("λ", "lambda"), ch("Ω", "omega"), ch("ψ", "psi")], since: 0 },
   { theme: "Letters", face: "roboto-slab", chars: [letter("h"), letter("e"), letter("y")], since: 0 },
   { theme: "Symbols", face: "archivo-black", chars: [ch("!", "exclamation mark"), ch("@", "at sign"), ch("%", "percent sign")], since: 0 },
-  // Retired: an A card beside an "ss" card reads "Ass" (NEVER_SPELLED). It
-  // had played (10-10), so it keeps that day; A b y, at the end, replaces it.
-  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0, until: 1 },
+  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("g"), letter("s")], since: 0 },
   // Faces that had never set a character board (review: the pool leaned on
   // Fraunces, EB Garamond and Literata). Each vetted in all three fills at
   // card size; Bodoni's dagger, Literata's asterism and Kaushan's thin
@@ -149,7 +142,6 @@ export const CHARSET_POOL: readonly CharsetEntry[] = [
   { theme: "Letters", face: "bodoni-moda", chars: [letter("Q"), letter("a"), letter("R")], since: 0 },
   { theme: "Letters", face: "lobster", chars: [letter("G"), letter("e"), letter("d")], since: 0 },
   { theme: "Letters", face: "jost", chars: [letter("M"), letter("y"), letter("s")], since: 0 },
-  { theme: "Letters", face: "archivo-black", chars: [letter("A"), letter("b"), letter("y")], since: 1 },
 ];
 
 export const FACES_POOL: readonly FacesEntry[] = [

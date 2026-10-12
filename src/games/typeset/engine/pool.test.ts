@@ -30,10 +30,14 @@ describe("what a board may spell", () => {
 
   it("is read on one card and across cards, and the capital SS only as written", () => {
     expect(blockedReading(["k"])).toBe("kkk");
-    expect(blockedReading(["A", "g", "s"])).toBe("Ass");
-    expect(blockedReading(["G", "a", "y"])).toBe("Gay");
+    expect(blockedReading(["n", "i", "g"])).toBe("nig");
     expect(blockedReading(["S"])).toBe("SS");
     expect(blockedReading(["M", "y", "s"])).toBeNull();
+  });
+
+  it("is not a profanity filter: swears may be dealt", () => {
+    expect(blockedReading(["A", "g", "s"])).toBeNull();
+    expect(blockedReading(["G", "a", "y"])).toBeNull();
   });
 });
 

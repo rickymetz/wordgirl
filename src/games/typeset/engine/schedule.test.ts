@@ -32,8 +32,8 @@ describe("schedule", () => {
     });
   }
 
-  // Faces "k" played 10-01 and 10-12, Letters "A g s" 10-10, before the
-  // rule (pool.ts NEVER_SPELLED); from the day after, no board may.
+  // Faces "k" played 10-01 and 10-12, before the rule (pool.ts
+  // NEVER_SPELLED); from the day after, no board may spell a word on it.
   it("never deals a board that spells a NEVER_SPELLED word, from 2026-10-13 on", () => {
     const spelled: string[] = [];
     for (const d of dateKeyRange("2026-10-13", "2028-12-31"))
