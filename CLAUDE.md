@@ -105,15 +105,18 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
   0.01ms duration), and constrained devices freeze just the glow's blur —
   `prefers-reduced-data` plus `html[data-low-power]`, the boot-time JS
   guess in `lib/lowPower.ts` (there is no CSS media query for device
-  power). A `ConfettiOverlay` fires ONCE when the banner first appears for
-  the day, and a "×" dismisses it for the day; both flags are
-  per-date in `lib/roundupCelebration.ts` (a `roundup:` store, not a game),
-  so neither replays on the next hub visit. Because that one-shot is spent
-  the moment it's marked, the banner waits for `document.hidden` to clear
-  before celebrating (rAF doesn't tick in a hidden tab, so marking it there
-  would burn the day having drawn nothing), and it only celebrates a
-  roundup whose `dateKey` still matches `today` — a midnight rollover
-  re-renders with the new day before the old entries clear.
+  power). A `ConfettiOverlay` fires EVERY time the banner is shown —
+  each hub visit replays it, a victory lap — until a "×" dismisses the
+  banner for the day (a per-date flag in `lib/roundupCelebration.ts`, a
+  `roundup:` store, not a game). The banner waits for `document.hidden`
+  to clear before celebrating (rAF doesn't tick in a hidden tab, so the
+  run would play to no one), unmounts the overlay on its `onDone` (the
+  run's REAL end, which a hidden stretch pushes back — never a wall-clock
+  timer, which cut the grand sequence short on a phone locked mid-run),
+  and only celebrates a roundup whose `dateKey` still matches `today` —
+  a midnight rollover re-renders with the new day before the old entries
+  clear. Only hints cost the perfect day: a Crosshatch board ended by hold
+  with words missing still counts (a decided rule).
 - `ConfettiOverlay` (`components/`) — TWO tiers, off the SAME whole-day
   hint decision as the roundup rows: `burst` (the everyday single pop,
   what every solve screen shows) and `grand` (gold, four staggered

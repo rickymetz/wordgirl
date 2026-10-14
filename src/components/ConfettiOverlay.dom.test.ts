@@ -47,14 +47,14 @@ function setMatchMedia() {
   })) as unknown as typeof window.matchMedia;
 }
 
-function mount(variant?: "burst" | "grand") {
+function mount(variant?: "burst" | "grand", onDone?: () => void) {
   container = document.createElement("div");
   document.body.appendChild(container);
   act(() => {
     root = createRoot(container);
   });
   act(() => {
-    root.render(createElement(ConfettiOverlay, variant ? { variant } : {}));
+    root.render(createElement(ConfettiOverlay, { ...(variant ? { variant } : {}), onDone }));
   });
 }
 
@@ -120,6 +120,66 @@ describe("ConfettiOverlay", () => {
     // The request is preserved; what was drawn is the cheap tier.
     expect(canvas().dataset.confetti).toBe("grand");
     expect(canvas().dataset.confettiDrawn).toBe("burst");
+  });
+});
+
+describe("ConfettiOverlay onDone", () => {
+  let frames: FrameRequestCallback[];
+  let now: number;
+  let hidden: boolean;
+  const run = (t: number) => {
+    now = t;
+    const due = frames;
+    frames = [];
+    act(() => due.forEach((f) => f(t)));
+  };
+  const setHidden = (h: boolean, t: number) => {
+    now = t;
+    hidden = h;
+    act(() => void document.dispatchEvent(new Event("visibilitychange")));
+  };
+
+  beforeEach(() => {
+    frames = [];
+    now = 0;
+    hidden = false;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((f) => frames.push(f));
+    vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("fires at once when nothing draws (reduced motion)", () => {
+    matching = ["prefers-reduced-motion"];
+    setMatchMedia();
+    const onDone = vi.fn();
+    mount("grand", onDone);
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires once, when the run has finished", () => {
+    const onDone = vi.fn();
+    mount("grand", onDone);
+    run(CONFETTI_DURATION.grand - 1);
+    expect(onDone).not.toHaveBeenCalled();
+    run(CONFETTI_DURATION.grand);
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(frames).toHaveLength(0);
+  });
+
+  it("is pushed back by a hidden stretch, so a locked phone doesn't lose the rest", () => {
+    const onDone = vi.fn();
+    mount("grand", onDone);
+    run(300);
+    setHidden(true, 300);
+    run(CONFETTI_DURATION.grand + 5_000); // a frame while hidden draws nothing
+    setHidden(false, 10_000);
+    // 300ms had played; the remaining run counts from the return.
+    run(10_000 + CONFETTI_DURATION.grand - 300 - 1);
+    expect(onDone).not.toHaveBeenCalled();
+    run(10_000 + CONFETTI_DURATION.grand - 300);
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 });
 

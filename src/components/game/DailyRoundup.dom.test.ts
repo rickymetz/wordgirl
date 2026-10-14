@@ -60,6 +60,15 @@ async function flush(ticks = 8) {
   }
 }
 
+/** Animation frames the overlay asked for, run by hand: jsdom has no
+ *  canvas, and a run that never ticks is a run that never ends. */
+let frames: FrameRequestCallback[] = [];
+function runFramesAt(now: number) {
+  const due = frames;
+  frames = [];
+  act(() => due.forEach((f) => f(now)));
+}
+
 async function mount() {
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -85,6 +94,13 @@ beforeEach(() => {
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
   });
+  // ConfettiOverlay draws on a 2D context; jsdom has none, and with no
+  // context the overlay counts its run as over at once.
+  frames = [];
+  window.requestAnimationFrame = ((f: FrameRequestCallback) => frames.push(f)) as typeof window.requestAnimationFrame;
+  window.cancelAnimationFrame = () => {};
+  HTMLCanvasElement.prototype.getContext = (() =>
+    new Proxy({}, { get: () => () => {}, set: () => true })) as unknown as HTMLCanvasElement["getContext"];
   // ConfettiOverlay reads matchMedia; jsdom doesn't provide it.
   window.matchMedia = ((q: string) => ({
     matches: false,
@@ -230,23 +246,22 @@ describe("DailyRoundup", () => {
   const banner = () =>
     container.querySelector('[aria-label="Today\'s roundup"]');
 
-  it("fires the confetti once, then remembers it for the day", async () => {
+  it("fires the confetti, and replays it on every hub visit", async () => {
     await mount();
-    // ConfettiOverlay mounts its canvas on the first show. Bravo used
-    // hints today, so it's the everyday burst, not the perfect-day one.
+    // Bravo used hints today, so it's the everyday burst, not the
+    // perfect-day one.
     expect(
       container.querySelector('canvas[data-confetti="burst"]'),
     ).toBeTruthy();
-    expect(
-      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25:3"),
-    ).toBeTruthy();
 
-    // A later visit the same day shows the banner but does NOT replay it.
+    // A later visit the same day plays it again.
     act(() => root.unmount());
     container.remove();
     await mount();
     expect(banner()).toBeTruthy();
-    expect(container.querySelector("canvas")).toBeNull();
+    expect(
+      container.querySelector('canvas[data-confetti="burst"]'),
+    ).toBeTruthy();
   });
 
   it("fires the grand confetti when the whole day used zero hints", async () => {
@@ -257,17 +272,35 @@ describe("DailyRoundup", () => {
     expect(
       container.querySelector('canvas[data-confetti="grand"]'),
     ).toBeTruthy();
-    // Still a one-shot: remembered for the day like the everyday burst.
+    // Replayed on the next visit like the everyday burst.
+    act(() => root.unmount());
+    container.remove();
+    await mount();
     expect(
-      localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25:3"),
+      container.querySelector('canvas[data-confetti="grand"]'),
     ).toBeTruthy();
   });
 
+  it("takes the confetti away when the run has drawn, not on a clock", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    const canvas = () => container.querySelector('canvas[data-confetti="grand"]');
+    expect(canvas()).toBeTruthy();
+    // Mid-run: still up.
+    runFramesAt(performance.now() + 500);
+    expect(canvas()).toBeTruthy();
+    // Past the end of the sequence: the overlay reports done, and goes.
+    runFramesAt(performance.now() + 60_000);
+    expect(canvas()).toBeNull();
+    expect(banner()).toBeTruthy();
+  });
+
   it("a flag from when the day had fewer games doesn't hide the new banner", async () => {
-    // Launch day of a new game: the player dismissed (and celebrated) the
-    // smaller roundup that morning. The bigger one is a different banner.
+    // Launch day of a new game: the player dismissed the smaller roundup
+    // that morning. The bigger one is a different banner.
     localStorage.setItem("wg:v1:local:roundup:dismissed:2026-08-25:2", "true");
-    localStorage.setItem("wg:v1:local:roundup:celebrated:2026-08-25:2", "true");
     await mount();
     expect(banner()).toBeTruthy();
     expect(container.querySelector("canvas")).toBeTruthy();

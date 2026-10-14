@@ -27,6 +27,9 @@ export const crosshatch: GameDefinition = {
     );
     if (!boards.every((b) => b?.solved === true)) return null;
     const elapsedMs = boards.reduce((ms, b) => ms + (b?.elapsedMs ?? 0), 0);
+    // Only hints count against the perfect day. A board ended by hold
+    // with words missing is still hint-free and still counts as done
+    // (a decided rule, not an oversight): its value reads short, nothing more.
     const hints = boards.reduce(
       (n, b) =>
         n +
