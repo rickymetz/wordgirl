@@ -60,6 +60,15 @@ async function flush(ticks = 8) {
   }
 }
 
+/** Animation frames the overlay asked for, run by hand: jsdom has no
+ *  canvas, and a run that never ticks is a run that never ends. */
+let frames: FrameRequestCallback[] = [];
+function runFramesAt(now: number) {
+  const due = frames;
+  frames = [];
+  act(() => due.forEach((f) => f(now)));
+}
+
 async function mount() {
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -85,6 +94,13 @@ beforeEach(() => {
   Object.assign(navigator, {
     clipboard: { writeText: async (t: string) => void copied.push(t) },
   });
+  // ConfettiOverlay draws on a 2D context; jsdom has none, and with no
+  // context the overlay counts its run as over at once.
+  frames = [];
+  window.requestAnimationFrame = ((f: FrameRequestCallback) => frames.push(f)) as typeof window.requestAnimationFrame;
+  window.cancelAnimationFrame = () => {};
+  HTMLCanvasElement.prototype.getContext = (() =>
+    new Proxy({}, { get: () => () => {}, set: () => true })) as unknown as HTMLCanvasElement["getContext"];
   // ConfettiOverlay reads matchMedia; jsdom doesn't provide it.
   window.matchMedia = ((q: string) => ({
     matches: false,
@@ -261,6 +277,22 @@ describe("DailyRoundup", () => {
     expect(
       localStorage.getItem("wg:v1:local:roundup:celebrated:2026-08-25:3"),
     ).toBeTruthy();
+  });
+
+  it("takes the confetti away when the run has drawn, not on a clock", async () => {
+    state.a = { ...state.a!, hints: 0 };
+    state.b = { ...state.b!, hints: 0 };
+    state.c = { ...state.c!, hints: 0 };
+    await mount();
+    const canvas = () => container.querySelector('canvas[data-confetti="grand"]');
+    expect(canvas()).toBeTruthy();
+    // Mid-run: still up.
+    runFramesAt(performance.now() + 500);
+    expect(canvas()).toBeTruthy();
+    // Past the end of the sequence: the overlay reports done, and goes.
+    runFramesAt(performance.now() + 60_000);
+    expect(canvas()).toBeNull();
+    expect(banner()).toBeTruthy();
   });
 
   it("a flag from when the day had fewer games doesn't hide the new banner", async () => {

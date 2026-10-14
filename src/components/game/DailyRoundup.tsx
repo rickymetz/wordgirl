@@ -18,12 +18,7 @@ import {
   markRoundupDismissed,
 } from "../../lib/roundupCelebration";
 import { ShareButton } from "../ShareButton";
-import {
-  CONFETTI_DURATION,
-  ConfettiOverlay,
-  resolveConfettiVariant,
-  type ConfettiVariant,
-} from "../ConfettiOverlay";
+import { ConfettiOverlay, type ConfettiVariant } from "../ConfettiOverlay";
 
 interface Roundup {
   /** The dateKey this was computed for. Carried so an effect can tell a
@@ -119,8 +114,8 @@ export function DailyRoundup({ today }: { today: string }) {
     };
   }, [today]);
 
-  // ONE whole-day decision, read by four things: the confetti tier, the
-  // effect's unmount timer, the headline, and the rows' hint counts. It
+  // ONE whole-day decision, read by three things: the confetti tier, the
+  // headline, and the rows' hint counts. It
   // lives up here (before the early return) because the effect needs it;
   // a second copy of the same test is how they stop agreeing.
   const perfectDay = roundup !== null && roundupTotalHints(roundup.entries) === 0;
@@ -137,7 +132,6 @@ export function DailyRoundup({ today }: { today: string }) {
     // would burn the new day's one-shot before its banner ever exists.
     if (roundup.dateKey !== today) return;
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
     // requestAnimationFrame doesn't run in a hidden tab, so celebrating now
     // would persist the flag having drawn nothing — and the grand tier is
     // rare enough that losing it to a locked phone means losing it for the
@@ -146,19 +140,17 @@ export function DailyRoundup({ today }: { today: string }) {
       void loadRoundupCelebrated(today, games.length).then((done) => {
         if (cancelled || done) return;
         void markRoundupCelebrated(today, games.length);
+        // The overlay unmounts itself through onDone when its run has
+        // finished. Not a timer: a phone locked mid-sequence pauses the
+        // run, and a wall clock would take the canvas away before the
+        // rest of the grand sequence ever drew.
         setCelebrate(true);
-        // Unmount the canvas once the run has finished (the grand variant
-        // takes longer); the banner then just sits with its drifting border.
-        timer = setTimeout(() => {
-          if (!cancelled) setCelebrate(false);
-        }, CONFETTI_DURATION[resolveConfettiVariant(variant)] + 200);
       });
     };
     if (!document.hidden) {
       run();
       return () => {
         cancelled = true;
-        clearTimeout(timer);
       };
     }
     const onVisible = () => {
@@ -169,10 +161,9 @@ export function DailyRoundup({ today }: { today: string }) {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
-      clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [roundup, dismissed, today, variant]);
+  }, [roundup, dismissed, today]);
 
   if (!roundup || dismissed !== false) return null;
   const { entries, streak } = roundup;
@@ -181,7 +172,9 @@ export function DailyRoundup({ today }: { today: string }) {
   const showHints = !perfectDay;
   return (
     <>
-      {celebrate && <ConfettiOverlay variant={variant} />}
+      {celebrate && (
+        <ConfettiOverlay variant={variant} onDone={() => setCelebrate(false)} />
+      )}
       <section
         aria-label="Today's roundup"
         // The gradient is the border: a 3px sweep showing only where the

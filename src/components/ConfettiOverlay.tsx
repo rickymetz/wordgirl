@@ -172,21 +172,32 @@ function starPath(ctx: CanvasRenderingContext2D, r: number) {
  * constrained device. Renders nothing under `prefers-reduced-motion`,
  * which means it can never be the ONLY thing marking an achievement.
  * Mount it when the celebration starts and unmount after
- * `CONFETTI_DURATION[resolveConfettiVariant(variant)]`.
+ * `CONFETTI_DURATION[resolveConfettiVariant(variant)]`, or — where the run
+ * must not be cut short — when `onDone` fires: that is the run's REAL end,
+ * which a hidden tab pushes back (the clock pauses while hidden), where a
+ * wall-clock timer would unmount the canvas mid-sequence.
  */
 export function ConfettiOverlay({
   variant = "burst",
+  onDone,
 }: {
   variant?: ConfettiVariant;
+  /** Called once, when the run has finished drawing (at once if nothing
+   *  draws: reduced motion, no canvas context). */
+  onDone?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Read through a ref so a new callback each render doesn't restart the run.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
+    const done = () => onDoneRef.current?.();
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return done();
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return done();
 
     const drawn = resolveConfettiVariant(variant);
     // `data-confetti` is the tier the CALLER asked for; this is the one
@@ -200,7 +211,7 @@ export function ConfettiOverlay({
           // rather than confetti-with-a-few-gold-pieces.
           [...palette.rainbow, ...palette.gold, ...palette.gold]
         : palette[name];
-    if (palette.rainbow.length === 0 && palette.gold.length === 0) return;
+    if (palette.rainbow.length === 0 && palette.gold.length === 0) return done();
 
     // Cap the backing store: a full-screen layer at DPR 3 is ~3M px
     // cleared and recomposited every frame, and confetti gains nothing
@@ -299,6 +310,8 @@ export function ConfettiOverlay({
 
       if (elapsed < duration) {
         raf = requestAnimationFrame(frame);
+      } else {
+        done();
       }
     }
 
