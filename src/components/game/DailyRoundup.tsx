@@ -113,9 +113,8 @@ export function DailyRoundup({ today }: { today: string }) {
   }, [today]);
 
   // ONE whole-day decision, read by three things: the confetti tier, the
-  // headline, and the rows' hint counts. It
-  // lives up here (before the early return) because the effect needs it;
-  // a second copy of the same test is how they stop agreeing.
+  // headline, and the rows' hint counts. Computed once, here: a second
+  // copy of the same test is how they stop agreeing.
   const perfectDay = roundup !== null && roundupTotalHints(roundup.entries) === 0;
   // A hint-free day gets the grand (gold, multi-burst) sequence.
   const variant: ConfettiVariant = perfectDay ? "grand" : "burst";
