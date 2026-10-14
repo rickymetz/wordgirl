@@ -12,9 +12,7 @@ import {
   type RoundupEntry,
 } from "../../lib/roundup";
 import {
-  loadRoundupCelebrated,
   loadRoundupDismissed,
-  markRoundupCelebrated,
   markRoundupDismissed,
 } from "../../lib/roundupCelebration";
 import { ShareButton } from "../ShareButton";
@@ -122,47 +120,33 @@ export function DailyRoundup({ today }: { today: string }) {
   // A hint-free day gets the grand (gold, multi-burst) sequence.
   const variant: ConfettiVariant = perfectDay ? "grand" : "burst";
 
-  // Fire the confetti ONCE, the first time the completed banner is shown for
-  // the day (and only if not dismissed). markCelebrated persists it so a
-  // reload or a later hub visit doesn't replay it.
+  // Fire the confetti every time the completed banner is shown: each hub
+  // visit replays it (the player's victory lap), until the banner is
+  // dismissed for the day.
   useEffect(() => {
     if (!roundup || dismissed !== false) return;
     // A midnight rollover re-renders with the new `today` before
-    // useDailyRoundup has cleared the old day's entries, and marking THEN
-    // would burn the new day's one-shot before its banner ever exists.
+    // useDailyRoundup has cleared the old day's entries; don't celebrate
+    // yesterday's banner on the new day.
     if (roundup.dateKey !== today) return;
-    let cancelled = false;
-    // requestAnimationFrame doesn't run in a hidden tab, so celebrating now
-    // would persist the flag having drawn nothing — and the grand tier is
-    // rare enough that losing it to a locked phone means losing it for the
-    // day. Wait for the tab to be looked at.
-    const run = () => {
-      void loadRoundupCelebrated(today, games.length).then((done) => {
-        if (cancelled || done) return;
-        void markRoundupCelebrated(today, games.length);
-        // The overlay unmounts itself through onDone when its run has
-        // finished. Not a timer: a phone locked mid-sequence pauses the
-        // run, and a wall clock would take the canvas away before the
-        // rest of the grand sequence ever drew.
-        setCelebrate(true);
-      });
-    };
+    // requestAnimationFrame doesn't run in a hidden tab (a phone locked on
+    // the way to the hub), so wait for the tab to be looked at rather than
+    // play the run to no one.
+    // The overlay unmounts itself through onDone when its run has
+    // finished. Not a timer: a phone locked mid-sequence pauses the run,
+    // and a wall clock would take the canvas away before the rest of the
+    // grand sequence ever drew.
     if (!document.hidden) {
-      run();
-      return () => {
-        cancelled = true;
-      };
+      setCelebrate(true);
+      return;
     }
     const onVisible = () => {
       if (document.hidden) return;
       document.removeEventListener("visibilitychange", onVisible);
-      if (!cancelled) run();
+      setCelebrate(true);
     };
     document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [roundup, dismissed, today]);
 
   if (!roundup || dismissed !== false) return null;
@@ -200,9 +184,9 @@ export function DailyRoundup({ today }: { today: string }) {
                 the accessible face automatically. */}
             {/* The perfect day says so in TEXT, not only in gold confetti:
                 the overlay renders nothing under prefers-reduced-motion and
-                fires once on a hub visit that may never happen, so an
-                animation alone leaves the achievement unattributable — and
-                unannounced to a screen reader. Same whole-day gate as the
+                only plays on a hub visit, so an animation alone leaves the
+                achievement unattributable — and unannounced to a screen
+                reader. Same whole-day gate as the
                 rows. */}
             <h2 className="text-balance px-6 font-game text-lg leading-none text-ink">
               {perfectDay
