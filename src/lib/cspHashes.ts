@@ -18,7 +18,9 @@ export interface InlineBlock {
  * comments are stripped first — a literal "<style>" mentioned in a
  * comment must not open a phantom block that swallows real content —
  * and a script tag carrying src= in any quoting is external, covered
- * by a host source rather than a hash.
+ * by a host source rather than a hash. A JSON data block
+ * (type="application/ld+json" or "application/json") is skipped too:
+ * the browser never executes it, so script-src never applies to it.
  */
 export function inlineBlocks(html: string): InlineBlock[] {
   const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
@@ -27,6 +29,11 @@ export function inlineBlocks(html: string): InlineBlock[] {
   for (const m of stripped.matchAll(tag)) {
     const kind = m[1].toLowerCase() as InlineBlock["kind"];
     if (kind === "script" && /(^|[\s"'])src\s*=/i.test(m[2])) continue;
+    if (
+      kind === "script" &&
+      /(^|\s)type\s*=\s*["']?application\/(ld\+)?json(?:["'\s]|$)/i.test(m[2])
+    )
+      continue;
     blocks.push({ kind, text: m[3] });
   }
   return blocks;

@@ -30,6 +30,19 @@ describe("inlineBlocks", () => {
     expect(inlineBlocks(html)).toEqual([{ kind: "script", text: "run();" }]);
   });
 
+  it("skips JSON data blocks, which the browser never executes", () => {
+    const html = `
+      <script type="application/ld+json">{"@type":"WebSite"}</script>
+      <script type='application/json'>{"a":1}</script>
+      <script type=application/ld+json>{}</script>
+      <script data-type="application/json">run();</script>
+      <script type="application/json-ish">x();</script>`;
+    expect(inlineBlocks(html)).toEqual([
+      { kind: "script", text: "run();" },
+      { kind: "script", text: "x();" },
+    ]);
+  });
+
   it("ignores tags mentioned inside HTML comments", () => {
     // Without comment-stripping, the commented "<style>" would open a
     // phantom block that swallows everything up to the REAL closing

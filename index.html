@@ -39,6 +39,9 @@
       content="A little collection of word games — a new puzzle every day."
     />
     <meta name="twitter:image" content="https://wordgirl.net/og.png" />
+    <!-- Canonical, robots and JSON-LD, filled per page at build time
+         from src/lib/seo.ts (seoPages, vite.config.ts). -->
+    <!--seo:head--><!--/seo:head-->
     <!-- Pre-JS mirror of applySettings (src/lib/settings.ts): the
          bundle re-applies these on mount, but on the slow connection
          the boot screen exists for that is seconds away, and a
@@ -274,9 +277,8 @@
           boot-spin 0.8s linear infinite;
       }
       /* On its own surface pill: ink-soft straight on a pulsing bone
-         bottoms out at 4.05:1 in dark mode, under AA. An h1 so the
-         page always has a heading naming its state, sized as body
-         text. */
+         bottoms out at 4.05:1 in dark mode, under AA. A paragraph, not
+         a heading: the page's h1 is its real name, in #boot-about. */
       #boot-note {
         font-size: 1rem;
         font-weight: 400;
@@ -328,6 +330,22 @@
         color: var(--boot-surface);
         font-weight: 600;
         text-decoration: none;
+      }
+      /* The crawler text (see the seo:body region): in the HTML for
+         anything that reads it without running the app, visually hidden
+         for people, who get the boot screen and then the app. Screen
+         readers can still read it while the boot is in flight. */
+      #boot-about {
+        /* Pinned top-left: left at its static position, after the
+           100dvh boot screen, its 1px would page-scroll the boot. */
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
       @keyframes boot-reveal {
         to {
@@ -435,7 +453,7 @@
         <div id="boot-center">
           <div id="boot-spinner" aria-hidden="true" hidden></div>
           <div role="status">
-            <h1 id="boot-note">Loading…</h1>
+            <p id="boot-note">Loading…</p>
           </div>
           <div role="status">
             <div id="boot-stuck" hidden>
@@ -450,6 +468,10 @@
           </div>
         </div>
       </div>
+      <!-- The page's own h1 and text for crawlers that read HTML without
+           running it, filled at build time from src/lib/seo.ts. React
+           replaces it on mount with the rest of #root's children. -->
+      <!--seo:body--><!--/seo:body-->
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

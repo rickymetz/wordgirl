@@ -43,13 +43,18 @@ export function HubPage() {
         ))}
       </main>
       <BackupPrompt />
-      {/* The only route into the legal pages. Kept off the game screens
+      {/* The only route into the legal pages and the guide. Kept off the game screens
           on purpose — they are the one place with a height budget, and a
           link nobody needs mid-puzzle is not worth spending it on. */}
       {/* `-my-3 py-3` is the touch floor, not decoration: the labels are
           20px of line box, and the padding lifts the tap target to 44
           while the negative margin keeps the footer the height it looks. */}
       <footer className="flex justify-center gap-6 pt-10 text-sm text-ink-soft">
+        {/* A plain <a>, not a Link: the docs are a separate site proxied
+            at /docs (netlify.toml), outside the router and the worker. */}
+        <a href="/docs/" className="-my-3 py-3 underline underline-offset-2">
+          Guide
+        </a>
         <Link
           to="/privacy"
           className="-my-3 py-3 underline underline-offset-2"
