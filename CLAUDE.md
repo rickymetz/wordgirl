@@ -495,6 +495,9 @@ sibling game a SECOND time, extract it into the kit instead of pasting.
 
 1. `src/games/<id>/` with `engine/`, `state/`, `ui/` subdirs
 2. Entry in `src/games/registry.ts` with `accentLevel`
+   and in `src/lib/seo.ts` (title, description, how-to for crawlers;
+   `seo.test.ts` pins the two lists together), plus its id in
+   `OG_GAMES` (`vite.config.ts`) so the build writes its page shell
 3. Color token `[data-level="<id>"]` in `src/index.css`
 4. Persistence via `createDailyPersistence` + `loadStaleDailyProgress`
 5. Clock via `useDailyClock` (never inline)

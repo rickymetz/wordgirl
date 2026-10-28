@@ -3,11 +3,20 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import { auditCspHashes, cspHeaderValue } from "./src/lib/cspHashes";
+import {
+  APP_SHELL_META,
+  SEO_GAMES,
+  SITE,
+  gameUrl,
+  pageMeta,
+  prerenderBody,
+  renderSeo,
+  sitemapXml,
+  structuredData,
+} from "./src/lib/seo";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
-
-const SITE = "https://wordgirl.net";
 
 /**
  * Per-game social-card metadata. Kept here rather than imported from
@@ -31,15 +40,48 @@ function setMeta(html: string, attr: "property" | "name", val: string, content: 
   return html.replace(tag, (m) => m.replace(/content="[^"]*"/, `content="${content}"`));
 }
 
+/** A page's SEO meta, crawler text and structured data (src/lib/seo.ts). */
+function seoFor(html: string, pathname: string): string {
+  return renderSeo(
+    html,
+    pageMeta(pathname),
+    prerenderBody(pathname),
+    structuredData(pathname),
+  );
+}
+
 /**
- * Emit a static per-game shell at dist/games/<id>/index.html. It is the
- * built index.html — same hashed JS/CSS, so it boots the identical SPA —
- * with only the social-card meta swapped, so a link to /games/<id> unfurls
- * AS that game instead of the generic hub card. Netlify serves this real
- * file before the /* -> /index.html catch-all, so humans still get the app.
+ * The hub's SEO regions, rendered into index.html itself — at transform
+ * time, not after the bundle, so the precache manifest's revision for
+ * index.html covers what is actually served.
+ */
+function seoHub(): Plugin {
+  return {
+    name: "wordgirl-seo-hub",
+    transformIndexHtml(html) {
+      return seoFor(html, "/");
+    },
+  };
+}
+
+/** The pages Netlify serves from their own static shell (netlify.toml). */
+const PAGE_SHELLS = ["dictionary", "privacy", "terms"] as const;
+
+/**
+ * Emit a static shell for every page that has one. Each is the built
+ * index.html — same hashed JS/CSS, so it boots the identical SPA — with
+ * the page's own title, description, canonical, JSON-LD and crawler text
+ * (src/lib/seo.ts), so search engines and link-readers see what the page
+ * is before any JavaScript runs:
  *
- * Deep sub-routes (/games/<id>/archive, /stats, /tutorial, /practice) are
- * left to the SPA catch-all and keep the generic card by design.
+ * - dist/games/<id>/index.html — each game. Its social-card meta is
+ *   swapped too, so a link to /games/<id>/ unfurls AS that game.
+ * - dist/{dictionary,privacy,terms}.html — rewritten to by netlify.toml.
+ * - dist/app.html — the game sub-routes (practice, stats, tutorial,
+ *   archive): no canonical, robots noindex, the generic card.
+ *
+ * Plus dist/sitemap.xml, listing exactly the pages marked indexable.
+ * Unknown paths match no rewrite and get Netlify's real 404.
  */
 function ogShells(): Plugin {
   let outDir = "dist";
@@ -54,22 +96,30 @@ function ogShells(): Plugin {
       sequential: true,
       order: "post",
       handler() {
+        // The sitemap lists SEO_GAMES; the shells come from OG_GAMES.
+        // A game in one and not the other is a sitemap URL with no page.
+        const ogIds = OG_GAMES.map((g) => g.id).join();
+        const seoIds = SEO_GAMES.map((g) => g.id).join();
+        if (ogIds !== seoIds) {
+          throw new Error(
+            `OG_GAMES (${ogIds}) and SEO_GAMES in src/lib/seo.ts (${seoIds}) must list the same games`,
+          );
+        }
         const base = readFileSync(join(outDir, "index.html"), "utf8");
+        // These shells don't boot the hub, so the hub-shaped boot
+        // skeleton would promise a layout the mount never delivers —
+        // data-boot="game" hides it (index.html's inline boot style)
+        // and leaves the route-agnostic spinner + note.
+        const notHub = base.replace(
+          /<html lang="en">/,
+          `<html lang="en" data-boot="game">`,
+        );
         for (const g of OG_GAMES) {
           const title = `${g.name} · WordGirl`;
           const desc = `${g.tagline} A new puzzle every day.`;
-          const url = `${SITE}/games/${g.id}`;
+          const url = gameUrl(g.id);
           const img = `${SITE}/og/${g.id}.png`;
-          // These shells boot a GAME, so the hub-shaped boot skeleton
-          // would promise a layout the mount never delivers —
-          // data-boot="game" hides it (index.html's inline boot style)
-          // and leaves the route-agnostic spinner + note.
-          let html = base.replace(
-            /<html lang="en">/,
-            `<html lang="en" data-boot="game">`,
-          );
-          html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
-          html = setMeta(html, "name", "description", desc);
+          let html = seoFor(notHub, `/games/${g.id}/`);
           html = setMeta(html, "property", "og:title", title);
           html = setMeta(html, "property", "og:description", desc);
           html = setMeta(html, "property", "og:url", url);
@@ -81,6 +131,19 @@ function ogShells(): Plugin {
           mkdirSync(dir, { recursive: true });
           writeFileSync(join(dir, "index.html"), html);
         }
+        for (const page of PAGE_SHELLS) {
+          const meta = pageMeta(`/${page}`);
+          let html = seoFor(notHub, `/${page}`);
+          html = setMeta(html, "property", "og:title", meta.title);
+          html = setMeta(html, "property", "og:url", meta.canonical!);
+          html = setMeta(html, "name", "twitter:title", meta.title);
+          writeFileSync(join(outDir, `${page}.html`), html);
+        }
+        writeFileSync(
+          join(outDir, "app.html"),
+          renderSeo(notHub, APP_SHELL_META, "", null),
+        );
+        writeFileSync(join(outDir, "sitemap.xml"), sitemapXml());
       },
     },
   };
@@ -96,7 +159,7 @@ function ogShells(): Plugin {
  * and a stale sha256 source matching no shipped block (a standing
  * grant that only ever ratchets the policy looser). It audits every
  * built page Netlify serves with the header — index.html, 404.html
- * and the per-game OG shells — via the pure helpers in
+ * and the shells ogShells writes — via the pure helpers in
  * src/lib/cspHashes.ts (unit-tested there). Out of scope on purpose:
  * the service worker's OFFLINE_HTML (src/sw/appShell.ts) also carries
  * an inline style, but the worker synthesizes that Response itself, so
@@ -127,6 +190,8 @@ function cspHashGuard(): Plugin {
           "index.html",
           "404.html",
           ...OG_GAMES.map((g) => `games/${g.id}/index.html`),
+          ...PAGE_SHELLS.map((p) => `${p}.html`),
+          "app.html",
         ].map((name) => ({
           name,
           html: readFileSync(join(outDir, name), "utf8"),
@@ -157,6 +222,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    seoHub(),
     ogShells(),
     cspHashGuard(),
     VitePWA({

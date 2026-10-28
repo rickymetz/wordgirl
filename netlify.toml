@@ -156,10 +156,35 @@
   to = "/games/pierglass/:splat"
   status = 301
 
-# SPA catch-all — must come AFTER the bot blockers and the docs proxy
+# The app's routes — no SPA catch-all, so a path the app doesn't have
+# gets Netlify's real 404 (public/404.html) instead of a 200 copy of the
+# hub. Must come AFTER the bot blockers and the docs proxy. Each target
+# is a static shell vite.config.ts writes (ogShells) with that page's
+# own title, canonical and crawler text from src/lib/seo.ts:
+# - / and /games/<id>/ are real files and need no rule (/games/<id>
+#   gets Netlify's 301 to the trailing slash, the canonical form);
+# - the game sub-routes (practice, stats, tutorial, archive and its
+#   days) share app.html, which is noindex — and since no rule here can
+#   list the registry, an unknown /games/<x> also lands there, noindex,
+#   and the app sends it home.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/dictionary"
+  to = "/dictionary.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/terms.html"
+  status = 200
+
+[[redirects]]
+  from = "/games/*"
+  to = "/app.html"
   status = 200
 
 # Security headers — all pages
@@ -185,7 +210,7 @@
     # style + settings script in index.html, 404.html's style) — no
     # 'unsafe-inline'. Do not edit them by hand: on any drift the build
     # fails naming the exact token and directive (cspHashGuard).
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.usefathom.com 'sha256-mxsOfPqVopZ9HGRuIgF2IpeX2/L9Err7WLHTk0NNgU8='; style-src 'self' 'sha256-hDRGKrdaGHPb1sQkO+TFcXA9npFIxq9HN8mFSrVVeas=' 'sha256-My7JR8LTPF7T4jaXp5kka8FoUh9ThvAyqZV9+C32yJI='; img-src 'self' data: https://cdn.usefathom.com; font-src 'self'; connect-src 'self' https://cdn.usefathom.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.usefathom.com 'sha256-mxsOfPqVopZ9HGRuIgF2IpeX2/L9Err7WLHTk0NNgU8='; style-src 'self' 'sha256-7xC5R2J/CnlR0lPh4R2D0rJ9q59ADjNvtGZ9ivZRW10=' 'sha256-My7JR8LTPF7T4jaXp5kka8FoUh9ThvAyqZV9+C32yJI='; img-src 'self' data: https://cdn.usefathom.com; font-src 'self'; connect-src 'self' https://cdn.usefathom.com; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
 
 # Docs — the extra protections a proxied response can carry. Note the
 # docs escape the app CSP only because Netlify does not apply custom
